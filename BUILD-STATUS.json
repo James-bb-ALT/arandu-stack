@@ -1,0 +1,32 @@
+{
+  "source_commit": "a0ecaca47f694a2c60c4f637b3ff47cd20609dbf",
+  "date": "2026-10-28",
+  "platform": "linux/amd64",
+  "docker_builds": {
+    "panel": "passed",
+    "nlu": "passed",
+    "stt": "passed",
+    "tts": "passed",
+    "decision": "passed",
+    "llm": "passed",
+    "wake": "passed"
+  },
+  "image_ids": {
+    "panel": "sha256:988ff55945ac0aadbe6f79abda3badc7ece10884c76a00f834982a4890d67202",
+    "nlu": "sha256:b00dc4ede0185a08e773c9087d3bd358b2134a6fddeca1c5d15e00131f492f9b",
+    "stt": "sha256:c4b70d11340021a4b070422ab95ce78563e147ca2dd1a186b214b6a270316be0",
+    "tts": "sha256:f12542743aab736c0f4b417de4d8d66c21e8978d4e2fff577a56af80164c7332",
+    "decision": "sha256:10c3c9edcc782b9983a78c34dba55514f3e855aa1087fc03449ad84808132ca6",
+    "llm": "sha256:ec87271f8e0014296820c79dd1000a93c8e9936fa9abe243954c1bc96b069744",
+    "wake": "sha256:dd4d57b845a5357ae6aab44be7a9c937ca980c755086eeb6070dd0bf0b52b82a"
+  },
+  "nlu_build_from_git_archive": "passed with core.autocrlf=false",
+  "new_python_syntax": "parsed without execution",
+  "integration_json": "parsed",
+  "desktop_ui": "visually reviewed in local mode",
+  "tests_run": false,
+  "benchmarks_run": false,
+  "inference_run": false,
+  "home_assistant_deployment_validated": false,
+  "note": "Build success does not validate startup, devices, voice pipeline or accuracy. Tests remain manual by user request. Images were built locally; Supervisor builds from source on installation."
+}

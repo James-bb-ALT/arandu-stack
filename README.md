@@ -80,6 +80,8 @@ O repositório contém os builds locais de cada app e a integração instalável
 Instalação e fluxo de voz completo em um HA real ainda precisam de validação.
 Nenhum teste, benchmark ou inferência foi executado nesta entrega por solicitação
 do usuário; builds e consultas de status não carregam modelos.
+Os sete builds Docker passaram em linux/amd64, incluindo compilação do NLU a
+partir do Git. Veja [o registro e os limites da verificação](BUILD-STATUS.json).
 
 ## Desenvolvimento e testes manuais
 

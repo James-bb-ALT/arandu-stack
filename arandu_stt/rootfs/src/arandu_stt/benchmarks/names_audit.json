@@ -1,0 +1,22 @@
+{
+  "origin": "user_supplied",
+  "sha256": "92c73ee407984dce75bd37014499ec485c3b2398c60a72bafba8e61fff9f3e3e",
+  "rows": 569,
+  "empty_canonical": 0,
+  "identical_duplicate_rows": 0,
+  "canonical_normalized_collisions": 40,
+  "populated_optional_fields": {
+    "variantes_graficas": 144,
+    "variantes_componentes": 51,
+    "apelidos_comuns": 133
+  },
+  "runtime_audit": {
+    "rows": 569,
+    "duplicate_phrases_skipped": 396,
+    "sha256": "92c73ee407984dce75bd37014499ec485c3b2398c60a72bafba8e61fff9f3e3e"
+  },
+  "name_tokens": 496,
+  "vocabulary_size": 2329,
+  "python_allocated_mib": 5.253752708435059,
+  "python_peak_mib": 5.483114242553711
+}

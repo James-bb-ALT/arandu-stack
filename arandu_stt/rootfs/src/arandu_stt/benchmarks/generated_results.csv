@@ -1,0 +1,801 @@
+category,raw,expected,corrected,wer_original,wer_corrected,cer_original,cer_corrected,latency_ms_median,first_pass_ms,confidence,low_confidence
+synthetic_agua_delete,tem vazameto em algum lugar,tem vazamento em algum lugar,tem vazamento em algum lugar,0.2,0.0,0.03571428571428571,0.0,0.4254999803379178,1.118,0.969939,False
+clean_agua,tem vazamento em algum lugar,tem vazamento em algum lugar,tem vazamento em algum lugar,0.0,0.0,0.0,0.0,0.17710000975057483,0.209,0.98,False
+synthetic_ambiente_transpose,me fala o CO2 da vaarnda,me fala o CO2 da varanda,me fala o CO2 da varanda,0.16666666666666666,0.0,0.08333333333333333,0.0,0.3869999782182276,0.82,0.920402,False
+clean_ambiente,me fala o CO2 da varanda,me fala o CO2 da varanda,me fala o CO2 da varanda,0.0,0.0,0.0,0.0,0.21160003961995244,0.208,0.98,False
+synthetic_calendario_substitute,o que eu tenho sábodo,o que eu tenho sábado,o que eu tenho sábado,0.2,0.0,0.047619047619047616,0.0,0.3357999958097935,0.747,0.936343,False
+clean_calendario,o que eu tenho sábado,o que eu tenho sábado,o que eu tenho sábado,0.0,0.0,0.0,0.0,0.1765000051818788,0.22,0.98,False
+synthetic_cenas_delete,liga a cena trablho,liga a cena trabalho,liga a cena trabalho,0.25,0.0,0.05,0.0,0.28979999478906393,0.732,0.964273,False
+clean_cenas,liga a cena trabalho,liga a cena trabalho,liga a cena trabalho,0.0,0.0,0.0,0.0,0.14129996998235583,0.141,0.98,False
+synthetic_clima_externo_transpose,vai cohver sábado,vai chover sábado,vai chover sábado,0.3333333333333333,0.0,0.11764705882352941,0.0,0.2793999738059938,0.733,0.740332,True
+clean_clima_externo,vai chover sábado,vai chover sábado,vai chover sábado,0.0,0.0,0.0,0.0,0.11179997818544507,0.144,0.98,False
+synthetic_climatizacao_substitute,como está o desumidificador do quauto,como está o desumidificador do quarto,como está o desumidificador do quarto,0.16666666666666666,0.0,0.02702702702702703,0.0,0.3674000035971403,0.781,0.888491,True
+clean_climatizacao,como está o desumidificador do quarto,como está o desumidificador do quarto,como está o desumidificador do quarto,0.0,0.0,0.0,0.0,0.22039999021217227,0.207,0.98,False
+synthetic_comunicacao_delete,avia no quarto que eu estou chamando,avisa no quarto que eu estou chamando,avisa no quarto que eu estou chamando,0.14285714285714285,0.0,0.02702702702702703,0.0,0.5610000225715339,1.047,0.945358,False
+clean_comunicacao,avisa no quarto que eu estou chamando,avisa no quarto que eu estou chamando,avisa no quarto que eu estou chamando,0.0,0.0,0.0,0.0,0.24889997439458966,0.248,0.98,False
+synthetic_consulta_transpose,o que está conecatdo no escritório de Bruna,o que está conectado no escritório de Bruna,o que está conectado no escritório de Bruna,0.125,0.0,0.046511627906976744,0.0,0.563400040846318,1.162,0.96506,False
+clean_consulta,o que está conectado no escritório de Bruna,o que está conectado no escritório de Bruna,o que está conectado no escritório de Bruna,0.0,0.0,0.0,0.0,0.2829000004567206,0.273,0.98,False
+synthetic_conversa_substitute,deuxa pra lá,deixa pra lá,deixa pra lá,0.3333333333333333,0.0,0.08333333333333333,0.0,0.3065000055357814,0.668,0.915899,False
+clean_conversa,deixa pra lá,deixa pra lá,deixa pra lá,0.0,0.0,0.0,0.0,0.11149997590109706,0.112,0.98,False
+synthetic_cortinas_delete,levanta a persiana da coziha,levanta a persiana da cozinha,levanta a persiana da cozinha,0.2,0.0,0.034482758620689655,0.0,0.32750004902482033,0.742,0.924078,False
+clean_cortinas,levanta a persiana da cozinha,levanta a persiana da cozinha,levanta a persiana da cozinha,0.0,0.0,0.0,0.0,0.17590000061318278,0.18,0.98,False
+synthetic_dispositivo_transpose,como está o computador do quarto de hósepdes,como está o computador do quarto de hóspedes,como está o computador do quarto de hóspedes,0.125,0.0,0.045454545454545456,0.0,0.4521000082604587,0.929,0.96196,False
+clean_dispositivo,como está o computador do quarto de hóspedes,como está o computador do quarto de hóspedes,como está o computador do quarto de hóspedes,0.0,0.0,0.0,0.0,0.27819996466860175,0.303,0.98,False
+synthetic_eletrodomesticos_substitute,como está a cefeteira,como está a cafeteira,como está a cafeteira,0.25,0.0,0.047619047619047616,0.0,0.2883999841287732,0.772,0.877592,True
+clean_eletrodomesticos,como está a cafeteira,como está a cafeteira,como está a cafeteira,0.0,0.0,0.0,0.0,0.1556000206619501,0.187,0.98,False
+synthetic_energia_delete,qual a bateria da teleisão,qual a bateria da televisão,qual a bateria da televisão,0.2,0.0,0.037037037037037035,0.0,0.33279997296631336,0.818,0.969939,False
+clean_energia,qual a bateria da televisão,qual a bateria da televisão,qual a bateria da televisão,0.0,0.0,0.0,0.0,0.17640000442042947,0.183,0.98,False
+synthetic_grupos_transpose,desliga as disopsitivos do casa toda,desliga as dispositivos do casa toda,desliga as dispositivos do casa toda,0.16666666666666666,0.0,0.05555555555555555,0.0,0.4768000217154622,0.885,0.93622,False
+clean_grupos,desliga as dispositivos do casa toda,desliga as dispositivos do casa toda,desliga as dispositivos do casa toda,0.0,0.0,0.0,0.0,0.20750000840052962,0.214,0.98,False
+synthetic_iluminacao_substitute,esquunta a cor da luz da sala,esquenta a cor da luz da sala,esquenta a cor da luz da sala,0.14285714285714285,0.0,0.034482758620689655,0.0,0.5419999943114817,0.964,0.963416,False
+clean_iluminacao,esquenta a cor da luz da sala,esquenta a cor da luz da sala,esquenta a cor da luz da sala,0.0,0.0,0.0,0.0,0.24590000975877047,0.241,0.98,False
+synthetic_impressao_3d_delete,a impressão termiou,a impressão terminou,a impressão terminou,0.3333333333333333,0.0,0.05,0.0,0.2668999950401485,0.677,0.911036,False
+clean_impressao_3d,a impressão terminou,a impressão terminou,a impressão terminou,0.0,0.0,0.0,0.0,0.11179997818544507,0.113,0.98,False
+synthetic_informacao_unchanged_no_eligible_token,me diz a hora,me diz a hora,me diz a hora,0.0,0.0,0.0,0.0,0.14160003047436476,0.156,0.98,False
+clean_informacao,me diz a hora,me diz a hora,me diz a hora,0.0,0.0,0.0,0.0,0.14020001981407404,0.134,0.98,False
+synthetic_jardim_substitute,como está o robô coitador,como está o robô cortador,como está o robô cortador,0.2,0.0,0.04,0.0,0.3301000106148422,0.907,0.890137,True
+clean_jardim,como está o robô cortador,como está o robô cortador,como está o robô cortador,0.0,0.0,0.0,0.0,0.1750999945215881,0.176,0.98,False
+synthetic_limpeza_delete,vota o robô aspirador pra base,volta o robô aspirador pra base,volta o robô aspirador pra base,0.16666666666666666,0.0,0.03225806451612903,0.0,0.4743000026792288,0.868,0.939464,False
+clean_limpeza,volta o robô aspirador pra base,volta o robô aspirador pra base,volta o robô aspirador pra base,0.0,0.0,0.0,0.0,0.21189998369663954,0.228,0.98,False
+synthetic_localizacao_transpose,faz meu celular tcoar,faz meu celular tocar,faz meu celular tocar,0.25,0.0,0.09523809523809523,0.0,0.292200013063848,0.725,0.835897,True
+clean_localizacao,faz meu celular tocar,faz meu celular tocar,faz meu celular tocar,0.0,0.0,0.0,0.0,0.14209997607395053,0.142,0.98,False
+synthetic_midia_substitute,volta um mieuto,volta um minuto,volta um minuto,0.3333333333333333,0.0,0.06666666666666667,0.0,0.26320002507418394,0.631,0.914738,False
+clean_midia,volta um minuto,volta um minuto,volta um minuto,0.0,0.0,0.0,0.0,0.11140003334730864,0.111,0.98,False
+synthetic_presenca_delete,confere se algém está no quintal,confere se alguém está no quintal,confere se alguém está no quintal,0.16666666666666666,0.0,0.030303030303030304,0.0,0.4610999603755772,0.829,0.969948,False
+clean_presenca,confere se alguém está no quintal,confere se alguém está no quintal,confere se alguém está no quintal,0.0,0.0,0.0,0.0,0.2096000243909657,0.207,0.98,False
+synthetic_rotinas_transpose,o que aidna está ligado,o que ainda está ligado,o que ainda está ligado,0.2,0.0,0.08695652173913043,0.0,0.403700047172606,0.742,0.826449,True
+clean_rotinas,o que ainda está ligado,o que ainda está ligado,o que ainda está ligado,0.0,0.0,0.0,0.0,0.17549999756738544,0.172,0.98,False
+synthetic_satelite_unchanged_no_eligible_token,toca rock aqui,toca rock aqui,toca rock aqui,0.0,0.0,0.0,0.0,0.10879995534196496,0.112,0.98,False
+clean_satelite,toca rock aqui,toca rock aqui,toca rock aqui,0.0,0.0,0.0,0.0,0.10710000060498714,0.102,0.98,False
+synthetic_seguranca_delete,feche o porão,feche o portão,feche o porão,0.3333333333333333,0.3333333333333333,0.07142857142857142,0.07142857142857142,0.11199997970834374,0.111,0.98,False
+clean_seguranca,feche o portão,feche o portão,feche o portão,0.0,0.0,0.0,0.0,0.1086000120267272,0.11,0.98,False
+synthetic_tempo_transpose,me dá mais quizne minutos,me dá mais quinze minutos,me dá mais quinze minutos,0.2,0.0,0.08,0.0,0.36999996518716216,0.724,0.938656,False
+clean_tempo,me dá mais quinze minutos,me dá mais quinze minutos,me dá mais quinze minutos,0.0,0.0,0.0,0.0,0.19719998817890882,0.172,0.98,False
+synthetic_agua_substitute,a cuixa d'água está cheia,a caixa d'água está cheia,a caixa d'água está cheia,0.2,0.0,0.04,0.0,0.40119996992871165,0.758,0.94102,False
+clean_agua,a caixa d'água está cheia,a caixa d'água está cheia,a caixa d'água está cheia,0.0,0.0,0.0,0.0,0.17670000670477748,0.173,0.98,False
+synthetic_ambiente_delete,como está a tempertura do banheiro,como está a temperatura do banheiro,como está a temperatura do banheiro,0.16666666666666666,0.0,0.02857142857142857,0.0,0.42910000775009394,0.879,0.973858,False
+clean_ambiente,como está a temperatura do banheiro,como está a temperatura do banheiro,como está a temperatura do banheiro,0.0,0.0,0.0,0.0,0.20860001677647233,0.211,0.98,False
+synthetic_calendario_transpose,remove cnosulta da agenda,remove consulta da agenda,remove consulta da agenda,0.25,0.0,0.08,0.0,0.3350000479258597,0.705,0.945746,False
+clean_calendario,remove consulta da agenda,remove consulta da agenda,remove consulta da agenda,0.0,0.0,0.0,0.0,0.14189997455105186,0.139,0.98,False
+synthetic_cenas_substitute,modo boa noate,modo boa noite,modo boa noite,0.3333333333333333,0.0,0.07142857142857142,0.0,0.24850002955645323,0.601,0.846909,True
+clean_cenas,modo boa noite,modo boa noite,modo boa noite,0.0,0.0,0.0,0.0,0.10720000136643648,0.107,0.98,False
+synthetic_clima_externo_delete,vai chover domino,vai chover domingo,vai chover domingo,0.3333333333333333,0.0,0.05555555555555555,0.0,0.25159999495372176,0.687,0.956049,False
+clean_clima_externo,vai chover domingo,vai chover domingo,vai chover domingo,0.0,0.0,0.0,0.0,0.10890001431107521,0.11,0.98,False
+synthetic_climatizacao_transpose,aumenta o ventildaor da sala,aumenta o ventilador da sala,aumenta o ventilador da sala,0.2,0.0,0.07142857142857142,0.0,0.3931999672204256,0.836,0.937639,False
+clean_climatizacao,aumenta o ventilador da sala,aumenta o ventilador da sala,aumenta o ventilador da sala,0.0,0.0,0.0,0.0,0.1735000405460596,0.186,0.98,False
+synthetic_comunicacao_substitute,manda um recado pra escritório de Jaiue,manda um recado pra escritório de Jaime,manda um recado pra escritório de Jaime,0.14285714285714285,0.0,0.02564102564102564,0.0,0.40769996121525764,0.745,0.925668,False
+clean_comunicacao,manda um recado pra escritório de Jaime,manda um recado pra escritório de Jaime,manda um recado pra escritório de Jaime,0.0,0.0,0.0,0.0,0.24359999224543571,0.241,0.98,False
+synthetic_consulta_delete,o que tem no escritório de Jame,o que tem no escritório de Jaime,o que tem no escritório de Jaime,0.14285714285714285,0.0,0.03125,0.0,0.40610000723972917,0.719,0.959742,False
+clean_consulta,o que tem no escritório de Jaime,o que tem no escritório de Jaime,o que tem no escritório de Jaime,0.0,0.0,0.0,0.0,0.24260004283860326,0.238,0.98,False
+synthetic_conversa_unchanged_no_eligible_token,sim,sim,sim,0.0,0.0,0.0,0.0,0.04110002191737294,0.049,0.98,False
+clean_conversa,sim,sim,sim,0.0,0.0,0.0,0.0,0.041899969801306725,0.057,0.98,False
+synthetic_cortinas_substitute,ajuita a porta da garagem para 75%,ajusta a porta da garagem para 75%,ajusta a porta da garagem para 75%,0.14285714285714285,0.0,0.029411764705882353,0.0,0.5579999997280538,1.111,0.957564,False
+clean_cortinas,ajusta a porta da garagem para 75%,ajusta a porta da garagem para 75%,ajusta a porta da garagem para 75%,0.0,0.0,0.0,0.0,0.2432999899610877,0.243,0.98,False
+synthetic_dispositivo_delete,qual o estado da toada do corredor,qual o estado da tomada do corredor,qual o estado da tomada do corredor,0.14285714285714285,0.0,0.02857142857142857,0.0,0.4841999616473913,1.037,0.905837,True
+clean_dispositivo,qual o estado da tomada do corredor,qual o estado da tomada do corredor,qual o estado da tomada do corredor,0.0,0.0,0.0,0.0,0.24910003412514925,0.24,0.98,False
+synthetic_eletrodomesticos_transpose,qual o estado do frono,qual o estado do forno,qual o estado do forno,0.2,0.0,0.09090909090909091,0.0,0.33199996687471867,0.727,0.849405,True
+clean_eletrodomesticos,qual o estado do forno,qual o estado do forno,qual o estado do forno,0.0,0.0,0.0,0.0,0.17559999832883477,0.173,0.98,False
+synthetic_energia_substitute,quanto de baturia tem o abajur,quanto de bateria tem o abajur,quanto de bateria tem o abajur,0.16666666666666666,0.0,0.03333333333333333,0.0,0.4703000304289162,0.856,0.919876,False
+clean_energia,quanto de bateria tem o abajur,quanto de bateria tem o abajur,quanto de bateria tem o abajur,0.0,0.0,0.0,0.0,0.20900001982226968,0.212,0.98,False
+synthetic_grupos_delete,tem algua coisa ligada no área íntima,tem alguma coisa ligada no área íntima,tem alguma coisa ligada no área íntima,0.14285714285714285,0.0,0.02631578947368421,0.0,0.5450000171549618,0.921,0.88804,True
+clean_grupos,tem alguma coisa ligada no área íntima,tem alguma coisa ligada no área íntima,tem alguma coisa ligada no área íntima,0.0,0.0,0.0,0.0,0.2465000143274665,0.241,0.98,False
+synthetic_iluminacao_transpose,ajsuta o brilho da fita LED da varanda para 100%,ajusta o brilho da fita LED da varanda para 100%,ajusta o brilho da fita LED da varanda para 100%,0.1,0.0,0.041666666666666664,0.0,0.7266000029630959,1.085,0.960312,False
+clean_iluminacao,ajusta o brilho da fita LED da varanda para 100%,ajusta o brilho da fita LED da varanda para 100%,ajusta o brilho da fita LED da varanda para 100%,0.0,0.0,0.0,0.0,0.3478999715298414,0.341,0.98,False
+synthetic_impressao_3d_substitute,retoma a imoressão,retoma a impressão,retoma a impressão,0.3333333333333333,0.0,0.05555555555555555,0.0,0.26489997981116176,0.727,0.947152,False
+clean_impressao_3d,retoma a impressão,retoma a impressão,retoma a impressão,0.0,0.0,0.0,0.0,0.11259998427703977,0.111,0.98,False
+synthetic_informacao_unchanged_no_eligible_token,que dia é hoje,que dia é hoje,que dia é hoje,0.0,0.0,0.0,0.0,0.14159997226670384,0.148,0.98,False
+clean_informacao,que dia é hoje,que dia é hoje,que dia é hoje,0.0,0.0,0.0,0.0,0.14210003428161144,0.136,0.98,False
+synthetic_jardim_transpose,o cortador está trbaalhando,o cortador está trabalhando,o cortador está trabalhando,0.25,0.0,0.07407407407407407,0.0,0.2965000458061695,0.82,0.959994,False
+clean_jardim,o cortador está trabalhando,o cortador está trabalhando,o cortador está trabalhando,0.0,0.0,0.0,0.0,0.14270003885030746,0.171,0.98,False
+synthetic_limpeza_substitute,liga o robô aspiiador,liga o robô aspirador,liga o robô aspirador,0.25,0.0,0.047619047619047616,0.0,0.2859999658539891,0.785,0.960574,False
+clean_limpeza,liga o robô aspirador,liga o robô aspirador,liga o robô aspirador,0.0,0.0,0.0,0.0,0.15109998639672995,0.138,0.98,False
+synthetic_localizacao_delete,toca meu tlefone,toca meu telefone,toca meu telefone,0.3333333333333333,0.0,0.058823529411764705,0.0,0.2571999793872237,0.665,0.960157,False
+clean_localizacao,toca meu telefone,toca meu telefone,toca meu telefone,0.0,0.0,0.0,0.0,0.12560002505779266,0.11,0.98,False
+synthetic_midia_transpose,reproduz mihna playlist,reproduz minha playlist,reproduz minha playlist,0.3333333333333333,0.0,0.08695652173913043,0.0,0.2856000210158527,0.694,0.820449,True
+clean_midia,reproduz minha playlist,reproduz minha playlist,reproduz minha playlist,0.0,0.0,0.0,0.0,0.2087999600917101,0.108,0.98,False
+synthetic_presenca_substitute,a garagem está ocupaaa,a garagem está ocupada,a garagem está ocupada,0.25,0.0,0.045454545454545456,0.0,0.285400019492954,1.085,0.887401,False
+clean_presenca,a garagem está ocupada,a garagem está ocupada,a garagem está ocupada,0.0,0.0,0.0,0.0,0.14259997988119721,0.146,0.98,False
+synthetic_rotinas_delete,tem algum disposiivo ligado,tem algum dispositivo ligado,tem algum dispositivo ligado,0.25,0.0,0.03571428571428571,0.0,0.3255000337958336,0.746,0.915015,False
+clean_rotinas,tem algum dispositivo ligado,tem algum dispositivo ligado,tem algum dispositivo ligado,0.0,0.0,0.0,0.0,0.1561000244691968,0.137,0.98,False
+synthetic_satelite_transpose,volume daqiu em 50%,volume daqui em 50%,volume daqui em 50%,0.25,0.0,0.10526315789473684,0.0,0.355200027115643,0.667,0.864773,True
+clean_satelite,volume daqui em 50%,volume daqui em 50%,volume daqui em 50%,0.0,0.0,0.0,0.0,0.14359998749569058,0.153,0.98,False
+synthetic_seguranca_substitute,destranca a fechidura da garagem,destranca a fechadura da garagem,destranca a fechadura da garagem,0.2,0.0,0.03125,0.0,0.41199999395757914,0.823,0.908045,False
+clean_seguranca,destranca a fechadura da garagem,destranca a fechadura da garagem,destranca a fechadura da garagem,0.0,0.0,0.0,0.0,0.1773000112734735,0.175,0.98,False
+synthetic_tempo_delete,pode acbar o timer,pode acabar o timer,pode acabar o timer,0.25,0.0,0.05263157894736842,0.0,0.3459000145085156,0.853,0.957738,False
+clean_tempo,pode acabar o timer,pode acabar o timer,pode acabar o timer,0.0,0.0,0.0,0.0,0.14670001110062003,0.14,0.98,False
+synthetic_agua_transpose,qual o nvíel da caixa d'água,qual o nível da caixa d'água,qual o nível da caixa d'água,0.16666666666666666,0.0,0.07142857142857142,0.0,0.45600003795698285,0.982,0.907012,True
+clean_agua,qual o nível da caixa d'água,qual o nível da caixa d'água,qual o nível da caixa d'água,0.0,0.0,0.0,0.0,0.2513999934308231,0.204,0.98,False
+synthetic_ambiente_substitute,tá meito úmido na garagem,tá muito úmido na garagem,tá muito úmido na garagem,0.2,0.0,0.04,0.0,0.40329998591914773,0.86,0.912401,False
+clean_ambiente,tá muito úmido na garagem,tá muito úmido na garagem,tá muito úmido na garagem,0.0,0.0,0.0,0.0,0.17409998690709472,0.172,0.98,False
+synthetic_calendario_delete,cria um compromisso hoje às meio-dia para dentisa,cria um compromisso hoje às meio-dia para dentista,cria um compromisso hoje às meio-dia para dentista,0.125,0.0,0.02,0.0,0.4393000272102654,0.912,0.962627,False
+clean_calendario,cria um compromisso hoje às meio-dia para dentista,cria um compromisso hoje às meio-dia para dentista,cria um compromisso hoje às meio-dia para dentista,0.0,0.0,0.0,0.0,0.28819998260587454,0.339,0.98,False
+synthetic_cenas_transpose,ativa a cena cniema,ativa a cena cinema,ativa a cena cinema,0.25,0.0,0.10526315789473684,0.0,0.28979999478906393,0.727,0.823236,True
+clean_cenas,ativa a cena cinema,ativa a cena cinema,ativa a cena cinema,0.0,0.0,0.0,0.0,0.1441999920643866,0.14,0.98,False
+synthetic_clima_externo_substitute,como está o temoo,como está o tempo,como está o tempo,0.25,0.0,0.058823529411764705,0.0,0.29390002600848675,0.739,0.825114,True
+clean_clima_externo,como está o tempo,como está o tempo,como está o tempo,0.0,0.0,0.0,0.0,0.14080002438277006,0.139,0.98,False
+synthetic_climatizacao_delete,desligue o ventilador do escrtório,desligue o ventilador do escritório,desligue o ventilador do escritório,0.2,0.0,0.02857142857142857,0.0,0.32670004293322563,0.782,0.94957,False
+clean_climatizacao,desligue o ventilador do escritório,desligue o ventilador do escritório,desligue o ventilador do escritório,0.0,0.0,0.0,0.0,0.17750001279637218,0.173,0.98,False
+synthetic_comunicacao_transpose,faz uma ligação para Jaiem,faz uma ligação para Jaime,faz uma ligação para Jaime,0.2,0.0,0.07692307692307693,0.0,0.33389998134225607,0.693,0.867721,True
+clean_comunicacao,faz uma ligação para Jaime,faz uma ligação para Jaime,faz uma ligação para Jaime,0.0,0.0,0.0,0.0,0.1783999614417553,0.179,0.98,False
+synthetic_consulta_substitute,cadê a tomuda,cadê a tomada,cadê a tomada,0.3333333333333333,0.0,0.07692307692307693,0.0,0.2544000162743032,0.704,0.841778,True
+clean_consulta,cadê a tomada,cadê a tomada,cadê a tomada,0.0,0.0,0.0,0.0,0.10900001507252455,0.107,0.98,False
+synthetic_conversa_delete,repee,repete,repete,1.0,0.0,0.16666666666666666,0.0,0.1425000373274088,0.513,0.893939,False
+clean_conversa,repete,repete,repete,0.0,0.0,0.0,0.0,0.03950000973418355,0.038,0.98,False
+synthetic_cortinas_transpose,a cortina do escritório está abetra,a cortina do escritório está aberta,a cortina do escritório está aberta,0.16666666666666666,0.0,0.05714285714285714,0.0,0.3643000381998718,0.749,0.857559,True
+clean_cortinas,a cortina do escritório está aberta,a cortina do escritório está aberta,a cortina do escritório está aberta,0.0,0.0,0.0,0.0,0.20970002515241504,0.215,0.98,False
+synthetic_dispositivo_substitute,desativa a lâmpada da gaiagem,desativa a lâmpada da garagem,desativa a lâmpada da garagem,0.2,0.0,0.034482758620689655,0.0,0.32649998320266604,0.657,0.932657,False
+clean_dispositivo,desativa a lâmpada da garagem,desativa a lâmpada da garagem,desativa a lâmpada da garagem,0.0,0.0,0.0,0.0,0.17500005196779966,0.172,0.98,False
+synthetic_eletrodomesticos_delete,quanto tempo fata na lava-louças,quanto tempo falta na lava-louças,quanto tempo falta na lava-louças,0.2,0.0,0.030303030303030304,0.0,0.39250002009794116,0.752,0.930951,False
+clean_eletrodomesticos,quanto tempo falta na lava-louças,quanto tempo falta na lava-louças,quanto tempo falta na lava-louças,0.0,0.0,0.0,0.0,0.17479999223724008,0.173,0.98,False
+synthetic_energia_transpose,quanto o ventilador está consmuindo,quanto o ventilador está consumindo,quanto o ventilador está consumindo,0.2,0.0,0.05714285714285714,0.0,0.3309000167064369,0.882,0.95913,False
+clean_energia,quanto o ventilador está consumindo,quanto o ventilador está consumindo,quanto o ventilador está consumindo,0.0,0.0,0.0,0.0,0.17030001617968082,0.181,0.98,False
+synthetic_grupos_substitute,apaga as tomadas do ander de cima,apaga as tomadas do andar de cima,apaga as tomadas do andar de cima,0.14285714285714285,0.0,0.030303030303030304,0.0,0.4735999973490834,0.915,0.900878,True
+clean_grupos,apaga as tomadas do andar de cima,apaga as tomadas do andar de cima,apaga as tomadas do andar de cima,0.0,0.0,0.0,0.0,0.23940001847222447,0.236,0.98,False
+synthetic_iluminacao_delete,clareia o escritrio de Jaime,clareia o escritório de Jaime,clareia o escritório de Jaime,0.2,0.0,0.034482758620689655,0.0,0.39330002618953586,0.783,0.94957,False
+clean_iluminacao,clareia o escritório de Jaime,clareia o escritório de Jaime,clareia o escritório de Jaime,0.0,0.0,0.0,0.0,0.1773000112734735,0.184,0.98,False
+synthetic_impressao_3d_transpose,como está a imprsesora 3D,como está a impressora 3D,como está a impressora 3D,0.2,0.0,0.08,0.0,0.4803999909199774,0.968,0.965151,False
+clean_impressao_3d,como está a impressora 3D,como está a impressora 3D,como está a impressora 3D,0.0,0.0,0.0,0.0,0.2204999909736216,0.204,0.98,False
+synthetic_informacao_substitute,que horus é,que horas é,que horas é,0.3333333333333333,0.0,0.09090909090909091,0.0,0.2766000106930733,0.622,0.874876,False
+clean_informacao,que horas é,que horas é,que horas é,0.0,0.0,0.0,0.0,0.10720000136643648,0.106,0.98,False
+synthetic_jardim_delete,começa a crtar a grama,começa a cortar a grama,começa a cortar a grama,0.2,0.0,0.043478260869565216,0.0,0.3844000166282058,0.766,0.962149,False
+clean_jardim,começa a cortar a grama,começa a cortar a grama,começa a cortar a grama,0.0,0.0,0.0,0.0,0.1705000177025795,0.171,0.98,False
+synthetic_limpeza_transpose,cacnela a limpeza,cancela a limpeza,cancela a limpeza,0.3333333333333333,0.0,0.11764705882352941,0.0,0.27820002287626266,0.661,0.852833,True
+clean_limpeza,cancela a limpeza,cancela a limpeza,cancela a limpeza,0.0,0.0,0.0,0.0,0.10599999222904444,0.104,0.98,False
+synthetic_localizacao_substitute,eu perdi meu calular,eu perdi meu celular,eu perdi meu celular,0.25,0.0,0.05,0.0,0.2826000563800335,0.672,0.901947,False
+clean_localizacao,eu perdi meu celular,eu perdi meu celular,eu perdi meu celular,0.0,0.0,0.0,0.0,0.14110002666711807,0.143,0.98,False
+synthetic_midia_delete,manda a música para speaer do quarto,manda a música para speaker do quarto,manda a música para speaker do quarto,0.14285714285714285,0.0,0.02702702702702703,0.0,0.4992999602109194,0.864,0.969663,False
+clean_midia,manda a música para speaker do quarto,manda a música para speaker do quarto,manda a música para speaker do quarto,0.0,0.0,0.0,0.0,0.2457000082358718,0.251,0.98,False
+synthetic_presenca_transpose,você sabe onde está Bruan,você sabe onde está Bruna,você sabe onde está Bruna,0.2,0.0,0.08,0.0,0.3341999836266041,0.717,0.826449,True
+clean_presenca,você sabe onde está Bruna,você sabe onde está Bruna,você sabe onde está Bruna,0.0,0.0,0.0,0.0,0.1737999846227467,0.175,0.98,False
+synthetic_rotinas_substitute,tem alguma coisa lagada,tem alguma coisa ligada,tem alguma coisa ligada,0.25,0.0,0.043478260869565216,0.0,0.29850000282749534,0.697,0.886569,False
+clean_rotinas,tem alguma coisa ligada,tem alguma coisa ligada,tem alguma coisa ligada,0.0,0.0,0.0,0.0,0.1430999836884439,0.14,0.98,False
+synthetic_satelite_unchanged_no_eligible_token,tira você do mudo,tira você do mudo,tira você do mudo,0.0,0.0,0.0,0.0,0.13940001372247934,0.142,0.98,False
+clean_satelite,tira você do mudo,tira você do mudo,tira você do mudo,0.0,0.0,0.0,0.0,0.14160003047436476,0.136,0.98,False
+synthetic_seguranca_transpose,abre a fechadura da porat da frente,abre a fechadura da porta da frente,abre a fechadura da porta da frente,0.14285714285714285,0.0,0.05714285714285714,0.0,0.49320003017783165,0.885,0.867684,True
+clean_seguranca,abre a fechadura da porta da frente,abre a fechadura da porta da frente,abre a fechadura da porta da frente,0.0,0.0,0.0,0.0,0.2577000414021313,0.245,0.98,False
+synthetic_tempo_substitute,me acoraa às seis da tarde,me acorda às seis da tarde,me acorda às seis da tarde,0.16666666666666666,0.0,0.038461538461538464,0.0,0.46749995090067387,0.892,0.947505,False
+clean_tempo,me acorda às seis da tarde,me acorda às seis da tarde,me acorda às seis da tarde,0.0,0.0,0.0,0.0,0.2150999498553574,0.206,0.98,False
+synthetic_agua_delete,algum sensor de água diparou,algum sensor de água disparou,algum sensor de água disparou,0.2,0.0,0.034482758620689655,0.0,0.3302000113762915,0.722,0.968045,False
+clean_agua,algum sensor de água disparou,algum sensor de água disparou,algum sensor de água disparou,0.0,0.0,0.0,0.0,0.1767999492585659,0.175,0.98,False
+synthetic_ambiente_transpose,como está o ríudo no escritório de Bruna,como está o ruído no escritório de Bruna,como está o ruído no escritório de Bruna,0.125,0.0,0.05,0.0,0.5661000031977892,0.937,0.909494,True
+clean_ambiente,como está o ruído no escritório de Bruna,como está o ruído no escritório de Bruna,como está o ruído no escritório de Bruna,0.0,0.0,0.0,0.0,0.2874999772757292,0.275,0.98,False
+synthetic_calendario_substitute,tira almoço da minha ageada,tira almoço da minha agenda,tira almoço da minha agenda,0.2,0.0,0.037037037037037035,0.0,0.36589999217540026,0.722,0.948734,False
+clean_calendario,tira almoço da minha agenda,tira almoço da minha agenda,tira almoço da minha agenda,0.0,0.0,0.0,0.0,0.17660000594332814,0.24,0.98,False
+synthetic_cenas_delete,qero a cena boa noite,quero a cena boa noite,quero a cena boa noite,0.2,0.0,0.045454545454545456,0.0,0.4121999954804778,0.864,0.9644,False
+clean_cenas,quero a cena boa noite,quero a cena boa noite,quero a cena boa noite,0.0,0.0,0.0,0.0,0.17010001465678215,0.17,0.98,False
+synthetic_clima_externo_transpose,como vai estar o temop amanhã,como vai estar o tempo amanhã,como vai estar o tempo amanhã,0.16666666666666666,0.0,0.06896551724137931,0.0,0.4278999986127019,0.777,0.850259,True
+clean_clima_externo,como vai estar o tempo amanhã,como vai estar o tempo amanhã,como vai estar o tempo amanhã,0.0,0.0,0.0,0.0,0.20760000916197896,0.208,0.98,False
+synthetic_climatizacao_substitute,bota o veetilador da sala pra funcionar,bota o ventilador da sala pra funcionar,bota o ventilador da sala pra funcionar,0.14285714285714285,0.0,0.02564102564102564,0.0,0.5129000055603683,0.976,0.958109,False
+clean_climatizacao,bota o ventilador da sala pra funcionar,bota o ventilador da sala pra funcionar,bota o ventilador da sala pra funcionar,0.0,0.0,0.0,0.0,0.2516999957151711,0.245,0.98,False
+synthetic_comunicacao_delete,chaa Jaime,chama Jaime,chama Jaime,0.5,0.0,0.09090909090909091,0.0,0.2201999886892736,0.57,0.658479,True
+clean_comunicacao,chama Jaime,chama Jaime,chama Jaime,0.0,0.0,0.0,0.0,0.07460004417225718,0.073,0.98,False
+synthetic_consulta_transpose,cadê o abajru,cadê o abajur,cadê o abajur,0.3333333333333333,0.0,0.15384615384615385,0.0,0.25510002160444856,0.565,0.915899,False
+clean_consulta,cadê o abajur,cadê o abajur,cadê o abajur,0.0,0.0,0.0,0.0,0.10639999527484179,0.104,0.98,False
+synthetic_conversa_substitute,canceea isso,cancela isso,cancela isso,0.5,0.0,0.08333333333333333,0.0,0.22170000011101365,0.587,0.869203,False
+clean_conversa,cancela isso,cancela isso,cancela isso,0.0,0.0,0.0,0.0,0.07419998291879892,0.072,0.98,False
+synthetic_cortinas_delete,coloca a persiana do qarto em metade,coloca a persiana do quarto em metade,coloca a persiana do quarto em metade,0.14285714285714285,0.0,0.02702702702702703,0.0,0.46579999616369605,0.822,0.964938,False
+clean_cortinas,coloca a persiana do quarto em metade,coloca a persiana do quarto em metade,coloca a persiana do quarto em metade,0.0,0.0,0.0,0.0,0.23750000400468707,0.233,0.98,False
+synthetic_dispositivo_transpose,liga o ventilador do escritório de Jiame,liga o ventilador do escritório de Jaime,liga o ventilador do escritório de Jaime,0.14285714285714285,0.0,0.05,0.0,0.4081000224687159,0.755,0.93386,False
+clean_dispositivo,liga o ventilador do escritório de Jaime,liga o ventilador do escritório de Jaime,liga o ventilador do escritório de Jaime,0.0,0.0,0.0,0.0,0.33330003498122096,0.26,0.98,False
+synthetic_eletrodomesticos_substitute,qual o estado da cafeteura,qual o estado da cafeteira,qual o estado da cafeteira,0.2,0.0,0.038461538461538464,0.0,0.4005000228062272,0.775,0.906419,False
+clean_eletrodomesticos,qual o estado da cafeteira,qual o estado da cafeteira,qual o estado da cafeteira,0.0,0.0,0.0,0.0,0.20380003843456507,0.273,0.98,False
+synthetic_energia_delete,desative a tomaa do computador,desative a tomada do computador,desative a tomada do computador,0.2,0.0,0.03225806451612903,0.0,0.45190000673756003,0.881,0.920481,False
+clean_energia,desative a tomada do computador,desative a tomada do computador,desative a tomada do computador,0.0,0.0,0.0,0.0,0.2041999832727015,0.189,0.98,False
+synthetic_grupos_transpose,como estão as dispostiivos do casa toda,como estão as dispositivos do casa toda,como estão as dispositivos do casa toda,0.14285714285714285,0.0,0.05128205128205128,0.0,0.5023999838158488,0.949,0.944972,False
+clean_grupos,como estão as dispositivos do casa toda,como estão as dispositivos do casa toda,como estão as dispositivos do casa toda,0.0,0.0,0.0,0.0,0.2568000345490873,0.234,0.98,False
+synthetic_iluminacao_substitute,deuxa a abajur do escritório mais branca,deixa a abajur do escritório mais branca,deixa a abajur do escritório mais branca,0.14285714285714285,0.0,0.025,0.0,0.5382000235840678,0.922,0.951996,False
+clean_iluminacao,deixa a abajur do escritório mais branca,deixa a abajur do escritório mais branca,deixa a abajur do escritório mais branca,0.0,0.0,0.0,0.0,0.23969996254891157,0.234,0.98,False
+synthetic_impressao_3d_delete,segura a imressão,segura a impressão,segura a impressão,0.3333333333333333,0.0,0.05555555555555555,0.0,0.2500999835319817,0.676,0.962477,False
+clean_impressao_3d,segura a impressão,segura a impressão,segura a impressão,0.0,0.0,0.0,0.0,0.1086000120267272,0.109,0.98,False
+synthetic_informacao_unchanged_no_eligible_token,vê a hora pra mim,vê a hora pra mim,vê a hora pra mim,0.0,0.0,0.0,0.0,0.17100002150982618,0.175,0.98,False
+clean_informacao,vê a hora pra mim,vê a hora pra mim,vê a hora pra mim,0.0,0.0,0.0,0.0,0.1686000032350421,0.164,0.98,False
+synthetic_jardim_substitute,monda o cortador pra base,manda o cortador pra base,manda o cortador pra base,0.2,0.0,0.04,0.0,0.4048999981023371,0.78,0.872893,True
+clean_jardim,manda o cortador pra base,manda o cortador pra base,manda o cortador pra base,0.0,0.0,0.0,0.0,0.1702000154182315,0.167,0.98,False
+synthetic_limpeza_delete,para o robô aspiador,para o robô aspirador,para o robô aspirador,0.25,0.0,0.047619047619047616,0.0,0.2899999963119626,0.696,0.96744,False
+clean_limpeza,para o robô aspirador,para o robô aspirador,para o robô aspirador,0.0,0.0,0.0,0.0,0.14219997683539987,0.143,0.98,False
+synthetic_localizacao_transpose,onde está meu tleefone,onde está meu telefone,onde está meu telefone,0.25,0.0,0.09090909090909091,0.0,0.28279999969527125,0.687,0.950576,False
+clean_localizacao,onde está meu telefone,onde está meu telefone,onde está meu telefone,0.0,0.0,0.0,0.0,0.13990001752972603,0.136,0.98,False
+synthetic_midia_substitute,repruduz rock na casa toda,reproduz rock na casa toda,reproduz rock na casa toda,0.2,0.0,0.038461538461538464,0.0,0.4076000186614692,0.742,0.955821,False
+clean_midia,reproduz rock na casa toda,reproduz rock na casa toda,reproduz rock na casa toda,0.0,0.0,0.0,0.0,0.17030001617968082,0.171,0.98,False
+synthetic_presenca_delete,confere se Jaime está na área de servio,confere se Jaime está na área de serviço,confere se Jaime está na área de serviço,0.125,0.0,0.025,0.0,0.4344999906606972,0.812,0.947378,False
+clean_presenca,confere se Jaime está na área de serviço,confere se Jaime está na área de serviço,confere se Jaime está na área de serviço,0.0,0.0,0.0,0.0,0.2722999779507518,0.268,0.98,False
+synthetic_rotinas_transpose,modo modo trablaho,modo modo trabalho,modo modo trabalho,0.3333333333333333,0.0,0.1111111111111111,0.0,0.248699972871691,0.627,0.881223,False
+clean_rotinas,modo modo trabalho,modo modo trabalho,modo modo trabalho,0.0,0.0,0.0,0.0,0.10740000288933516,0.104,0.98,False
+synthetic_satelite_substitute,liga a luz diqui,liga a luz daqui,liga a luz daqui,0.25,0.0,0.0625,0.0,0.30860002152621746,0.79,0.910595,False
+clean_satelite,liga a luz daqui,liga a luz daqui,liga a luz daqui,0.0,0.0,0.0,0.0,0.14070002362132072,0.14,0.98,False
+synthetic_seguranca_delete,abre a fechadura da entraa,abre a fechadura da entrada,abre a fechadura da entrada,0.2,0.0,0.037037037037037035,0.0,0.32729998929426074,0.736,0.937758,False
+clean_seguranca,abre a fechadura da entrada,abre a fechadura da entrada,abre a fechadura da entrada,0.0,0.0,0.0,0.0,0.17219997243955731,0.173,0.98,False
+synthetic_tempo_transpose,colcoa um alarme para oito e meia,coloca um alarme para oito e meia,coloca um alarme para oito e meia,0.14285714285714285,0.0,0.06060606060606061,0.0,0.5270999972708523,0.886,0.882977,True
+clean_tempo,coloca um alarme para oito e meia,coloca um alarme para oito e meia,coloca um alarme para oito e meia,0.0,0.0,0.0,0.0,0.24010002380236983,0.238,0.98,False
+synthetic_agua_substitute,quanuo de água tem no reservatório,quanto de água tem no reservatório,quanto de água tem no reservatório,0.16666666666666666,0.0,0.029411764705882353,0.0,0.47289999201893806,0.796,0.867294,True
+clean_agua,quanto de água tem no reservatório,quanto de água tem no reservatório,quanto de água tem no reservatório,0.0,0.0,0.0,0.0,0.21520000882446766,0.203,0.98,False
+synthetic_ambiente_delete,qanto está a luminosidade no quarto,quanto está a luminosidade no quarto,quanto está a luminosidade no quarto,0.16666666666666666,0.0,0.027777777777777776,0.0,0.4734999965876341,0.844,0.876993,True
+clean_ambiente,quanto está a luminosidade no quarto,quanto está a luminosidade no quarto,quanto está a luminosidade no quarto,0.0,0.0,0.0,0.0,0.20540005061775446,0.202,0.98,False
+synthetic_calendario_transpose,que horas é reunioã,que horas é reunião,que horas é reunião,0.25,0.0,0.10526315789473684,0.0,0.2888999879360199,0.678,0.939728,False
+clean_calendario,que horas é reunião,que horas é reunião,que horas é reunião,0.0,0.0,0.0,0.0,0.14080002438277006,0.137,0.98,False
+synthetic_cenas_substitute,couoca o modo leitura,coloca o modo leitura,coloca o modo leitura,0.25,0.0,0.047619047619047616,0.0,0.3445000038482249,0.712,0.929956,False
+clean_cenas,coloca o modo leitura,coloca o modo leitura,coloca o modo leitura,0.0,0.0,0.0,0.0,0.1401000190526247,0.137,0.98,False
+synthetic_clima_externo_delete,vai chovr amanhã,vai chover amanhã,vai chover amanhã,0.3333333333333333,0.0,0.058823529411764705,0.0,0.2753000007942319,0.613,0.948277,False
+clean_clima_externo,vai chover amanhã,vai chover amanhã,vai chover amanhã,0.0,0.0,0.0,0.0,0.10770000517368317,0.104,0.98,False
+synthetic_climatizacao_transpose,diminui o ventiladro da sala,diminui o ventilador da sala,diminui o ventilador da sala,0.2,0.0,0.07142857142857142,0.0,0.3912000101990998,0.854,0.926894,False
+clean_climatizacao,diminui o ventilador da sala,diminui o ventilador da sala,diminui o ventilador da sala,0.0,0.0,0.0,0.0,0.16739999409765005,0.169,0.98,False
+synthetic_comunicacao_substitute,faz uma ligaaão para mãe,faz uma ligação para mãe,faz uma ligação para mãe,0.2,0.0,0.041666666666666664,0.0,0.3839000128209591,0.769,0.882148,True
+clean_comunicacao,faz uma ligação para mãe,faz uma ligação para mãe,faz uma ligação para mãe,0.0,0.0,0.0,0.0,0.16980001237243414,0.166,0.98,False
+synthetic_consulta_delete,o que está conctado no quarto,o que está conectado no quarto,o que está conectado no quarto,0.16666666666666666,0.0,0.03333333333333333,0.0,0.423500023316592,0.836,0.971609,False
+clean_consulta,o que está conectado no quarto,o que está conectado no quarto,o que está conectado no quarto,0.0,0.0,0.0,0.0,0.20279997261241078,0.2,0.98,False
+synthetic_conversa_unchanged_no_eligible_token,fala de novo,fala de novo,fala de novo,0.0,0.0,0.0,0.0,0.10529998689889908,0.105,0.98,False
+clean_conversa,fala de novo,fala de novo,fala de novo,0.0,0.0,0.0,0.0,0.10490004206076264,0.101,0.98,False
+synthetic_cortinas_substitute,pode abrir a persaana da cozinha,pode abrir a persiana da cozinha,pode abrir a persiana da cozinha,0.16666666666666666,0.0,0.03125,0.0,0.41930004954338074,0.858,0.925082,False
+clean_cortinas,pode abrir a persiana da cozinha,pode abrir a persiana da cozinha,pode abrir a persiana da cozinha,0.0,0.0,0.0,0.0,0.20490004681050777,0.264,0.98,False
+synthetic_dispositivo_delete,o ventilador do escritóio de Jaime está ligado,o ventilador do escritório de Jaime está ligado,o ventilador do escritório de Jaime está ligado,0.125,0.0,0.02127659574468085,0.0,0.5691000260412693,0.971,0.960869,False
+clean_dispositivo,o ventilador do escritório de Jaime está ligado,o ventilador do escritório de Jaime está ligado,o ventilador do escritório de Jaime está ligado,0.0,0.0,0.0,0.0,0.27489999774843454,0.276,0.98,False
+synthetic_eletrodomesticos_unchanged_no_eligible_token,como está a lava e seca,como está a lava e seca,como está a lava e seca,0.0,0.0,0.0,0.0,0.20559999393299222,0.3,0.98,False
+clean_eletrodomesticos,como está a lava e seca,como está a lava e seca,como está a lava e seca,0.0,0.0,0.0,0.0,0.20410004071891308,0.199,0.98,False
+synthetic_energia_substitute,quanto a casa está consuuindo,quanto a casa está consumindo,quanto a casa está consumindo,0.2,0.0,0.034482758620689655,0.0,0.3208999987691641,0.825,0.966474,False
+clean_energia,quanto a casa está consumindo,quanto a casa está consumindo,quanto a casa está consumindo,0.0,0.0,0.0,0.0,0.1715999678708613,0.168,0.98,False
+synthetic_grupos_delete,quais tomadas esão ligadas no andar de cima,quais tomadas estão ligadas no andar de cima,quais tomadas estão ligadas no andar de cima,0.125,0.0,0.022727272727272728,0.0,0.6146000232547522,0.958,0.916138,True
+clean_grupos,quais tomadas estão ligadas no andar de cima,quais tomadas estão ligadas no andar de cima,quais tomadas estão ligadas no andar de cima,0.0,0.0,0.0,0.0,0.27379998937249184,0.271,0.98,False
+synthetic_iluminacao_transpose,desligue a luimnária da garagem,desligue a luminária da garagem,desligue a luminária da garagem,0.2,0.0,0.06451612903225806,0.0,0.39549998473376036,0.899,0.900746,True
+clean_iluminacao,desligue a luminária da garagem,desligue a luminária da garagem,desligue a luminária da garagem,0.0,0.0,0.0,0.0,0.1705000177025795,0.171,0.98,False
+synthetic_impressao_3d_substitute,velta a imprimir,volta a imprimir,volta a imprimir,0.3333333333333333,0.0,0.0625,0.0,0.28039998142048717,0.683,0.750415,True
+clean_impressao_3d,volta a imprimir,volta a imprimir,volta a imprimir,0.0,0.0,0.0,0.0,0.10609999299049377,0.104,0.98,False
+synthetic_informacao_unchanged_no_eligible_token,qual a data de hoje,qual a data de hoje,qual a data de hoje,0.0,0.0,0.0,0.0,0.17039995873346925,0.172,0.98,False
+clean_informacao,qual a data de hoje,qual a data de hoje,qual a data de hoje,0.0,0.0,0.0,0.0,0.17300003673881292,0.179,0.98,False
+synthetic_jardim_transpose,segura o cortaodr,segura o cortador,segura o cortador,0.3333333333333333,0.0,0.11764705882352941,0.0,0.2508999896235764,0.727,0.794884,True
+clean_jardim,segura o cortador,segura o cortador,segura o cortador,0.0,0.0,0.0,0.0,0.10639999527484179,0.105,0.98,False
+synthetic_limpeza_substitute,asiira o escritório de Bruna,aspira o escritório de Bruna,aspira o escritório de Bruna,0.2,0.0,0.03571428571428571,0.0,0.4327999777160585,0.809,0.953854,False
+clean_limpeza,aspira o escritório de Bruna,aspira o escritório de Bruna,aspira o escritório de Bruna,0.0,0.0,0.0,0.0,0.17600000137463212,0.203,0.98,False
+synthetic_localizacao_delete,toca meu clular,toca meu celular,toca meu celular,0.3333333333333333,0.0,0.0625,0.0,0.25479996111243963,0.663,0.939603,False
+clean_localizacao,toca meu celular,toca meu celular,toca meu celular,0.0,0.0,0.0,0.0,0.10810000821948051,0.106,0.98,False
+synthetic_midia_transpose,vai um mintuo pra frente,vai um minuto pra frente,vai um minuto pra frente,0.2,0.0,0.08333333333333333,0.0,0.3948000376112759,0.788,0.94018,False
+clean_midia,vai um minuto pra frente,vai um minuto pra frente,vai um minuto pra frente,0.0,0.0,0.0,0.0,0.17279997700825334,0.17,0.98,False
+synthetic_presenca_substitute,vê se Bruna está no quarto de hóspades,vê se Bruna está no quarto de hóspedes,vê se Bruna está no quarto de hóspedes,0.125,0.0,0.02631578947368421,0.0,0.44380000326782465,0.952,0.965474,False
+clean_presenca,vê se Bruna está no quarto de hóspedes,vê se Bruna está no quarto de hóspedes,vê se Bruna está no quarto de hóspedes,0.0,0.0,0.0,0.0,0.2997999545186758,0.294,0.98,False
+synthetic_rotinas_delete,tem algo que eu peciso saber,tem algo que eu preciso saber,tem algo que eu preciso saber,0.16666666666666666,0.0,0.034482758620689655,0.0,0.39900001138448715,0.83,0.965271,False
+clean_rotinas,tem algo que eu preciso saber,tem algo que eu preciso saber,tem algo que eu preciso saber,0.0,0.0,0.0,0.0,0.2125999890267849,0.273,0.98,False
+synthetic_satelite_transpose,toca podcast onde eu esotu,toca podcast onde eu estou,toca podcast onde eu estou,0.2,0.0,0.07692307692307693,0.0,0.3524000057950616,0.712,0.91719,False
+clean_satelite,toca podcast onde eu estou,toca podcast onde eu estou,toca podcast onde eu estou,0.0,0.0,0.0,0.0,0.19209994934499264,0.188,0.98,False
+synthetic_seguranca_substitute,qual o estado da fechadura da perta da frente,qual o estado da fechadura da porta da frente,qual o estado da fechadura da porta da frente,0.1111111111111111,0.0,0.022222222222222223,0.0,0.5759000196121633,1.025,0.919218,True
+clean_seguranca,qual o estado da fechadura da porta da frente,qual o estado da fechadura da porta da frente,qual o estado da fechadura da porta da frente,0.0,0.0,0.0,0.0,0.39250002009794116,0.5,0.98,False
+synthetic_tempo_delete,aumenta o timer em cico minutos,aumenta o timer em cinco minutos,aumenta o timer em cinco minutos,0.16666666666666666,0.0,0.03125,0.0,0.43999997433274984,1.001,0.9084,True
+clean_tempo,aumenta o timer em cinco minutos,aumenta o timer em cinco minutos,aumenta o timer em cinco minutos,0.0,0.0,0.0,0.0,0.215300009585917,0.304,0.98,False
+synthetic_agua_transpose,tem água vaznado,tem água vazando,tem água vazando,0.3333333333333333,0.0,0.125,0.0,0.2634000265970826,0.716,0.926675,False
+clean_agua,tem água vazando,tem água vazando,tem água vazando,0.0,0.0,0.0,0.0,0.10710000060498714,0.302,0.98,False
+synthetic_ambiente_substitute,qual a umidide do quarto,qual a umidade do quarto,qual a umidade do quarto,0.2,0.0,0.041666666666666664,0.0,0.41589996544644237,0.812,0.954095,False
+clean_ambiente,qual a umidade do quarto,qual a umidade do quarto,qual a umidade do quarto,0.0,0.0,0.0,0.0,0.20940002286806703,0.181,0.98,False
+synthetic_calendario_delete,que horas é acdemia,que horas é academia,que horas é academia,0.25,0.0,0.05,0.0,0.3127999952994287,0.852,0.965079,False
+clean_calendario,que horas é academia,que horas é academia,que horas é academia,0.0,0.0,0.0,0.0,0.1419999753125012,0.161,0.98,False
+synthetic_cenas_transpose,qureo a cena leitura,quero a cena leitura,quero a cena leitura,0.25,0.0,0.1,0.0,0.4042999935336411,0.913,0.781346,True
+clean_cenas,quero a cena leitura,quero a cena leitura,quero a cena leitura,0.0,0.0,0.0,0.0,0.1370999962091446,0.137,0.98,False
+synthetic_clima_externo_substitute,qual a temparatura lá fora,qual a temperatura lá fora,qual a temperatura lá fora,0.2,0.0,0.038461538461538464,0.0,0.4417999880388379,0.897,0.965389,False
+clean_clima_externo,qual a temperatura lá fora,qual a temperatura lá fora,qual a temperatura lá fora,0.0,0.0,0.0,0.0,0.2169000217691064,0.343,0.98,False
+synthetic_climatizacao_delete,bota o arcondicionado da sala pra gelar,bota o ar-condicionado da sala pra gelar,bota o ar-condicionado da sala pra gelar,0.14285714285714285,0.0,0.025,0.0,0.5484999855980277,1.042,0.94809,False
+clean_climatizacao,bota o ar-condicionado da sala pra gelar,bota o ar-condicionado da sala pra gelar,bota o ar-condicionado da sala pra gelar,0.0,0.0,0.0,0.0,0.2500000409781933,0.25,0.98,False
+synthetic_comunicacao_transpose,faz uma ligaãço para pai,faz uma ligação para pai,faz uma ligação para pai,0.2,0.0,0.08333333333333333,0.0,0.46549999387934804,0.814,0.90497,False
+clean_comunicacao,faz uma ligação para pai,faz uma ligação para pai,faz uma ligação para pai,0.0,0.0,0.0,0.0,0.1737999846227467,0.201,0.98,False
+synthetic_consulta_substitute,onde fica a teluvisão,onde fica a televisão,onde fica a televisão,0.25,0.0,0.047619047619047616,0.0,0.29009999707341194,0.789,0.956382,False
+clean_consulta,onde fica a televisão,onde fica a televisão,onde fica a televisão,0.0,0.0,0.0,0.0,0.13760000001639128,0.135,0.98,False
+synthetic_conversa_unchanged_no_eligible_token,pode,pode,pode,0.0,0.0,0.0,0.0,0.03809999907389283,0.038,0.98,False
+clean_conversa,pode,pode,pode,0.0,0.0,0.0,0.0,0.03850000211969018,0.034,0.98,False
+synthetic_cortinas_transpose,abre a persiana da coiznha,abre a persiana da cozinha,abre a persiana da cozinha,0.2,0.0,0.07692307692307693,0.0,0.3201999934390187,0.68,0.904434,False
+clean_cortinas,abre a persiana da cozinha,abre a persiana da cozinha,abre a persiana da cozinha,0.0,0.0,0.0,0.0,0.17229997320100665,0.168,0.98,False
+synthetic_dispositivo_substitute,qual o estado da lâmpada da garugem,qual o estado da lâmpada da garagem,qual o estado da lâmpada da garagem,0.14285714285714285,0.0,0.02857142857142857,0.0,0.39330002618953586,0.747,0.961426,False
+clean_dispositivo,qual o estado da lâmpada da garagem,qual o estado da lâmpada da garagem,qual o estado da lâmpada da garagem,0.0,0.0,0.0,0.0,0.23860001238062978,0.233,0.98,False
+synthetic_eletrodomesticos_delete,a cafeteira está lgada,a cafeteira está ligada,a cafeteira está ligada,0.25,0.0,0.043478260869565216,0.0,0.27950003277510405,0.68,0.914653,False
+clean_eletrodomesticos,a cafeteira está ligada,a cafeteira está ligada,a cafeteira está ligada,0.0,0.0,0.0,0.0,0.21109997760504484,0.137,0.98,False
+synthetic_energia_transpose,quanto de bateria tem o ar-condicoinado,quanto de bateria tem o ar-condicionado,quanto de bateria tem o ar-condicionado,0.16666666666666666,0.0,0.05128205128205128,0.0,0.35909999860450625,0.97,0.964712,False
+clean_energia,quanto de bateria tem o ar-condicionado,quanto de bateria tem o ar-condicionado,quanto de bateria tem o ar-condicionado,0.0,0.0,0.0,0.0,0.19970000721514225,0.201,0.98,False
+synthetic_grupos_substitute,desliga tudo do aodar de baixo,desliga tudo do andar de baixo,desliga tudo do andar de baixo,0.16666666666666666,0.0,0.03333333333333333,0.0,0.4199999966658652,0.819,0.887938,True
+clean_grupos,desliga tudo do andar de baixo,desliga tudo do andar de baixo,desliga tudo do andar de baixo,0.0,0.0,0.0,0.0,0.2009000163525343,0.197,0.98,False
+synthetic_iluminacao_delete,pode desigar a lâmpada da área de serviço,pode desligar a lâmpada da área de serviço,pode desligar a lâmpada da área de serviço,0.125,0.0,0.023809523809523808,0.0,0.5791000439785421,0.976,0.952209,False
+clean_iluminacao,pode desligar a lâmpada da área de serviço,pode desligar a lâmpada da área de serviço,pode desligar a lâmpada da área de serviço,0.0,0.0,0.0,0.0,0.2690000110305846,0.266,0.98,False
+synthetic_impressao_3d_transpose,contiuna a impressão,continua a impressão,continua a impressão,0.3333333333333333,0.0,0.1,0.0,0.28310000197961926,0.68,0.846612,True
+clean_impressao_3d,continua a impressão,continua a impressão,continua a impressão,0.0,0.0,0.0,0.0,0.12919999426230788,0.107,0.98,False
+synthetic_informacao_substitute,que haras são,que horas são,que horas são,0.3333333333333333,0.0,0.07692307692307693,0.0,0.2728000399656594,0.672,0.845182,True
+clean_informacao,que horas são,que horas são,que horas são,0.0,0.0,0.0,0.0,0.10909995762631297,0.104,0.98,False
+synthetic_jardim_delete,pausa o cortadr,pausa o cortador,pausa o cortador,0.3333333333333333,0.0,0.0625,0.0,0.255199964158237,0.747,0.813979,True
+clean_jardim,pausa o cortador,pausa o cortador,pausa o cortador,0.0,0.0,0.0,0.0,0.1078000059351325,0.105,0.98,False
+synthetic_limpeza_transpose,manad o robô voltar,manda o robô voltar,manda o robô voltar,0.25,0.0,0.10526315789473684,0.0,0.34089997643604875,0.775,0.791979,True
+clean_limpeza,manda o robô voltar,manda o robô voltar,manda o robô voltar,0.0,0.0,0.0,0.0,0.1379000023007393,0.136,0.98,False
+synthetic_localizacao_substitute,onde tá meu calular,onde tá meu celular,onde tá meu celular,0.25,0.0,0.05263157894736842,0.0,0.2812999882735312,0.3,0.901947,False
+clean_localizacao,onde tá meu celular,onde tá meu celular,onde tá meu celular,0.0,0.0,0.0,0.0,0.1371000544168055,0.134,0.98,False
+synthetic_midia_delete,toca músics de Marisa Monte,toca músicas de Marisa Monte,toca músicas de Marisa Monte,0.2,0.0,0.03571428571428571,0.0,0.408099964261055,0.782,0.923536,False
+clean_midia,toca músicas de Marisa Monte,toca músicas de Marisa Monte,toca músicas de Marisa Monte,0.0,0.0,0.0,0.0,0.17309997929260135,0.172,0.98,False
+synthetic_presenca_transpose,Jaime tá na vraanda,Jaime tá na varanda,Jaime tá na varanda,0.25,0.0,0.10526315789473684,0.0,0.28710003243759274,0.886,0.891976,False
+clean_presenca,Jaime tá na varanda,Jaime tá na varanda,Jaime tá na varanda,0.0,0.0,0.0,0.0,0.13940001372247934,0.137,0.98,False
+synthetic_rotinas_substitute,pode deiligar tudo,pode desligar tudo,pode desligar tudo,0.3333333333333333,0.0,0.05555555555555555,0.0,0.2759000053629279,0.728,0.883673,False
+clean_rotinas,pode desligar tudo,pode desligar tudo,pode desligar tudo,0.0,0.0,0.0,0.0,0.10689999908208847,0.106,0.98,False
+synthetic_satelite_delete,desiga a luz daqui,desliga a luz daqui,desliga a luz daqui,0.25,0.0,0.05263157894736842,0.0,0.34119997872039676,0.701,0.909105,False
+clean_satelite,desliga a luz daqui,desliga a luz daqui,desliga a luz daqui,0.0,0.0,0.0,0.0,0.13940001372247934,0.135,0.98,False
+synthetic_seguranca_transpose,abre a fechdaura da garagem,abre a fechadura da garagem,abre a fechadura da garagem,0.2,0.0,0.07407407407407407,0.0,0.38819998735561967,0.796,0.901839,True
+clean_seguranca,abre a fechadura da garagem,abre a fechadura da garagem,abre a fechadura da garagem,0.0,0.0,0.0,0.0,0.1734999823383987,0.171,0.98,False
+synthetic_tempo_substitute,inicia um timer de tronta minutos,inicia um timer de trinta minutos,inicia um timer de trinta minutos,0.16666666666666666,0.0,0.030303030303030304,0.0,0.40229997830465436,0.9,0.942899,False
+clean_tempo,inicia um timer de trinta minutos,inicia um timer de trinta minutos,inicia um timer de trinta minutos,0.0,0.0,0.0,0.0,0.20270003005862236,0.202,0.98,False
+synthetic_agua_delete,quanto tem na cixa d'água,quanto tem na caixa d'água,quanto tem na caixa d'água,0.2,0.0,0.038461538461538464,0.0,0.3586999955587089,0.706,0.88035,True
+clean_agua,quanto tem na caixa d'água,quanto tem na caixa d'água,quanto tem na caixa d'água,0.0,0.0,0.0,0.0,0.17030001617968082,0.168,0.98,False
+synthetic_ambiente_transpose,tá escuro na varnada,tá escuro na varanda,tá escuro na varanda,0.25,0.0,0.1,0.0,0.28249999741092324,0.673,0.883259,True
+clean_ambiente,tá escuro na varanda,tá escuro na varanda,tá escuro na varanda,0.0,0.0,0.0,0.0,0.13870000839233398,0.135,0.98,False
+synthetic_calendario_substitute,qual o horirio de academia,qual o horário de academia,qual o horário de academia,0.2,0.0,0.038461538461538464,0.0,0.387399981264025,0.755,0.952499,False
+clean_calendario,qual o horário de academia,qual o horário de academia,qual o horário de academia,0.0,0.0,0.0,0.0,0.17230003140866756,0.172,0.98,False
+synthetic_cenas_delete,aiva a cena relaxar,ativa a cena relaxar,ativa a cena relaxar,0.25,0.0,0.05,0.0,0.3846999607048929,0.759,0.943099,False
+clean_cenas,ativa a cena relaxar,ativa a cena relaxar,ativa a cena relaxar,0.0,0.0,0.0,0.0,0.13960001524537802,0.138,0.98,False
+synthetic_clima_externo_transpose,como fica o clmia amanhã,como fica o clima amanhã,como fica o clima amanhã,0.2,0.0,0.08333333333333333,0.0,0.37999998312443495,0.753,0.826449,True
+clean_clima_externo,como fica o clima amanhã,como fica o clima amanhã,como fica o clima amanhã,0.0,0.0,0.0,0.0,0.17319998005405068,0.182,0.98,False
+synthetic_climatizacao_substitute,ajusta o umadificador da sala para 45%,ajusta o umidificador da sala para 45%,ajusta o umidificador da sala para 45%,0.14285714285714285,0.0,0.02631578947368421,0.0,0.5122000002302229,1.025,0.961098,False
+clean_climatizacao,ajusta o umidificador da sala para 45%,ajusta o umidificador da sala para 45%,ajusta o umidificador da sala para 45%,0.0,0.0,0.0,0.0,0.23990002227947116,0.253,0.98,False
+synthetic_comunicacao_delete,faz um anúncio no escritório de Brua,faz um anúncio no escritório de Bruna,faz um anúncio no escritório de Bruna,0.14285714285714285,0.0,0.02702702702702703,0.0,0.4157000221312046,0.777,0.914236,True
+clean_comunicacao,faz um anúncio no escritório de Bruna,faz um anúncio no escritório de Bruna,faz um anúncio no escritório de Bruna,0.0,0.0,0.0,0.0,0.24020002456381917,0.246,0.98,False
+synthetic_consulta_transpose,quais dispositivos tem no escirtório de Bruna,quais dispositivos tem no escritório de Bruna,quais dispositivos tem no escritório de Bruna,0.14285714285714285,0.0,0.044444444444444446,0.0,0.47749996883794665,1.367,0.942143,False
+clean_consulta,quais dispositivos tem no escritório de Bruna,quais dispositivos tem no escritório de Bruna,quais dispositivos tem no escritório de Bruna,0.0,0.0,0.0,0.0,0.2384000108577311,0.238,0.98,False
+synthetic_conversa_unchanged_no_eligible_token,não pode,não pode,não pode,0.0,0.0,0.0,0.0,0.0735999783501029,0.075,0.98,False
+clean_conversa,não pode,não pode,não pode,0.0,0.0,0.0,0.0,0.07270002970471978,0.068,0.98,False
+synthetic_cortinas_delete,pode abrir a cortina do escrtório,pode abrir a cortina do escritório,pode abrir a cortina do escritório,0.16666666666666666,0.0,0.029411764705882353,0.0,0.3633000305853784,0.357,0.954575,False
+clean_cortinas,pode abrir a cortina do escritório,pode abrir a cortina do escritório,pode abrir a cortina do escritório,0.0,0.0,0.0,0.0,0.20670000230893493,0.204,0.98,False
+synthetic_dispositivo_transpose,ativa a lâmpada da gargaem,ativa a lâmpada da garagem,ativa a lâmpada da garagem,0.2,0.0,0.07692307692307693,0.0,0.32459996873512864,0.721,0.947647,False
+clean_dispositivo,ativa a lâmpada da garagem,ativa a lâmpada da garagem,ativa a lâmpada da garagem,0.0,0.0,0.0,0.0,0.17199997091665864,0.171,0.98,False
+synthetic_eletrodomesticos_substitute,como está a lava-liuças,como está a lava-louças,como está a lava-louças,0.25,0.0,0.043478260869565216,0.0,0.2930000191554427,0.876,0.961048,False
+clean_eletrodomesticos,como está a lava-louças,como está a lava-louças,como está a lava-louças,0.0,0.0,0.0,0.0,0.14189997455105186,0.217,0.98,False
+synthetic_energia_delete,qual a bateria do abajr,qual a bateria do abajur,qual a bateria do abajur,0.2,0.0,0.041666666666666664,0.0,0.3149000112898648,0.802,0.962149,False
+clean_energia,qual a bateria do abajur,qual a bateria do abajur,qual a bateria do abajur,0.0,0.0,0.0,0.0,0.1753999968059361,0.174,0.98,False
+synthetic_grupos_transpose,liga tudo do área socail,liga tudo do área social,liga tudo do área social,0.2,0.0,0.08333333333333333,0.0,0.31999999191612005,0.735,0.912048,False
+clean_grupos,liga tudo do área social,liga tudo do área social,liga tudo do área social,0.0,0.0,0.0,0.0,0.17249997472390532,0.168,0.98,False
+synthetic_iluminacao_substitute,aumenta o abajur do baiheiro,aumenta o abajur do banheiro,aumenta o abajur do banheiro,0.2,0.0,0.03571428571428571,0.0,0.31860003946349025,0.734,0.93331,False
+clean_iluminacao,aumenta o abajur do banheiro,aumenta o abajur do banheiro,aumenta o abajur do banheiro,0.0,0.0,0.0,0.0,0.18540001474320889,0.182,0.98,False
+synthetic_impressao_3d_delete,pasa a impressora 3D,pausa a impressora 3D,pausa a impressora 3D,0.25,0.0,0.047619047619047616,0.0,0.4016000311821699,0.813,0.849314,True
+clean_impressao_3d,pausa a impressora 3D,pausa a impressora 3D,pausa a impressora 3D,0.0,0.0,0.0,0.0,0.17280003521591425,0.168,0.98,False
+synthetic_informacao_unchanged_no_eligible_token,qual a hora,qual a hora,qual a hora,0.0,0.0,0.0,0.0,0.10760000441223383,0.145,0.98,False
+clean_informacao,qual a hora,qual a hora,qual a hora,0.0,0.0,0.0,0.0,0.10629999451339245,0.102,0.98,False
+synthetic_jardim_substitute,manda o cortadir carregar,manda o cortador carregar,manda o cortador carregar,0.25,0.0,0.04,0.0,0.3239000216126442,0.844,0.868302,True
+clean_jardim,manda o cortador carregar,manda o cortador carregar,manda o cortador carregar,0.0,0.0,0.0,0.0,0.14180003199726343,0.138,0.98,False
+synthetic_limpeza_delete,começa a lipeza,começa a limpeza,começa a limpeza,0.3333333333333333,0.0,0.0625,0.0,0.24720001965761185,0.599,0.956049,False
+clean_limpeza,começa a limpeza,começa a limpeza,começa a limpeza,0.0,0.0,0.0,0.0,0.10649999603629112,0.104,0.98,False
+synthetic_localizacao_transpose,cadê meu ceullar,cadê meu celular,cadê meu celular,0.3333333333333333,0.0,0.125,0.0,0.2612999523989856,0.662,0.933991,False
+clean_localizacao,cadê meu celular,cadê meu celular,cadê meu celular,0.0,0.0,0.0,0.0,0.10870001278817654,0.106,0.98,False
+synthetic_midia_substitute,quoro ouvir minha playlist,quero ouvir minha playlist,quero ouvir minha playlist,0.25,0.0,0.038461538461538464,0.0,0.3440000000409782,0.712,0.83014,True
+clean_midia,quero ouvir minha playlist,quero ouvir minha playlist,quero ouvir minha playlist,0.0,0.0,0.0,0.0,0.13909995323047042,0.137,0.98,False
+synthetic_presenca_delete,quantas pesoas tem na sala,quantas pessoas tem na sala,quantas pessoas tem na sala,0.2,0.0,0.037037037037037035,0.0,0.42749999556690454,0.798,0.952598,False
+clean_presenca,quantas pessoas tem na sala,quantas pessoas tem na sala,quantas pessoas tem na sala,0.0,0.0,0.0,0.0,0.17070001922547817,0.182,0.98,False
+synthetic_rotinas_transpose,roda a roitna boa noite,roda a rotina boa noite,roda a rotina boa noite,0.2,0.0,0.08695652173913043,0.0,0.39409997407346964,0.773,0.862552,True
+clean_rotinas,roda a rotina boa noite,roda a rotina boa noite,roda a rotina boa noite,0.0,0.0,0.0,0.0,0.17990003107115626,0.169,0.98,False
+synthetic_satelite_substitute,aconde aqui,acende aqui,acende aqui,0.5,0.0,0.09090909090909091,0.0,0.22419996093958616,0.682,0.691712,True
+clean_satelite,acende aqui,acende aqui,acende aqui,0.0,0.0,0.0,0.0,0.07429998368024826,0.073,0.98,False
+synthetic_seguranca_delete,mosta a câmera da garagem,mostra a câmera da garagem,mostra a câmera da garagem,0.2,0.0,0.038461538461538464,0.0,0.4102999810129404,0.932,0.959845,False
+clean_seguranca,mostra a câmera da garagem,mostra a câmera da garagem,mostra a câmera da garagem,0.0,0.0,0.0,0.0,0.19310001516714692,0.182,0.98,False
+synthetic_tempo_transpose,coloca um alarme para seis da tadre,coloca um alarme para seis da tarde,coloca um alarme para seis da tarde,0.14285714285714285,0.0,0.05714285714285714,0.0,0.4187000449746847,0.856,0.86921,True
+clean_tempo,coloca um alarme para seis da tarde,coloca um alarme para seis da tarde,coloca um alarme para seis da tarde,0.0,0.0,0.0,0.0,0.24449999909847975,0.298,0.98,False
+synthetic_agua_substitute,detectou vazameito,detectou vazamento,detectou vazamento,0.5,0.0,0.05555555555555555,0.0,0.20270003005862236,0.647,0.933333,False
+clean_agua,detectou vazamento,detectou vazamento,detectou vazamento,0.0,0.0,0.0,0.0,0.07389998063445091,0.073,0.98,False
+synthetic_ambiente_delete,quanto está a umidae do banheiro,quanto está a umidade do banheiro,quanto está a umidade do banheiro,0.16666666666666666,0.0,0.030303030303030304,0.0,0.424700032453984,0.802,0.967951,False
+clean_ambiente,quanto está a umidade do banheiro,quanto está a umidade do banheiro,quanto está a umidade do banheiro,0.0,0.0,0.0,0.0,0.20680000307038426,0.203,0.98,False
+synthetic_calendario_transpose,remvoe almoço da agenda,remove almoço da agenda,remove almoço da agenda,0.25,0.0,0.08695652173913043,0.0,0.3485999768599868,0.682,0.897451,False
+clean_calendario,remove almoço da agenda,remove almoço da agenda,remove almoço da agenda,0.0,0.0,0.0,0.0,0.1398000167682767,0.138,0.98,False
+synthetic_cenas_substitute,liga a cena leetura,liga a cena leitura,liga a cena leitura,0.25,0.0,0.05263157894736842,0.0,0.28330000350251794,0.685,0.953147,False
+clean_cenas,liga a cena leitura,liga a cena leitura,liga a cena leitura,0.0,0.0,0.0,0.0,0.13679999392479658,0.135,0.98,False
+synthetic_clima_externo_delete,como vai estr o tempo hoje,como vai estar o tempo hoje,como vai estar o tempo hoje,0.16666666666666666,0.0,0.037037037037037035,0.0,0.4702000296674669,0.821,0.871344,True
+clean_clima_externo,como vai estar o tempo hoje,como vai estar o tempo hoje,como vai estar o tempo hoje,0.0,0.0,0.0,0.0,0.20629999926313758,0.202,0.98,False
+synthetic_climatizacao_transpose,bota o ar-condicionado da sala em 20 gruas,bota o ar-condicionado da sala em 20 graus,bota o ar-condicionado da sala em 20 graus,0.125,0.0,0.047619047619047616,0.0,0.43700000969693065,0.822,0.905545,True
+clean_climatizacao,bota o ar-condicionado da sala em 20 graus,bota o ar-condicionado da sala em 20 graus,bota o ar-condicionado da sala em 20 graus,0.0,0.0,0.0,0.0,0.27330004377290606,0.269,0.98,False
+synthetic_comunicacao_substitute,telifone para Bruna,telefone para Bruna,telefone para Bruna,0.3333333333333333,0.0,0.05263157894736842,0.0,0.28879998717457056,0.772,0.94367,False
+clean_comunicacao,telefone para Bruna,telefone para Bruna,telefone para Bruna,0.0,0.0,0.0,0.0,0.10689999908208847,0.104,0.98,False
+synthetic_consulta_delete,onde está o abjur,onde está o abajur,onde está o abajur,0.25,0.0,0.05555555555555555,0.0,0.2892000484280288,0.652,0.957738,False
+clean_consulta,onde está o abajur,onde está o abajur,onde está o abajur,0.0,0.0,0.0,0.0,0.1453000004403293,0.163,0.98,False
+synthetic_conversa_unchanged_no_eligible_token,não,não,não,0.0,0.0,0.0,0.0,0.038700003642588854,0.039,0.98,False
+clean_conversa,não,não,não,0.0,0.0,0.0,0.0,0.03819999983534217,0.035,0.98,False
+synthetic_cortinas_substitute,sobe a persiana do quaeto,sobe a persiana do quarto,sobe a persiana do quarto,0.2,0.0,0.04,0.0,0.3296000068075955,0.817,0.871241,True
+clean_cortinas,sobe a persiana do quarto,sobe a persiana do quarto,sobe a persiana do quarto,0.0,0.0,0.0,0.0,0.17300003673881292,0.17,0.98,False
+synthetic_dispositivo_delete,como está a lâmpada da gargem,como está a lâmpada da garagem,como está a lâmpada da garagem,0.16666666666666666,0.0,0.03333333333333333,0.0,0.37590001011267304,0.735,0.967951,False
+clean_dispositivo,como está a lâmpada da garagem,como está a lâmpada da garagem,como está a lâmpada da garagem,0.0,0.0,0.0,0.0,0.20539999241009355,0.206,0.98,False
+synthetic_eletrodomesticos_transpose,o que o forno está faznedo,o que o forno está fazendo,o que o forno está fazendo,0.16666666666666666,0.0,0.07692307692307693,0.0,0.3619000199250877,0.785,0.952964,False
+clean_eletrodomesticos,o que o forno está fazendo,o que o forno está fazendo,o que o forno está fazendo,0.0,0.0,0.0,0.0,0.22170000011101365,0.211,0.98,False
+synthetic_energia_substitute,pode deslegar a tomada da impressora,pode desligar a tomada da impressora,pode desligar a tomada da impressora,0.16666666666666666,0.0,0.027777777777777776,0.0,0.46199996722862124,0.919,0.930591,False
+clean_energia,pode desligar a tomada da impressora,pode desligar a tomada da impressora,pode desligar a tomada da impressora,0.0,0.0,0.0,0.0,0.20650000078603625,0.203,0.98,False
+synthetic_grupos_delete,liga tudo do área ínima,liga tudo do área íntima,liga tudo do área íntima,0.2,0.0,0.041666666666666664,0.0,0.33740000799298286,0.818,0.962149,False
+clean_grupos,liga tudo do área íntima,liga tudo do área íntima,liga tudo do área íntima,0.0,0.0,0.0,0.0,0.16930000856518745,0.168,0.98,False
+synthetic_iluminacao_transpose,liga a luz do escritório de Jamie,liga a luz do escritório de Jaime,liga a luz do escritório de Jaime,0.14285714285714285,0.0,0.06060606060606061,0.0,0.3972999984398484,0.767,0.88847,True
+clean_iluminacao,liga a luz do escritório de Jaime,liga a luz do escritório de Jaime,liga a luz do escritório de Jaime,0.0,0.0,0.0,0.0,0.23689999943599105,0.232,0.98,False
+synthetic_impressao_3d_substitute,a impressora está imprimineo,a impressora está imprimindo,a impressora está imprimindo,0.25,0.0,0.03571428571428571,0.0,0.29719999292865396,0.691,0.956985,False
+clean_impressao_3d,a impressora está imprimindo,a impressora está imprimindo,a impressora está imprimindo,0.0,0.0,0.0,0.0,0.1406999654136598,0.142,0.98,False
+synthetic_informacao_unchanged_no_eligible_token,hoje é que dia,hoje é que dia,hoje é que dia,0.0,0.0,0.0,0.0,0.1403999631293118,0.14,0.98,False
+clean_informacao,hoje é que dia,hoje é que dia,hoje é que dia,0.0,0.0,0.0,0.0,0.1379000023007393,0.136,0.98,False
+synthetic_jardim_transpose,para o cortadro de grama por enquanto,para o cortador de grama por enquanto,para o cortador de grama por enquanto,0.14285714285714285,0.0,0.05405405405405406,0.0,0.5599000141955912,1.174,0.8959,True
+clean_jardim,para o cortador de grama por enquanto,para o cortador de grama por enquanto,para o cortador de grama por enquanto,0.0,0.0,0.0,0.0,0.24159997701644897,0.241,0.98,False
+synthetic_limpeza_substitute,inicia o robô aipirador,inicia o robô aspirador,inicia o robô aspirador,0.25,0.0,0.043478260869565216,0.0,0.2908000024035573,0.764,0.906122,False
+clean_limpeza,inicia o robô aspirador,inicia o robô aspirador,inicia o robô aspirador,0.0,0.0,0.0,0.0,0.14739995822310448,0.153,0.98,False
+synthetic_localizacao_delete,cadê meu teefone,cadê meu telefone,cadê meu telefone,0.3333333333333333,0.0,0.058823529411764705,0.0,0.2518999972380698,0.673,0.952153,False
+clean_localizacao,cadê meu telefone,cadê meu telefone,cadê meu telefone,0.0,0.0,0.0,0.0,0.10819995077326894,0.106,0.98,False
+synthetic_midia_transpose,adianta dez sgeundos,adianta dez segundos,adianta dez segundos,0.3333333333333333,0.0,0.1,0.0,0.2449000021442771,0.637,0.934596,False
+clean_midia,adianta dez segundos,adianta dez segundos,adianta dez segundos,0.0,0.0,0.0,0.0,0.10520004434511065,0.105,0.98,False
+synthetic_presenca_substitute,tem geete no escritório de Jaime,tem gente no escritório de Jaime,tem gente no escritório de Jaime,0.16666666666666666,0.0,0.03125,0.0,0.4619000246748328,0.821,0.952599,False
+clean_presenca,tem gente no escritório de Jaime,tem gente no escritório de Jaime,tem gente no escritório de Jaime,0.0,0.0,0.0,0.0,0.2080000122077763,0.205,0.98,False
+synthetic_rotinas_delete,executa modo trabalo,executa modo trabalho,executa modo trabalho,0.3333333333333333,0.0,0.047619047619047616,0.0,0.24759996449574828,0.713,0.967052,False
+clean_rotinas,executa modo trabalho,executa modo trabalho,executa modo trabalho,0.0,0.0,0.0,0.0,0.10810000821948051,0.105,0.98,False
+synthetic_satelite_transpose,aumenta o vloume aqui,aumenta o volume aqui,aumenta o volume aqui,0.25,0.0,0.09523809523809523,0.0,0.3223999519832432,0.677,0.93152,False
+clean_satelite,aumenta o volume aqui,aumenta o volume aqui,aumenta o volume aqui,0.0,0.0,0.0,0.0,0.14070002362132072,0.136,0.98,False
+synthetic_seguranca_substitute,abre o portão da garaaem,abre o portão da garagem,abre o portão da garagem,0.2,0.0,0.041666666666666664,0.0,0.33060001442208886,0.675,0.958458,False
+clean_seguranca,abre o portão da garagem,abre o portão da garagem,abre o portão da garagem,0.0,0.0,0.0,0.0,0.17479999223724008,0.172,0.98,False
+synthetic_tempo_delete,qual é meu próximo alrme,qual é meu próximo alarme,qual é meu próximo alarme,0.2,0.0,0.04,0.0,0.32300001475960016,0.678,0.962149,False
+clean_tempo,qual é meu próximo alarme,qual é meu próximo alarme,qual é meu próximo alarme,0.0,0.0,0.0,0.0,0.17220003064721823,0.169,0.98,False
+synthetic_agua_transpose,tem algmu vazamento,tem algum vazamento,tem algum vazamento,0.3333333333333333,0.0,0.10526315789473684,0.0,0.27139997109770775,0.583,0.762219,True
+clean_agua,tem algum vazamento,tem algum vazamento,tem algum vazamento,0.0,0.0,0.0,0.0,0.13810000382363796,0.102,0.98,False
+synthetic_ambiente_substitute,qual a luminosidade do escritório de Jiime,qual a luminosidade do escritório de Jaime,qual a luminosidade do escritório de Jaime,0.14285714285714285,0.0,0.023809523809523808,0.0,0.39329996798187494,0.771,0.956466,False
+clean_ambiente,qual a luminosidade do escritório de Jaime,qual a luminosidade do escritório de Jaime,qual a luminosidade do escritório de Jaime,0.0,0.0,0.0,0.0,0.23420003708451986,0.231,0.98,False
+synthetic_calendario_delete,a que horas comea compromisso,a que horas começa compromisso,a que horas começa compromisso,0.2,0.0,0.03333333333333333,0.0,0.3554000286385417,0.741,0.927749,False
+clean_calendario,a que horas começa compromisso,a que horas começa compromisso,a que horas começa compromisso,0.0,0.0,0.0,0.0,0.17040001694113016,0.168,0.98,False
+synthetic_cenas_transpose,modo leiutra,modo leitura,modo leitura,0.5,0.0,0.16666666666666666,0.0,0.1949999714270234,0.593,0.785412,True
+clean_cenas,modo leitura,modo leitura,modo leitura,0.0,0.0,0.0,0.0,0.07299997378140688,0.07,0.98,False
+synthetic_clima_externo_substitute,que horas o sol nasae,que horas o sol nasce,que horas o sol nasce,0.2,0.0,0.047619047619047616,0.0,0.3197999903932214,0.673,0.897819,True
+clean_clima_externo,que horas o sol nasce,que horas o sol nasce,que horas o sol nasce,0.0,0.0,0.0,0.0,0.17289997776970267,0.18,0.98,False
+synthetic_climatizacao_delete,deixa o ar-condicionado do quato em 22 graus,deixa o ar-condicionado do quarto em 22 graus,deixa o ar-condicionado do quarto em 22 graus,0.125,0.0,0.022222222222222223,0.0,0.5381000228226185,0.903,0.923318,True
+clean_climatizacao,deixa o ar-condicionado do quarto em 22 graus,deixa o ar-condicionado do quarto em 22 graus,deixa o ar-condicionado do quarto em 22 graus,0.0,0.0,0.0,0.0,0.2742999931797385,0.274,0.98,False
+synthetic_comunicacao_transpose,tleefone para mãe,telefone para mãe,telefone para mãe,0.3333333333333333,0.0,0.11764705882352941,0.0,0.28110004495829344,0.295,0.940966,False
+clean_comunicacao,telefone para mãe,telefone para mãe,telefone para mãe,0.0,0.0,0.0,0.0,0.10529998689889908,0.104,0.98,False
+synthetic_consulta_substitute,quais dispositives tem na cozinha,quais dispositivos tem na cozinha,quais dispositivos tem na cozinha,0.2,0.0,0.030303030303030304,0.0,0.4107999848201871,0.87,0.9091,False
+clean_consulta,quais dispositivos tem na cozinha,quais dispositivos tem na cozinha,quais dispositivos tem na cozinha,0.0,0.0,0.0,0.0,0.16950001008808613,0.169,0.98,False
+synthetic_conversa_delete,esuece,esquece,esquece,1.0,0.0,0.14285714285714285,0.0,0.14449999434873462,0.522,0.603536,True
+clean_conversa,esquece,esquece,esquece,0.0,0.0,0.0,0.0,0.03809999907389283,0.039,0.98,False
+synthetic_cortinas_transpose,qual a posiçoã da persiana do quarto,qual a posição da persiana do quarto,qual a posição da persiana do quarto,0.14285714285714285,0.0,0.05555555555555555,0.0,0.5184999899938703,0.957,0.95678,False
+clean_cortinas,qual a posição da persiana do quarto,qual a posição da persiana do quarto,qual a posição da persiana do quarto,0.0,0.0,0.0,0.0,0.2712999703362584,0.237,0.98,False
+synthetic_dispositivo_substitute,ativa o abajur da varenda,ativa o abajur da varanda,ativa o abajur da varanda,0.2,0.0,0.04,0.0,0.3728000447154045,1.144,0.910426,False
+clean_dispositivo,ativa o abajur da varanda,ativa o abajur da varanda,ativa o abajur da varanda,0.0,0.0,0.0,0.0,0.17419998766854405,0.167,0.98,False
+synthetic_eletrodomesticos_delete,quanto tempo falta na lvagem,quanto tempo falta na lavagem,quanto tempo falta na lavagem,0.2,0.0,0.034482758620689655,0.0,0.33849995816126466,0.686,0.94529,False
+clean_eletrodomesticos,quanto tempo falta na lavagem,quanto tempo falta na lavagem,quanto tempo falta na lavagem,0.0,0.0,0.0,0.0,0.18069997895509005,0.171,0.98,False
+synthetic_energia_transpose,desative a tomaad da impressora,desative a tomada da impressora,desative a tomada da impressora,0.2,0.0,0.06451612903225806,0.0,0.4325999761931598,0.815,0.885556,True
+clean_energia,desative a tomada da impressora,desative a tomada da impressora,desative a tomada da impressora,0.0,0.0,0.0,0.0,0.20820001373067498,0.192,0.98,False
+synthetic_grupos_substitute,quaos aparelhos estão ligadas no área íntima,quais aparelhos estão ligadas no área íntima,quais aparelhos estão ligadas no área íntima,0.14285714285714285,0.0,0.022727272727272728,0.0,0.5905000143684447,1.127,0.874066,True
+clean_grupos,quais aparelhos estão ligadas no área íntima,quais aparelhos estão ligadas no área íntima,quais aparelhos estão ligadas no área íntima,0.0,0.0,0.0,0.0,0.25540002388879657,0.255,0.98,False
+synthetic_iluminacao_delete,liga o abjur do banheiro,liga o abajur do banheiro,liga o abajur do banheiro,0.2,0.0,0.04,0.0,0.40199997602030635,0.441,0.962149,False
+clean_iluminacao,liga o abajur do banheiro,liga o abajur do banheiro,liga o abajur do banheiro,0.0,0.0,0.0,0.0,0.19270001212134957,0.195,0.98,False
+synthetic_impressao_3d_transpose,como está a impresãso,como está a impressão,como está a impressão,0.25,0.0,0.09523809523809523,0.0,0.3027000348083675,0.913,0.915238,False
+clean_impressao_3d,como está a impressão,como está a impressão,como está a impressão,0.0,0.0,0.0,0.0,0.1420000335201621,0.151,0.98,False
+synthetic_informacao_unchanged_no_eligible_token,me diz a data,me diz a data,me diz a data,0.0,0.0,0.0,0.0,0.15239999629557133,0.138,0.98,False
+clean_informacao,me diz a data,me diz a data,me diz a data,0.0,0.0,0.0,0.0,0.14869996812194586,0.14,0.98,False
+synthetic_jardim_delete,faz o robô cortador voltr,faz o robô cortador voltar,faz o robô cortador voltar,0.2,0.0,0.038461538461538464,0.0,0.3461999585852027,0.732,0.932015,False
+clean_jardim,faz o robô cortador voltar,faz o robô cortador voltar,faz o robô cortador voltar,0.0,0.0,0.0,0.0,0.23060000967234373,0.398,0.98,False
+synthetic_limpeza_transpose,volta o apsirador robô pra base,volta o aspirador robô pra base,volta o aspirador robô pra base,0.16666666666666666,0.0,0.06451612903225806,0.0,0.4548000288195908,0.916,0.912956,True
+clean_limpeza,volta o aspirador robô pra base,volta o aspirador robô pra base,volta o aspirador robô pra base,0.0,0.0,0.0,0.0,0.2022999688051641,0.201,0.98,False
+synthetic_localizacao_substitute,acha meu culular,acha meu celular,acha meu celular,0.3333333333333333,0.0,0.0625,0.0,0.24399999529123306,0.657,0.921318,False
+clean_localizacao,acha meu celular,acha meu celular,acha meu celular,0.0,0.0,0.0,0.0,0.10539998766034842,0.111,0.98,False
+synthetic_midia_delete,quero ouvr MPB,quero ouvir MPB,quero ouvir MPB,0.3333333333333333,0.0,0.06666666666666667,0.0,0.2753000007942319,0.591,0.94227,False
+clean_midia,quero ouvir MPB,quero ouvir MPB,quero ouvir MPB,0.0,0.0,0.0,0.0,0.10549998842179775,0.105,0.98,False
+synthetic_presenca_transpose,o banherio está vazio,o banheiro está vazio,o banheiro está vazio,0.25,0.0,0.09523809523809523,0.0,0.33459998667240143,0.753,0.922596,False
+clean_presenca,o banheiro está vazio,o banheiro está vazio,o banheiro está vazio,0.0,0.0,0.0,0.0,0.1385000068694353,0.134,0.98,False
+synthetic_rotinas_substitute,desiiga a casa toda,desliga a casa toda,desliga a casa toda,0.25,0.0,0.05263157894736842,0.0,0.34039997262880206,0.707,0.89664,False
+clean_rotinas,desliga a casa toda,desliga a casa toda,desliga a casa toda,0.0,0.0,0.0,0.0,0.14619994908571243,0.134,0.98,False
+synthetic_satelite_delete,vlta seu som,volta seu som,volta seu som,0.3333333333333333,0.0,0.07692307692307693,0.0,0.28169999131932855,0.638,0.900605,False
+clean_satelite,volta seu som,volta seu som,volta seu som,0.0,0.0,0.0,0.0,0.10419997852295637,0.103,0.98,False
+synthetic_seguranca_transpose,o portão da gargaem está aberto,o portão da garagem está aberto,o portão da garagem está aberto,0.16666666666666666,0.0,0.06451612903225806,0.0,0.42539997957646847,0.437,0.952964,False
+clean_seguranca,o portão da garagem está aberto,o portão da garagem está aberto,o portão da garagem está aberto,0.0,0.0,0.0,0.0,0.2038999809883535,0.2,0.98,False
+synthetic_tempo_substitute,para todos os tamers,para todos os timers,para todos os timers,0.25,0.0,0.05,0.0,0.2818999928422272,0.687,0.910716,False
+clean_tempo,para todos os timers,para todos os timers,para todos os timers,0.0,0.0,0.0,0.0,0.13729999773204327,0.134,0.98,False
+synthetic_ambiente_delete,qual o nível de ruído do escritório de Buna,qual o nível de ruído do escritório de Bruna,qual o nível de ruído do escritório de Bruna,0.1111111111111111,0.0,0.022727272727272728,0.0,0.4615000216290355,0.821,0.96426,False
+clean_ambiente,qual o nível de ruído do escritório de Bruna,qual o nível de ruído do escritório de Bruna,qual o nível de ruído do escritório de Bruna,0.0,0.0,0.0,0.0,0.34829997457563877,0.306,0.98,False
+synthetic_calendario_transpose,que horas é consutla,que horas é consulta,que horas é consulta,0.25,0.0,0.1,0.0,0.2807999844662845,0.732,0.92214,False
+clean_calendario,que horas é consulta,que horas é consulta,que horas é consulta,0.0,0.0,0.0,0.0,0.13780000153928995,0.144,0.98,False
+synthetic_cenas_substitute,quero a cena cinoma,quero a cena cinema,quero a cena cinema,0.25,0.0,0.05263157894736842,0.0,0.3000000142492354,0.742,0.871942,True
+clean_cenas,quero a cena cinema,quero a cena cinema,quero a cena cinema,0.0,0.0,0.0,0.0,0.1373999984934926,0.134,0.98,False
+synthetic_clima_externo_delete,que hors amanhece,que horas amanhece,que horas amanhece,0.3333333333333333,0.0,0.05555555555555555,0.0,0.28309994377195835,0.645,0.938823,False
+clean_clima_externo,que horas amanhece,que horas amanhece,que horas amanhece,0.0,0.0,0.0,0.0,0.10689999908208847,0.106,0.98,False
+synthetic_climatizacao_transpose,coloca o ar-condicoinado do quarto no modo seco,coloca o ar-condicionado do quarto no modo seco,coloca o ar-condicionado do quarto no modo seco,0.125,0.0,0.0425531914893617,0.0,0.5665000062435865,0.589,0.968512,False
+clean_climatizacao,coloca o ar-condicionado do quarto no modo seco,coloca o ar-condicionado do quarto no modo seco,coloca o ar-condicionado do quarto no modo seco,0.0,0.0,0.0,0.0,0.29369996627792716,0.262,0.98,False
+synthetic_comunicacao_substitute,faz um anúnceo na cozinha,faz um anúncio na cozinha,faz um anúncio na cozinha,0.2,0.0,0.04,0.0,0.39190001552924514,0.851,0.954095,False
+clean_comunicacao,faz um anúncio na cozinha,faz um anúncio na cozinha,faz um anúncio na cozinha,0.0,0.0,0.0,0.0,0.17180002760142088,0.169,0.98,False
+synthetic_consulta_delete,onde está a teleisão,onde está a televisão,onde está a televisão,0.25,0.0,0.047619047619047616,0.0,0.28470001416280866,0.296,0.96744,False
+clean_consulta,onde está a televisão,onde está a televisão,onde está a televisão,0.0,0.0,0.0,0.0,0.1365999924018979,0.135,0.98,False
+synthetic_cortinas_transpose,baixa a cortina do escriótrio,baixa a cortina do escritório,baixa a cortina do escritório,0.2,0.0,0.06896551724137931,0.0,0.3218000056222081,0.773,0.931191,False
+clean_cortinas,baixa a cortina do escritório,baixa a cortina do escritório,baixa a cortina do escritório,0.0,0.0,0.0,0.0,0.17150002531707287,0.168,0.98,False
+synthetic_dispositivo_substitute,quero a lâmiada da garagem desligado,quero a lâmpada da garagem desligado,quero a lâmpada da garagem desligado,0.16666666666666666,0.0,0.027777777777777776,0.0,0.4466000245884061,0.959,0.920884,False
+clean_dispositivo,quero a lâmpada da garagem desligado,quero a lâmpada da garagem desligado,quero a lâmpada da garagem desligado,0.0,0.0,0.0,0.0,0.2025999710895121,0.238,0.98,False
+synthetic_eletrodomesticos_delete,a lava-loças está ligada,a lava-louças está ligada,a lava-louças está ligada,0.25,0.0,0.04,0.0,0.3459000145085156,0.792,0.970415,False
+clean_eletrodomesticos,a lava-louças está ligada,a lava-louças está ligada,a lava-louças está ligada,0.0,0.0,0.0,0.0,0.14179997378960252,0.138,0.98,False
+synthetic_energia_transpose,a tomada está com qaunta bateria,a tomada está com quanta bateria,a tomada está com quanta bateria,0.16666666666666666,0.0,0.0625,0.0,0.40249997982755303,0.806,0.892775,True
+clean_energia,a tomada está com quanta bateria,a tomada está com quanta bateria,a tomada está com quanta bateria,0.0,0.0,0.0,0.0,0.20340003538876772,0.201,0.98,False
+synthetic_grupos_substitute,apaia as dispositivos do casa toda,apaga as dispositivos do casa toda,apaga as dispositivos do casa toda,0.16666666666666666,0.0,0.029411764705882353,0.0,0.46090001706033945,0.85,0.915195,False
+clean_grupos,apaga as dispositivos do casa toda,apaga as dispositivos do casa toda,apaga as dispositivos do casa toda,0.0,0.0,0.0,0.0,0.2346000401303172,0.197,0.98,False
+synthetic_iluminacao_delete,troca a cor da lâmpada da área de seriço para roxo,troca a cor da lâmpada da área de serviço para roxo,troca a cor da lâmpada da área de serviço para roxo,0.09090909090909091,0.0,0.0196078431372549,0.0,0.6456999690271914,1.164,0.932433,True
+clean_iluminacao,troca a cor da lâmpada da área de serviço para roxo,troca a cor da lâmpada da área de serviço para roxo,troca a cor da lâmpada da área de serviço para roxo,0.0,0.0,0.0,0.0,0.39709999691694975,0.465,0.98,False
+synthetic_impressao_3d_transpose,qual o progersso da impressão,qual o progresso da impressão,qual o progresso da impressão,0.2,0.0,0.06896551724137931,0.0,0.38570002652704716,0.909,0.900563,True
+clean_impressao_3d,qual o progresso da impressão,qual o progresso da impressão,qual o progresso da impressão,0.0,0.0,0.0,0.0,0.16840000171214342,0.169,0.98,False
+synthetic_jardim_substitute,manda o cortador de grama trabolhar,manda o cortador de grama trabalhar,manda o cortador de grama trabalhar,0.16666666666666666,0.0,0.02857142857142857,0.0,0.3659999929368496,0.81,0.963436,False
+clean_jardim,manda o cortador de grama trabalhar,manda o cortador de grama trabalhar,manda o cortador de grama trabalhar,0.0,0.0,0.0,0.0,0.20429998403415084,0.203,0.98,False
+synthetic_limpeza_delete,para o asprador robô,para o aspirador robô,para o aspirador robô,0.25,0.0,0.047619047619047616,0.0,0.3215000033378601,0.777,0.922655,False
+clean_limpeza,para o aspirador robô,para o aspirador robô,para o aspirador robô,0.0,0.0,0.0,0.0,0.13719999697059393,0.142,0.98,False
+synthetic_localizacao_transpose,acha meu teelfone,acha meu telefone,acha meu telefone,0.3333333333333333,0.0,0.11764705882352941,0.0,0.2612000098451972,0.739,0.940966,False
+clean_localizacao,acha meu telefone,acha meu telefone,acha meu telefone,0.0,0.0,0.0,0.0,0.10799994925037026,0.105,0.98,False
+synthetic_midia_substitute,reprodoz podcast na casa inteira,reproduz podcast na casa inteira,reproduz podcast na casa inteira,0.2,0.0,0.03125,0.0,0.3994000144302845,0.794,0.958037,False
+clean_midia,reproduz podcast na casa inteira,reproduz podcast na casa inteira,reproduz podcast na casa inteira,0.0,0.0,0.0,0.0,0.16880000475794077,0.168,0.98,False
+synthetic_presenca_delete,confee se tem alguém na sala,confere se tem alguém na sala,confere se tem alguém na sala,0.16666666666666666,0.0,0.034482758620689655,0.0,0.480900052934885,0.896,0.967951,False
+clean_presenca,confere se tem alguém na sala,confere se tem alguém na sala,confere se tem alguém na sala,0.0,0.0,0.0,0.0,0.20439998479560018,0.207,0.98,False
+synthetic_rotinas_unchanged_no_eligible_token,modo bom dia,modo bom dia,modo bom dia,0.0,0.0,0.0,0.0,0.10499998461455107,0.11,0.98,False
+clean_rotinas,modo bom dia,modo bom dia,modo bom dia,0.0,0.0,0.0,0.0,0.10409997776150703,0.099,0.98,False
+synthetic_satelite_substitute,toca rádio onde eu esaou,toca rádio onde eu estou,toca rádio onde eu estou,0.2,0.0,0.041666666666666664,0.0,0.3635999746620655,0.782,0.884674,True
+clean_satelite,toca rádio onde eu estou,toca rádio onde eu estou,toca rádio onde eu estou,0.0,0.0,0.0,0.0,0.1745999907143414,0.174,0.98,False
+synthetic_seguranca_delete,a janela da sala está aerta,a janela da sala está aberta,a janela da sala está aberta,0.16666666666666666,0.0,0.03571428571428571,0.0,0.39280002238228917,0.98,0.962986,False
+clean_seguranca,a janela da sala está aberta,a janela da sala está aberta,a janela da sala está aberta,0.0,0.0,0.0,0.0,0.263199966866523,0.252,0.98,False
+synthetic_tempo_transpose,colcoa um timer de 15 minutos,coloca um timer de 15 minutos,coloca um timer de 15 minutos,0.16666666666666666,0.0,0.06896551724137931,0.0,0.45689998660236597,0.539,0.867767,True
+clean_tempo,coloca um timer de 15 minutos,coloca um timer de 15 minutos,coloca um timer de 15 minutos,0.0,0.0,0.0,0.0,0.20240002777427435,0.197,0.98,False
+synthetic_ambiente_substitute,tá cluro no banheiro,tá claro no banheiro,tá claro no banheiro,0.25,0.0,0.05,0.0,0.34960004268214107,0.753,0.804106,True
+clean_ambiente,tá claro no banheiro,tá claro no banheiro,tá claro no banheiro,0.0,0.0,0.0,0.0,0.14209997607395053,0.138,0.98,False
+synthetic_calendario_delete,qais compromissos eu tenho segunda-feira,quais compromissos eu tenho segunda-feira,quais compromissos eu tenho segunda-feira,0.2,0.0,0.024390243902439025,0.0,0.41689997306093574,0.776,0.930777,False
+clean_calendario,quais compromissos eu tenho segunda-feira,quais compromissos eu tenho segunda-feira,quais compromissos eu tenho segunda-feira,0.0,0.0,0.0,0.0,0.21430000197142363,0.17,0.98,False
+synthetic_cenas_transpose,coloca o modo relaaxr,coloca o modo relaxar,coloca o modo relaxar,0.25,0.0,0.09523809523809523,0.0,0.291300006210804,0.735,0.945287,False
+clean_cenas,coloca o modo relaxar,coloca o modo relaxar,coloca o modo relaxar,0.0,0.0,0.0,0.0,0.13920001219958067,0.138,0.98,False
+synthetic_clima_externo_substitute,que hoeas o sol se põe,que horas o sol se põe,que horas o sol se põe,0.16666666666666666,0.0,0.045454545454545456,0.0,0.4631999763660133,0.819,0.917998,False
+clean_clima_externo,que horas o sol se põe,que horas o sol se põe,que horas o sol se põe,0.0,0.0,0.0,0.0,0.20900001982226968,0.245,0.98,False
+synthetic_climatizacao_delete,dixa o ventilador de teto mais forte,deixa o ventilador de teto mais forte,deixa o ventilador de teto mais forte,0.14285714285714285,0.0,0.02702702702702703,0.0,0.5278000026009977,0.954,0.913456,True
+clean_climatizacao,deixa o ventilador de teto mais forte,deixa o ventilador de teto mais forte,deixa o ventilador de teto mais forte,0.0,0.0,0.0,0.0,0.2410999732092023,0.234,0.98,False
+synthetic_comunicacao_transpose,liga para Bruan,liga para Bruna,liga para Bruna,0.3333333333333333,0.0,0.13333333333333333,0.0,0.2578999847173691,0.319,0.737694,True
+clean_comunicacao,liga para Bruna,liga para Bruna,liga para Bruna,0.0,0.0,0.0,0.0,0.15729997539892793,0.106,0.98,False
+synthetic_consulta_substitute,quais aparelhos tem no escretório de Jaime,quais aparelhos tem no escritório de Jaime,quais aparelhos tem no escritório de Jaime,0.14285714285714285,0.0,0.023809523809523808,0.0,0.6300999666564167,1.403,0.948775,False
+clean_consulta,quais aparelhos tem no escritório de Jaime,quais aparelhos tem no escritório de Jaime,quais aparelhos tem no escritório de Jaime,0.0,0.0,0.0,0.0,0.24700001813471317,0.361,0.98,False
+synthetic_cortinas_delete,desce a cortina do escitório,desce a cortina do escritório,desce a cortina do escritório,0.2,0.0,0.034482758620689655,0.0,0.3787999739870429,0.815,0.946059,False
+clean_cortinas,desce a cortina do escritório,desce a cortina do escritório,desce a cortina do escritório,0.0,0.0,0.0,0.0,0.22029998945072293,0.213,0.98,False
+synthetic_dispositivo_transpose,desativa a tmoada do corredor,desativa a tomada do corredor,desativa a tomada do corredor,0.2,0.0,0.06896551724137931,0.0,0.43839996214956045,0.943,0.862083,True
+clean_dispositivo,desativa a tomada do corredor,desativa a tomada do corredor,desativa a tomada do corredor,0.0,0.0,0.0,0.0,0.1852000132203102,0.186,0.98,False
+synthetic_eletrodomesticos_substitute,a air fryer está logada,a air fryer está ligada,a air fryer está ligada,0.2,0.0,0.043478260869565216,0.0,0.380899989977479,0.945,0.907073,False
+clean_eletrodomesticos,a air fryer está ligada,a air fryer está ligada,a air fryer está ligada,0.0,0.0,0.0,0.0,0.1708000199869275,0.171,0.98,False
+synthetic_energia_delete,bateria da tmada,bateria da tomada,bateria da tomada,0.3333333333333333,0.0,0.058823529411764705,0.0,0.2457000082358718,0.639,0.895887,False
+clean_energia,bateria da tomada,bateria da tomada,bateria da tomada,0.0,0.0,0.0,0.0,0.10539998766034842,0.103,0.98,False
+synthetic_grupos_transpose,liga tudo do andra de baixo,liga tudo do andar de baixo,liga tudo do andar de baixo,0.16666666666666666,0.0,0.07407407407407407,0.0,0.46089995885267854,0.82,0.850259,True
+clean_grupos,liga tudo do andar de baixo,liga tudo do andar de baixo,liga tudo do andar de baixo,0.0,0.0,0.0,0.0,0.20160002168267965,0.2,0.98,False
+synthetic_iluminacao_substitute,deixa a fita LED do quintal aiagada,deixa a fita LED do quintal apagada,deixa a fita LED do quintal apagada,0.14285714285714285,0.0,0.02857142857142857,0.0,0.3933999687433243,0.976,0.927392,False
+clean_iluminacao,deixa a fita LED do quintal apagada,deixa a fita LED do quintal apagada,deixa a fita LED do quintal apagada,0.0,0.0,0.0,0.0,0.23970002075657248,0.233,0.98,False
+synthetic_impressao_3d_delete,quanto falta pra impressão termnar,quanto falta pra impressão terminar,quanto falta pra impressão terminar,0.2,0.0,0.02857142857142857,0.0,0.3203999949619174,1.31,0.935849,False
+clean_impressao_3d,quanto falta pra impressão terminar,quanto falta pra impressão terminar,quanto falta pra impressão terminar,0.0,0.0,0.0,0.0,0.1667000469751656,0.169,0.98,False
+synthetic_jardim_transpose,inicai o cortador,inicia o cortador,inicia o cortador,0.3333333333333333,0.0,0.11764705882352941,0.0,0.3136000013910234,0.688,0.816436,True
+clean_jardim,inicia o cortador,inicia o cortador,inicia o cortador,0.0,0.0,0.0,0.0,0.11359999189153314,0.115,0.98,False
+synthetic_limpeza_substitute,manea o robô pra escritório de Bruna,manda o robô pra escritório de Bruna,manda o robô pra escritório de Bruna,0.14285714285714285,0.0,0.027777777777777776,0.0,0.5302000208757818,0.962,0.874066,True
+clean_limpeza,manda o robô pra escritório de Bruna,manda o robô pra escritório de Bruna,manda o robô pra escritório de Bruna,0.0,0.0,0.0,0.0,0.23969996254891157,0.24,0.98,False
+synthetic_localizacao_delete,faz meu telefone tcar,faz meu telefone tocar,faz meu telefone tocar,0.25,0.0,0.045454545454545456,0.0,0.2818999928422272,0.717,0.951564,False
+clean_localizacao,faz meu telefone tocar,faz meu telefone tocar,faz meu telefone tocar,0.0,0.0,0.0,0.0,0.13500003842636943,0.134,0.98,False
+synthetic_midia_unchanged_no_eligible_token,bota MPB,bota MPB,bota MPB,0.0,0.0,0.0,0.0,0.07870001718401909,0.07,0.98,False
+clean_midia,bota MPB,bota MPB,bota MPB,0.0,0.0,0.0,0.0,0.07430004188790917,0.071,0.98,False
+synthetic_presenca_substitute,tem alguém na cozinea,tem alguém na cozinha,tem alguém na cozinha,0.25,0.0,0.047619047619047616,0.0,0.28870004462078214,0.682,0.906262,False
+clean_presenca,tem alguém na cozinha,tem alguém na cozinha,tem alguém na cozinha,0.0,0.0,0.0,0.0,0.14359998749569058,0.192,0.98,False
+synthetic_rotinas_delete,tem alguma coisa erraa,tem alguma coisa errada,tem alguma coisa errada,0.25,0.0,0.043478260869565216,0.0,0.2793999738059938,0.703,0.875774,True
+clean_rotinas,tem alguma coisa errada,tem alguma coisa errada,tem alguma coisa errada,0.0,0.0,0.0,0.0,0.1441999920643866,0.133,0.98,False
+synthetic_satelite_transpose,voulme daqui em 10%,volume daqui em 10%,volume daqui em 10%,0.25,0.0,0.10526315789473684,0.0,0.34980004420503974,0.717,0.93152,False
+clean_satelite,volume daqui em 10%,volume daqui em 10%,volume daqui em 10%,0.0,0.0,0.0,0.0,0.14100002590566874,0.143,0.98,False
+synthetic_seguranca_substitute,arma o alurme,arma o alarme,arma o alarme,0.3333333333333333,0.0,0.07692307692307693,0.0,0.24889997439458966,0.624,0.91872,False
+clean_seguranca,arma o alarme,arma o alarme,arma o alarme,0.0,0.0,0.0,0.0,0.10459998156875372,0.104,0.98,False
+synthetic_tempo_delete,marca uma hora no tmer,marca uma hora no timer,marca uma hora no timer,0.2,0.0,0.043478260869565216,0.0,0.3293000045232475,0.676,0.934797,False
+clean_tempo,marca uma hora no timer,marca uma hora no timer,marca uma hora no timer,0.0,0.0,0.0,0.0,0.2313000150024891,0.168,0.98,False
+synthetic_ambiente_transpose,qaunto está a temperatura no quarto,quanto está a temperatura no quarto,quanto está a temperatura no quarto,0.16666666666666666,0.0,0.05714285714285714,0.0,0.5492999916896224,0.948,0.862974,True
+clean_ambiente,quanto está a temperatura no quarto,quanto está a temperatura no quarto,quanto está a temperatura no quarto,0.0,0.0,0.0,0.0,0.2395000192336738,0.226,0.98,False
+synthetic_calendario_substitute,coloca dentista na aienda segunda-feira às dez horas,coloca dentista na agenda segunda-feira às dez horas,coloca dentista na agenda segunda-feira às dez horas,0.125,0.0,0.019230769230769232,0.0,0.5502999993041158,1.181,0.89119,True
+clean_calendario,coloca dentista na agenda segunda-feira às dez horas,coloca dentista na agenda segunda-feira às dez horas,coloca dentista na agenda segunda-feira às dez horas,0.0,0.0,0.0,0.0,0.26980001712217927,0.269,0.98,False
+synthetic_cenas_delete,queo a cena jantar,quero a cena jantar,quero a cena jantar,0.25,0.0,0.05263157894736842,0.0,0.3470000228844583,0.789,0.948952,False
+clean_cenas,quero a cena jantar,quero a cena jantar,quero a cena jantar,0.0,0.0,0.0,0.0,0.13770000077784061,0.135,0.98,False
+synthetic_clima_externo_transpose,como fica o clmia domingo,como fica o clima domingo,como fica o clima domingo,0.2,0.0,0.08,0.0,0.36830001045018435,0.455,0.826449,True
+clean_clima_externo,como fica o clima domingo,como fica o clima domingo,como fica o clima domingo,0.0,0.0,0.0,0.0,0.17150002531707287,0.177,0.98,False
+synthetic_climatizacao_substitute,o ar-condicionado do escritario está ligado,o ar-condicionado do escritório está ligado,o ar-condicionado do escritório está ligado,0.16666666666666666,0.0,0.023255813953488372,0.0,0.4440000047907233,0.997,0.943669,False
+clean_climatizacao,o ar-condicionado do escritório está ligado,o ar-condicionado do escritório está ligado,o ar-condicionado do escritório está ligado,0.0,0.0,0.0,0.0,0.20870001753792167,0.207,0.98,False
+synthetic_comunicacao_delete,telefoe para pai,telefone para pai,telefone para pai,0.3333333333333333,0.0,0.058823529411764705,0.0,0.28249999741092324,0.726,0.960157,False
+clean_comunicacao,telefone para pai,telefone para pai,telefone para pai,0.0,0.0,0.0,0.0,0.10979996295645833,0.145,0.98,False
+synthetic_consulta_transpose,cadê a cafetiera,cadê a cafeteira,cadê a cafeteira,0.3333333333333333,0.0,0.125,0.0,0.25649997405707836,0.688,0.850681,True
+clean_consulta,cadê a cafeteira,cadê a cafeteira,cadê a cafeteira,0.0,0.0,0.0,0.0,0.10850001126527786,0.11,0.98,False
+synthetic_cortinas_substitute,deixa a persaana do quarto em 75%,deixa a persiana do quarto em 75%,deixa a persiana do quarto em 75%,0.14285714285714285,0.0,0.030303030303030304,0.0,0.555400038138032,0.546,0.932735,False
+clean_cortinas,deixa a persiana do quarto em 75%,deixa a persiana do quarto em 75%,deixa a persiana do quarto em 75%,0.0,0.0,0.0,0.0,0.2459999523125589,0.284,0.98,False
+synthetic_dispositivo_delete,como está a cafeteira da área de servço,como está a cafeteira da área de serviço,como está a cafeteira da área de serviço,0.125,0.0,0.025,0.0,0.4594000056385994,1.016,0.970949,False
+clean_dispositivo,como está a cafeteira da área de serviço,como está a cafeteira da área de serviço,como está a cafeteira da área de serviço,0.0,0.0,0.0,0.0,0.28499995823949575,0.272,0.98,False
+synthetic_eletrodomesticos_transpose,como está a máquina de lavra,como está a máquina de lavar,como está a máquina de lava,0.16666666666666666,0.16666666666666666,0.07142857142857142,0.03571428571428571,0.3868999774567783,0.834,0.876046,True
+clean_eletrodomesticos,como está a máquina de lavar,como está a máquina de lavar,como está a máquina de lavar,0.0,0.0,0.0,0.0,0.20750000840052962,0.206,0.98,False
+synthetic_energia_substitute,pode deslegar a tomada da TV,pode desligar a tomada da TV,pode desligar a tomada da TV,0.16666666666666666,0.0,0.03571428571428571,0.0,0.5007999716326594,0.473,0.930591,False
+clean_energia,pode desligar a tomada da TV,pode desligar a tomada da TV,pode desligar a tomada da TV,0.0,0.0,0.0,0.0,0.20289997337386012,0.377,0.98,False
+synthetic_grupos_delete,liga as disposiivos do casa toda,liga as dispositivos do casa toda,liga as dispositivos do casa toda,0.16666666666666666,0.0,0.030303030303030304,0.0,0.4760000156238675,1.005,0.946607,False
+clean_grupos,liga as dispositivos do casa toda,liga as dispositivos do casa toda,liga as dispositivos do casa toda,0.0,0.0,0.0,0.0,0.2384000108577311,0.311,0.98,False
+synthetic_iluminacao_transpose,acende todas as lzues do escritório de Bruna,acende todas as luzes do escritório de Bruna,acende todas as luzes do escritório de Bruna,0.125,0.0,0.045454545454545456,0.0,0.6490999949164689,1.114,0.931436,False
+clean_iluminacao,acende todas as luzes do escritório de Bruna,acende todas as luzes do escritório de Bruna,acende todas as luzes do escritório de Bruna,0.0,0.0,0.0,0.0,0.4181999829597771,0.324,0.98,False
+synthetic_impressao_3d_substitute,pausa a impresaão,pausa a impressão,pausa a impressão,0.3333333333333333,0.0,0.058823529411764705,0.0,0.2823999966494739,0.765,0.960349,False
+clean_impressao_3d,pausa a impressão,pausa a impressão,pausa a impressão,0.0,0.0,0.0,0.0,0.17980003030970693,0.13,0.98,False
+synthetic_jardim_delete,liga o cortdor,liga o cortador,liga o cortador,0.3333333333333333,0.0,0.06666666666666667,0.0,0.31370000215247273,0.781,0.933481,False
+clean_jardim,liga o cortador,liga o cortador,liga o cortador,0.0,0.0,0.0,0.0,0.10519998613744974,0.105,0.98,False
+synthetic_limpeza_transpose,madna o robô aspirador pra base,manda o robô aspirador pra base,manda o robô aspirador pra base,0.16666666666666666,0.0,0.06451612903225806,0.0,0.4763000179082155,0.9,0.850259,True
+clean_limpeza,manda o robô aspirador pra base,manda o robô aspirador pra base,manda o robô aspirador pra base,0.0,0.0,0.0,0.0,0.20359997870400548,0.204,0.98,False
+synthetic_midia_substitute,manda isso para a quurto,manda isso para a quarto,manda isso para a quarto,0.2,0.0,0.041666666666666664,0.0,0.3358999965712428,1.072,0.953854,False
+clean_midia,manda isso para a quarto,manda isso para a quarto,manda isso para a quarto,0.0,0.0,0.0,0.0,0.1674999948590994,0.172,0.98,False
+synthetic_presenca_delete,vê se Jaie está na área de serviço,vê se Jaime está na área de serviço,vê se Jaime está na área de serviço,0.125,0.0,0.02857142857142857,0.0,0.6862999871373177,0.963,0.890669,True
+clean_presenca,vê se Jaime está na área de serviço,vê se Jaime está na área de serviço,vê se Jaime está na área de serviço,0.0,0.0,0.0,0.0,0.2861000248230994,0.269,0.98,False
+synthetic_rotinas_unchanged_no_eligible_token,bom dia,bom dia,bom dia,0.0,0.0,0.0,0.0,0.07150002056732774,0.075,0.98,False
+clean_rotinas,bom dia,bom dia,bom dia,0.0,0.0,0.0,0.0,0.06940000457689166,0.067,0.98,False
+synthetic_satelite_substitute,reproduz rock nease alto-falante,reproduz rock nesse alto-falante,reproduz rock nesse alto-falante,0.25,0.0,0.03125,0.0,0.33030001213774085,0.753,0.851663,True
+clean_satelite,reproduz rock nesse alto-falante,reproduz rock nesse alto-falante,reproduz rock nesse alto-falante,0.0,0.0,0.0,0.0,0.13970001600682735,0.142,0.98,False
+synthetic_seguranca_delete,confere o portão da gaagem,confere o portão da garagem,confere o portão da garagem,0.2,0.0,0.037037037037037035,0.0,0.3230999573133886,0.71,0.959776,False
+clean_seguranca,confere o portão da garagem,confere o portão da garagem,confere o portão da garagem,0.0,0.0,0.0,0.0,0.17259997548535466,0.169,0.98,False
+synthetic_tempo_transpose,me dá mais um mniuto,me dá mais um minuto,me dá mais um minuto,0.2,0.0,0.1,0.0,0.3388000186532736,0.763,0.917409,False
+clean_tempo,me dá mais um minuto,me dá mais um minuto,me dá mais um minuto,0.0,0.0,0.0,0.0,0.17359998309984803,0.183,0.98,False
+synthetic_ambiente_substitute,me diz a temperatura da área de serviao,me diz a temperatura da área de serviço,me diz a temperatura da área de serviço,0.125,0.0,0.02564102564102564,0.0,0.5596000119112432,0.865,0.94902,False
+clean_ambiente,me diz a temperatura da área de serviço,me diz a temperatura da área de serviço,me diz a temperatura da área de serviço,0.0,0.0,0.0,0.0,0.2706999657675624,0.288,0.98,False
+synthetic_calendario_delete,marca acadeia hoje às meio-dia,marca academia hoje às meio-dia,marca academia hoje às meio-dia,0.2,0.0,0.03225806451612903,0.0,0.4020999767817557,0.931,0.937476,False
+clean_calendario,marca academia hoje às meio-dia,marca academia hoje às meio-dia,marca academia hoje às meio-dia,0.0,0.0,0.0,0.0,0.17289997776970267,0.175,0.98,False
+synthetic_cenas_transpose,coolca o modo trabalho,coloca o modo trabalho,coloca o modo trabalho,0.25,0.0,0.09090909090909091,0.0,0.3535000141710043,0.747,0.842346,True
+clean_cenas,coloca o modo trabalho,coloca o modo trabalho,coloca o modo trabalho,0.0,0.0,0.0,0.0,0.1395999570377171,0.137,0.98,False
+synthetic_clima_externo_substitute,como vai estar o temio domingo,como vai estar o tempo domingo,como vai estar o tempo domingo,0.16666666666666666,0.0,0.03333333333333333,0.0,0.3996000159531832,0.82,0.857559,True
+clean_clima_externo,como vai estar o tempo domingo,como vai estar o tempo domingo,como vai estar o tempo domingo,0.0,0.0,0.0,0.0,0.22009998792782426,0.2,0.98,False
+synthetic_climatizacao_delete,aiva o ar-condicionado da sala,ativa o ar-condicionado da sala,ativa o ar-condicionado da sala,0.2,0.0,0.03225806451612903,0.0,0.40959997568279505,0.517,0.950366,False
+clean_climatizacao,ativa o ar-condicionado da sala,ativa o ar-condicionado da sala,ativa o ar-condicionado da sala,0.0,0.0,0.0,0.0,0.1729000359773636,0.179,0.98,False
+synthetic_comunicacao_transpose,aivsa na sala que eu estou chamando,avisa na sala que eu estou chamando,avisa na sala que eu estou chamando,0.14285714285714285,0.0,0.05714285714285714,0.0,0.5395999760366976,0.915,0.867684,True
+clean_comunicacao,avisa na sala que eu estou chamando,avisa na sala que eu estou chamando,avisa na sala que eu estou chamando,0.0,0.0,0.0,0.0,0.23750000400468707,0.237,0.98,False
+synthetic_consulta_substitute,em que cômooo está o ar-condicionado,em que cômodo está o ar-condicionado,em que cômodo está o ar-condicionado,0.16666666666666666,0.0,0.027777777777777776,0.0,0.4529999569058418,0.88,0.923091,False
+clean_consulta,em que cômodo está o ar-condicionado,em que cômodo está o ar-condicionado,em que cômodo está o ar-condicionado,0.0,0.0,0.0,0.0,0.20399998174980283,0.203,0.98,False
+synthetic_cortinas_delete,levnta a cortina do escritório,levanta a cortina do escritório,levanta a cortina do escritório,0.2,0.0,0.03225806451612903,0.0,0.4029999836347997,0.796,0.874312,True
+clean_cortinas,levanta a cortina do escritório,levanta a cortina do escritório,levanta a cortina do escritório,0.0,0.0,0.0,0.0,0.17120002303272486,0.186,0.98,False
+synthetic_dispositivo_transpose,quero a lâmpada da garagem liagdo,quero a lâmpada da garagem ligado,quero a lâmpada da garagem ligado,0.16666666666666666,0.0,0.06060606060606061,0.0,0.36529998760670424,0.738,0.920862,False
+clean_dispositivo,quero a lâmpada da garagem ligado,quero a lâmpada da garagem ligado,quero a lâmpada da garagem ligado,0.0,0.0,0.0,0.0,0.20429998403415084,0.201,0.98,False
+synthetic_eletrodomesticos_substitute,a lava e seca está liiada,a lava e seca está ligada,a lava e seca está ligada,0.16666666666666666,0.0,0.04,0.0,0.35990000469610095,0.744,0.925584,False
+clean_eletrodomesticos,a lava e seca está ligada,a lava e seca está ligada,a lava e seca está ligada,0.0,0.0,0.0,0.0,0.2044999855570495,0.201,0.98,False
+synthetic_energia_delete,qunto de bateria tem o ventilador,quanto de bateria tem o ventilador,quanto de bateria tem o ventilador,0.16666666666666666,0.0,0.029411764705882353,0.0,0.4609999596141279,0.826,0.959097,False
+clean_energia,quanto de bateria tem o ventilador,quanto de bateria tem o ventilador,quanto de bateria tem o ventilador,0.0,0.0,0.0,0.0,0.20399998174980283,0.198,0.98,False
+synthetic_grupos_transpose,tem alguma coisa ligada no área soical,tem alguma coisa ligada no área social,tem alguma coisa ligada no área social,0.14285714285714285,0.0,0.05263157894736842,0.0,0.42370002483949065,0.824,0.919498,True
+clean_grupos,tem alguma coisa ligada no área social,tem alguma coisa ligada no área social,tem alguma coisa ligada no área social,0.0,0.0,0.0,0.0,0.23939996026456356,0.262,0.98,False
+synthetic_iluminacao_substitute,acende a fita LED da vaianda,acende a fita LED da varanda,acende a fita LED da varanda,0.16666666666666666,0.0,0.03571428571428571,0.0,0.36340003134682775,0.798,0.920454,False
+clean_iluminacao,acende a fita LED da varanda,acende a fita LED da varanda,acende a fita LED da varanda,0.0,0.0,0.0,0.0,0.20269997185096145,0.201,0.98,False
+synthetic_jardim_delete,liga o robô cortaor,liga o robô cortador,liga o robô cortador,0.25,0.0,0.05,0.0,0.2940999693237245,0.694,0.852642,True
+clean_jardim,liga o robô cortador,liga o robô cortador,liga o robô cortador,0.0,0.0,0.0,0.0,0.14139997074380517,0.14,0.98,False
+synthetic_limpeza_transpose,aspria o banheiro,aspira o banheiro,aspira o banheiro,0.3333333333333333,0.0,0.11764705882352941,0.0,0.2843000111170113,0.671,0.892117,False
+clean_limpeza,aspira o banheiro,aspira o banheiro,aspira o banheiro,0.0,0.0,0.0,0.0,0.10629999451339245,0.103,0.98,False
+synthetic_midia_substitute,põe rádio pra tocur,põe rádio pra tocar,põe rádio pra tocar,0.25,0.0,0.05263157894736842,0.0,0.28520001797005534,0.633,0.896076,False
+clean_midia,põe rádio pra tocar,põe rádio pra tocar,põe rádio pra tocar,0.0,0.0,0.0,0.0,0.1742999884299934,0.254,0.98,False
+synthetic_presenca_delete,tem alguém em cozina,tem alguém em cozinha,tem alguém em cozinha,0.25,0.0,0.047619047619047616,0.0,0.27949997456744313,0.712,0.930006,False
+clean_presenca,tem alguém em cozinha,tem alguém em cozinha,tem alguém em cozinha,0.0,0.0,0.0,0.0,0.13910001143813133,0.167,0.98,False
+synthetic_rotinas_transpose,delsiga tudo,desliga tudo,desliga tudo,0.5,0.0,0.16666666666666666,0.0,0.22000004537403584,0.595,0.786682,True
+clean_rotinas,desliga tudo,desliga tudo,desliga tudo,0.0,0.0,0.0,0.0,0.07210002513602376,0.07,0.98,False
+synthetic_satelite_substitute,volume daqoi em 75%,volume daqui em 75%,volume daqui em 75%,0.25,0.0,0.05263157894736842,0.0,0.34220004454255104,0.648,0.908439,False
+clean_satelite,volume daqui em 75%,volume daqui em 75%,volume daqui em 75%,0.0,0.0,0.0,0.0,0.13830000534653664,0.181,0.98,False
+synthetic_seguranca_delete,a janla da cozinha está aberta,a janela da cozinha está aberta,a janela da cozinha está aberta,0.16666666666666666,0.0,0.03225806451612903,0.0,0.46229996951296926,0.835,0.938053,False
+clean_seguranca,a janela da cozinha está aberta,a janela da cozinha está aberta,a janela da cozinha está aberta,0.0,0.0,0.0,0.0,0.21279999054968357,0.206,0.98,False
+synthetic_tempo_transpose,quatno falta no timer,quanto falta no timer,quanto falta no timer,0.25,0.0,0.09523809523809523,0.0,0.42020005639642477,0.717,0.8022,True
+clean_tempo,quanto falta no timer,quanto falta no timer,quanto falta no timer,0.0,0.0,0.0,0.0,0.13909995323047042,0.189,0.98,False
+synthetic_ambiente_substitute,qual a temperatura do quario,qual a temperatura do quarto,qual a temperatura do quarto,0.2,0.0,0.03571428571428571,0.0,0.3171000280417502,0.739,0.841816,True
+clean_ambiente,qual a temperatura do quarto,qual a temperatura do quarto,qual a temperatura do quarto,0.0,0.0,0.0,0.0,0.1702000154182315,0.166,0.98,False
+synthetic_calendario_delete,quando é acadmia,quando é academia,quando é academia,0.3333333333333333,0.0,0.058823529411764705,0.0,0.2411000314168632,0.667,0.960157,False
+clean_calendario,quando é academia,quando é academia,quando é academia,0.0,0.0,0.0,0.0,0.10579999070614576,0.113,0.98,False
+synthetic_cenas_transpose,liga a cena janatr,liga a cena jantar,liga a cena jantar,0.25,0.0,0.1111111111111111,0.0,0.2829000004567206,0.652,0.913765,False
+clean_cenas,liga a cena jantar,liga a cena jantar,liga a cena jantar,0.0,0.0,0.0,0.0,0.1370999962091446,0.133,0.98,False
+synthetic_clima_externo_substitute,como fica o clima sáaado,como fica o clima sábado,como fica o clima sábado,0.2,0.0,0.041666666666666664,0.0,0.3218000056222081,0.712,0.939785,False
+clean_clima_externo,como fica o clima sábado,como fica o clima sábado,como fica o clima sábado,0.0,0.0,0.0,0.0,0.16850000247359276,0.168,0.98,False
+synthetic_climatizacao_delete,destiva o desumidificador do quarto,desativa o desumidificador do quarto,desativa o desumidificador do quarto,0.2,0.0,0.027777777777777776,0.0,0.408999971114099,0.921,0.940256,False
+clean_climatizacao,desativa o desumidificador do quarto,desativa o desumidificador do quarto,desativa o desumidificador do quarto,0.0,0.0,0.0,0.0,0.17230003140866756,0.184,0.98,False
+synthetic_comunicacao_transpose,fala no banheiro que eu cheguie,fala no banheiro que eu cheguei,fala no banheiro que eu cheguei,0.16666666666666666,0.0,0.06451612903225806,0.0,0.3624999662861228,0.741,0.954781,False
+clean_comunicacao,fala no banheiro que eu cheguei,fala no banheiro que eu cheguei,fala no banheiro que eu cheguei,0.0,0.0,0.0,0.0,0.20540005061775446,0.205,0.98,False
+synthetic_consulta_substitute,onde fica o abauur,onde fica o abajur,onde fica o abajur,0.25,0.0,0.05555555555555555,0.0,0.277700019069016,0.623,0.947427,False
+clean_consulta,onde fica o abajur,onde fica o abajur,onde fica o abajur,0.0,0.0,0.0,0.0,0.13770000077784061,0.134,0.98,False
+synthetic_cortinas_delete,baixa a persiana do qurto,baixa a persiana do quarto,baixa a persiana do quarto,0.2,0.0,0.038461538461538464,0.0,0.3192999865859747,0.654,0.962149,False
+clean_cortinas,baixa a persiana do quarto,baixa a persiana do quarto,baixa a persiana do quarto,0.0,0.0,0.0,0.0,0.17680000746622682,0.201,0.98,False
+synthetic_dispositivo_transpose,ligue a lâmapda da garagem,ligue a lâmpada da garagem,ligue a lâmpada da garagem,0.2,0.0,0.07692307692307693,0.0,0.4064000095240772,0.802,0.901458,True
+clean_dispositivo,ligue a lâmpada da garagem,ligue a lâmpada da garagem,ligue a lâmpada da garagem,0.0,0.0,0.0,0.0,0.17280003521591425,0.173,0.98,False
+synthetic_eletrodomesticos_substitute,o que a impressora 3D está fazondo,o que a impressora 3D está fazendo,o que a impressora 3D está fazendo,0.14285714285714285,0.0,0.029411764705882353,0.0,0.4409000393934548,0.849,0.963728,False
+clean_eletrodomesticos,o que a impressora 3D está fazendo,o que a impressora 3D está fazendo,o que a impressora 3D está fazendo,0.0,0.0,0.0,0.0,0.2744999947026372,0.269,0.98,False
+synthetic_energia_delete,bateia do abajur,bateria do abajur,bateria do abajur,0.3333333333333333,0.0,0.058823529411764705,0.0,0.2845999551936984,0.78,0.890784,False
+clean_energia,bateria do abajur,bateria do abajur,bateria do abajur,0.0,0.0,0.0,0.0,0.10679999832063913,0.105,0.98,False
+synthetic_grupos_transpose,como estão as aparelhos do área scoial,como estão as aparelhos do área social,como estão as aparelhos do área social,0.14285714285714285,0.0,0.05263157894736842,0.0,0.4008000250905752,0.818,0.941784,False
+clean_grupos,como estão as aparelhos do área social,como estão as aparelhos do área social,como estão as aparelhos do área social,0.0,0.0,0.0,0.0,0.23639999562874436,0.236,0.98,False
+synthetic_iluminacao_substitute,desliga a lâipada do escritório de Bruna,desliga a lâmpada do escritório de Bruna,desliga a lâmpada do escritório de Bruna,0.14285714285714285,0.0,0.025,0.0,0.6407000473700464,0.956,0.929528,False
+clean_iluminacao,desliga a lâmpada do escritório de Bruna,desliga a lâmpada do escritório de Bruna,desliga a lâmpada do escritório de Bruna,0.0,0.0,0.0,0.0,0.23969996254891157,0.241,0.98,False
+synthetic_jardim_delete,faz o cortador vltar,faz o cortador voltar,faz o cortador voltar,0.25,0.0,0.047619047619047616,0.0,0.2877999795600772,0.696,0.951184,False
+clean_jardim,faz o cortador voltar,faz o cortador voltar,faz o cortador voltar,0.0,0.0,0.0,0.0,0.13840000610798597,0.138,0.98,False
+synthetic_limpeza_transpose,manda o aspriador robô pra base,manda o aspirador robô pra base,manda o aspirador robô pra base,0.16666666666666666,0.0,0.06451612903225806,0.0,0.44570001773536205,0.932,0.926191,False
+clean_limpeza,manda o aspirador robô pra base,manda o aspirador robô pra base,manda o aspirador robô pra base,0.0,0.0,0.0,0.0,0.20519999088719487,0.202,0.98,False
+synthetic_midia_substitute,o que está tacando,o que está tocando,o que está tocando,0.25,0.0,0.05555555555555555,0.0,0.29340002220124006,0.743,0.909274,False
+clean_midia,o que está tocando,o que está tocando,o que está tocando,0.0,0.0,0.0,0.0,0.14050002209842205,0.138,0.98,False
+synthetic_presenca_delete,em que lugr da casa está alguém,em que lugar da casa está alguém,em que lugar da casa está alguém,0.14285714285714285,0.0,0.03125,0.0,0.5775000317953527,1.048,0.963648,False
+clean_presenca,em que lugar da casa está alguém,em que lugar da casa está alguém,em que lugar da casa está alguém,0.0,0.0,0.0,0.0,0.2376000047661364,0.235,0.98,False
+synthetic_rotinas_transpose,aitva a rotina sair de casa,ativa a rotina sair de casa,ativa a rotina sair de casa,0.16666666666666666,0.0,0.07407407407407407,0.0,0.4676000098697841,0.876,0.854221,True
+clean_rotinas,ativa a rotina sair de casa,ativa a rotina sair de casa,ativa a rotina sair de casa,0.0,0.0,0.0,0.0,0.19859999883919954,0.2,0.98,False
+synthetic_satelite_substitute,apega a luz desse cômodo,apaga a luz desse cômodo,apaga a luz desse cômodo,0.2,0.0,0.041666666666666664,0.0,0.4005000228062272,0.788,0.838957,True
+clean_satelite,apaga a luz desse cômodo,apaga a luz desse cômodo,apaga a luz desse cômodo,0.0,0.0,0.0,0.0,0.17600000137463212,0.178,0.98,False
+synthetic_seguranca_delete,tranque a fechadura da pota da frente,tranque a fechadura da porta da frente,tranque a fechadura da porta da frente,0.14285714285714285,0.0,0.02631578947368421,0.0,0.47889997949823737,0.872,0.944811,False
+clean_seguranca,tranque a fechadura da porta da frente,tranque a fechadura da porta da frente,tranque a fechadura da porta da frente,0.0,0.0,0.0,0.0,0.27439999394118786,0.237,0.98,False
+synthetic_tempo_transpose,diimnui cinco minutos do timer,diminui cinco minutos do timer,diminui cinco minutos do timer,0.2,0.0,0.06666666666666667,0.0,0.39770000148564577,0.756,0.95213,False
+clean_tempo,diminui cinco minutos do timer,diminui cinco minutos do timer,diminui cinco minutos do timer,0.0,0.0,0.0,0.0,0.1669999910518527,0.168,0.98,False
+synthetic_ambiente_substitute,como está a ueidade no escritório de Jaime,como está a umidade no escritório de Jaime,como está a umidade no escritório de Jaime,0.125,0.0,0.023809523809523808,0.0,0.5721999914385378,0.967,0.958467,False
+clean_ambiente,como está a umidade no escritório de Jaime,como está a umidade no escritório de Jaime,como está a umidade no escritório de Jaime,0.0,0.0,0.0,0.0,0.27379998937249184,0.277,0.98,False
+synthetic_calendario_delete,o que tem no calendário sexta-feia,o que tem no calendário sexta-feira,o que tem no calendário sexta-feira,0.16666666666666666,0.0,0.02857142857142857,0.0,0.3597000031732023,0.783,0.9736,False
+clean_calendario,o que tem no calendário sexta-feira,o que tem no calendário sexta-feira,o que tem no calendário sexta-feira,0.0,0.0,0.0,0.0,0.21170004038140178,0.202,0.98,False
+synthetic_cenas_transpose,atiav a cena trabalho,ativa a cena trabalho,ativa a cena trabalho,0.25,0.0,0.09523809523809523,0.0,0.3436999977566302,0.704,0.793397,True
+clean_cenas,ativa a cena trabalho,ativa a cena trabalho,ativa a cena trabalho,0.0,0.0,0.0,0.0,0.13780000153928995,0.135,0.98,False
+synthetic_clima_externo_substitute,como fica o cliia hoje,como fica o clima hoje,como fica o clima hoje,0.2,0.0,0.045454545454545456,0.0,0.36940001882612705,0.798,0.930031,False
+clean_clima_externo,como fica o clima hoje,como fica o clima hoje,como fica o clima hoje,0.0,0.0,0.0,0.0,0.16920000780373812,0.17,0.98,False
+synthetic_climatizacao_delete,liga o vetilador de teto,liga o ventilador de teto,liga o ventilador de teto,0.2,0.0,0.04,0.0,0.38510002195835114,0.834,0.957741,False
+clean_climatizacao,liga o ventilador de teto,liga o ventilador de teto,liga o ventilador de teto,0.0,0.0,0.0,0.0,0.17060001846402884,0.168,0.98,False
+synthetic_comunicacao_transpose,teleofne para Jaime,telefone para Jaime,telefone para Jaime,0.3333333333333333,0.0,0.10526315789473684,0.0,0.2810999867506325,0.693,0.934596,False
+clean_comunicacao,telefone para Jaime,telefone para Jaime,telefone para Jaime,0.0,0.0,0.0,0.0,0.10599999222904444,0.103,0.98,False
+synthetic_consulta_substitute,onde está o ventioador,onde está o ventilador,onde está o ventilador,0.25,0.0,0.045454545454545456,0.0,0.291300006210804,0.703,0.935163,False
+clean_consulta,onde está o ventilador,onde está o ventilador,onde está o ventilador,0.0,0.0,0.0,0.0,0.1401000190526247,0.141,0.98,False
+synthetic_cortinas_delete,deixa a cortina do esritório em 75%,deixa a cortina do escritório em 75%,deixa a cortina do escritório em 75%,0.14285714285714285,0.0,0.027777777777777776,0.0,0.4718999844044447,0.912,0.958166,False
+clean_cortinas,deixa a cortina do escritório em 75%,deixa a cortina do escritório em 75%,deixa a cortina do escritório em 75%,0.0,0.0,0.0,0.0,0.2389000146649778,0.235,0.98,False
+synthetic_dispositivo_transpose,ligue a televisão do escritório de Burna,ligue a televisão do escritório de Bruna,ligue a televisão do escritório de Bruna,0.14285714285714285,0.0,0.05,0.0,0.4048999981023371,0.74,0.918295,True
+clean_dispositivo,ligue a televisão do escritório de Bruna,ligue a televisão do escritório de Bruna,ligue a televisão do escritório de Bruna,0.0,0.0,0.0,0.0,0.23860001238062978,0.234,0.98,False
+synthetic_eletrodomesticos_substitute,a máquiia termina que horas,a máquina termina que horas,a máquina termina que horas,0.2,0.0,0.037037037037037035,0.0,0.3994999569840729,0.771,0.948692,False
+clean_eletrodomesticos,a máquina termina que horas,a máquina termina que horas,a máquina termina que horas,0.0,0.0,0.0,0.0,0.17179996939375997,0.169,0.98,False
+synthetic_energia_delete,a cafteira está puxando quanto,a cafeteira está puxando quanto,a cafeteira está puxando quanto,0.2,0.0,0.03225806451612903,0.0,0.41550002060830593,0.799,0.916152,False
+clean_energia,a cafeteira está puxando quanto,a cafeteira está puxando quanto,a cafeteira está puxando quanto,0.0,0.0,0.0,0.0,0.17590000061318278,0.179,0.98,False
+synthetic_grupos_unchanged_no_eligible_token,liga tudo do casa toda,liga tudo do casa toda,liga tudo do casa toda,0.0,0.0,0.0,0.0,0.17499999376013875,0.218,0.98,False
+clean_grupos,liga tudo do casa toda,liga tudo do casa toda,liga tudo do casa toda,0.0,0.0,0.0,0.0,0.1715999678708613,0.169,0.98,False
+synthetic_iluminacao_substitute,bralho da fita LED da varanda em 100%,brilho da fita LED da varanda em 100%,brilho da fita LED da varanda em 100%,0.125,0.0,0.02702702702702703,0.0,0.6088000372983515,1.025,0.899829,True
+clean_iluminacao,brilho da fita LED da varanda em 100%,brilho da fita LED da varanda em 100%,brilho da fita LED da varanda em 100%,0.0,0.0,0.0,0.0,0.2772000152617693,0.281,0.98,False
+synthetic_jardim_delete,para o cortador por enqanto,para o cortador por enquanto,para o cortador por enquanto,0.2,0.0,0.03571428571428571,0.0,0.3347999881953001,0.788,0.968045,False
+clean_jardim,para o cortador por enquanto,para o cortador por enquanto,para o cortador por enquanto,0.0,0.0,0.0,0.0,0.17790001584216952,0.195,0.98,False
+synthetic_limpeza_transpose,carerga o robô aspirador,carrega o robô aspirador,carrega o robô aspirador,0.25,0.0,0.08333333333333333,0.0,0.3535000141710043,0.892,0.860665,True
+clean_limpeza,carrega o robô aspirador,carrega o robô aspirador,carrega o robô aspirador,0.0,0.0,0.0,0.0,0.14259997988119721,0.229,0.98,False
+synthetic_midia_unchanged_no_eligible_token,bota rock,bota rock,bota rock,0.0,0.0,0.0,0.0,0.07170002209022641,0.072,0.98,False
+clean_midia,bota rock,bota rock,bota rock,0.0,0.0,0.0,0.0,0.07740000728517771,0.09,0.98,False
+synthetic_presenca_delete,confere se alguém está no coredor,confere se alguém está no corredor,confere se alguém está no corredor,0.16666666666666666,0.0,0.029411764705882353,0.0,0.3961999900639057,0.974,0.971316,False
+clean_presenca,confere se alguém está no corredor,confere se alguém está no corredor,confere se alguém está no corredor,0.0,0.0,0.0,0.0,0.21539995213970542,0.202,0.98,False
+synthetic_rotinas_transpose,aapga a casa,apaga a casa,apaga a casa,0.3333333333333333,0.0,0.16666666666666666,0.0,0.2875000354833901,0.699,0.910782,False
+clean_rotinas,apaga a casa,apaga a casa,apaga a casa,0.0,0.0,0.0,0.0,0.1078000059351325,0.183,0.98,False
+synthetic_satelite_substitute,coluca rock aqui,coloca rock aqui,coloca rock aqui,0.3333333333333333,0.0,0.0625,0.0,0.2929000183939934,0.645,0.772052,True
+clean_satelite,coloca rock aqui,coloca rock aqui,coloca rock aqui,0.0,0.0,0.0,0.0,0.12609997065737844,0.128,0.98,False
+synthetic_seguranca_delete,como está a porta da frete,como está a porta da frente,como está a porta da frente,0.16666666666666666,0.0,0.037037037037037035,0.0,0.38130005123093724,1.021,0.963055,False
+clean_seguranca,como está a porta da frente,como está a porta da frente,como está a porta da frente,0.0,0.0,0.0,0.0,0.20929996389895678,0.39,0.98,False
+synthetic_tempo_transpose,reduz o tiemr em um minuto,reduz o timer em um minuto,reduz o timer em um minuto,0.16666666666666666,0.0,0.07692307692307693,0.0,0.45930000487715006,0.951,0.884647,True
+clean_tempo,reduz o timer em um minuto,reduz o timer em um minuto,reduz o timer em um minuto,0.0,0.0,0.0,0.0,0.25949999690055847,0.254,0.98,False
+synthetic_ambiente_substitute,me fala a temperaeura do corredor,me fala a temperatura do corredor,me fala a temperatura do corredor,0.16666666666666666,0.0,0.030303030303030304,0.0,0.49510004464536905,1.141,0.967809,False
+clean_ambiente,me fala a temperatura do corredor,me fala a temperatura do corredor,me fala a temperatura do corredor,0.0,0.0,0.0,0.0,0.21470000501722097,0.256,0.98,False
+synthetic_calendario_delete,tem alguma coisa na minha agena hoje,tem alguma coisa na minha agenda hoje,tem alguma coisa na minha agenda hoje,0.14285714285714285,0.0,0.02702702702702703,0.0,0.4734999965876341,1.023,0.967216,False
+clean_calendario,tem alguma coisa na minha agenda hoje,tem alguma coisa na minha agenda hoje,tem alguma coisa na minha agenda hoje,0.0,0.0,0.0,0.0,0.2329999697394669,0.263,0.98,False
+synthetic_cenas_transpose,liga a cena relaaxr,liga a cena relaxar,liga a cena relaxar,0.25,0.0,0.10526315789473684,0.0,0.2794000320136547,0.285,0.945287,False
+clean_cenas,liga a cena relaxar,liga a cena relaxar,liga a cena relaxar,0.0,0.0,0.0,0.0,0.13479997869580984,0.136,0.98,False
+synthetic_clima_externo_substitute,qual a prevosão para hoje,qual a previsão para hoje,qual a previsão para hoje,0.2,0.0,0.04,0.0,0.3837000112980604,0.837,0.907994,False
+clean_clima_externo,qual a previsão para hoje,qual a previsão para hoje,qual a previsão para hoje,0.0,0.0,0.0,0.0,0.1689000055193901,0.168,0.98,False
+synthetic_climatizacao_delete,liga o ar-condicionado do qurto,liga o ar-condicionado do quarto,liga o ar-condicionado do quarto,0.2,0.0,0.03125,0.0,0.3201999934390187,0.323,0.962149,False
+clean_climatizacao,liga o ar-condicionado do quarto,liga o ar-condicionado do quarto,liga o ar-condicionado do quarto,0.0,0.0,0.0,0.0,0.16929995035752654,0.168,0.98,False
+synthetic_comunicacao_unchanged_no_eligible_token,liga para pai,liga para pai,liga para pai,0.0,0.0,0.0,0.0,0.105600047390908,0.102,0.98,False
+clean_comunicacao,liga para pai,liga para pai,liga para pai,0.0,0.0,0.0,0.0,0.10410003596916795,0.099,0.98,False
+synthetic_consulta_substitute,quais aparelhos tem no banheioo,quais aparelhos tem no banheiro,quais aparelhos tem no banheiro,0.2,0.0,0.03225806451612903,0.0,0.33060001442208886,0.691,0.909949,False
+clean_consulta,quais aparelhos tem no banheiro,quais aparelhos tem no banheiro,quais aparelhos tem no banheiro,0.0,0.0,0.0,0.0,0.1829999964684248,0.208,0.98,False
+synthetic_cortinas_delete,qual a posição da cotina da sala,qual a posição da cortina da sala,qual a posição da cortina da sala,0.14285714285714285,0.0,0.030303030303030304,0.0,0.5985000170767307,1.113,0.939163,False
+clean_cortinas,qual a posição da cortina da sala,qual a posição da cortina da sala,qual a posição da cortina da sala,0.0,0.0,0.0,0.0,0.2702000201679766,0.292,0.98,False
+synthetic_dispositivo_transpose,liga o abajur da varanad,liga o abajur da varanda,liga o abajur da varanda,0.2,0.0,0.08333333333333333,0.0,0.4493999877013266,0.916,0.883772,True
+clean_dispositivo,liga o abajur da varanda,liga o abajur da varanda,liga o abajur da varanda,0.0,0.0,0.0,0.0,0.17140002455562353,0.179,0.98,False
+synthetic_eletrodomesticos_substitute,a air fiyer terminou,a air fryer terminou,a air fryer terminou,0.25,0.0,0.05,0.0,0.40089996764436364,0.723,0.939187,False
+clean_eletrodomesticos,a air fryer terminou,a air fryer terminou,a air fryer terminou,0.0,0.0,0.0,0.0,0.1577999792061746,0.146,0.98,False
+synthetic_energia_delete,tem algua bateria acabando,tem alguma bateria acabando,tem alguma bateria acabando,0.25,0.0,0.037037037037037035,0.0,0.5062000127509236,0.473,0.824778,True
+clean_energia,tem alguma bateria acabando,tem alguma bateria acabando,tem alguma bateria acabando,0.0,0.0,0.0,0.0,0.13569998554885387,0.165,0.98,False
+synthetic_grupos_transpose,tem alguam coisa ligada no andar de baixo,tem alguma coisa ligada no andar de baixo,tem alguma coisa ligada no andar de baixo,0.125,0.0,0.04878048780487805,0.0,0.6625999812968075,0.993,0.886654,True
+clean_grupos,tem alguma coisa ligada no andar de baixo,tem alguma coisa ligada no andar de baixo,tem alguma coisa ligada no andar de baixo,0.0,0.0,0.0,0.0,0.29989995528012514,0.277,0.98,False
+synthetic_iluminacao_substitute,acenda a lâmpada da área de seiviço,acenda a lâmpada da área de serviço,acenda a lâmpada da área de serviço,0.14285714285714285,0.0,0.02857142857142857,0.0,0.40880002779886127,0.941,0.957244,False
+clean_iluminacao,acenda a lâmpada da área de serviço,acenda a lâmpada da área de serviço,acenda a lâmpada da área de serviço,0.0,0.0,0.0,0.0,0.26409997371956706,0.235,0.98,False
+synthetic_jardim_delete,pausa o cortador de grma,pausa o cortador de grama,pausa o cortador de grama,0.2,0.0,0.04,0.0,0.3703999682329595,0.733,0.949077,False
+clean_jardim,pausa o cortador de grama,pausa o cortador de grama,pausa o cortador de grama,0.0,0.0,0.0,0.0,0.2052999916486442,0.19,0.98,False
+synthetic_limpeza_transpose,manda o aspirador robô limpra a varanda,manda o aspirador robô limpar a varanda,manda o aspirador robô limpar a varanda,0.14285714285714285,0.0,0.05128205128205128,0.0,0.4904000088572502,0.933,0.874066,True
+clean_limpeza,manda o aspirador robô limpar a varanda,manda o aspirador robô limpar a varanda,manda o aspirador robô limpar a varanda,0.0,0.0,0.0,0.0,0.24359999224543571,0.237,0.98,False
+synthetic_midia_substitute,desliga o alaatório,desliga o aleatório,desliga o aleatório,0.3333333333333333,0.0,0.05263157894736842,0.0,0.27120002778247,0.73,0.92712,False
+clean_midia,desliga o aleatório,desliga o aleatório,desliga o aleatório,0.0,0.0,0.0,0.0,0.11100003030151129,0.118,0.98,False
+synthetic_presenca_delete,tem alguém no escritório de Jame,tem alguém no escritório de Jaime,tem alguém no escritório de Jaime,0.16666666666666666,0.0,0.030303030303030304,0.0,0.4751000087708235,0.424,0.956407,False
+clean_presenca,tem alguém no escritório de Jaime,tem alguém no escritório de Jaime,tem alguém no escritório de Jaime,0.0,0.0,0.0,0.0,0.20920002134516835,0.224,0.98,False
+synthetic_rotinas_transpose,roda a rotina modo traablho,roda a rotina modo trabalho,roda a rotina modo trabalho,0.2,0.0,0.07407407407407407,0.0,0.3304000128991902,0.824,0.95571,False
+clean_rotinas,roda a rotina modo trabalho,roda a rotina modo trabalho,roda a rotina modo trabalho,0.0,0.0,0.0,0.0,0.16980001237243414,0.168,0.98,False
+synthetic_satelite_substitute,toca minha playliet aqui,toca minha playlist aqui,toca minha playlist aqui,0.25,0.0,0.041666666666666664,0.0,0.3226000117138028,0.74,0.952624,False
+clean_satelite,toca minha playlist aqui,toca minha playlist aqui,toca minha playlist aqui,0.0,0.0,0.0,0.0,0.1362999901175499,0.135,0.98,False
+synthetic_seguranca_delete,como está o portão da garagm,como está o portão da garagem,como está o portão da garagem,0.16666666666666666,0.0,0.034482758620689655,0.0,0.3567999810911715,0.728,0.959589,False
+clean_seguranca,como está o portão da garagem,como está o portão da garagem,como está o portão da garagem,0.0,0.0,0.0,0.0,0.202300027012825,0.201,0.98,False
+synthetic_tempo_transpose,adiciona cicno minutos ao timer,adiciona cinco minutos ao timer,adiciona cinco minutos ao timer,0.2,0.0,0.06451612903225806,0.0,0.3966999938711524,0.77,0.913224,False
+clean_tempo,adiciona cinco minutos ao timer,adiciona cinco minutos ao timer,adiciona cinco minutos ao timer,0.0,0.0,0.0,0.0,0.19590003648772836,0.166,0.98,False
+synthetic_ambiente_substitute,como está o ruado no banheiro,como está o ruído no banheiro,como está o ruído no banheiro,0.16666666666666666,0.0,0.034482758620689655,0.0,0.430300016887486,0.845,0.886236,True
+clean_ambiente,como está o ruído no banheiro,como está o ruído no banheiro,como está o ruído no banheiro,0.0,0.0,0.0,0.0,0.19940000493079424,0.199,0.98,False
+synthetic_calendario_delete,o que tem no calendário amanã,o que tem no calendário amanhã,o que tem no calendário amanhã,0.16666666666666666,0.0,0.03333333333333333,0.0,0.35749998642131686,0.763,0.905818,True
+clean_calendario,o que tem no calendário amanhã,o que tem no calendário amanhã,o que tem no calendário amanhã,0.0,0.0,0.0,0.0,0.20180002320557833,0.198,0.98,False
+synthetic_cenas_transpose,modo relaaxr,modo relaxar,modo relaxar,0.5,0.0,0.16666666666666666,0.0,0.19969994900748134,0.201,0.911803,False
+clean_cenas,modo relaxar,modo relaxar,modo relaxar,0.0,0.0,0.0,0.0,0.07239996921271086,0.071,0.98,False
+synthetic_clima_externo_substitute,qual a paevisão para domingo,qual a previsão para domingo,qual a previsão para domingo,0.2,0.0,0.03571428571428571,0.0,0.38979999953880906,0.79,0.954307,False
+clean_clima_externo,qual a previsão para domingo,qual a previsão para domingo,qual a previsão para domingo,0.0,0.0,0.0,0.0,0.17329998081550002,0.175,0.98,False
+synthetic_climatizacao_delete,coloca o ventilaor do ar-condicionado do quarto em máxima,coloca o ventilador do ar-condicionado do quarto em máxima,coloca o ventilador do ar-condicionado do quarto em máxima,0.1111111111111111,0.0,0.017241379310344827,0.0,0.6482999888248742,1.141,0.967571,False
+clean_climatizacao,coloca o ventilador do ar-condicionado do quarto em máxima,coloca o ventilador do ar-condicionado do quarto em máxima,coloca o ventilador do ar-condicionado do quarto em máxima,0.0,0.0,0.0,0.0,0.32190000638365746,0.372,0.98,False
+synthetic_comunicacao_transpose,faz um anúncio no escritório de Jaiem,faz um anúncio no escritório de Jaime,faz um anúncio no escritório de Jaime,0.14285714285714285,0.0,0.05405405405405406,0.0,0.395099981687963,0.429,0.898419,True
+clean_comunicacao,faz um anúncio no escritório de Jaime,faz um anúncio no escritório de Jaime,faz um anúncio no escritório de Jaime,0.0,0.0,0.0,0.0,0.24010002380236983,0.24,0.98,False
+synthetic_consulta_substitute,o que tem na coainha,o que tem na cozinha,o que tem na cozinha,0.2,0.0,0.05,0.0,0.3198000486008823,0.782,0.879002,True
+clean_consulta,o que tem na cozinha,o que tem na cozinha,o que tem na cozinha,0.0,0.0,0.0,0.0,0.1708000199869275,0.168,0.98,False
+synthetic_cortinas_delete,feche a crtina da sala,feche a cortina da sala,feche a cortina da sala,0.2,0.0,0.043478260869565216,0.0,0.4133000038564205,0.785,0.926436,False
+clean_cortinas,feche a cortina da sala,feche a cortina da sala,feche a cortina da sala,0.0,0.0,0.0,0.0,0.22469996474683285,0.302,0.98,False
+synthetic_dispositivo_transpose,quero a tomaad do corredor desligado,quero a tomada do corredor desligado,quero a tomada do corredor desligado,0.16666666666666666,0.0,0.05555555555555555,0.0,0.4457999602891505,0.483,0.90064,True
+clean_dispositivo,quero a tomada do corredor desligado,quero a tomada do corredor desligado,quero a tomada do corredor desligado,0.0,0.0,0.0,0.0,0.20110001787543297,0.199,0.98,False
+synthetic_eletrodomesticos_substitute,quando a máquina de lavar termena,quando a máquina de lavar termina,quando a máquina de lavar termina,0.16666666666666666,0.0,0.030303030303030304,0.0,0.39030000334605575,0.868,0.904024,True
+clean_eletrodomesticos,quando a máquina de lavar termina,quando a máquina de lavar termina,quando a máquina de lavar termina,0.0,0.0,0.0,0.0,0.22630003513768315,0.301,0.98,False
+synthetic_energia_delete,deliga a tomada,desliga a tomada,desliga a tomada,0.3333333333333333,0.0,0.0625,0.0,0.2837999491021037,0.815,0.886632,False
+clean_energia,desliga a tomada,desliga a tomada,desliga a tomada,0.0,0.0,0.0,0.0,0.10499998461455107,0.104,0.98,False
+synthetic_grupos_transpose,ativa as luzes do andar de baiox,ativa as luzes do andar de baixo,ativa as luzes do andar de baixo,0.14285714285714285,0.0,0.0625,0.0,0.5361000075936317,0.737,0.867684,True
+clean_grupos,ativa as luzes do andar de baixo,ativa as luzes do andar de baixo,ativa as luzes do andar de baixo,0.0,0.0,0.0,0.0,0.23850001161918044,0.263,0.98,False
+synthetic_iluminacao_substitute,o abaiur do banheiro está apagada,o abajur do banheiro está apagada,o abajur do banheiro está apagada,0.16666666666666666,0.0,0.030303030303030304,0.0,0.532599980942905,0.921,0.944706,False
+clean_iluminacao,o abajur do banheiro está apagada,o abajur do banheiro está apagada,o abajur do banheiro está apagada,0.0,0.0,0.0,0.0,0.2046999870799482,0.217,0.98,False
+synthetic_jardim_delete,segra o robô cortador,segura o robô cortador,segura o robô cortador,0.25,0.0,0.045454545454545456,0.0,0.3943000338040292,0.823,0.895482,False
+clean_jardim,segura o robô cortador,segura o robô cortador,segura o robô cortador,0.0,0.0,0.0,0.0,0.13649999164044857,0.156,0.98,False

@@ -1,0 +1,31 @@
+{
+  "content_validated": true,
+  "extracted_addon_docker_build_smoke": "PASS; linux/amd64",
+  "extracted_integration_acceptance": "70 tests PASS; test fixtures supplied from repository, real Rust HTTP",
+  "hashes_and_unix_permissions": "PASS",
+  "isolated_store": "PASS; tools/make-store-repo.py, 611 files under addon/",
+  "limitations": [
+    "No residential install",
+    "aarch64 image is emulated"
+  ],
+  "packages": [
+    {
+      "file": "arandu-nlu-addon-0.4.0.zip",
+      "files": 612,
+      "sha256": "d159da2485a8f5530487dba0421bb13b6f25d7525440103e16cdc43c229b1561",
+      "version": "0.4.0"
+    },
+    {
+      "file": "arandu-nlu-integration-0.4.0.zip",
+      "files": 22,
+      "sha256": "197d0cb94bf73bf429b6571a6117b48c9c2d6f2aa0205d12243ad069a44659a3",
+      "version": "0.4.0"
+    }
+  ],
+  "reproducible_second_generation": "PASS; both ZIPs byte-identical",
+  "source_digest": "04165cf4af8fc290edd7ff015dfd5358c24f0dd6cc9c99b242a2f0ec61fbb87c",
+  "standalone_full_gate": "Not claimed: separate installation ZIPs intentionally omit repository test support",
+  "status": "PASS",
+  "version": "0.4.0",
+  "zip_extracted": true
+}

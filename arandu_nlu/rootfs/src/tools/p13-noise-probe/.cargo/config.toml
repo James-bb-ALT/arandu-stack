@@ -1,0 +1,40 @@
+[net]
+offline = true
+
+[source.crates-io]
+replace-with = "p13-exact-archives"
+
+[source.p13-exact-archives]
+directory = "vendor"
+
+[build]
+rustflags = [
+    "--check-cfg",
+    "cfg(chacha20_force_soft)",
+    "--check-cfg",
+    "cfg(chacha20_force_neon)",
+    "--check-cfg",
+    "cfg(chacha20_force_avx2)",
+    "--check-cfg",
+    "cfg(chacha20_force_sse2)",
+    "--check-cfg",
+    "cfg(poly1305_force_soft)",
+    "--check-cfg",
+    "cfg(curve25519_dalek_backend, values(\"auto\", \"fiat\", \"serial\", \"simd\"))",
+    "--check-cfg",
+    "cfg(curve25519_dalek_bits, values(\"32\", \"64\"))",
+    "--check-cfg",
+    "cfg(curve25519_dalek_diagnostics, values(\"build\"))",
+    "--check-cfg",
+    "cfg(nightly)",
+    "--check-cfg",
+    "cfg(allow_unused_unsafe)",
+    "--cfg",
+    "chacha20_force_soft",
+    "--cfg",
+    "poly1305_force_soft",
+    "--cfg",
+    "curve25519_dalek_backend=\"serial\"",
+    "-C",
+    "linker-flavor=ld",
+]

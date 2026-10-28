@@ -1,0 +1,17 @@
+{
+  "repository": "brownard/Ava",
+  "version": "v0.6.2",
+  "package": "com.example.ava",
+  "activity": "com.example.ava/.MainActivity",
+  "minimum_android_api": 26,
+  "url": "https://github.com/brownard/Ava/releases/download/v0.6.2/Ava-v0.6.2-release.apk",
+  "sha256": "28faf6b32c79d67e5bde909245294bca9fab54687438c771412f090b239cea83",
+  "size": 34314878,
+  "reviewed_on": "2026-10-14",
+  "wake_word": "alexa",
+  "detection": "microWakeWord-local",
+  "transport": "ESPHome-native-api",
+  "port": 6053,
+  "authentication": false,
+  "boot": "optional Termux:Boot launch; physical validation required"
+}

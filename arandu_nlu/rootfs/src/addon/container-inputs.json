@@ -1,0 +1,19 @@
+{
+  "builder": {
+    "image": "docker.io/library/rust",
+    "license": "MIT",
+    "oci_index_digest": "sha256:2e452153b2dc6bed8ef123c4801cfd3f637e7c092846f974ecdce5e64af3120c",
+    "platform_manifests": {
+      "aarch64": "sha256:f2d4d7fe1d065b8da883ed4aaa3a7e4b0a4e68e6915ddb1ed118627053526602",
+      "amd64": "sha256:e8081123c663fca08740af7dc09d936f198e62490d270b6e698699f1b541a31f"
+    },
+    "source": "https://github.com/rust-lang/docker-rust",
+    "tag": "1.98.0-alpine3.22"
+  },
+  "recorded_on": "2026-09-12",
+  "runtime": {
+    "base": "scratch",
+    "packages": []
+  },
+  "schema_version": 1
+}

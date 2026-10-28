@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/schemas/intent-evaluation-report-v1.schema.json",
+  "title": "P09 aggregate intent-evaluation report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "runner_id",
+    "metric_specification",
+    "dataset",
+    "recognizer",
+    "results",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "runner_id": {"const": "intent-eval-v1"},
+    "metric_specification": {
+      "const": "exact-pre-resolution-intent-and-slot-aggregate-v1"
+    },
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataset_id",
+        "source_id",
+        "corpus_version",
+        "generator_id",
+        "oracle_origin",
+        "locale",
+        "split",
+        "claim_scope",
+        "physical_sha256",
+        "records"
+      ],
+      "properties": {
+        "dataset_id": {"const": "p09-intent-internal-conformance"},
+        "source_id": {"const": "project-authored-synthetic-ptbr-v1"},
+        "corpus_version": {"const": "1.0.0"},
+        "generator_id": {"const": "p02-generator-v1"},
+        "oracle_origin": {"const": "pre_engine_generator_specification"},
+        "locale": {"const": "pt-BR"},
+        "split": {"enum": ["train", "development"]},
+        "claim_scope": {"const": "internal_conformance_only"},
+        "physical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "records": {"const": 960}
+      }
+    },
+    "recognizer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "algorithm_id",
+        "configuration_id",
+        "package_sha256",
+        "package_manifest_sha256",
+        "projection_id",
+        "projection_sha256"
+      ],
+      "properties": {
+        "schema_id": {"const": "p09-intent-schema-v1"},
+        "algorithm_id": {"const": "p09-weighted-marker-slot-extraction-v1"},
+        "configuration_id": {"const": "p09-intent-config-v1"},
+        "package_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "package_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "projection_id": {"const": "p09-pre-resolution-oracle-projection-v1"},
+        "projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "results": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exact_semantics",
+        "outcomes",
+        "slots",
+        "intent_strata",
+        "slot_strata",
+        "prediction_digest_sha256",
+        "reconciliation"
+      ],
+      "properties": {
+        "exact_semantics": {"$ref": "#/$defs/fraction"},
+        "outcomes": {"$ref": "#/$defs/outcomes"},
+        "slots": {"$ref": "#/$defs/slots"},
+        "intent_strata": {
+          "type": "array",
+          "minItems": 20,
+          "maxItems": 20,
+          "items": {"$ref": "#/$defs/intent_stratum"}
+        },
+        "slot_strata": {
+          "type": "array",
+          "minItems": 26,
+          "maxItems": 26,
+          "items": {"$ref": "#/$defs/slot_stratum"}
+        },
+        "prediction_digest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "reconciliation": {"$ref": "#/$defs/reconciliation"}
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "$defs": {
+    "count": {"type": "integer", "minimum": 0},
+    "fraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["numerator", "denominator"],
+      "properties": {
+        "numerator": {"$ref": "#/$defs/count"},
+        "denominator": {"$ref": "#/$defs/count"}
+      }
+    },
+    "outcomes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["matches", "clarifications", "abstentions", "errors"],
+      "properties": {
+        "matches": {"$ref": "#/$defs/count"},
+        "clarifications": {"$ref": "#/$defs/count"},
+        "abstentions": {"$ref": "#/$defs/count"},
+        "errors": {"$ref": "#/$defs/count"}
+      }
+    },
+    "slots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total",
+        "value_exact",
+        "value_incorrect",
+        "span_exact",
+        "span_incorrect",
+        "missing",
+        "unexpected"
+      ],
+      "properties": {
+        "total": {"$ref": "#/$defs/count"},
+        "value_exact": {"$ref": "#/$defs/count"},
+        "value_incorrect": {"$ref": "#/$defs/count"},
+        "span_exact": {"$ref": "#/$defs/count"},
+        "span_incorrect": {"$ref": "#/$defs/count"},
+        "missing": {"$ref": "#/$defs/count"},
+        "unexpected": {"$ref": "#/$defs/count"}
+      }
+    },
+    "intent_stratum": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intent_id",
+        "total",
+        "exact_semantics",
+        "matches",
+        "clarifications",
+        "abstentions",
+        "errors"
+      ],
+      "properties": {
+        "intent_id": {"type": "string", "minLength": 3, "maxLength": 128},
+        "total": {"const": 48},
+        "exact_semantics": {"$ref": "#/$defs/count"},
+        "matches": {"$ref": "#/$defs/count"},
+        "clarifications": {"$ref": "#/$defs/count"},
+        "abstentions": {"$ref": "#/$defs/count"},
+        "errors": {"$ref": "#/$defs/count"}
+      }
+    },
+    "slot_stratum": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intent_id",
+        "slot_id",
+        "role",
+        "occurrence",
+        "value_kind",
+        "total",
+        "value_exact",
+        "value_incorrect",
+        "span_exact",
+        "span_incorrect",
+        "missing"
+      ],
+      "properties": {
+        "intent_id": {"type": "string", "minLength": 3, "maxLength": 128},
+        "slot_id": {"type": "string", "minLength": 3, "maxLength": 128},
+        "role": {"type": "string", "minLength": 1, "maxLength": 64},
+        "occurrence": {"type": "integer", "minimum": 0, "maximum": 7},
+        "value_kind": {"enum": ["mention", "text", "integer"]},
+        "total": {"const": 48},
+        "value_exact": {"$ref": "#/$defs/count"},
+        "value_incorrect": {"$ref": "#/$defs/count"},
+        "span_exact": {"$ref": "#/$defs/count"},
+        "span_incorrect": {"$ref": "#/$defs/count"},
+        "missing": {"$ref": "#/$defs/count"}
+      }
+    },
+    "reconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "records_expected",
+        "records_observed",
+        "outcome_total",
+        "intent_strata_total",
+        "slots_expected",
+        "slot_strata_total",
+        "value_accounted",
+        "span_accounted",
+        "complete"
+      ],
+      "properties": {
+        "records_expected": {"const": 960},
+        "records_observed": {"const": 960},
+        "outcome_total": {"const": 960},
+        "intent_strata_total": {"const": 960},
+        "slots_expected": {"const": 1248},
+        "slot_strata_total": {"const": 1248},
+        "value_accounted": {"const": 1248},
+        "span_accounted": {"const": 1248},
+        "complete": {"const": true}
+      }
+    }
+  }
+}

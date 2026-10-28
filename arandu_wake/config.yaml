@@ -1,0 +1,19 @@
+name: Arandu Wake
+slug: arandu_wake
+version: "0.1.0"
+description: Detector Wyoming e ferramentas de satélites Arandu
+url: https://github.com/jaimevictor/arandu-stack
+arch: [amd64]
+startup: services
+boot: manual
+init: false
+stage: experimental
+discovery: [wyoming]
+ports:
+  10400/tcp: null
+options:
+  threshold: 0.5
+  trigger_level: 1
+schema:
+  threshold: float(0.01,0.99)
+  trigger_level: int(1,20)

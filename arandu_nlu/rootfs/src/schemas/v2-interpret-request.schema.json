@@ -1,0 +1,57 @@
+{
+  "$id": "urn:arandu-nlu:v2-interpret:request",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Versioned full-interpretation request",
+  "description": "Wire-shape projection of local_nlu::InterpretRequestV2 (addon/engine/src/v2.rs). The snapshot subschema is identical to the catalog subschema of schemas/entity-resolution-request.schema.json; a test locks that equality. Semantic validations map to abstention outcomes, never to silent acceptance.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["text", "snapshot", "generation"],
+  "properties": {
+    "text": {"type": "string"},
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["catalog_id", "generation", "areas", "entities"],
+      "properties": {
+        "catalog_id": {"type": "string"},
+        "generation": {"type": "string"},
+        "areas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["area_id", "names"],
+            "properties": {
+              "area_id": {"type": "string"},
+              "names": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        },
+        "entities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["registry_id", "entity_id", "domain", "display_name", "aliases", "capabilities"],
+            "properties": {
+              "registry_id": {"type": "string"},
+              "entity_id": {"type": "string"},
+              "domain": {"type": "string"},
+              "area_id": {"type": ["string", "null"]},
+              "display_name": {"type": "string"},
+              "aliases": {"type": "array", "items": {"type": "string"}},
+              "capabilities": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["get_state", "set_fan_percentage", "turn_off", "turn_on"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "generation": {"type": "string"}
+  }
+}

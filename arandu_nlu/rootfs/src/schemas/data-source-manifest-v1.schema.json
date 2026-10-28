@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nlu.local/schemas/data-source-manifest-v1.schema.json",
+  "title": "NLU data source manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source",
+    "recipes",
+    "source_reviews",
+    "source_decision",
+    "per_entry_provenance_fields",
+    "artifacts",
+    "aggregate"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "admission_status",
+        "admission_basis",
+        "authorization",
+        "claim_scope",
+        "canonical_source_url",
+        "upstream_owner",
+        "immutable_version",
+        "license",
+        "license_path",
+        "license_url",
+        "license_sha256",
+        "intended_use",
+        "redistribution",
+        "external_evidence_disposition"
+      ],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "admission_status": {"const": "PROJECT_AUTHORED_SYNTHETIC"},
+        "admission_basis": {"const": "USER_DELEGATED_AUTONOMY"},
+        "authorization": {"const": "USR-016"},
+        "claim_scope": {"const": "internal_conformance_only"},
+        "canonical_source_url": {"type": "string", "minLength": 1},
+        "upstream_owner": {"const": "project_contributors"},
+        "immutable_version": {"type": "string", "minLength": 1},
+        "license": {"const": "Apache-2.0"},
+        "license_path": {"const": "LICENSE"},
+        "license_url": {"type": "string", "minLength": 1},
+        "license_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "intended_use": {"type": "string", "minLength": 1},
+        "redistribution": {"type": "string", "minLength": 1},
+        "external_evidence_disposition": {
+          "const": "not_applicable_project_authored"
+        }
+      }
+    },
+    "recipes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fetch", "extract", "normalize", "split", "compile", "remove"],
+      "properties": {
+        "fetch": {"const": "local-manifest-copy-v1"},
+        "extract": {"const": "identity-v1"},
+        "normalize": {"const": "canonical-json-v1"},
+        "split": {"const": "frozen-record-split-v1"},
+        "compile": {"const": "nlu-data-package-v1"},
+        "remove": {"const": "source-id-filter-v1"}
+      }
+    },
+    "source_reviews": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "review_id", "disposition"],
+        "properties": {
+          "role": {"enum": ["discovery", "license", "provenance", "quality", "adversary"]},
+          "review_id": {"type": "string", "minLength": 1},
+          "disposition": {"const": "USER_WAIVED_PROJECT_AUTHORED"}
+        }
+      }
+    },
+    "source_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adr", "status"],
+      "properties": {
+        "adr": {"const": "docs/adr/ADR-0009-deterministic-data-pipeline.md"},
+        "status": {"const": "ACCEPTED_AUTONOMOUS"}
+      }
+    },
+    "per_entry_provenance_fields": {
+      "const": ["source_id", "corpus_version", "generator_id", "license", "locale"]
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "role", "content_type", "bytes", "sha256", "records"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "role": {"type": "string", "minLength": 1},
+          "content_type": {
+            "enum": ["application/json", "application/yaml", "application/x-ndjson"]
+          },
+          "bytes": {"type": "integer", "minimum": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "records": {"type": ["integer", "null"], "minimum": 1}
+        }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "sha256"],
+      "properties": {
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  }
+}

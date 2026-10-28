@@ -1,0 +1,72 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Local NLU is already configured.",
+      "single_instance_allowed": "Only one Local NLU instance is supported."
+    },
+    "error": {
+      "cannot_connect": "Could not connect to the local add-on."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "endpoint": "Local add-on endpoint",
+          "stack_endpoint": "Arandu Stack endpoint (optional, port 8099)"
+        },
+        "description": "Enter the internal HTTP endpoint exposed by the Local NLU add-on.",
+        "title": "Connect Local NLU"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Context and device policies",
+        "description": "Set a default room only when it is known. Access devices require an explicit policy and confirmation.",
+        "data": {
+          "contextual_enabled": "Enable Arandu NLU 2.0",
+          "stack_endpoint": "Arandu Stack endpoint (optional, port 8099)",
+          "session_ttl": "Context lifetime (seconds)",
+          "default_area": "Default room ID",
+          "wake_words": "Exact wake word prefixes (optional list)",
+          "increments": "Relative adjustment increments",
+          "entity_preferences": "Preferred sensors and semantic categories",
+          "sensitive_entities": "Access devices allowed with confirmation",
+          "energy_sources": "Verified non-overlapping energy sources",
+          "device_mappings": "TV and remote command mappings",
+          "intent_bindings": "Registered script and button adapters",
+          "v2_enabled": "Enable legacy v3 when contextual mode is disabled",
+          "shadow_enabled": "Enable legacy resolver diagnostics",
+          "person_device_bindings": "Person aliases and device bindings",
+          "device_sensor_bindings": "Device sensor bindings",
+          "excluded_from_bulk_actions": "Exclude from collective actions",
+          "low_battery_threshold": "Low battery threshold (%)",
+          "fallback_user_id": "User for pipelines without identity",
+          "configure_identity_bindings": "Configure device/satellite identity bindings"
+        },
+        "data_description": {
+          "fallback_user_id": "User whose permissions are used when Home Assistant does not provide the voice pipeline identity. Select — to disable."
+        }
+      },
+      "identity_binding": {
+        "title": "Voice identity bindings",
+        "description": "Choose one satellite OR device and a user. Uncheck Save and finish to add another binding. To remove, select an existing binding or check Remove binding. Authenticated context always wins; users are never chosen automatically.",
+        "data": {
+          "satellite_id": "Assist satellite",
+          "device_id": "Origin device",
+          "identity_user_id": "Associated user",
+          "remove_binding": "Remove binding",
+          "save_and_finish": "Save and finish",
+          "existing_binding": "Existing binding to remove"
+        }
+      }
+    },
+    "error": {
+      "invalid_identity_user": "Choose an active user.",
+      "choose_one_identity_origin": "Choose exactly one satellite or device.",
+      "invalid_identity_origin": "The selected origin is unavailable.",
+      "invalid_identity_configuration": "Identity bindings are invalid or exceed the limit."
+    }
+  },
+  "title": "ARANDU NLU"
+}

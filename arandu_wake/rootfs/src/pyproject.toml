@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arandu-wake"
+version = "0.1.0"
+description = "Configuração e diagnóstico local de satélites Assist da stack Arandu"
+requires-python = ">=3.10"
+dependencies = ["wyoming==1.10.2", "websocket-client==1.9.2"]
+
+[project.scripts]
+arandu-wake = "arandu_wake.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["arandu_wake*"]

@@ -1,0 +1,15 @@
+[package]
+name = "ha-catalog"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "ha_catalog"
+path = "src/lib.rs"
+
+[dependencies]
+lang-ptbr = { path = "../lang-ptbr" }
+nlu-core = { path = "../nlu-core" }

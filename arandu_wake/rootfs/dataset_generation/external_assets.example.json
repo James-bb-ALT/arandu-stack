@@ -1,0 +1,11 @@
+{
+  "assets": [],
+  "required_fields_per_asset": ["path", "kind", "license", "source_url", "sha256", "sample_rate", "split"],
+  "allowed_kinds": ["negative_speech", "ambient_noise", "music", "television", "room_impulse_response", "openwakeword_embeddings"],
+  "rules": [
+    "Somente material legalmente reutilizável; confirmar os termos do dataset e de cada gravação.",
+    "Não mover o mesmo locutor/ambiente gravado entre splits.",
+    "Não usar validação/teste para ajustar o gerador de treinamento.",
+    "Embeddings openWakeWord não são espectrogramas microWakeWord; não trocar formatos."
+  ]
+}

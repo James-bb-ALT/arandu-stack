@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nlu.local/schemas/data-package-manifest-v1.schema.json",
+  "title": "NLU data package manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "format",
+    "source_manifest_sha256",
+    "input_records_sha256",
+    "package_sha256",
+    "package_bytes",
+    "record_count",
+    "source_ids",
+    "partition_counts"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "format": {"const": "nlu-data-package-v1"},
+    "source_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "input_records_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "package_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "package_bytes": {"type": "integer", "minimum": 17},
+    "record_count": {"type": "integer", "minimum": 0},
+    "source_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "partition_counts": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 1}
+    }
+  }
+}

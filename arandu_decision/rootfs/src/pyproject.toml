@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools==80.9.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arandu-decision"
+version = "0.1.0"
+description = "Optional passive Arandu Decision service for the Arandu stack"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = ["aiohttp==3.13.3","sentence-transformers==5.2.0","torch==2.9.1","transformers==4.57.3","huggingface-hub==0.36.0","psutil==7.2.1"]
+
+[project.scripts]
+arandu-decision = "arandu_decision.service:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

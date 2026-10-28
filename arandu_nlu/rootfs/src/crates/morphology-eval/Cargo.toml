@@ -1,0 +1,21 @@
+[package]
+name = "morphology-eval"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "morphology_eval"
+path = "src/lib.rs"
+
+[[bin]]
+name = "morphology-eval"
+path = "src/main.rs"
+
+[dependencies]
+lang-ptbr = { path = "../lang-ptbr" }
+nlu-data = { path = "../nlu-data" }
+serde.workspace = true
+serde_json.workspace = true

@@ -1,0 +1,29 @@
+{
+  "enabled": true,
+  "closed_vocabulary": true,
+  "beam_width": 8,
+  "candidates_per_token": 12,
+  "max_index_pool": 160,
+  "max_tokens": 256,
+  "source_weights": {
+    "home_assistant": 10.0,
+    "generic_lexicon": 7.0,
+    "household": 7.0,
+    "names": 7.0,
+    "commands": 7.0,
+    "functional": 0.0
+  },
+  "score_weights": {
+    "orthographic": 0.48,
+    "phonetic": 0.32,
+    "edit": 0.2,
+    "source": 0.07,
+    "frequency": 0.025,
+    "bigram": 0.13,
+    "trigram": 0.16,
+    "lookahead": 0.08,
+    "dictionary": 0.015,
+    "semantic": 0.10
+  },
+  "wordlist": null
+}

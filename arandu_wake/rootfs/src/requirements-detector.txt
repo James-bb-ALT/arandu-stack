@@ -1,0 +1,5 @@
+# O PyPI ainda só publica até 1.8.2; o app HA usa o upstream 2.1.0.
+wyoming-openwakeword @ https://github.com/rhasspy/wyoming-openwakeword/archive/456fdcc4c4e2205f629f48127b49b7acf845666c.tar.gz
+pyopen-wakeword==1.1.0
+wyoming==1.10.2
+numpy==2.2.6

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/schemas/p02-case-v1.schema.json",
+  "title": "P02 project-authored conformance case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "generator_record_id",
+    "canonical_semantic_id",
+    "source_id",
+    "corpus_version",
+    "generator_id",
+    "oracle_origin",
+    "license",
+    "locale",
+    "split",
+    "utterance",
+    "utterance_sha256",
+    "context",
+    "dimensions",
+    "expected"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "case_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+    "generator_record_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]+$"},
+    "canonical_semantic_id": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "source_id": {"const": "project-authored-synthetic-ptbr-v1"},
+    "corpus_version": {"const": "1.0.0"},
+    "generator_id": {"const": "p02-generator-v1"},
+    "oracle_origin": {"const": "pre_engine_generator_specification"},
+    "license": {"const": "Apache-2.0"},
+    "locale": {"const": "pt-BR"},
+    "split": {"enum": ["train", "development", "heldout", "performance"]},
+    "utterance": {"type": "string", "minLength": 1},
+    "utterance_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "context": {"type": "object"},
+    "dimensions": {
+      "type": "object",
+      "required": [
+        "source",
+        "family",
+        "intent",
+        "domain",
+        "slot_kind",
+        "graph_shape",
+        "outcome",
+        "ambiguity",
+        "noise",
+        "target_cardinality"
+      ]
+    },
+    "expected": {
+      "type": "object",
+      "required": ["outcome", "intent", "catalog_generation", "nodes", "relations"]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+*.py text eol=lf
+*.sh text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf
+*.csv -text
+Dockerfile text eol=lf
+.gitignore text eol=lf

@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/schemas/ha-domain-coverage-v1.schema.json",
+  "title": "P10 Home Assistant domain coverage disposition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "baseline",
+    "action_contract_prerequisites",
+    "domains",
+    "intent_families",
+    "unknown_domain",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "tag",
+        "commit",
+        "tree",
+        "license",
+        "selected_path_bundle_sha256",
+        "claim_scope"
+      ],
+      "properties": {
+        "source_id": {"const": "home-assistant-core-2026.8.3-p10-catalog"},
+        "tag": {"const": "2026.8.3"},
+        "commit": {
+          "const": "759e4658f40b3ccb671d418b8a0ed95224bf4561"
+        },
+        "tree": {"const": "f4a72534bb33abf8b5d183910a0c134b968af2f8"},
+        "license": {"const": "Apache-2.0"},
+        "selected_path_bundle_sha256": {
+          "const": "4627587cd790e86e935c702e2f8e3c9dda48390ad639bb69cd7c7fba2fd0489e"
+        },
+        "claim_scope": {"const": "public_contract_coverage_only"}
+      }
+    },
+    "action_contract_prerequisites": {
+      "const": [
+        "typed_operation_schema",
+        "capability_check",
+        "risk_policy_mapping",
+        "adapter_mapping"
+      ]
+    },
+    "domains": {
+      "type": "array",
+      "minItems": 45,
+      "maxItems": 45,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/domain"}
+    },
+    "intent_families": {
+      "type": "array",
+      "minItems": 20,
+      "maxItems": 20,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/intent"}
+    },
+    "unknown_domain": {"$ref": "#/$defs/operations"},
+    "limitations": {
+      "const": [
+        "catalog_presence_is_not_state_query_or_action_support",
+        "state_queries_require_a_reviewed_typed_descriptor",
+        "actions_require_all_four_reviewed_contracts",
+        "intent_release_coverage_is_verified_in_P15",
+        "source_identifiers_are_not_linguistic_data"
+      ]
+    }
+  },
+  "$defs": {
+    "catalog_presence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability", "disposition"],
+      "properties": {
+        "capability": {"const": "ha_catalog:presence"},
+        "disposition": {"const": "supported"}
+      }
+    },
+    "state_query": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability", "disposition"],
+      "properties": {
+        "capability": {"type": "null"},
+        "disposition": {"const": "abstain_without_reviewed_descriptor"}
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability", "disposition"],
+      "properties": {
+        "capability": {"type": "null"},
+        "disposition": {"const": "abstain_without_required_action_contracts"}
+      }
+    },
+    "operations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "catalog_presence", "state_query"],
+      "properties": {
+        "action": {"$ref": "#/$defs/action"},
+        "catalog_presence": {"$ref": "#/$defs/catalog_presence"},
+        "state_query": {"$ref": "#/$defs/state_query"}
+      }
+    },
+    "domain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domain", "operations"],
+      "properties": {
+        "domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "operations": {"$ref": "#/$defs/operations"}
+      }
+    },
+    "intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intent", "disposition"],
+      "properties": {
+        "intent": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^Hass[A-Za-z0-9]+$"
+        },
+        "disposition": {"const": "pinned_minimum_pending_P15_verification"}
+      }
+    }
+  }
+}

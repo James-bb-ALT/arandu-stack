@@ -1,0 +1,19 @@
+[package]
+name = "nlu-data"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "nlu_data"
+path = "src/lib.rs"
+
+[[bin]]
+name = "nlu-data"
+path = "src/main.rs"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true

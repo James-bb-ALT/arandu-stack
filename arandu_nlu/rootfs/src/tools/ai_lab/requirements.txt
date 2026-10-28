@@ -1,0 +1,11 @@
+# Optional inference environment only. HA's environment is unchanged.
+# Install the CPU wheel from the official CPU index first; see docs/ai-lab/README.md.
+torch==2.9.1
+laya==0.4.17
+jatoba @ git+https://github.com/LeonardoVilela/jatoba-decision.git@533f5499c993608172f7ac4d25bcad636e79d230
+aiohttp==3.13.3
+sentence-transformers==5.2.0
+transformers==4.57.3
+tokenizers==0.22.2
+psutil==7.2.1
+huggingface-hub==0.36.0

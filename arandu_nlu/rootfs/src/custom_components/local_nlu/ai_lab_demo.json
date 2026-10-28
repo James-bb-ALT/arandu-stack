@@ -1,0 +1,44 @@
+{
+  "id": "arandu-casa-demo-v1",
+  "license": "Apache-2.0",
+  "synthetic": true,
+  "description": "FIXTURE_TECNICA: casa e gabaritos fictícios, definidos antes da execução. Inferência real, sem dispositivos reais. Acurácia somente nesta demonstração; não é avaliação residencial ou independente de PT-BR.",
+  "areas": [
+    {"area_id": "demo_sala", "names": ["Sala", "Sala de estar"]},
+    {"area_id": "demo_quarto", "names": ["Quarto", "Quarto do Jaime"]},
+    {"area_id": "demo_cozinha", "names": ["Cozinha"]},
+    {"area_id": "demo_escritorio", "names": ["Escritório"]}
+  ],
+  "devices": [
+    {"id": "luz_sala", "entity_id": "light.demo_sala_principal", "name": "Luz principal da sala", "area": "demo_sala", "aliases": ["luz da sala", "iluminação principal"], "preferred": true},
+    {"id": "luz_tv", "entity_id": "light.demo_sala_tv", "name": "Luz perto da televisão", "area": "demo_sala", "aliases": ["luz perto da TV", "luz da TV", "luz perto da televisão"]},
+    {"id": "luz_quarto", "entity_id": "light.demo_quarto", "name": "Luz do quarto", "area": "demo_quarto", "aliases": ["abajur do quarto"]},
+    {"id": "luz_cozinha", "entity_id": "light.demo_cozinha", "name": "Luz da cozinha", "area": "demo_cozinha", "aliases": ["luz da bancada"]},
+    {"id": "ventilador_jaime", "entity_id": "fan.demo_jaime", "name": "Ventilador do Jaime", "area": "demo_quarto", "aliases": ["ventilador do quarto", "ventilador pessoal do Jaime"]},
+    {"id": "ventilador_sala", "entity_id": "fan.demo_sala", "name": "Ventilador da sala", "area": "demo_sala", "aliases": []},
+    {"id": "tomada_sala", "entity_id": "switch.demo_sala", "name": "Tomada da sala", "area": "demo_sala", "aliases": [], "device_class": "outlet"},
+    {"id": "temperatura_sala", "entity_id": "sensor.demo_temperatura_sala", "name": "Temperatura da sala", "area": "demo_sala", "aliases": [], "device_class": "temperature", "state": "24"},
+    {"id": "temperatura_quarto", "entity_id": "sensor.demo_temperatura_quarto", "name": "Temperatura do quarto", "area": "demo_quarto", "aliases": [], "device_class": "temperature", "state": "26"},
+    {"id": "umidade_sala", "entity_id": "sensor.demo_umidade_sala", "name": "Umidade da sala", "area": "demo_sala", "aliases": [], "device_class": "humidity", "state": "55"},
+    {"id": "luz_offline", "entity_id": "light.demo_escritorio", "name": "Luz do escritório", "area": "demo_escritorio", "aliases": [], "available": false}
+  ],
+  "quick_ids": ["sala", "principal", "tv", "jaime", "temperatura", "inexistente", "ambiguo", "contexto"],
+  "cases": [
+    {"id": "sala", "text": "Liga a luz da sala", "category": "Comando direto", "expected": {"intent": "turn_on", "target_entities": ["light.demo_sala_principal"], "requires_clarification": false}},
+    {"id": "principal", "text": "Apaga a iluminação principal", "category": "Alias", "expected": {"intent": "turn_off", "target_entities": ["light.demo_sala_principal"], "requires_clarification": false}},
+    {"id": "tv", "text": "Acende a luz perto da TV", "category": "Referência contextual com alias", "expected": {"intent": "turn_on", "target_entities": ["light.demo_sala_tv"], "requires_clarification": false}},
+    {"id": "jaime", "text": "Liga o ventilador do Jaime", "category": "Referência pessoal", "expected": {"intent": "turn_on", "target_entities": ["fan.demo_jaime"], "requires_clarification": false}},
+    {"id": "ventilador", "text": "Desliga o ventilador da sala", "category": "Desligamento", "expected": {"intent": "turn_off", "target_entities": ["fan.demo_sala"], "requires_clarification": false}},
+    {"id": "cozinha", "text": "Liga a luz da cozinha", "category": "Área distinta", "expected": {"intent": "turn_on", "target_entities": ["light.demo_cozinha"], "requires_clarification": false}},
+    {"id": "quarto", "text": "Apaga a luz do quarto", "category": "Área distinta", "expected": {"intent": "turn_off", "target_entities": ["light.demo_quarto"], "requires_clarification": false}},
+    {"id": "temperatura", "text": "Qual a temperatura da sala?", "category": "Consulta de sensor", "expected": {"intent": "query", "target_entities": ["sensor.demo_temperatura_sala"], "requires_clarification": false}},
+    {"id": "temperatura_quarto", "text": "Qual a temperatura do quarto?", "category": "Sensores semelhantes", "expected": {"intent": "query", "target_entities": ["sensor.demo_temperatura_quarto"], "requires_clarification": false}},
+    {"id": "umidade", "text": "Qual a umidade da sala?", "category": "Capacidade de sensor", "expected": {"intent": "query", "target_entities": ["sensor.demo_umidade_sala"], "requires_clarification": false}},
+    {"id": "coletivo", "text": "Liga todos os dispositivos da sala", "category": "Comando coletivo", "expected": {"intent": "turn_on", "target_entities": ["fan.demo_sala", "light.demo_sala_principal", "light.demo_sala_tv", "switch.demo_sala"], "requires_clarification": false}},
+    {"id": "area", "text": "Liga a sala", "category": "Política de área", "expected": {"intent": "turn_on", "target_entities": ["fan.demo_sala", "light.demo_sala_principal", "light.demo_sala_tv", "switch.demo_sala"], "requires_clarification": false}},
+    {"id": "inexistente", "text": "Acende a lua", "category": "Alvo inexistente", "expected": {"intent": null, "target_entities": [], "requires_clarification": true}},
+    {"id": "ambiguo", "text": "Liga a luz", "category": "Falta de área ou origem", "expected": {"intent": null, "target_entities": [], "requires_clarification": true}},
+    {"id": "contexto", "text": "Está muito quente aqui", "category": "Sem autorização explícita", "expected": {"intent": null, "target_entities": [], "requires_clarification": true}},
+    {"id": "offline", "text": "Liga a luz do escritório", "category": "Dispositivo indisponível", "expected": {"intent": null, "target_entities": [], "requires_clarification": true}}
+  ]
+}

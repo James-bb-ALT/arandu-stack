@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+.pytest_cache
+tests
+docs
+examples
+addon
+tools
+voices
+profiles
+dataset
+training
+*.zip

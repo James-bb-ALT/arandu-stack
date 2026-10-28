@@ -1,0 +1,45 @@
+name: Arandu STT
+version: "2.2.0"
+slug: arandu_stt
+description: STT PT-BR local com FastConformer adaptado, correção contextual e Wyoming
+arch:
+  - amd64
+init: false
+startup: application
+boot: auto
+stage: experimental
+discovery:
+  - wyoming
+ports:
+  "10350/tcp": null
+ports_description:
+  "10350/tcp": Wyoming STT (opcional para acesso externo)
+homeassistant_api: true
+homeassistant: "2026.2.0"
+backup_exclude:
+  - "models*"
+  - "hub*"
+options:
+  model_variant: adapted
+  threads: 2
+  padding_ms: 0
+  profile: full
+  debug_text: false
+  refresh_inventory: true
+  lexical_enabled: true
+  closed_vocabulary: true
+  generic_weight: 7
+  home_assistant_weight: 10
+  inventory_refresh_seconds: 60
+schema:
+  model_variant: "list(adapted|original)"
+  threads: "int(1,8)"
+  padding_ms: "list(0|100|200|300)"
+  profile: "list(raw|normalize_only|acoustic_only|fuzzy_only|inventory_only|full|legacy_full)"
+  debug_text: bool
+  refresh_inventory: bool
+  lexical_enabled: bool
+  closed_vocabulary: bool
+  generic_weight: "int(0,100)"
+  home_assistant_weight: "int(0,100)"
+  inventory_refresh_seconds: "int(0,86400)"

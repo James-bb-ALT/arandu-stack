@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "license": "Apache-2.0",
+  "kind": "project-authored internal conformance; frozen before contextual engine implementation",
+  "catalog": "FIXTURE_TECNICA; imaginary exposed devices, no residential data",
+  "cases": [
+    ["Liga o ar.", "turn_on"],
+    ["Liga o ar do quarto.", "turn_on"],
+    ["Pode ligar o ventilador?", "turn_on"],
+    ["Não liga o ventilador", "cancel"],
+    ["Qual é a temperatura aqui?", "query"],
+    ["Coloca o ar em vinte e três graus", "temperature"],
+    ["Coloca o ar em 22,5 graus", "temperature"],
+    ["Deixa a luz mais fraca", "brightness"],
+    ["Aumenta um pouco o ventilador", "percentage"],
+    ["Coloca a iluminação azul", "color"],
+    ["Liga o ar e apaga a luz", "compound"],
+    ["Desliga a luz da sala, mas deixa a do corredor ligada", "compound"],
+    ["Coloca um timer de dez minutos", "timer_start"],
+    ["O que eu tenho no calendário amanhã?", "calendar"],
+    ["Destranca a porta", "unlock"],
+    ["Onde está Bruna?", "query"],
+    ["Tem alguém na cozinha?", "query"],
+    ["Próximo canal da TV", "remote_key"],
+    ["Coloca no canal 15", "channel"],
+    ["Ativa o modo cinema", "activate"]
+  ],
+  "safety": ["negation", "unknown explicit area", "equal-rank ambiguity", "expired confirmation", "cross-user session", "permission denied", "hidden entity", "relative live state", "full-plan preflight", "partial failure", "duplicate request", "feature changed", "unavailable state", "non-overlapping energy sources", "malformed parameters"]
+}

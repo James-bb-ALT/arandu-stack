@@ -1,0 +1,6 @@
+numpy>=1.26,<3
+sherpa-onnx==1.13.8
+rapidfuzz>=3.9,<4
+wyoming>=1.7,<2
+huggingface_hub>=0.27,<2
+websockets>=15,<16

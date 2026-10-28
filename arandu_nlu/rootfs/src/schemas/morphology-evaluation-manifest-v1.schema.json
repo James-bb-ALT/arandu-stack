@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nlu.local/schemas/morphology-evaluation-manifest-v1.schema.json",
+  "title": "Morphology evaluation manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "dataset_id",
+    "dataset_version",
+    "split_id",
+    "claim_scope",
+    "locale",
+    "source_id",
+    "source_manifest_sha256",
+    "artifact_path",
+    "artifact_sha256",
+    "artifact_records",
+    "surface_count",
+    "analysis_count",
+    "case_ids_sha256",
+    "grouping",
+    "metric_spec",
+    "confusion_labels",
+    "error_taxonomy",
+    "runner_id",
+    "runtime_package_sha256",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "dataset_id": {"const": "p07-morphology-internal-conformance"},
+    "dataset_version": {"const": "1.0.0"},
+    "split_id": {"const": "p07-morphology-internal-conformance-v1"},
+    "claim_scope": {"const": "internal_conformance_only"},
+    "locale": {"const": "pt-BR"},
+    "source_id": {"const": "project-authored-synthetic-ptbr-v1"},
+    "source_manifest_sha256": {
+      "const": "d9e1ca32ec0f92aa6b5fc6c1d4f232f93389e0bf8031267d23daddf7287006c5"
+    },
+    "artifact_path": {
+      "const": "data/project-authored/p02-v1/morphology.jsonl"
+    },
+    "artifact_sha256": {
+      "const": "ebee221611e4cbf6206a755022d163e4c96f7eb1a42626d7032773bfb8c793dc"
+    },
+    "artifact_records": {"const": 29},
+    "surface_count": {"const": 28},
+    "analysis_count": {"const": 29},
+    "case_ids_sha256": {
+      "const": "6e481a12ebd00c62635e0fc13381993f96256987fe37ee67f66efdac8b1131bf"
+    },
+    "grouping": {"const": "exact-surface-analysis-set-v1"},
+    "metric_spec": {"const": "exact-morphology-set-metrics-v1"},
+    "confusion_labels": {
+      "const": ["unknown", "unique", "ambiguous"]
+    },
+    "error_taxonomy": {
+      "const": [
+        "missing_analysis",
+        "unexpected_analysis",
+        "cardinality_mismatch"
+      ]
+    },
+    "runner_id": {"const": "morphology-eval-v1"},
+    "runtime_package_sha256": {
+      "const": "ec24f2335f64d694931450fb5ad6aefe3e924d1e29b23e046f128491dfe79e27"
+    },
+    "limitations": {
+      "const": [
+        "project_authored_labels_share_generator_with_runtime_lexicon",
+        "feature_bearing_source_analyses_only",
+        "four_featureless_lexicon_analyses_unscored",
+        "no_expected_unknown_surfaces",
+        "internal_conformance_not_independent_accuracy_or_generalization"
+      ]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+[package]
+name = "fiat-crypto"
+version = "0.2.9"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+description = "FIXTURE_TECNICA resolver-only package; compilation is prohibited"
+
+[lib]
+path = "src/lib.rs"

@@ -1,0 +1,74 @@
+# Build artifacts
+target/
+*.exe
+*.pdb
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Cargo (lockfiles are ignored by default; these two are required for
+# hermetic offline distribution builds and are explicitly re-included)
+Cargo.lock
+!Cargo.lock
+!addon/engine/Cargo.lock
+# Vendored crates ship their own Cargo.toml.orig/Cargo.lock, which cargo
+# checksum-verifies; re-include exactly those (nothing else *.orig)
+!addon/vendor/**/Cargo.toml.orig
+!addon/vendor/**/Cargo.lock
+**/*.rs.bk
+*.orig
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Credentials and secrets (never commit; see DISTRIBUTION checklist)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials.json
+secrets.yaml
+secrets.yml
+
+# Home Assistant runtime state and residential data (never publish)
+*.sqlite*
+*.db
+home-assistant*.log
+.storage/
+
+# Private scratch and non-product siblings (never publish)
+work/
+baseline_*.txt
+test_baseline_output.txt
+sophia*
+
+# Archives
+archive/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local toolchain
+.tools/
+.cargo-home/
+.venv-ai-lab/
+.venv-ai-lab-313/

@@ -1,0 +1,2348 @@
+[
+  {
+    "domains": [
+      "alarm_control_panel"
+    ],
+    "intent": "alarm.arm",
+    "operation": "arm",
+    "templates": [
+      "arma o alarme",
+      "ativa a segurança",
+      "ativa o alarme",
+      "deixa a casa armada",
+      "liga o alarme"
+    ]
+  },
+  {
+    "dependency": "explicit registered script/button adapter; no generic HA service",
+    "domains": [],
+    "intent": "alarm.cancel",
+    "operation": "binding",
+    "templates": [
+      "apaga meu alarme",
+      "cancela o alarme",
+      "desativa o alarme que eu marquei",
+      "tira o despertador"
+    ]
+  },
+  {
+    "domains": [
+      "alarm_control_panel"
+    ],
+    "intent": "alarm.disarm",
+    "operation": "disarm",
+    "sensitive": true,
+    "templates": [
+      "desarma o alarme",
+      "desativa o alarme",
+      "desliga o alarme",
+      "tira a casa do modo armado"
+    ]
+  },
+  {
+    "dependency": "explicit registered script/button adapter; no generic HA service",
+    "domains": [],
+    "intent": "alarm.set",
+    "operation": "binding",
+    "templates": [
+      "coloca um alarme para {time}",
+      "despertador para {time}",
+      "marca um alarme às {time}",
+      "me acorda às {time}"
+    ]
+  },
+  {
+    "domains": [
+      "alarm_control_panel"
+    ],
+    "intent": "alarm.status",
+    "operation": "query",
+    "templates": [
+      "a casa está armada",
+      "como está o alarme",
+      "o alarme está armado",
+      "o alarme está ligado"
+    ]
+  },
+  {
+    "dependency": "explicit registered script/button adapter; no generic HA service",
+    "domains": [],
+    "intent": "announce.area",
+    "operation": "binding",
+    "templates": [
+      "avisa na {area} que eu estou chamando",
+      "fala na {area} que eu cheguei",
+      "faz um anúncio na {area}",
+      "manda um recado pra {area}"
+    ]
+  },
+  {
+    "domains": [
+      "sensor",
+      "switch"
+    ],
+    "intent": "appliance.status",
+    "operation": "query",
+    "target_slot": "appliance",
+    "templates": [
+      "a {appliance} está ligada",
+      "a {appliance} terminou",
+      "como está a {appliance}",
+      "o que a {appliance} está fazendo",
+      "qual o estado da {appliance}"
+    ]
+  },
+  {
+    "domains": [],
+    "intent": "area.devices_query",
+    "metric": "inventory",
+    "operation": "query",
+    "plural": true,
+    "templates": [
+      "o que está conectado na {area}",
+      "o que tem na {area}",
+      "quais aparelhos tem na {area}",
+      "quais dispositivos tem na {area}"
+    ]
+  },
+  {
+    "domains": [],
+    "intent": "assistant.cancel",
+    "operation": "cancel",
+    "templates": [
+      "cancela isso",
+      "deixa pra lá",
+      "esquece"
+    ]
+  },
+  {
+    "domains": [],
+    "intent": "assistant.confirm",
+    "operation": "confirm",
+    "templates": [
+      "pode",
+      "sim"
+    ]
+  },
+  {
+    "domains": [],
+    "intent": "assistant.deny",
+    "operation": "cancel",
+    "templates": [
+      "não",
+      "não pode"
+    ]
+  },
+  {
+    "domains": [],
+    "intent": "assistant.repeat",
+    "operation": "repeat_response",
+    "templates": [
+      "fala de novo",
+      "repete"
+    ]
+  },
+  {
+    "device_class": "battery",
+    "domains": [
+      "sensor"
+    ],
+    "intent": "battery.device_query",
+    "metric": "battery",
+    "operation": "query",
+    "target_slot": "device",
+    "templates": [
+      "bateria do {device}",
+      "o {device} está com quanta bateria",
+      "qual a bateria do {device}",
+      "quanto de bateria tem o {device}"
+    ]
+  },
+  {
+    "aggregate": "filter",
+    "device_class": "battery",
+    "domains": [
+      "sensor"
+    ],
+    "intent": "battery.low_query",
+    "metric": "battery",
+    "operation": "query",
+    "plural": true,
+    "templates": [
+      "o que está com bateria baixa",
+      "quais sensores precisam de bateria",
+      "tem algum dispositivo com bateria baixa",
+      "tem alguma bateria acabando"
+    ],
+    "threshold": 20
+  },
+  {
+    "dependency": "explicit start and end datetime required",
+    "domains": [
+      "calendar"
+    ],
+    "intent": "calendar.add_event",
+    "operation": "calendar_create",
+    "templates": [
+      "adiciona {event_title} {date_ref} às {time_ref}",
+      "coloca {event_title} na agenda {date_ref} às {time_ref}",
+      "cria um compromisso {date_ref} às {time_ref} para {event_title}",
+      "marca {event_title} {date_ref} às {time_ref}"
+    ]
+  },
+  {
+    "domains": [
+      "calendar"
+    ],
+    "intent": "calendar.date_query",
+    "operation": "calendar",
+    "templates": [
+      "como está minha agenda {date_ref}",
+      "o que eu tenho {date_ref}",
+      "o que tem no calendário {date_ref}",
+      "quais compromissos eu tenho {date_ref}",
+      "tem alguma coisa marcada {date_ref}"
+    ],
+    "value_slot": "date_ref"
+  },
+  {
+    "domains": [
+      "calendar"
+    ],
+    "intent": "calendar.event_time_query",
+    "operation": "calendar",
+    "templates": [
+      "a que horas começa {event_title}",
+      "qual o horário de {event_title}",
+      "quando é {event_title}",
+      "que horas é {event_title}"
+    ],
+    "value_slot": "event_title"
+  },
+  {
+    "domains": [
+      "calendar"
+    ],
+    "intent": "calendar.next_event_query",
+    "metric": "next_event",
+    "operation": "query",
+    "templates": [
+      "o que eu tenho depois",
+      "qual o próximo evento da agenda",
+      "qual é a próxima coisa no calendário",
+      "qual é meu próximo compromisso",
+      "quando é meu próximo compromisso",
+      "tem alguma coisa marcada depois"
+    ]
+  },
+  {
+    "dependency": "explicit calendar deletion adapter with UID",
+    "domains": [],
+    "intent": "calendar.remove_event",
+    "operation": "binding",
+    "templates": [
+      "apaga {event_title} do calendário",
+      "cancela {event_title}",
+      "remove {event_title} da agenda",
+      "tira {event_title} da minha agenda"
+    ]
+  },
+  {
+    "domains": [
+      "calendar"
+    ],
+    "intent": "calendar.today_query",
+    "operation": "calendar",
+    "templates": [
+      "como está minha agenda hoje",
+      "minha agenda de hoje",
+      "o que eu tenho hoje",
+      "o que tem no calendário hoje",
+      "quais são meus compromissos de hoje",
+      "tem alguma coisa na minha agenda hoje"
+    ],
+    "value_slot": "date_ref"
+  },
+  {
+    "dependency": "explicit registered script/button adapter; no generic HA service",
+    "domains": [],
+    "intent": "call.contact",
+    "operation": "binding",
+    "templates": [
+      "chama {contact}",
+      "faz uma ligação para {contact}",
+      "liga para {contact}",
+      "telefone para {contact}"
+    ]
+  },
+  {
+    "dependency": "explicit display adapter",
+    "domains": [
+      "camera"
+    ],
+    "intent": "camera.show",
+    "operation": "camera_view",
+    "templates": [
+      "abre a {camera}",
+      "coloca a {camera} na tela",
+      "me mostra a {camera}",
+      "mostra a {camera}",
+      "quero ver a {camera}"
+    ]
+  },
+  {
+    "domains": [
+      "climate"
+    ],
+    "intent": "climate.fan_speed_set",
+    "operation": "fan_mode",
+    "templates": [
+      "coloca o ventilador do {climate} em {fan_speed}",
+      "deixa a ventilação do {climate} em {fan_speed}",
+      "velocidade {fan_speed} no {climate}"
+    ],
+    "value_slot": "fan_speed"
+  },
+  {
+    "domains": [
+      "climate"
+    ],
+    "intent": "climate.mode_set",
+    "operation": "hvac_mode",
+    "templates": [
+      "coloca o {climate} no modo {hvac_mode}",
+      "deixa o {climate} em {hvac_mode}",
+      "modo {hvac_mode} no {climate}",
+      "muda o {climate} para {hvac_mode}"
+    ],
+    "value_slot": "hvac_mode"
+  },
+  {
+    "domains": [
+      "climate"
+    ],
+    "intent": "climate.status",
+    "operation": "query",
+    "target_slot": "climate",
+    "templates": [
+      "como está o {climate}",
+      "em quanto está o {climate}",
+      "o {climate} está ligado",
+      "qual a temperatura configurada no {climate}"
+    ]
+  },
+  {
+    "domains": [
+      "climate"
+    ],
+    "intent": "climate.swing_set",
+    "operation": "swing_mode",
+    "templates": [
+      "ajusta a direção do {climate} {swing_mode}",
+      "coloca o swing do {climate} {swing_mode}",
+      "deixa a aleta do {climate} {swing_mode}"
+    ],
+    "value_slot": "swing_mode"
+  },
+  {
+    "domains": [
+      "climate"
+    ],
+    "intent": "climate.temperature_set",
+    "operation": "temperature",
+    "templates": [
+      "ajusta o {climate} para {temperature}",
+      "bota o {climate} em {temperature}",
+      "coloca o {climate} em {temperature}",
+      "deixa o {climate} em {temperature}",
+      "temperatura do {climate} em {temperature}"
+    ],
+    "value_slot": "temperature"
+  },
+  {
+    "domains": [
+      "climate"
+    ],
+    "intent": "climate.turn_off",
+    "operation": "turn_off",
+    "target_slot": "climate",
+    "templates": [
+      "desativa o {climate}",
+      "desliga o {climate}",
+      "desligue o {climate}",
+      "para o {climate}",
+      "pode desligar o {climate}"
+    ]
+  },
+  {
+    "domains": [
+      "climate"
+    ],
+    "intent": "climate.turn_on",
+    "operation": "turn_on",
+    "target_slot": "climate",
+    "templates": [
+      "ativa o {climate}",
+      "bota o {climate} pra gelar",
+      "liga o {climate}",
+      "ligue o {climate}",
+      "pode ligar o {climate}"
+    ]
+  },
+  {
+    "dependency": "explicit registered script/button adapter; no generic HA service",
+    "domains": [],
+    "intent": "clock_alarm.cancel_all",
+    "operation": "binding",
+    "templates": [
+      "apaga todos os alarmes",
+      "cancela todos os alarmes",
+      "remove todos os despertadores"
+    ]
+  },
+  {
+    "dependency": "explicit registered script/button adapter; no generic HA service",
+    "domains": [],
+    "intent": "clock_alarm.dismiss",
+    "operation": "binding",
+    "templates": [
+      "desliga o despertador",
+      "encerra o alarme",
+      "para de tocar",
+      "para o alarme"
+    ]
+  },
+  {
+    "dependency": "explicit registered script/button adapter; no generic HA service",
+    "domains": [],
+    "intent": "clock_alarm.query",
+    "operation": "binding",
+    "templates": [
+      "quais alarmes estão ativos",
+      "qual é meu próximo alarme",
+      "que alarmes eu tenho",
+      "que horas meu alarme vai tocar",
+      "tem algum alarme marcado"
+    ]
+  },
+  {
+    "dependency": "explicit registered script/button adapter; no generic HA service",
+    "domains": [],
+    "intent": "clock_alarm.snooze",
+    "operation": "binding",
+    "templates": [
+      "adia o alarme {delta_duration}",
+      "me dá mais {delta_duration}",
+      "soneca por {delta_duration}",
+      "toca de novo em {delta_duration}"
+    ]
+  },
+  {
+    "domains": [
+      "cover"
+    ],
+    "intent": "cover.close",
+    "operation": "close",
+    "templates": [
+      "baixa a {cover}",
+      "desce a {cover}",
+      "fecha a {cover}",
+      "feche a {cover}",
+      "pode fechar a {cover}"
+    ]
+  },
+  {
+    "domains": [
+      "cover"
+    ],
+    "intent": "cover.open",
+    "operation": "open",
+    "sensitive": true,
+    "templates": [
+      "abra a {cover}",
+      "abre a {cover}",
+      "levanta a {cover}",
+      "pode abrir a {cover}",
+      "sobe a {cover}"
+    ]
+  },
+  {
+    "domains": [
+      "cover"
+    ],
+    "intent": "cover.position_percent",
+    "operation": "position",
+    "templates": [
+      "abre a {cover} até {position}",
+      "ajusta a {cover} para {position}",
+      "coloca a {cover} em {position}",
+      "deixa a {cover} em {position}"
+    ],
+    "value_slot": "position"
+  },
+  {
+    "domains": [
+      "cover"
+    ],
+    "intent": "cover.position_set",
+    "operation": "position",
+    "templates": [
+      "abre a {cover} em {cover_position}",
+      "coloca a {cover} em {cover_position}",
+      "deixa a {cover} em {cover_position}"
+    ],
+    "value_slot": "position"
+  },
+  {
+    "domains": [
+      "cover"
+    ],
+    "intent": "cover.status",
+    "operation": "query",
+    "templates": [
+      "a {cover} está aberta",
+      "a {cover} está fechada",
+      "como está a {cover}",
+      "qual a posição da {cover}"
+    ]
+  },
+  {
+    "domains": [],
+    "intent": "date.current",
+    "operation": "local_date",
+    "templates": [
+      "hoje é que dia",
+      "me diz a data",
+      "qual a data de hoje",
+      "que dia é hoje"
+    ]
+  },
+  {
+    "domains": [
+      "humidifier"
+    ],
+    "intent": "dehumidifier.humidity_set",
+    "operation": "humidity",
+    "templates": [
+      "ajusta o {dehumidifier} para {humidity_target}",
+      "coloca o {dehumidifier} em {humidity_target}",
+      "deixa a umidade em {humidity_target} no {dehumidifier}"
+    ],
+    "value_slot": "humidity_target"
+  },
+  {
+    "domains": [
+      "humidifier"
+    ],
+    "intent": "dehumidifier.status",
+    "operation": "query",
+    "target_slot": "dehumidifier",
+    "templates": [
+      "como está o {dehumidifier}",
+      "o {dehumidifier} está ligado",
+      "qual a configuração do {dehumidifier}"
+    ]
+  },
+  {
+    "domains": [
+      "humidifier"
+    ],
+    "intent": "dehumidifier.turn_off",
+    "operation": "turn_off",
+    "target_slot": "dehumidifier",
+    "templates": [
+      "desativa o {dehumidifier}",
+      "desliga o {dehumidifier}",
+      "pode desligar o {dehumidifier}"
+    ]
+  },
+  {
+    "domains": [
+      "humidifier"
+    ],
+    "intent": "dehumidifier.turn_on",
+    "operation": "turn_on",
+    "target_slot": "dehumidifier",
+    "templates": [
+      "ativa o {dehumidifier}",
+      "liga o {dehumidifier}",
+      "pode ligar o {dehumidifier}"
+    ]
+  },
+  {
+    "dependency": "explicit registered script/button adapter; no generic HA service",
+    "domains": [],
+    "intent": "device.phone_find",
+    "operation": "binding",
+    "templates": [
+      "acha meu celular",
+      "acha meu telefone",
+      "cadê meu celular",
+      "cadê meu telefone",
+      "eu perdi meu celular",
+      "faz meu celular tocar",
+      "faz meu telefone tocar",
+      "onde está meu telefone",
+      "onde tá meu celular",
+      "toca meu celular",
+      "toca meu telefone"
+    ]
+  },
+  {
+    "domains": [],
+    "intent": "device.status",
+    "operation": "query",
+    "target_slot": "device",
+    "templates": [
+      "como está o {device} da {area}",
+      "o {device} da {area} está desligado",
+      "o {device} da {area} está ligado",
+      "o {device} da {area} tá ligado",
+      "qual o estado do {device} da {area}"
+    ]
+  },
+  {
+    "domains": [],
+    "intent": "device.turn_off",
+    "operation": "turn_off",
+    "target_slot": "device",
+    "templates": [
+      "desativa o {device} da {area}",
+      "desliga o {device} da {area}",
+      "desligue o {device} da {area}",
+      "pode desligar o {device} da {area}",
+      "quero o {device} da {area} desligado"
+    ]
+  },
+  {
+    "domains": [],
+    "intent": "device.turn_on",
+    "operation": "turn_on",
+    "target_slot": "device",
+    "templates": [
+      "ativa o {device} da {area}",
+      "liga o {device} da {area}",
+      "ligue o {device} da {area}",
+      "pode ligar o {device} da {area}",
+      "quero o {device} da {area} ligado"
+    ]
+  },
+  {
+    "domains": [
+      "sensor"
+    ],
+    "intent": "dishwasher.remaining_time",
+    "metric": "remaining_time",
+    "operation": "query",
+    "templates": [
+      "quando a lava-louças termina",
+      "quanto falta pra lava-louças terminar",
+      "quanto tempo falta na lava-louças"
+    ]
+  },
+  {
+    "domains": [
+      "binary_sensor"
+    ],
+    "intent": "door.status",
+    "metric": "opening",
+    "operation": "query",
+    "templates": [
+      "a {door} está aberta",
+      "a {door} está fechada",
+      "como está a {door}",
+      "confere a {door}"
+    ]
+  },
+  {
+    "device_class": "power",
+    "domains": [
+      "sensor"
+    ],
+    "intent": "energy.device_query",
+    "metric": "power",
+    "operation": "query",
+    "target_slot": "device",
+    "templates": [
+      "o {device} está puxando quanto",
+      "qual o consumo do {device}",
+      "quanto de energia o {device} está gastando",
+      "quanto o {device} está consumindo"
+    ]
+  },
+  {
+    "aggregate": "sum",
+    "dependency": "explicit non-overlapping energy sources",
+    "device_class": "power",
+    "domains": [
+      "sensor"
+    ],
+    "intent": "energy.home_query",
+    "metric": "power",
+    "operation": "query",
+    "plural": true,
+    "templates": [
+      "qual a potência da casa agora",
+      "qual o consumo da casa agora",
+      "quanto a casa está consumindo",
+      "quanto de energia estamos gastando"
+    ]
+  },
+  {
+    "domains": [],
+    "intent": "entity.where_query",
+    "metric": "area",
+    "operation": "query",
+    "target_slot": "device",
+    "templates": [
+      "cadê o {device}",
+      "em que cômodo está o {device}",
+      "onde está o {device}",
+      "onde fica o {device}"
+    ]
+  },
+  {
+    "domains": [
+      "fan"
+    ],
+    "intent": "fan.speed_down",
+    "operation": "percentage",
+    "relative": -1,
+    "templates": [
+      "baixa a velocidade do {fan}",
+      "bota o {fan} mais devagar",
+      "deixa o {fan} mais fraco",
+      "diminui o {fan}"
+    ]
+  },
+  {
+    "domains": [
+      "fan"
+    ],
+    "intent": "fan.speed_set",
+    "operation": "percentage",
+    "templates": [
+      "bota o {fan} no {fan_speed}",
+      "coloca o {fan} na velocidade {fan_speed}",
+      "deixa o {fan} na velocidade {fan_speed}",
+      "velocidade {fan_speed} no {fan}"
+    ],
+    "value_slot": "fan_speed"
+  },
+  {
+    "domains": [
+      "fan"
+    ],
+    "intent": "fan.speed_up",
+    "operation": "percentage",
+    "relative": 1,
+    "templates": [
+      "aumenta a velocidade do {fan}",
+      "aumenta o {fan}",
+      "bota o {fan} mais rápido",
+      "deixa o {fan} mais forte"
+    ]
+  },
+  {
+    "domains": [
+      "fan"
+    ],
+    "intent": "fan.turn_off",
+    "operation": "turn_off",
+    "target_slot": "fan",
+    "templates": [
+      "desativa o {fan}",
+      "desliga o {fan}",
+      "desligue o {fan}",
+      "para o {fan}",
+      "pode desligar o {fan}"
+    ]
+  },
+  {
+    "domains": [
+      "fan"
+    ],
+    "intent": "fan.turn_on",
+    "operation": "turn_on",
+    "target_slot": "fan",
+    "templates": [
+      "ativa o {fan}",
+      "bota o {fan} pra funcionar",
+      "liga o {fan}",
+      "ligue o {fan}",
+      "pode ligar o {fan}"
+    ]
+  },
+  {
+    "domains": [
+      "cover"
+    ],
+    "intent": "gate.close",
+    "operation": "close",
+    "templates": [
+      "fecha o {gate}",
+      "feche o {gate}",
+      "pode fechar o {gate}"
+    ]
+  },
+  {
+    "domains": [
+      "cover"
+    ],
+    "intent": "gate.open",
+    "operation": "open",
+    "sensitive": true,
+    "templates": [
+      "abra o {gate}",
+      "abre o portão pra mim",
+      "abre o {gate}",
+      "pode abrir o {gate}"
+    ]
+  },
+  {
+    "domains": [
+      "cover"
+    ],
+    "intent": "gate.status",
+    "operation": "query",
+    "templates": [
+      "como está o {gate}",
+      "confere o {gate}",
+      "o {gate} está aberto",
+      "o {gate} está fechado"
+    ]
+  },
+  {
+    "aggregate": "filter",
+    "domains": [
+      "light"
+    ],
+    "intent": "group.status",
+    "operation": "query",
+    "plural": true,
+    "state_filter": "on",
+    "templates": [
+      "como estão as {group_type} do {floor_group}",
+      "quais {group_type} estão ligadas no {floor_group}",
+      "tem alguma coisa ligada no {floor_group}"
+    ]
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "group.turn_off",
+    "operation": "turn_off",
+    "plural": true,
+    "templates": [
+      "apaga as {group_type} do {floor_group}",
+      "desliga as {group_type} do {floor_group}",
+      "desliga tudo do {floor_group}"
+    ]
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "group.turn_on",
+    "operation": "turn_on",
+    "plural": true,
+    "templates": [
+      "ativa as {group_type} do {floor_group}",
+      "liga as {group_type} do {floor_group}",
+      "liga tudo do {floor_group}"
+    ]
+  },
+  {
+    "domains": [
+      "light",
+      "switch",
+      "fan",
+      "media_player",
+      "climate",
+      "humidifier"
+    ],
+    "intent": "home.all_off",
+    "operation": "turn_off",
+    "plural": true,
+    "templates": [
+      "apaga a casa",
+      "desliga a casa toda",
+      "desliga tudo",
+      "desliga tudo que não precisa",
+      "pode desligar tudo"
+    ]
+  },
+  {
+    "aggregate": "any",
+    "domains": [],
+    "intent": "home.any_device_on",
+    "operation": "query",
+    "plural": true,
+    "state_filter": "on",
+    "templates": [
+      "ficou algum aparelho ligado",
+      "o que ainda está ligado",
+      "tem algum dispositivo ligado",
+      "tem alguma coisa ligada"
+    ]
+  },
+  {
+    "domains": [],
+    "intent": "home.status_summary",
+    "metric": "inventory",
+    "operation": "query",
+    "plural": true,
+    "templates": [
+      "como está a casa",
+      "está tudo bem em casa",
+      "me dá um resumo da casa",
+      "tem algo que eu preciso saber",
+      "tem alguma coisa errada"
+    ]
+  },
+  {
+    "domains": [
+      "humidifier"
+    ],
+    "intent": "humidifier.humidity_set",
+    "operation": "humidity",
+    "templates": [
+      "ajusta o {humidifier} para {humidity_target}",
+      "coloca o {humidifier} em {humidity_target}",
+      "deixa a umidade em {humidity_target} no {humidifier}"
+    ],
+    "value_slot": "humidity_target"
+  },
+  {
+    "domains": [
+      "humidifier"
+    ],
+    "intent": "humidifier.status",
+    "operation": "query",
+    "target_slot": "humidifier",
+    "templates": [
+      "como está o {humidifier}",
+      "o {humidifier} está ligado",
+      "qual a configuração do {humidifier}"
+    ]
+  },
+  {
+    "domains": [
+      "humidifier"
+    ],
+    "intent": "humidifier.turn_off",
+    "operation": "turn_off",
+    "target_slot": "humidifier",
+    "templates": [
+      "desativa o {humidifier}",
+      "desliga o {humidifier}",
+      "pode desligar o {humidifier}"
+    ]
+  },
+  {
+    "domains": [
+      "humidifier"
+    ],
+    "intent": "humidifier.turn_on",
+    "operation": "turn_on",
+    "target_slot": "humidifier",
+    "templates": [
+      "ativa o {humidifier}",
+      "liga o {humidifier}",
+      "pode ligar o {humidifier}"
+    ]
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "light.all_off",
+    "operation": "turn_off",
+    "plural": true,
+    "templates": [
+      "apaga todas as luzes da {area}",
+      "apaga tudo na {area}",
+      "desliga a iluminação da {area}",
+      "desliga todas as luzes da {area}"
+    ]
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "light.all_on",
+    "operation": "turn_on",
+    "plural": true,
+    "templates": [
+      "acende todas as luzes da {area}",
+      "acende tudo na {area}",
+      "liga a iluminação da {area}",
+      "liga todas as luzes da {area}"
+    ]
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "light.brightness_down",
+    "operation": "brightness",
+    "relative": -1,
+    "templates": [
+      "baixa o brilho da {light} da {area}",
+      "deixa a {light} da {area} mais fraca",
+      "diminui a {light} da {area}",
+      "escurece um pouco a {area}"
+    ]
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "light.brightness_set",
+    "operation": "brightness",
+    "templates": [
+      "ajusta o brilho da {light} da {area} para {brightness}",
+      "brilho da {light} da {area} em {brightness}",
+      "coloca a {light} da {area} em {brightness}",
+      "deixa a {light} da {area} em {brightness}"
+    ],
+    "value_slot": "brightness"
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "light.brightness_up",
+    "operation": "brightness",
+    "relative": 1,
+    "templates": [
+      "aumenta a {light} da {area}",
+      "aumenta o brilho da {light} da {area}",
+      "clareia a {area}",
+      "deixa a {light} da {area} mais forte"
+    ]
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "light.color_set",
+    "operation": "color",
+    "templates": [
+      "coloca a {light} da {area} em {color}",
+      "deixa a {light} da {area} {color}",
+      "muda a {light} da {area} para {color}",
+      "troca a cor da {light} da {area} para {color}"
+    ],
+    "value_slot": "color"
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "light.color_temperature_cooler",
+    "operation": "color_temperature",
+    "relative": 1,
+    "templates": [
+      "coloca uma luz mais fria na {light}",
+      "deixa a {light} mais branca",
+      "deixa a {light} mais fria",
+      "esfria a cor da {light}"
+    ]
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "light.color_temperature_set",
+    "operation": "color_temperature",
+    "templates": [
+      "ajusta a {light} para {kelvin}",
+      "coloca a {light} em {kelvin}",
+      "temperatura de cor da {light} em {kelvin}"
+    ],
+    "value_slot": "kelvin"
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "light.color_temperature_warmer",
+    "operation": "color_temperature",
+    "relative": -1,
+    "templates": [
+      "coloca uma luz mais quente na {light}",
+      "deixa a {light} mais amarelada",
+      "deixa a {light} mais quente",
+      "esquenta a cor da {light}"
+    ]
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "light.status",
+    "operation": "query",
+    "target_slot": "light",
+    "templates": [
+      "a {light} da {area} está apagada",
+      "a {light} da {area} está ligada",
+      "a {light} da {area} tá acesa",
+      "qual o estado da {light} da {area}"
+    ]
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "light.turn_off",
+    "operation": "turn_off",
+    "target_slot": "light",
+    "templates": [
+      "apaga a {light} da {area}",
+      "apague a {light} da {area}",
+      "deixa a {light} da {area} apagada",
+      "desliga a {light} da {area}",
+      "desligue a {light} da {area}",
+      "pode desligar a {light} da {area}"
+    ]
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "light.turn_on",
+    "operation": "turn_on",
+    "target_slot": "light",
+    "templates": [
+      "acenda a {light} da {area}",
+      "acende a {light} da {area}",
+      "deixa a {light} da {area} ligada",
+      "liga a {light} da {area}",
+      "ligue a {light} da {area}",
+      "pode ligar a {light} da {area}",
+      "quero a {light} da {area} acesa"
+    ]
+  },
+  {
+    "domains": [
+      "lock"
+    ],
+    "intent": "lock.lock",
+    "operation": "lock",
+    "templates": [
+      "deixa a {lock} trancada",
+      "fecha a {lock}",
+      "pode trancar a {lock}",
+      "tranca a {lock}",
+      "tranque a {lock}"
+    ]
+  },
+  {
+    "domains": [
+      "lock"
+    ],
+    "intent": "lock.status",
+    "operation": "query",
+    "templates": [
+      "a {lock} está destrancada",
+      "a {lock} está trancada",
+      "confere a {lock}",
+      "qual o estado da {lock}"
+    ]
+  },
+  {
+    "domains": [
+      "lock"
+    ],
+    "intent": "lock.unlock",
+    "operation": "unlock",
+    "sensitive": true,
+    "templates": [
+      "abre a {lock}",
+      "destranca a {lock}",
+      "destranque a {lock}",
+      "pode destrancar a {lock}"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.mute",
+    "operation": "mute",
+    "templates": [
+      "coloca no mudo",
+      "deixa sem som",
+      "muta",
+      "silencia",
+      "tira o som"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.next",
+    "operation": "next",
+    "templates": [
+      "passa essa",
+      "próxima",
+      "próxima música",
+      "pula essa",
+      "troca de música",
+      "vai pra próxima"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.now_playing",
+    "metric": "media",
+    "operation": "query",
+    "templates": [
+      "o que está tocando",
+      "o que eu tô ouvindo",
+      "qual música está tocando",
+      "que música é essa",
+      "quem está cantando"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.pause",
+    "operation": "pause",
+    "templates": [
+      "dá pause",
+      "para um pouco",
+      "pausa",
+      "pausa a música",
+      "pausa isso",
+      "segura a música"
+    ]
+  },
+  {
+    "dependency": "Music Assistant",
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.play_artist",
+    "operation": "music",
+    "templates": [
+      "bota alguma coisa de {artist}",
+      "coloca {artist}",
+      "quero ouvir {artist}",
+      "toca músicas de {artist}",
+      "toca {artist}"
+    ],
+    "value_slot": "media_query"
+  },
+  {
+    "dependency": "Music Assistant",
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.play_generic",
+    "operation": "music",
+    "templates": [
+      "bota {media}",
+      "coloca {media}",
+      "põe {media} pra tocar",
+      "quero ouvir {media}",
+      "reproduz {media}",
+      "toca {media}",
+      "toque {media}"
+    ],
+    "value_slot": "media_query"
+  },
+  {
+    "dependency": "Music Assistant",
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.play_on_destination",
+    "operation": "music",
+    "templates": [
+      "bota {media} pra tocar na {media_destination}",
+      "coloca {media} na {media_destination}",
+      "reproduz {media} na {media_destination}",
+      "toca {media} na {media_destination}"
+    ],
+    "value_slot": "media_query"
+  },
+  {
+    "dependency": "Music Assistant",
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.play_playlist",
+    "operation": "music",
+    "templates": [
+      "abre a playlist {playlist}",
+      "coloca {playlist}",
+      "quero ouvir {playlist}",
+      "toca a playlist {playlist}",
+      "toca {playlist}"
+    ],
+    "value_slot": "media_query"
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.previous",
+    "operation": "previous",
+    "templates": [
+      "faixa anterior",
+      "música anterior",
+      "toca a anterior",
+      "volta a música",
+      "volta pra anterior"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.repeat_all",
+    "operation": "repeat_all",
+    "templates": [
+      "coloca tudo em repetição",
+      "deixa a fila repetindo",
+      "repete a playlist",
+      "repete tudo"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.repeat_off",
+    "operation": "repeat_off",
+    "templates": [
+      "desliga a repetição",
+      "não repete mais",
+      "para de repetir",
+      "tira do repeat"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.repeat_one",
+    "operation": "repeat_one",
+    "templates": [
+      "deixa essa música repetindo",
+      "repete essa faixa",
+      "repete essa música",
+      "repete só essa"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.resume",
+    "operation": "play",
+    "templates": [
+      "continua",
+      "continua a música",
+      "dá play de novo",
+      "pode continuar",
+      "retoma",
+      "volta a tocar"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.seek_backward",
+    "operation": "seek",
+    "relative": -1,
+    "templates": [
+      "retrocede {seek_time}",
+      "vai {seek_time} pra trás",
+      "volta {seek_time}",
+      "volta {seek_time} na música"
+    ],
+    "value_slot": "seek_time"
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.seek_forward",
+    "operation": "seek",
+    "relative": 1,
+    "templates": [
+      "adianta {seek_time}",
+      "avança {seek_time}",
+      "pula {seek_time} pra frente",
+      "vai {seek_time} pra frente"
+    ],
+    "value_slot": "seek_time"
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.shuffle_off",
+    "operation": "shuffle_off",
+    "templates": [
+      "desliga o aleatório",
+      "para de embaralhar",
+      "tira do shuffle",
+      "volta para a ordem normal"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.shuffle_on",
+    "operation": "shuffle_on",
+    "templates": [
+      "ativa o aleatório",
+      "embaralha as músicas",
+      "liga o shuffle",
+      "toca em ordem aleatória"
+    ]
+  },
+  {
+    "dependency": "Music Assistant",
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.spotify_play",
+    "operation": "music",
+    "templates": [
+      "abre o Spotify",
+      "bota o Spotify pra tocar",
+      "coloca meu Spotify",
+      "continua meu Spotify",
+      "toca meu Spotify",
+      "toca minhas músicas no Spotify"
+    ],
+    "value_slot": "media_query"
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.stop",
+    "operation": "stop",
+    "templates": [
+      "desliga a música",
+      "encerra a reprodução",
+      "para a música",
+      "para de tocar",
+      "para isso"
+    ]
+  },
+  {
+    "dependency": "Music Assistant transfer_queue",
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.transfer",
+    "operation": "transfer",
+    "templates": [
+      "continua tocando na {media_player}",
+      "manda a música para {media_player}",
+      "toca isso na {media_player}",
+      "transfere o áudio para {media_player}"
+    ],
+    "value_slot": "media_destination"
+  },
+  {
+    "dependency": "Music Assistant transfer_queue",
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.transfer_destination",
+    "operation": "transfer",
+    "templates": [
+      "continua na {media_destination}",
+      "leva o áudio para a {media_destination}",
+      "manda isso para a {media_destination}",
+      "transfere a música para a {media_destination}"
+    ],
+    "value_slot": "media_destination"
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.unmute",
+    "operation": "unmute",
+    "templates": [
+      "desmuta",
+      "liga o som de novo",
+      "pode voltar o áudio",
+      "tira do mudo",
+      "volta o som"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.volume_down",
+    "operation": "volume",
+    "relative": -1,
+    "templates": [
+      "baixa o som",
+      "baixa o volume",
+      "bota mais baixo",
+      "deixa mais baixo",
+      "diminui o volume"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.volume_set",
+    "operation": "volume",
+    "templates": [
+      "ajusta o som para {volume}",
+      "coloca o volume em {volume}",
+      "deixa o volume em {volume}",
+      "volume em {volume}"
+    ],
+    "value_slot": "volume"
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.volume_up",
+    "operation": "volume",
+    "relative": 1,
+    "templates": [
+      "aumenta o som",
+      "aumenta o volume",
+      "bota mais alto",
+      "deixa mais alto",
+      "sobe o volume"
+    ]
+  },
+  {
+    "dependency": "Music Assistant explicitly configured player group",
+    "domains": [
+      "media_player"
+    ],
+    "intent": "media.whole_home",
+    "operation": "music",
+    "plural": true,
+    "templates": [
+      "coloca {media} em todos os alto-falantes",
+      "reproduz {media} na casa inteira",
+      "toca {media} em todo lugar",
+      "toca {media} na casa toda"
+    ],
+    "value_slot": "media_query"
+  },
+  {
+    "domains": [
+      "lawn_mower"
+    ],
+    "intent": "mower.dock",
+    "operation": "mower_dock",
+    "templates": [
+      "faz o {mower} voltar",
+      "manda o cortador carregar",
+      "manda o {mower} pra base"
+    ]
+  },
+  {
+    "domains": [
+      "lawn_mower"
+    ],
+    "intent": "mower.pause",
+    "operation": "mower_pause",
+    "templates": [
+      "para o {mower} por enquanto",
+      "pausa o {mower}",
+      "segura o {mower}"
+    ]
+  },
+  {
+    "domains": [
+      "lawn_mower"
+    ],
+    "intent": "mower.start",
+    "operation": "mower_start",
+    "templates": [
+      "começa a cortar a grama",
+      "inicia o {mower}",
+      "liga o {mower}",
+      "manda o {mower} trabalhar"
+    ]
+  },
+  {
+    "domains": [
+      "lawn_mower"
+    ],
+    "intent": "mower.status",
+    "operation": "query",
+    "templates": [
+      "como está o {mower}",
+      "o cortador terminou",
+      "o {mower} está trabalhando",
+      "onde está o {mower}"
+    ]
+  },
+  {
+    "domains": [
+      "switch"
+    ],
+    "intent": "plug.turn_off",
+    "operation": "turn_off",
+    "target_slot": "plug",
+    "templates": [
+      "desative a {plug}",
+      "desliga a tomada",
+      "desliga a {plug}",
+      "pode desligar a {plug}"
+    ]
+  },
+  {
+    "domains": [
+      "switch"
+    ],
+    "intent": "plug.turn_on",
+    "operation": "turn_on",
+    "target_slot": "plug",
+    "templates": [
+      "ative a {plug}",
+      "liga a tomada",
+      "liga a {plug}",
+      "pode ligar a {plug}"
+    ]
+  },
+  {
+    "aggregate": "any",
+    "device_class": "occupancy",
+    "domains": [
+      "binary_sensor"
+    ],
+    "intent": "presence.area.query",
+    "metric": "presence",
+    "operation": "query",
+    "templates": [
+      "a {area} está ocupada",
+      "a {area} está vazia",
+      "alguém está na {area}",
+      "confere se tem alguém na {area}",
+      "me diz se tem alguém na {area}",
+      "tem alguma pessoa na {area}",
+      "tem alguém em {area}",
+      "tem alguém na {area}",
+      "tem gente na {area}",
+      "vê se tem alguém na {area}"
+    ]
+  },
+  {
+    "device_class": "",
+    "domains": [
+      "sensor"
+    ],
+    "intent": "presence.count.query",
+    "metric": "people_count",
+    "operation": "query",
+    "templates": [
+      "quantas pessoas estão na {area}",
+      "quantas pessoas tem na {area}",
+      "quantos estão na {area}",
+      "tem quantas pessoas na {area}"
+    ]
+  },
+  {
+    "domains": [
+      "person",
+      "device_tracker"
+    ],
+    "intent": "presence.person_area.query",
+    "metric": "location",
+    "operation": "query",
+    "templates": [
+      "a {person} está na {area}",
+      "confere se {person} está na {area}",
+      "o {person} está na {area}",
+      "vê se {person} está na {area}",
+      "{person} está na {area}",
+      "{person} tá na {area}"
+    ]
+  },
+  {
+    "domains": [
+      "person",
+      "device_tracker"
+    ],
+    "intent": "presence.person_location.query",
+    "metric": "location",
+    "operation": "query",
+    "templates": [
+      "acha {person}",
+      "em qual cômodo está {person}",
+      "em que lugar da casa está {person}",
+      "me diz onde está {person}",
+      "onde está {person}",
+      "onde tá {person}",
+      "você sabe onde está {person}"
+    ]
+  },
+  {
+    "dependency": "explicit registered script/button adapter; no generic HA service",
+    "domains": [],
+    "intent": "printer3d.pause",
+    "operation": "binding",
+    "templates": [
+      "pausa a impressora 3D",
+      "pausa a impressão",
+      "segura a impressão"
+    ]
+  },
+  {
+    "dependency": "explicit registered script/button adapter; no generic HA service",
+    "domains": [],
+    "intent": "printer3d.resume",
+    "operation": "binding",
+    "templates": [
+      "continua a impressão",
+      "retoma a impressão",
+      "volta a imprimir"
+    ]
+  },
+  {
+    "domains": [
+      "sensor",
+      "switch"
+    ],
+    "intent": "printer3d.status",
+    "operation": "query",
+    "target_slot": "appliance",
+    "templates": [
+      "a impressora está imprimindo",
+      "a impressão terminou",
+      "como está a impressora 3D",
+      "como está a impressão",
+      "qual o progresso da impressão",
+      "quanto falta pra impressão terminar"
+    ]
+  },
+  {
+    "domains": [
+      "script"
+    ],
+    "intent": "routine.activate",
+    "operation": "activate",
+    "target_slot": "routine",
+    "templates": [
+      "ativa a rotina {routine}",
+      "executa {routine}",
+      "modo {routine}",
+      "roda a rotina {routine}",
+      "{routine}"
+    ]
+  },
+  {
+    "context_target": true,
+    "domains": [],
+    "intent": "satellite.device_here_off",
+    "operation": "turn_off",
+    "templates": [
+      "desliga daqui",
+      "desliga esse aparelho",
+      "desliga isso",
+      "para isso aqui"
+    ]
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "satellite.light_here_off",
+    "operation": "turn_off",
+    "origin": true,
+    "plural": true,
+    "templates": [
+      "apaga a luz desse cômodo",
+      "apaga aqui",
+      "desliga a luz daqui",
+      "desliga a luz onde eu estou"
+    ]
+  },
+  {
+    "domains": [
+      "light"
+    ],
+    "intent": "satellite.light_here_on",
+    "operation": "turn_on",
+    "origin": true,
+    "plural": true,
+    "templates": [
+      "acende a luz desse cômodo",
+      "acende aqui",
+      "liga a luz daqui",
+      "liga a luz onde eu estou"
+    ]
+  },
+  {
+    "dependency": "Music Assistant",
+    "domains": [
+      "media_player"
+    ],
+    "intent": "satellite.media_here",
+    "operation": "music",
+    "templates": [
+      "coloca {media} aqui",
+      "reproduz {media} nesse alto-falante",
+      "toca {media} aqui",
+      "toca {media} onde eu estou"
+    ],
+    "value_slot": "media_query"
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "satellite.mute",
+    "operation": "mute",
+    "origin": true,
+    "templates": [
+      "fica mudo",
+      "muta você",
+      "silencia aqui",
+      "tira seu som"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "satellite.unmute",
+    "operation": "unmute",
+    "origin": true,
+    "templates": [
+      "desmuta",
+      "pode voltar a falar",
+      "tira você do mudo",
+      "volta seu som"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "satellite.volume_down",
+    "operation": "volume",
+    "relative": -1,
+    "templates": [
+      "baixa o volume aqui",
+      "baixa seu volume",
+      "diminui seu volume",
+      "fala mais baixo",
+      "fica mais baixo"
+    ]
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "satellite.volume_set",
+    "operation": "volume",
+    "templates": [
+      "coloca seu volume em {sat_volume}",
+      "fica em {sat_volume} de volume",
+      "volume daqui em {sat_volume}"
+    ],
+    "value_slot": "volume"
+  },
+  {
+    "domains": [
+      "media_player"
+    ],
+    "intent": "satellite.volume_up",
+    "operation": "volume",
+    "relative": 1,
+    "templates": [
+      "aumenta o volume aqui",
+      "aumenta seu volume",
+      "fala mais alto",
+      "fica mais alto",
+      "sobe seu volume"
+    ]
+  },
+  {
+    "domains": [
+      "scene"
+    ],
+    "intent": "scene.activate",
+    "operation": "activate",
+    "target_slot": "scene",
+    "templates": [
+      "ativa a cena {scene}",
+      "coloca o modo {scene}",
+      "liga a cena {scene}",
+      "modo {scene}",
+      "quero a cena {scene}"
+    ]
+  },
+  {
+    "aggregate": "any",
+    "domains": [
+      "binary_sensor",
+      "cover"
+    ],
+    "intent": "security.openings_any_open",
+    "metric": "opening",
+    "operation": "query",
+    "plural": true,
+    "templates": [
+      "confere se está tudo fechado",
+      "ficou alguma porta ou janela aberta",
+      "tem alguma coisa aberta",
+      "tem alguma janela aberta",
+      "tem alguma porta aberta"
+    ]
+  },
+  {
+    "device_class": "aqi",
+    "domains": [
+      "sensor"
+    ],
+    "intent": "sensor.air_quality.query",
+    "metric": "air_quality",
+    "operation": "query",
+    "templates": [
+      "como está a qualidade do ar na {area}",
+      "me diz como está o ar na {area}",
+      "o ar da {area} está bom",
+      "qual a qualidade do ar da {area}",
+      "qual o índice de qualidade do ar na {area}",
+      "tem alguma coisa ruim no ar da {area}"
+    ]
+  },
+  {
+    "device_class": "carbon_dioxide",
+    "domains": [
+      "sensor"
+    ],
+    "intent": "sensor.co2.query",
+    "metric": "co2",
+    "operation": "query",
+    "templates": [
+      "como está o gás carbônico na {area}",
+      "me fala o CO2 da {area}",
+      "o CO2 da {area} está alto",
+      "qual o nível de CO2 da {area}",
+      "quanto está o CO2 na {area}"
+    ]
+  },
+  {
+    "device_class": "humidity",
+    "domains": [
+      "sensor"
+    ],
+    "intent": "sensor.humidity.query",
+    "metric": "humidity",
+    "operation": "query",
+    "templates": [
+      "a {area} tá seca",
+      "como está a umidade na {area}",
+      "me diz a umidade da {area}",
+      "me fala quanto tá de umidade na {area}",
+      "qual a umidade da {area}",
+      "qual é a umidade na {area}",
+      "quanto está a umidade da {area}",
+      "tá muito úmido na {area}",
+      "umidade da {area}"
+    ]
+  },
+  {
+    "device_class": "illuminance",
+    "domains": [
+      "sensor"
+    ],
+    "intent": "sensor.illuminance.query",
+    "metric": "illuminance",
+    "operation": "query",
+    "templates": [
+      "como está a luz ambiente na {area}",
+      "qual a luminosidade da {area}",
+      "quanto está a luminosidade na {area}",
+      "tá claro na {area}",
+      "tá escuro na {area}"
+    ]
+  },
+  {
+    "device_class": "sound_pressure",
+    "domains": [
+      "sensor"
+    ],
+    "intent": "sensor.noise.query",
+    "metric": "noise",
+    "operation": "query",
+    "templates": [
+      "como está o ruído na {area}",
+      "qual o nível de ruído da {area}",
+      "quanto está o barulho na {area}",
+      "tá muito barulhento na {area}"
+    ]
+  },
+  {
+    "device_class": "temperature",
+    "domains": [
+      "sensor",
+      "climate"
+    ],
+    "intent": "sensor.temperature.query",
+    "metric": "temperature",
+    "operation": "query",
+    "templates": [
+      "como está a temperatura da {area}",
+      "me diz a temperatura da {area}",
+      "me fala a temperatura da {area}",
+      "qual a temperatura da {area}",
+      "qual é a temperatura da {area}",
+      "quanto está a temperatura na {area}",
+      "quanto tá dando de temperatura na {area}",
+      "quantos graus está fazendo na {area}",
+      "quantos graus está na {area}",
+      "temperatura da {area}",
+      "tá frio na {area}",
+      "tá quente na {area}"
+    ]
+  },
+  {
+    "domains": [
+      "sun"
+    ],
+    "intent": "sunrise.query",
+    "metric": "sunrise",
+    "operation": "query",
+    "templates": [
+      "quando é o nascer do sol",
+      "que horas amanhece",
+      "que horas o sol nasce"
+    ]
+  },
+  {
+    "domains": [
+      "sun"
+    ],
+    "intent": "sunset.query",
+    "metric": "sunset",
+    "operation": "query",
+    "templates": [
+      "quando é o pôr do sol",
+      "que horas escurece",
+      "que horas o sol se põe"
+    ]
+  },
+  {
+    "domains": [],
+    "intent": "time.current",
+    "operation": "local_time",
+    "templates": [
+      "me diz a hora",
+      "qual a hora",
+      "que horas são",
+      "que horas é",
+      "vê a hora pra mim"
+    ]
+  },
+  {
+    "domains": [
+      "timer"
+    ],
+    "intent": "timer.add_time",
+    "operation": "timer_change",
+    "relative": 1,
+    "templates": [
+      "adiciona {delta_duration} ao timer",
+      "aumenta o timer em {delta_duration}",
+      "coloca mais {delta_duration} no timer",
+      "soma {delta_duration} ao timer"
+    ],
+    "value_slot": "delta_duration"
+  },
+  {
+    "domains": [
+      "timer"
+    ],
+    "intent": "timer.cancel",
+    "operation": "timer_cancel",
+    "templates": [
+      "apaga o timer",
+      "cancela o timer",
+      "para o timer",
+      "tira o temporizador"
+    ]
+  },
+  {
+    "domains": [
+      "timer"
+    ],
+    "intent": "timer.cancel_all",
+    "operation": "timer_cancel",
+    "plural": true,
+    "templates": [
+      "apaga todos os temporizadores",
+      "cancela os temporizadores",
+      "cancela todos os timers",
+      "para todos os timers"
+    ]
+  },
+  {
+    "domains": [
+      "timer"
+    ],
+    "intent": "timer.finish",
+    "operation": "timer_finish",
+    "templates": [
+      "encerra o timer",
+      "finaliza o timer",
+      "pode acabar o timer",
+      "termina o timer"
+    ]
+  },
+  {
+    "domains": [
+      "timer"
+    ],
+    "intent": "timer.pause",
+    "operation": "timer_pause",
+    "templates": [
+      "para o timer por enquanto",
+      "pausa o temporizador",
+      "pausa o timer",
+      "segura o timer"
+    ]
+  },
+  {
+    "domains": [
+      "timer"
+    ],
+    "intent": "timer.query",
+    "metric": "remaining",
+    "operation": "query",
+    "templates": [
+      "como está o timer",
+      "o timer termina quando",
+      "quanto falta no timer",
+      "quanto tempo falta"
+    ]
+  },
+  {
+    "domains": [
+      "timer"
+    ],
+    "intent": "timer.remove_time",
+    "operation": "timer_change",
+    "relative": -1,
+    "templates": [
+      "diminui {delta_duration} do timer",
+      "reduz o timer em {delta_duration}",
+      "remove {delta_duration} do temporizador",
+      "tira {delta_duration} do timer"
+    ],
+    "value_slot": "delta_duration"
+  },
+  {
+    "domains": [
+      "timer"
+    ],
+    "intent": "timer.resume",
+    "operation": "timer_resume",
+    "templates": [
+      "continua o temporizador",
+      "continua o timer",
+      "retoma o timer",
+      "volta o timer"
+    ]
+  },
+  {
+    "domains": [
+      "timer"
+    ],
+    "intent": "timer.set",
+    "operation": "timer_start",
+    "templates": [
+      "coloca um timer de {duration}",
+      "conta {duration}",
+      "cronometra {duration}",
+      "marca {duration}",
+      "me avisa em {duration}"
+    ],
+    "value_slot": "duration"
+  },
+  {
+    "domains": [
+      "timer"
+    ],
+    "intent": "timer.start",
+    "operation": "timer_start",
+    "templates": [
+      "coloca um timer de {duration}",
+      "começa um timer de {duration}",
+      "conta {duration}",
+      "inicia um timer de {duration}",
+      "marca {duration} no timer"
+    ],
+    "value_slot": "duration"
+  },
+  {
+    "domains": [
+      "vacuum"
+    ],
+    "intent": "vacuum.clean_area",
+    "operation": "vacuum_area",
+    "templates": [
+      "aspira a {area}",
+      "limpa a {area}",
+      "manda o robô pra {area}",
+      "manda o {vacuum} limpar a {area}"
+    ],
+    "value_slot": "area"
+  },
+  {
+    "domains": [
+      "vacuum"
+    ],
+    "intent": "vacuum.dock",
+    "operation": "vacuum_dock",
+    "templates": [
+      "carrega o {vacuum}",
+      "manda o robô voltar",
+      "manda o {vacuum} pra base",
+      "volta o {vacuum} pra base"
+    ]
+  },
+  {
+    "domains": [
+      "vacuum"
+    ],
+    "intent": "vacuum.start",
+    "operation": "vacuum_start",
+    "templates": [
+      "bota o robô pra limpar",
+      "começa a limpeza",
+      "inicia o {vacuum}",
+      "liga o {vacuum}",
+      "manda o {vacuum} limpar"
+    ]
+  },
+  {
+    "domains": [
+      "vacuum"
+    ],
+    "intent": "vacuum.stop",
+    "operation": "vacuum_stop",
+    "templates": [
+      "cancela a limpeza",
+      "chega de limpar",
+      "manda o {vacuum} parar",
+      "para o {vacuum}"
+    ]
+  },
+  {
+    "domains": [
+      "sensor"
+    ],
+    "intent": "washer.remaining_time",
+    "metric": "remaining_time",
+    "operation": "query",
+    "templates": [
+      "a máquina termina que horas",
+      "quando a máquina de lavar termina",
+      "quanto falta pra máquina de lavar terminar",
+      "quanto tempo falta na lavagem"
+    ]
+  },
+  {
+    "aggregate": "any",
+    "device_class": "moisture",
+    "domains": [
+      "binary_sensor"
+    ],
+    "intent": "water.leak_query",
+    "metric": "leak",
+    "operation": "query",
+    "plural": true,
+    "templates": [
+      "algum sensor de água disparou",
+      "detectou vazamento",
+      "tem algum vazamento",
+      "tem vazamento em algum lugar",
+      "tem água vazando"
+    ]
+  },
+  {
+    "domains": [
+      "sensor"
+    ],
+    "intent": "water.tank_level_query",
+    "metric": "tank_level",
+    "operation": "query",
+    "templates": [
+      "a caixa d'água está cheia",
+      "qual o nível da caixa d'água",
+      "quanto de água tem no reservatório",
+      "quanto tem na caixa d'água"
+    ]
+  },
+  {
+    "domains": [
+      "weather"
+    ],
+    "intent": "weather.current",
+    "metric": "weather",
+    "operation": "query",
+    "templates": [
+      "como está o clima lá fora",
+      "como está o tempo",
+      "como está o tempo agora",
+      "qual a temperatura lá fora",
+      "tá chovendo",
+      "tá quente lá fora"
+    ]
+  },
+  {
+    "domains": [
+      "weather"
+    ],
+    "intent": "weather.forecast",
+    "operation": "forecast",
+    "templates": [
+      "como fica o clima {date}",
+      "como vai estar o tempo {date}",
+      "qual a previsão do tempo {date}",
+      "qual a previsão para {date}",
+      "vai chover {date}"
+    ],
+    "value_slot": "date"
+  },
+  {
+    "domains": [
+      "binary_sensor"
+    ],
+    "intent": "window.status",
+    "metric": "opening",
+    "operation": "query",
+    "templates": [
+      "a {window} está aberta",
+      "a {window} está fechada",
+      "como está a {window}",
+      "confere a {window}"
+    ]
+  }
+]

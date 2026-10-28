@@ -1,0 +1,17 @@
+[package]
+name = "lang-ptbr"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "lang_ptbr"
+path = "src/lib.rs"
+
+[dependencies]
+nlu-core = { path = "../nlu-core" }
+nlu-data = { path = "../nlu-data" }
+unicode-normalization.workspace = true
+unicode-segmentation.workspace = true

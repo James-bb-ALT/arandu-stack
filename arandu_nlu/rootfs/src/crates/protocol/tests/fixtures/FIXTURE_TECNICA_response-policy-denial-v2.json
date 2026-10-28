@@ -1,0 +1,1 @@
+{"version":2,"outcome":{"type":"policy_denial","reason":"explicit_deny"},"diagnostics":[{"code":"policy_denied","node":"fixture_tecnica:node","limit":null}]}

@@ -1,0 +1,46 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: pip install numpy rapidfuzz pyyaml websockets wyoming fastapi uvicorn httpx
+      - name: Install media test tools
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Compile sources
+        run: python -m compileall -q arandu_stt tools
+      - name: Lexical resolver tests
+        run: python -m unittest discover -s arandu_stt/tests -v
+      - name: Offline dataset and training tests
+        run: python -m unittest discover -s tools/stt_pipeline/tests -v
+      - name: Comparison app tests
+        run: python -m unittest discover -s tools/comparison_app/tests -v
+      - name: Validate app metadata
+        run: |
+          python - <<'PY'
+          import yaml
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('arandu_stt').resolve()))
+          from server import VERSION
+          root=yaml.safe_load(Path('repository.yaml').read_text())
+          cfg=yaml.safe_load(Path('arandu_stt/config.yaml').read_text())
+          assert root['name']
+          for key in ('name','version','slug','description','arch'):
+              assert cfg.get(key), key
+          assert cfg['version'] == VERSION
+          assert f'ARG BUILD_VERSION="{VERSION}"' in Path('arandu_stt/Dockerfile').read_text()
+          assert cfg['slug']=='arandu_stt'
+          assert 'amd64' in cfg['arch']
+          assert cfg.get('discovery') == ['wyoming']
+          assert cfg['ports']['10350/tcp'] is None
+          PY

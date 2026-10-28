@@ -1,0 +1,8 @@
+{
+  "name": "ARANDU NLU",
+  "homeassistant": "2025.3.0",
+  "hacs": "2.0.5",
+  "content_in_root": false,
+  "hide_default_branch": false,
+  "zip_release": false
+}

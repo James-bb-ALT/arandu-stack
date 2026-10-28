@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools==80.9.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arandu-llm"
+version = "0.1.0"
+description = "Optional passive Arandu LLM service for the Arandu stack"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = ["aiohttp==3.13.3","huggingface-hub==0.36.0","psutil==7.2.1"]
+
+[project.scripts]
+arandu-llm = "arandu_llm.service:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

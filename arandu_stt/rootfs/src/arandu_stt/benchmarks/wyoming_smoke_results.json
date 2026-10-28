@@ -1,0 +1,7 @@
+{
+  "scope": "actual_server_real_INT8_over_Wyoming_TCP_silence",
+  "model": "arandu-fastconformer-ptbr-int8",
+  "version": "2.0.0",
+  "final": "",
+  "all_tokens_allowed": true
+}

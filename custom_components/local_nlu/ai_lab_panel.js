@@ -1,0 +1,305 @@
+/* Native Home Assistant panel. Uses the authenticated hass websocket, never stored tokens. */
+class AranduAILab extends HTMLElement {
+  set hass(value) { this._hass = value; if (!this.ready) { this.ready = true; this.mount(); } }
+  connectedCallback() { if (this._hass && !this.ready) { this.ready = true; this.mount(); } }
+  disconnectedCallback() { this.demoStopRequested=true;clearInterval(this.demoTimer);this.stopRecording(); if (this.audioUrl) URL.revokeObjectURL(this.audioUrl); }
+  $(id) { return this.shadowRoot.getElementById(id); }
+  saved(key, fallback) { try { return JSON.parse(localStorage.getItem('arandu-lab-' + key)) ?? fallback; } catch { return fallback; } }
+  store(key, value) { localStorage.setItem('arandu-lab-' + key, JSON.stringify(value)); }
+  async call(command, extra = {}) {
+    return this._hass.callWS({type: 'local_nlu/ai_lab', payload: {command, worker: this.$('worker').value,
+      entry_id: this.$('entry').value || undefined, stt_endpoint: this.$('sttEndpoint').value,
+      tts_endpoint: this.$('ttsEndpoint').value, tts_token: this.$('ttsToken').value,
+      model: this.$('decision').value, mode: this.$('mode').value, llm_model:this.$('llm').value || 'tucano',
+      threshold: Number(this.$('threshold').value), min_margin: Number(this.$('margin').value), ...extra}});
+  }
+  async task(fn) {
+    if (this.busy) return;
+    this.busy = true; this.$('status').textContent = 'Processando…'; this.$('status').setAttribute('role', 'status');
+    this.shadowRoot.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    try { await fn(); this.$('status').textContent = 'Teste finalizado.'; }
+    catch (e) { this.$('status').textContent = 'Falha: ' + (e.message || e); this.$('status').setAttribute('role', 'alert'); }
+    finally { this.busy = false; this.shadowRoot.querySelectorAll('button').forEach(b => { b.disabled = false; }); this.executionState(); }
+  }
+  mount() {
+    this.attachShadow({mode: 'open'});
+    this.shadowRoot.innerHTML = `
+      <style>
+      :host{display:block;background:var(--primary-background-color,#f4f6f3);color:var(--primary-text-color,#172a27);font:15px/1.5 system-ui;min-height:100vh}*{box-sizing:border-box}
+      main{max-width:1200px;margin:auto;padding:32px 24px 70px}header{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:28px}h1{font-size:30px;letter-spacing:-1px;margin:0}h2{font-size:18px;margin:0 0 16px}p{margin:6px 0}.muted{color:var(--secondary-text-color,#5a6d67)}.badge{border:1px solid #7b9f8c;border-radius:20px;padding:5px 12px;font-size:12px;color:var(--primary-text-color,#24503c)}
+      .layout{display:grid;grid-template-columns:300px 1fr;gap:20px}.card{background:var(--card-background-color,white);border:1px solid var(--divider-color,#dae1da);border-radius:16px;padding:22px;margin-bottom:18px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.row>*{flex:1}.row button{flex:initial}
+      label{display:block;font-size:13px;margin:12px 0 5px}input,select,textarea{font:inherit;width:100%;border:1px solid var(--divider-color,#cad6cd);background:var(--card-background-color,white);color:inherit;border-radius:8px;padding:10px}textarea{min-height:110px;resize:vertical}input[type=checkbox]{width:auto}button{font:inherit;border:1px solid var(--divider-color,#cad6cd);background:var(--card-background-color,white);color:inherit;border-radius:9px;padding:10px 14px;cursor:pointer}button.primary{background:#215641;color:white;border-color:#215641}button:disabled{opacity:.45;cursor:wait}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #88b5e6;outline-offset:2px}
+      #stages{display:flex;gap:6px;flex-wrap:wrap;margin:15px 0}.stage{border:1px solid var(--divider-color,#dae1da);padding:8px;border-radius:8px;flex:1;font-size:12px;min-width:78px}.executed{border-color:#508567;background:#50856718}.error{border-color:#bb6654}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 ui-monospace,monospace;max-height:480px;overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:8px;border-bottom:1px solid var(--divider-color,#ddd)}.scroll{overflow:auto}summary{cursor:pointer}#status{min-height:28px;margin:12px 0}audio{width:100%;margin-top:12px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.metric{padding:12px;background:#5085670e;border-radius:8px}.metric strong{display:block;font-size:20px}#history button{display:block;width:100%;text-align:left;margin-top:8px}small{font-size:12px}a{color:inherit}
+      @media(max-width:850px){.layout{grid-template-columns:1fr}main{padding:20px 12px}header{align-items:start}h1{font-size:25px}}
+      </style>
+      <main><header><div><p class="muted">ARANDU / INTELIGÊNCIA LOCAL</p><h1>AI Decision Lab</h1><p class="muted">Interprete, compare e revise antes de agir.</p></div><span class="badge" id="safety">Dry-run ativo</span></header>
+      <section class="card" id="demoCard"><h2>Testes prontos · casa fictícia</h2>
+        <p class="muted">Dataset sintético com dispositivos, aliases, áreas e gabaritos prontos. Os modelos rodam de verdade, somente após seu clique. Nenhuma ação real é permitida nesta suíte.</p>
+        <label for="demoSize">Quantidade de casos por modelo</label><select id="demoSize"><option value="quick">Rápida · 8 comandos</option><option value="full">Completa · 16 comandos</option></select>
+        <div class="row"><button class="primary" id="demoAll">Rodar tudo</button><button id="demoNlu">Só NLU Rust</button><button id="demoDecision">Todos os Decision Engines</button><button id="demoLlm">Todos os LLMs</button><button id="demoStop" disabled>Parar após este caso</button></div>
+        <p id="demoStatus" role="status" aria-live="polite">Carregando apenas os dados da suíte. Nenhum teste executado.</p><progress id="demoProgress" max="1" value="0" style="width:100%"></progress>
+        <p class="muted"><small>Execução sequencial. Política fixa da demonstração: confiança &gt;50%, margem 0,08. LLMs recebem recuperação real do BrazEmbed, medida separadamente. Top-1 avalia intenção e alvo nos casos positivos; decisão final também avalia recusas. Erros técnicos contam como erro. Acurácia nesta demonstração não é acurácia geral em PT-BR.</small></p>
+        <div id="demoSummary" class="scroll"></div>
+        <details><summary>Comandos, gabaritos e casa fictícia</summary><pre id="demoDataset"></pre></details>
+        <details open><summary>Resultados por comando · esperado versus obtido</summary><div id="demoRows"></div></details>
+        <div class="row"><button id="demoDatasetDownload">Baixar dataset</button><button id="demoJson">Exportar resultados JSON</button><button id="demoCsv">Exportar resultados CSV</button></div>
+      </section>
+      <div class="layout"><aside>
+      <section class="card"><h2>Componentes</h2>
+        <label for="stt">STT · FastConformer existente</label><select id="stt"><option value="original">Original</option><option value="adapted">Adaptado (se instalado)</option></select>
+        <label for="mode">Modo de interpretação</label><select id="mode"><option value="pipeline">Pipeline com fallbacks</option><option value="nlu">NLU Rust isolado</option><option value="decision">Decision isolado</option><option value="llm">LLM isolado + recuperação</option></select>
+        <label for="decision">Decision Engine</label><select id="decision"><option value="e5-small">Arandu Decision · E5 Small · verificar serviço</option></select>
+        <label for="llm">LLM local</label><select id="llm"><option value="tucano">Arandu LLM · Tucano 2 Qwen 0.5B · verificar serviço</option></select>
+        <label for="threshold">Confiança calibrada mínima (exclusiva)</label><input id="threshold" type="number" min="0.5" max="1" step="0.01" value="0.5">
+        <label for="margin">Margem mínima</label><input id="margin" type="number" min="0.001" max="1" step="0.001" value="0.08">
+        <p class="muted"><small>Cosine similarity não é probabilidade. Sem calibração válida, o motor encaminha ao próximo nível.</small></p>
+        <label for="tts">TTS existente</label><select id="tts"><option value="piper">Piper PT-BR</option><option value="pocket">Pocket TTS</option></select>
+        <button id="refresh">Verificar modelos</button><button id="load">Pré-carregar encoder</button><button id="unload">Descarregar modelos</button>
+        <label for="installModel">Instalação sob demanda (download no worker)</label><select id="installModel"><option value="brazembed">BrazEmbed · MIT</option><option value="e5-small">E5 Small · MIT</option><option value="saracura">Saracura · Apache-2.0</option><option value="jatoba">JATOBÁ · pesos não comerciais</option><option value="qwen">Qwen Q4 · Apache-2.0</option><option value="tucano">Tucano 2 Q4 · Apache-2.0</option></select><button id="install">Baixar pesos selecionados</button>
+      </section>
+      <details class="card"><summary>Conexões locais</summary>
+        <label for="worker">Worker de inferência (opcional)</label><input id="worker" value="" placeholder="Automático pelo endpoint Arandu Stack">
+        <label for="sttEndpoint">Web app STT</label><input id="sttEndpoint" value="http://127.0.0.1:8765">
+        <label for="ttsEndpoint">Web app TTS</label><input id="ttsEndpoint" value="http://127.0.0.1:8099">
+        <label for="ttsToken">Token TTS (opcional; não salvo)</label><input id="ttsToken" type="password" autocomplete="off">
+        <label for="entry">Entry ID NLU (se houver várias integrações)</label><input id="entry">
+        <p class="muted"><small>Endereços vistos pelo servidor HA. Em máquinas separadas, use o IP privado do serviço. Sem wake word.</small></p>
+      </details>
+      <section class="card"><h2>Histórico neste navegador</h2><button id="clear">Apagar histórico</button><div id="history"></div></section>
+      </aside><div>
+      <section class="card"><h2>Comando em português</h2><label for="text">Texto ou transcrição editável</label><textarea id="text" placeholder="Acende a luz perto da televisão."></textarea>
+        <div class="row"><button id="record">Gravar microfone</button><button class="primary" id="run">Processar comando</button><button id="repeat">Repetir teste</button></div>
+        <label><input type="checkbox" id="autoTts"> Sintetizar resposta ao final pelo TTS existente</label>
+        <p id="transcription" class="muted"></p><p id="status" aria-live="polite">Pronto. Nenhuma ação real será executada.</p>
+        <label><input type="checkbox" id="real"> Habilitar execução real com revisão de cada proposta</label>
+        <button id="execute" disabled>Executar ação revisada (30 s)</button>
+      </section>
+      <section class="card"><h2>Resultado do pipeline</h2><div id="stages"></div><p id="answer" aria-live="polite"></p><div id="metrics" class="metrics"></div>
+        <div class="scroll"><table><thead><tr><th>Candidato</th><th>Ação</th><th>Score bruto</th></tr></thead><tbody id="ranking"></tbody></table></div>
+        <details><summary>Entradas, saídas, erros e JSON final</summary><pre id="output">Nenhum teste executado.</pre></details>
+        <div class="row"><button id="speak">Testar resposta TTS</button><button id="json">Exportar JSON</button><button id="csv">Exportar CSV</button></div><audio id="player" controls></audio>
+      </section>
+      <section class="card"><h2>Suíte de comandos e benchmark</h2><p class="muted">Edite o JSON. Exemplos sem rótulo não entram na acurácia. Informe entidades reais; nunca use resultados do modelo como gabarito.</p>
+        <label for="examples">Exemplos editáveis (máximo 20 por lote)</label><textarea id="examples" spellcheck="false" style="min-height:220px"></textarea>
+        <label for="compareModels">Motores para comparar</label><select id="compareModels" multiple aria-label="Motores para comparação"></select>
+        <p class="muted"><small>Comparação sequencial, mesmo catálogo, sempre dry-run. Selecione Decision isolado para medir os motores sem a resolução do NLU.</small></p>
+        <div class="row"><button id="saveExamples">Salvar exemplos localmente</button><button id="batch">Executar lote</button><button id="catalog">Ver catálogo real</button></div><div id="benchmark" class="scroll"></div><pre id="batchOutput"></pre>
+      </section>
+      <details class="card"><summary>Calibrar com rótulos revisados</summary><p>Forneça {"train": [...], "validation": [...]}, com pelo menos 50 e 30 textos distintos. Campos: text, expected_intent, expected_entities, requires_clarification. Somente calibração validada no mesmo catálogo/modelo pode autorizar Decision.</p>
+        <label for="calibration">Dados de calibração</label><textarea id="calibration" spellcheck="false"></textarea><button id="calibrate">Ajustar e validar calibração</button>
+      </details></div></div></main>`;
+    const defaults = ['Liga a luz da sala', 'Liga a sala', 'Liga todos os dispositivos da sala', 'Liga o ventilador do Jaime', 'Acende a luz perto da TV', 'Apaga a iluminação principal', 'Desliga tudo', 'Acende a lua', 'Qual a temperatura da sala?', 'Está muito quente aqui'];
+    this.$('examples').value = JSON.stringify(this.saved('examples', defaults.map(text => ({text, expected: null, expected_area: null, correct_result: null, notes: 'Rotular com entidades reais antes de medir acurácia.'}))), null, 2);
+    const config = this.saved('config', {});
+    for (const id of ['worker','sttEndpoint','ttsEndpoint','entry','threshold','margin']) if (config[id] != null) this.$(id).value = config[id];
+    for (const id of ['worker','sttEndpoint','ttsEndpoint','entry','threshold','margin']) this.$(id).onchange = () => {
+      this.invalidate();
+      this.store('config', Object.fromEntries(['worker','sttEndpoint','ttsEndpoint','entry','threshold','margin'].map(k => [k, this.$(k).value])));
+      const policies=this.saved('policies',{});policies[this.$('decision').value||'e5-small']={threshold:this.$('threshold').value,margin:this.$('margin').value};this.store('policies',policies);
+    };
+    this.$('decision').onchange=()=>{this.invalidate();const policy=this.saved('policies',{})[this.$('decision').value]||{threshold:.5,margin:.08};this.$('threshold').value=policy.threshold;this.$('margin').value=policy.margin;};
+    this.$('text').oninput=()=>this.invalidate();this.$('mode').onchange=()=>this.invalidate();this.$('llm').onchange=()=>this.invalidate();
+    this.$('run').onclick = () => this.task(() => this.run());
+    for(const [id,kind] of [['demoAll','all'],['demoNlu','nlu'],['demoDecision','decision'],['demoLlm','llm']])this.$(id).onclick=()=>this.task(()=>this.runDemo(kind));
+    this.$('demoStop').onclick=()=>{this.demoStopRequested=true;this.$('demoStop').disabled=true;this.$('demoStatus').textContent='Parada solicitada. A inferência atual termina antes de interromper a fila.';};
+    this.$('demoSize').onchange=()=>this.demoPreview();
+    this.$('demoDatasetDownload').onclick=()=>{if(this.demoData)this.demoDownload('json',this.demoData,'arandu-dataset-ficticio');};
+    this.$('demoJson').onclick=()=>this.demoDownload('json');this.$('demoCsv').onclick=()=>this.demoDownload('csv');
+    this.$('repeat').onclick = () => this.task(async () => { if (!this.lastInput) throw Error('Nenhum teste anterior'); this.$('text').value = this.lastInput.text; await this.run(this.lastInput); });
+    this.$('refresh').onclick = () => this.task(() => this.refresh());
+    for (const command of ['load','unload','install']) this.$(command).onclick = () => this.task(async () => {
+      const r = await this.call(command, command === 'install' ? {model:this.$('installModel').value} : {});
+      this.$('batchOutput').textContent = JSON.stringify(r, null, 2); if(command==='install') await this.refresh();
+    });
+    this.$('real').onchange = () => { this.$('safety').textContent = this.$('real').checked ? 'Revisão obrigatória' : 'Dry-run ativo'; this.executionState(); };
+    this.$('execute').onclick = () => this.task(async () => {
+      if (!this.$('real').checked || !this.last?.execution_token) throw Error('Revise e habilite a execução real');
+      const token = this.last.execution_token; delete this.last.execution_token;
+      const before = performance.now(); const result = await this.call('execute', {token, confirm: true});
+      this.last.stages.ha = {status:'executed', latency_ms:performance.now()-before, output:result};
+      this.last.execution = result; this.last.dry_run = false; this.render(this.last); this.persist();
+    });
+    this.$('record').onclick = () => this.recorder ? this.stopRecording() : this.startRecording();
+    this.$('speak').onclick = () => this.task(() => this.speak());
+    this.$('clear').onclick = () => { this.store('history', []); this.history(); };
+    this.$('saveExamples').onclick = () => this.task(async () => { this.store('examples', JSON.parse(this.$('examples').value)); });
+    this.$('batch').onclick = () => this.task(async () => {
+      const models = [...this.$('compareModels').selectedOptions].map(o=>o.value);
+      this.batch = await this.call('compare', {examples:JSON.parse(this.$('examples').value), models});
+      this.renderBenchmark(this.batch);
+      this.$('batchOutput').textContent = JSON.stringify(this.batch, null, 2);
+    });
+    this.$('catalog').onclick = () => this.task(async () => { this.$('batchOutput').textContent = JSON.stringify(await this.call('catalog'), null, 2); });
+    this.$('calibrate').onclick = () => this.task(async () => { const data = JSON.parse(this.$('calibration').value); this.$('batchOutput').textContent = JSON.stringify(await this.call('calibrate', data), null, 2); });
+    this.$('json').onclick = () => this.download('json'); this.$('csv').onclick = () => this.download('csv');
+    this.history(); this.task(() => this.refresh());
+  }
+  async speak() {
+    try {
+      const text = this.last?.execution?.response_text || this.last?.clarification_question || this.last?.proposal?.reason || 'Ação interpretada em modo de simulação.';
+      const r = await this.call('tts', {text, tts_model:this.$('tts').value});
+      if (this.audioUrl) URL.revokeObjectURL(this.audioUrl);
+      this.audioUrl = URL.createObjectURL(new Blob([Uint8Array.from(atob(r.audio), c=>c.charCodeAt(0))], {type:'audio/wav'}));
+      this.$('player').src = this.audioUrl;
+      if (this.last) { this.last.stages.tts = {status:'executed', model:r.model, latency_ms:r.latency_ms, first_chunk_ms:r.first_chunk_ms}; this.render(this.last); this.persist(); }
+      await this.$('player').play();
+    } catch(e) {
+      if(this.last){this.last.stages.tts={status:'error',error:e.message||String(e)};this.render(this.last);this.persist();}throw e;
+    }
+  }
+  executionState() { this.$('execute').disabled = this.busy || !this.$('real').checked || !this.last?.execution_token;this.$('demoStop').disabled=!this.demoRunning||this.demoStopRequested; }
+  invalidate(){if(this.last)delete this.last.execution_token;this.executionState();}
+  renderBenchmark(batch) {
+    const table = document.createElement('table'); const head = document.createElement('tr');
+    for (const label of ['Motor','Acurácia','Erros de alvo','Falsos acionamentos','Rejeição','LLM','p50 / p95 / p99','RSS máximo']) { const th=document.createElement('th');th.textContent=label;head.append(th); }
+    table.append(head); const pct=v=>v==null?'Indisponível':(v*100).toFixed(1)+'%';
+    for(const [model,data] of Object.entries(batch.models)) {
+      const m=data.metrics,row=document.createElement('tr');
+      const values=[model,pct(m.accuracy),m.device_errors??'Indisponível',m.false_activations??'Indisponível',pct(m.rejection_rate),pct(m.llm_rate),[50,95,99].map(p=>m.latency_ms?.['p'+p]==null?'—':m.latency_ms['p'+p].toFixed(1)).join(' / ')+' ms',m.memory_bytes==null?'Indisponível':(m.memory_bytes/1048576).toFixed(0)+' MiB'];
+      for(const value of values){const cell=document.createElement('td');cell.textContent=value;row.append(cell);}table.append(row);
+    }
+    this.$('benchmark').replaceChildren(table);
+    const note=document.createElement('p');note.className='muted';note.textContent='Tempos do processamento de texto no servidor; RSS do processo, sem atribuição exclusiva ao modelo. Calibração versus acerto está no JSON reliability. Latência audível ponta a ponta ainda não medida.';this.$('benchmark').append(note);
+  }
+  async refresh() {
+    let result;
+    try{result=await this.call('status');}catch(error){result={models:[],error:error.message||String(error)};}
+    this.modelStatus=result.models;
+    const fill = (id, kind) => {
+      const previous=this.$(id).value;
+      this.$(id).replaceChildren();
+      for (const model of result.models.filter(m=>m.kind===kind)) {
+        const option = document.createElement('option'); option.value = model.id;
+        option.textContent = model.name + (model.available ? ' · disponível' : ' · indisponível: ' + model.reason);
+        option.disabled = !model.available; this.$(id).append(option);
+      }
+      if([...this.$(id).options].some(o=>o.value===previous&&!o.disabled))this.$(id).value=previous;
+    };
+    fill('decision','decision'); fill('compareModels','decision'); fill('llm','llm');
+    if (result.error) this.$('batchOutput').textContent = result.error;
+    try{this.demoData=await this.call('demo_suite');this.$('demoDataset').textContent=JSON.stringify(this.demoData,null,2);this.demoPreview();this.renderDemo();}
+    catch(error){this.$('demoStatus').textContent='Suíte indisponível: '+(error.message||error);}
+  }
+  demoCases(){return this.demoData?.cases.filter(c=>this.$('demoSize').value==='full'||this.demoData.quick_ids.includes(c.id))||[];}
+  demoPreview(){if(!this.demoData||this.demoRunning)return;this.$('demoStatus').textContent=`Pronto: ${this.demoData.devices.length} dispositivos fictícios, ${this.demoCases().length} comandos por modelo. Clique para executar; nenhuma inferência começou automaticamente.`;}
+  async runDemo(kind){
+    if(!this.demoData)throw Error('Carregue a suíte pelo botão Verificar modelos.');
+    const cases=this.demoCases();
+    this.demoRunners=this.demoData.runners.filter(r=>kind==='all'||r.kind===kind);
+    this.demoResults=[];this.demoRowsShown=0;this.$('demoRows').replaceChildren();
+    this.demoRunning=true;this.demoStopRequested=false;this.demoPlanned=cases.length;this.demoScope=kind;
+    this.$('demoStop').disabled=false;this.$('demoSize').disabled=true;
+    const planned=cases.length*this.demoRunners.length;let done=0;
+    this.$('demoProgress').max=planned;this.$('demoProgress').value=0;this.renderDemo();
+    try{
+      for(const runner of this.demoRunners){
+        for(const sample of cases){
+          if(this.demoStopRequested)break;
+          this.$('demoStatus').textContent=`${done+1}/${planned} · ${runner.name} · ${sample.text} · aguardando inferência real…`;
+          const model=this.modelStatus?.find(m=>m.id===runner.model);
+          let result;
+          if(runner.kind!=='nlu'&&!model?.available){
+            result={runner,case_id:sample.id,text:sample.text,expected:sample.expected,actual:null,skipped:true,error:false,reason:model?.reason||'Modelo não instalado ou worker inacessível',stages:[],model_invocations:0};
+          }else{
+            const before=performance.now();
+            this.demoTimer=setInterval(()=>{this.$('demoStatus').textContent=`${done+1}/${planned} · ${runner.name} · ${sample.text} · ${((performance.now()-before)/1000).toFixed(1)} s`+(this.demoStopRequested?' · encerrando após este caso':' · rodando…');},250);
+            try{result=await this.call('demo_case',{runner_id:runner.id,case_id:sample.id,dataset_hash:this.demoData.dataset_hash});}
+            catch(error){result={runner,case_id:sample.id,text:sample.text,expected:sample.expected,actual:null,correct:false,top1_correct:sample.expected.requires_clarification?null:false,error:true,reason:error.message||String(error),stages:[],model_invocations:0,model_ms:null,total_ms:performance.now()-before};}
+            finally{clearInterval(this.demoTimer);}
+          }
+          this.demoResults.push(result);done++;this.$('demoProgress').value=done;this.renderDemo();
+        }
+        if(this.demoStopRequested)break;
+      }
+      this.$('demoStatus').textContent=(this.demoStopRequested?'Interrompido':'Finalizado')+` · ${done}/${planned} casos processados. Resultados reais abaixo; erros e indisponibilidades foram preservados.`;
+    }finally{this.demoRunning=false;this.$('demoSize').disabled=false;this.$('demoStop').disabled=true;}
+  }
+  renderDemo(){
+    const table=document.createElement('table'),head=document.createElement('tr');
+    for(const label of ['Modelo','Casos feitos','Top-1 · positivos','Decisão final','Chamadas / apoio','Etapa média','Carga total','Inferência média','p95 da etapa','Erros']){const th=document.createElement('th');th.textContent=label;head.append(th);}table.append(head);
+    const percentage=(count,total)=>total?`${(100*count/total).toFixed(1)}% (${count}/${total})`:'Não medido';
+    const number=v=>typeof v==='number'&&Number.isFinite(v);
+    const avg=values=>values.length?(values.reduce((a,b)=>a+b,0)/values.length).toFixed(1)+' ms':'Indisponível';
+    for(const runner of this.demoRunners||this.demoData?.runners||[]){
+      const all=(this.demoResults||[]).filter(r=>r.runner.id===runner.id),rows=all.filter(r=>!r.skipped),positive=rows.filter(r=>r.top1_correct!==null&&r.top1_correct!==undefined);
+      const times=rows.map(r=>r.model_ms).filter(number).sort((a,b)=>a-b),loads=rows.map(r=>r.load_ms).filter(number),infer=rows.map(r=>r.inference_ms).filter(number);
+      const values=[runner.name,`${rows.length}/${this.demoPlanned||this.demoCases().length}`+(all.some(r=>r.skipped)?' · indisponível':''),percentage(positive.filter(r=>r.top1_correct).length,positive.length),percentage(rows.filter(r=>r.correct).length,rows.length),`${rows.reduce((a,r)=>a+(r.model_invocations||0),0)} / ${rows.reduce((a,r)=>a+(r.support_invocations||0),0)}`,avg(times),loads.length?loads.reduce((a,b)=>a+b,0).toFixed(1)+' ms':'Indisponível',avg(infer),times.length?times[Math.ceil(times.length*.95)-1].toFixed(1)+' ms':'Indisponível',String(rows.filter(r=>r.error).length)];
+      const tr=document.createElement('tr');for(const value of values){const td=document.createElement('td');td.textContent=value;tr.append(td);}table.append(tr);
+    }
+    this.$('demoSummary').replaceChildren(table);
+    while(this.demoRowsShown<(this.demoResults||[]).length){
+      const row=this.demoResults[this.demoRowsShown++],detail=document.createElement('details'),summary=document.createElement('summary');
+      const status=row.skipped?'INDISPONÍVEL':row.error?'ERRO TÉCNICO':row.correct?'ACERTO':'DIVERGÊNCIA';
+      summary.textContent=`${row.runner.name} · ${row.text} · ${status}`+(number(row.model_ms)?` · ${row.model_ms.toFixed(1)} ms`:'');detail.append(summary);
+      const comparison=document.createElement('pre');comparison.textContent=JSON.stringify({esperado:row.expected,obtido:row.actual,primeiro_candidato:row.raw_prediction,motivo:row.reason},null,2);detail.append(comparison);
+      const trace=document.createElement('details'),title=document.createElement('summary'),json=document.createElement('pre');title.textContent='Tempos, scores, saída completa e erros';json.textContent=JSON.stringify(row,null,2);trace.append(title,json);detail.append(trace);this.$('demoRows').append(detail);
+    }
+  }
+  demoDownload(format,value=null,name='arandu-demo-resultados'){
+    if(!value&&!(this.demoResults||[]).length){this.$('demoStatus').textContent='Nenhum resultado ainda. Clique em um dos botões para rodar os testes.';return;}
+    const report=value||{synthetic:true,dry_run:true,dataset_id:this.demoData.id,dataset_hash:this.demoData.dataset_hash,scope:this.demoScope,rows:this.demoResults};
+    let text=JSON.stringify(report,null,2);
+    if(format==='csv'){
+      const columns=['modelo','comando','esperado','obtido','acerto_final','acerto_top1','erro','etapa_ms','carga_ms','inferencia_ms'];
+      const cell=v=>'"'+String(typeof v==='object'?JSON.stringify(v):v??'').replaceAll('"','""').replace(/^[=+@-]/,"'$&")+'"';
+      text=[columns.map(cell).join(','),...this.demoResults.map(r=>[r.runner.name,r.text,r.expected,r.actual,r.correct,r.top1_correct,r.error,r.model_ms,r.load_ms,r.inference_ms].map(cell).join(','))].join('\r\n');
+    }
+    const url=URL.createObjectURL(new Blob([text],{type:format==='csv'?'text/csv;charset=utf-8':'application/json'}));const link=document.createElement('a');link.href=url;link.download=name+'.'+format;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  async run(previous) {
+    const input = previous || {text:this.$('text').value, model:this.$('decision').value || 'e5-small', llm_model:this.$('llm').value || 'tucano', mode:this.$('mode').value,
+      threshold:Number(this.$('threshold').value), min_margin:Number(this.$('margin').value)};
+    this.lastInput = structuredClone(input); this.last = await this.call('run', input);
+    if (this.transcription && this.transcription.text === input.text) this.last.stages.stt = {status:'executed', ...this.transcription};
+    this.render(this.last); this.persist();
+    if(this.$('autoTts').checked)await this.speak();
+  }
+  render(result) {
+    this.$('stages').replaceChildren();
+    for (const [name, stage] of Object.entries(result.stages)) {
+      const node = document.createElement('div'); node.className = 'stage ' + stage.status;
+      node.textContent = name.toUpperCase() + ' · ' + ({executed:'executado', skipped:'ignorado', error:'erro'}[stage.status] || stage.status) + (stage.latency_ms != null ? ` · ${stage.latency_ms.toFixed(1)} ms` : ''); this.$('stages').append(node);
+    }
+    this.$('answer').textContent = result.execution?.response_text || result.clarification_question || (result.operations_validated ? 'Ação validada. Revise o JSON antes de executar.' : result.proposal?.reason || 'Nenhuma ação validada.');
+    this.$('output').textContent = JSON.stringify(result, (key, value) => key === 'execution_token' ? undefined : value, 2);
+    const de = result.stages.decision.output || {};
+    this.$('ranking').replaceChildren();
+    for (const item of de.ranking || []) { const row = document.createElement('tr'); for (const text of [item.entity_id,item.intent,item.raw_score.toFixed(4)]) { const cell = document.createElement('td'); cell.textContent = text; row.append(cell); } this.$('ranking').append(row); }
+    this.$('metrics').replaceChildren();
+    const values = [['Total do servidor', result.total_ms.toFixed(1)+' ms'],['Confiança calibrada', de.confidence == null ? 'Indisponível' : (de.confidence*100).toFixed(1)+'%'],['Margem', de.margin == null ? 'Indisponível' : de.margin.toFixed(4)],['Decisão',de.decision_status || 'Ignorada']];
+    for (const [label,value] of values) { const node = document.createElement('div'); node.className='metric'; const strong=document.createElement('strong'); strong.textContent=value; node.textContent=label; node.append(strong); this.$('metrics').append(node); }
+    this.executionState();
+  }
+  persist() {
+    const safe = JSON.parse(JSON.stringify(this.last, (key,value) => key==='execution_token' ? undefined : value));
+    const items = this.saved('history', []); items.unshift(safe); this.store('history', items.slice(0,30)); this.history();
+  }
+  history() { this.$('history').replaceChildren(); for (const item of this.saved('history', [])) { const button=document.createElement('button'); button.textContent=item.text; button.onclick=()=>{this.$('text').value=item.text;this.last=item;this.render(item);};this.$('history').append(button); } }
+  async startRecording() {
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw Error('Microfone exige HTTPS ou localhost');
+      this.stream = await navigator.mediaDevices.getUserMedia({audio:true});
+      this.parts=[]; this.recorder=new MediaRecorder(this.stream);
+      this.recorder.ondataavailable=e=>{if(e.data.size)this.parts.push(e.data);};
+      this.recorder.onstop=()=>this.task(async()=>{
+        const blob=new Blob(this.parts); if(blob.size>2000000)throw Error('Áudio excedeu 2 MB');
+        const bytes=new Uint8Array(await blob.arrayBuffer()); let encoded=''; for(let i=0;i<bytes.length;i+=8192) encoded+=String.fromCharCode(...bytes.subarray(i,i+8192));
+        const r=await this.call('transcribe',{audio:btoa(encoded), stt_model:this.$('stt').value});
+        this.transcription=r;this.$('text').value=r.text;this.$('transcription').textContent=`Transcrição ${r.model} · ${r.latency_ms.toFixed(1)} ms. Edite antes de processar.`;
+      });
+      this.recorder.start();this.$('record').textContent='Parar e transcrever';this.recordTimer=setTimeout(()=>this.stopRecording(),30000);
+    } catch(e){this.stream?.getTracks().forEach(t=>t.stop());this.$('status').textContent=e.message;}
+  }
+  stopRecording(){clearTimeout(this.recordTimer);if(this.recorder?.state==='recording')this.recorder.stop();this.stream?.getTracks().forEach(t=>t.stop());this.recorder=null;if(this.shadowRoot)this.$('record').textContent='Gravar microfone';}
+  download(format) {
+    const value=this.batch || this.last;if(!value)return;
+    let text=JSON.stringify(value,(key,v)=>key==='execution_token'?undefined:v,2);
+    if(format==='csv') {
+      const rows=this.batch ? Object.entries(this.batch.models).flatMap(([model,data])=>data.rows.map(r=>({model,text:r.result.text,source:r.result.source,total_ms:r.result.total_ms,expected:r.expected,actual:r.actual}))) : [{text:value.text,source:value.source,total_ms:value.total_ms}];
+      const keys=Object.keys(rows[0]||{}); const cell=v=>'"'+String(typeof v==='object'?JSON.stringify(v):v??'').replaceAll('"','""').replace(/^[=+@-]/,"'$&")+'"';
+      text=[keys.map(cell).join(','),...rows.map(r=>keys.map(k=>cell(r[k])).join(','))].join('\r\n');
+    }
+    const url=URL.createObjectURL(new Blob([text],{type:format==='json'?'application/json':'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='arandu-ai-lab.'+format;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+}
+if (!customElements.get('arandu-ai-lab')) customElements.define('arandu-ai-lab', AranduAILab);

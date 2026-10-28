@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nlu.local/schemas/pos-model-manifest-v1.schema.json",
+  "title": "POS transition model manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "format",
+    "identity",
+    "random_seed",
+    "randomness_used",
+    "source",
+    "training",
+    "label_count",
+    "labels_sha256",
+    "transition_count",
+    "transitions_sha256",
+    "package_bytes",
+    "package_sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "format": {"const": "nlu-pos-transition-package-v1"},
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model_id", "algorithm_id", "compiler_id", "config_id"],
+      "properties": {
+        "model_id": {"const": "p08-pos-transition-model-v1"},
+        "algorithm_id": {
+          "const": "adjacent-singleton-presence-noncascading-v1"
+        },
+        "compiler_id": {"const": "nlu-data-pos-transition-compiler-v1"},
+        "config_id": {"const": "p08-pos-config-v1"}
+      }
+    },
+    "random_seed": {"const": 0},
+    "randomness_used": {"const": false},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "corpus_version",
+        "generator_id",
+        "source_license",
+        "locale",
+        "source_manifest_sha256",
+        "specification_sha256",
+        "generator_sha256",
+        "original_pos_artifact_sha256"
+      ],
+      "properties": {
+        "source_id": {"const": "project-authored-synthetic-ptbr-v1"},
+        "corpus_version": {"const": "1.0.0"},
+        "generator_id": {"const": "p02-generator-v1"},
+        "source_license": {"const": "Apache-2.0"},
+        "locale": {"const": "pt-BR"},
+        "source_manifest_sha256": {
+          "const": "d9e1ca32ec0f92aa6b5fc6c1d4f232f93389e0bf8031267d23daddf7287006c5"
+        },
+        "specification_sha256": {
+          "const": "f72451f03d1a5e2e4955b5d2857bd7d33b3b012912d920e53a3d85719f14859d"
+        },
+        "generator_sha256": {
+          "const": "ff8817afc2c2f13d539ab7d10720cab407d769ca3a6189dcc55d43ea052689d1"
+        },
+        "original_pos_artifact_sha256": {
+          "const": "85ad18caf3ae749d3ec0135c3c01ce6d754f831d395abdc44ff1c3643a18fac8"
+        }
+      }
+    },
+    "training": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "physical_train_slice_sha256",
+        "train_case_digest_sha256",
+        "train_document_digest_sha256",
+        "train_origin_digest_sha256",
+        "train_sentence_count",
+        "train_document_count",
+        "train_token_count"
+      ],
+      "properties": {
+        "physical_train_slice_sha256": {
+          "const": "b78d4b79350638da0cacf2c6c027d07b37919a9e3bc82de654b4f1c0f0984461"
+        },
+        "train_case_digest_sha256": {
+          "const": "2d19927df47be5f79b98ee6efffa290b512633682b2635dbe7de265653a4f481"
+        },
+        "train_document_digest_sha256": {
+          "const": "31548f0c55c3c66d2560a46b1567a4a197c1cf443ddecbc8d1f502fd3a8e3ce8"
+        },
+        "train_origin_digest_sha256": {
+          "const": "7c9b3c0943f43dcc2327fcaec2edc61ff2eedc8e5a2c62f714c1c07cb388b757"
+        },
+        "train_sentence_count": {"const": 80},
+        "train_document_count": {"const": 8},
+        "train_token_count": {"const": 560}
+      }
+    },
+    "label_count": {"const": 5},
+    "labels_sha256": {
+      "const": "c122d646963857a97f12dba255a15d7213dbb1dcca45fb6bb003dbcbabccc9fa"
+    },
+    "transition_count": {"const": 7},
+    "transitions_sha256": {
+      "const": "2b336fcb85f5351fad17db5192312947cda76fdae816fa4ae5dfe7aaab8cf374"
+    },
+    "package_bytes": {"const": 47},
+    "package_sha256": {
+      "const": "23beb6dd464c4bd03d69bb374be210fd3a187661c37673194f466b4270b8020c"
+    }
+  }
+}

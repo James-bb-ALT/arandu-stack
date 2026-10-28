@@ -1,0 +1,30 @@
+{
+  "_meta": {"total_entidades": 8, "total_dispositivos": 6, "total_areas": 4, "total_aliases": 0},
+  "areas": [
+    {"id":"sala","name":"Sala","aliases":[]},
+    {"id":"quarto","name":"Quarto","aliases":[]},
+    {"id":"cozinha","name":"Cozinha","aliases":[]},
+    {"id":"escritorio","name":"Escritório","aliases":[]}
+  ],
+  "devices": [
+    {"id":"d1","name":"TV Sala","name_by_user":"TV da sala","aliases":[],"area":"Sala","area_id":"sala","manufacturer":"Samsung","model":"TV"},
+    {"id":"d2","name":"Ventilador","name_by_user":"Ventilador de Rafael","aliases":[],"area":"Escritório","area_id":"escritorio","manufacturer":"Tuya","model":"Fan"},
+    {"id":"d3","name":"Lava Lamp","name_by_user":"Lava Lamp","aliases":[],"area":"Escritório","area_id":"escritorio","manufacturer":"Tuya","model":"Switch"}
+  ],
+  "persons": [
+    {"entity_id":"person.rafael","name":"Rafael","aliases":[]},
+    {"entity_id":"person.ana","name":"Ana","aliases":[]}
+  ],
+  "scenes": [],
+  "scripts": [],
+  "entities": [
+    {"entity_id":"light.luz_quarto","domain":"light","name":"Luz do quarto","original_name":null,"aliases":[],"assist_aliases":[],"area":"Quarto","area_id":"quarto","device":null,"device_id":null,"manufacturer":null,"model":null,"device_class":null,"entity_category":null,"platform":"template","unit":null,"options":null,"exposed_to_assist":true,"disabled":false,"hidden":false},
+    {"entity_id":"light.luz_cozinha","domain":"light","name":"Luz da cozinha","original_name":null,"aliases":[],"assist_aliases":[],"area":"Cozinha","area_id":"cozinha","device":null,"device_id":null,"manufacturer":null,"model":null,"device_class":null,"entity_category":null,"platform":"template","unit":null,"options":null,"exposed_to_assist":true,"disabled":false,"hidden":false},
+    {"entity_id":"media_player.tv_sala","domain":"media_player","name":"TV da sala","original_name":null,"aliases":[],"assist_aliases":[],"area":"Sala","area_id":"sala","device":"TV da sala","device_id":"d1","manufacturer":"Samsung","model":"TV","device_class":null,"entity_category":null,"platform":"samsungtv","unit":null,"options":null,"exposed_to_assist":true,"disabled":false,"hidden":false},
+    {"entity_id":"fan.ventilador_rafael","domain":"fan","name":"Ventilador de Rafael","original_name":null,"aliases":[],"assist_aliases":[],"area":"Escritório","area_id":"escritorio","device":"Ventilador de Rafael","device_id":"d2","manufacturer":"Tuya","model":"Fan","device_class":null,"entity_category":null,"platform":"switch_as_x","unit":null,"options":null,"exposed_to_assist":true,"disabled":false,"hidden":false},
+    {"entity_id":"light.lava_lamp","domain":"light","name":"Lava Lamp","original_name":null,"aliases":[],"assist_aliases":[],"area":"Escritório","area_id":"escritorio","device":"Lava Lamp","device_id":"d3","manufacturer":"Tuya","model":"Switch","device_class":null,"entity_category":null,"platform":"switch_as_x","unit":null,"options":null,"exposed_to_assist":true,"disabled":false,"hidden":false},
+    {"entity_id":"climate.ar_condicionado","domain":"climate","name":"Ar-condicionado","original_name":null,"aliases":[],"assist_aliases":[],"area":"Quarto","area_id":"quarto","device":"Ar-condicionado","device_id":null,"manufacturer":"Daikin","model":"Smart AC","device_class":null,"entity_category":null,"platform":"daikin","unit":null,"options":null,"exposed_to_assist":true,"disabled":false,"hidden":false},
+    {"entity_id":"person.rafael","domain":"person","name":"Rafael","original_name":"Rafael","aliases":[],"assist_aliases":[],"area":null,"area_id":null,"device":null,"device_id":null,"manufacturer":null,"model":null,"device_class":null,"entity_category":null,"platform":"person","unit":null,"options":null,"exposed_to_assist":false,"disabled":false,"hidden":false},
+    {"entity_id":"person.ana","domain":"person","name":"Ana","original_name":"Ana","aliases":[],"assist_aliases":[],"area":null,"area_id":null,"device":null,"device_id":null,"manufacturer":null,"model":null,"device_class":null,"entity_category":null,"platform":"person","unit":null,"options":null,"exposed_to_assist":false,"disabled":false,"hidden":false}
+  ]
+}

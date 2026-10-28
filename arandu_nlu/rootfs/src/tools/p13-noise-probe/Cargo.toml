@@ -1,0 +1,25 @@
+[package]
+name = "p13-snow-final-probe"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace]
+members = ["."]
+exclude = ["sources/snow", "sources/chacha20", "sources/poly1305"]
+resolver = "3"
+
+[dependencies]
+poly1305 = { path = "sources/poly1305" }
+snow = { path = "sources/snow", default-features = false, features = [
+    "use-chacha20poly1305",
+    "use-blake2",
+    "use-curve25519",
+] }
+
+[patch.crates-io]
+chacha20 = { path = "sources/chacha20" }
+poly1305 = { path = "sources/poly1305" }
+
+[lints.rust]
+unsafe_code = "forbid"

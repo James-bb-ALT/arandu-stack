@@ -1,0 +1,42 @@
+{
+  "phrases": {
+    "v outro lado": "ventilador",
+    "lava lemp": "Lava Lamp",
+    "lava lamp": "Lava Lamp",
+    "te ve": "TV",
+    "te vê": "TV"
+  },
+  "words": {
+    "ventulador": "ventilador",
+    "entlador": "ventilador",
+    "vitilador": "ventilador",
+    "vetilador": "ventilador",
+    "ventlador": "ventilador",
+    "tev": "TV",
+    "teve": "TV",
+    "imperatura": "temperatura",
+    "inperatura": "temperatura",
+    "ligua": "liga",
+    "desligua": "desliga",
+    "lampada": "lâmpada",
+    "luminaria": "luminária",
+    "ventadores": "ventiladores",
+    "ventuladores": "ventiladores",
+    "ontulador": "ventilador",
+    "vigili": "liga"
+  },
+  "action_fragments": {
+    "destib": "desliga",
+    "eangeliga": "liga",
+    "digino": "desliga",
+    "disgito": "desliga",
+    "deslige": "desliga"
+  },
+  "fan_fragments": [
+    "me valor",
+    "velado",
+    "metilador",
+    "resultador"
+  ],
+  "person_fragments": {}
+}

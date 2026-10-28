@@ -1,0 +1,10 @@
+# Home Assistant add-on store: Arandu NLU.
+# Add this repository URL in Home Assistant under Settings → Add-ons →
+# Add-on Store → ⋮ → Repositories.
+# Contents: one add-on directory per store layout requirements.
+# - addon/ — Local PT-BR NLU add-on (config, recipe, engine sources,
+#   vendored crates). Built locally by the Supervisor from the pinned
+#   recipe; no remote image is referenced.
+name: ARANDU NLU
+url: https://github.com/jaimevictor/Arandu-NLU
+maintainer: Arandu NLU

@@ -1,0 +1,46 @@
+{
+  "images": [
+    {
+      "architecture": "amd64",
+      "build": "PASS",
+      "emulated": false,
+      "image": "local-nlu:0.4.0-amd64",
+      "image_id": "sha256:23ea39c2e14ad3c4853927435e970680b283ada0c3c7b70b018f301a9dccfeb8",
+      "runtime_license_notices": "PASS",
+      "size_bytes": 1768038,
+      "smoke": "PASS",
+      "user": "65534:65534"
+    },
+    {
+      "architecture": "arm64",
+      "build": "PASS",
+      "emulated": true,
+      "image": "local-nlu:0.4.0-aarch64",
+      "image_id": "sha256:9e7820a2d7160731e0fb18ac6582870892190f239cd23dcceab312e236a85662",
+      "runtime_license_notices": "PASS",
+      "size_bytes": 1739021,
+      "smoke": "PASS",
+      "user": "65534:65534"
+    },
+    {
+      "architecture": "amd64",
+      "build": "PASS",
+      "emulated": false,
+      "image": "local-nlu:0.4.0-package-amd64",
+      "image_id": "sha256:29e2f00c8f2853ee09ffa6acb5ce8e1aded9a08f9e015e5126cb271a3a54ac6f",
+      "runtime_license_notices": "PASS",
+      "size_bytes": 1767978,
+      "smoke": "PASS",
+      "user": "65534:65534"
+    }
+  ],
+  "limitations": [
+    "Home Assistant services simulated",
+    "aarch64 executes via Docker emulation; no native ARM performance claim",
+    "No residential HA/BLE validation"
+  ],
+  "network": "isolated namespace of network=none dev container; no host port",
+  "source_digest": "04165cf4af8fc290edd7ff015dfd5358c24f0dd6cc9c99b242a2f0ec61fbb87c",
+  "status": "PASS",
+  "version": "0.4.0"
+}

@@ -1,0 +1,15 @@
+# Linux/WSL2, Python 3.10-3.12. Install CUDA-enabled PyTorch separately first.
+# This adapter targets the inspected NeMo 2.5.3 API. Do not install in the HA App.
+-r requirements.txt
+# Keep the legacy ONNX exporter used by the inspected NeMo adapter.
+torch==2.8.0
+torchaudio==2.8.0
+nemo_toolkit[asr]==2.5.3
+lightning==2.4.0
+omegaconf>=2.3,<2.4
+huggingface_hub>=0.27,<1
+# Compatibility pins for the inspected NeMo 2.5.3 stack.
+datasets==3.6.0
+pyarrow==20.0.0
+peft==0.17.1
+numba==0.61.2

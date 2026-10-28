@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "phase": "B",
+  "contract_id": "phase-b-safe-composition-v1",
+  "protocol_version": 1,
+  "scope": "passive ordered composition over existing Vec<Operation>",
+  "limits": {"max_operations": 4, "max_target_clauses": 4, "max_targets_per_operation": 32},
+  "rules": [
+    "Operations preserve spoken order.",
+    "Target conjunction stays within one operation unless e starts a recognized effect.",
+    "A late failure rejects the whole plan and emits no partial operations.",
+    "The same target cannot be reused across effect operations.",
+    "Query and effect actions cannot share one plan.",
+    "Protocol v1 remains byte-identical; no execution occurs."
+  ],
+  "provenance": {"kind": "PROJECT_AUTHORED_SYNTHETIC", "license": "Apache-2.0", "product_output_used_for_labels": false}
+}

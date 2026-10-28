@@ -1,0 +1,13 @@
+[package]
+name = "sha2"
+version = "0.10.9"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+description = "FIXTURE_TECNICA resolver-only package; compilation is prohibited"
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+std = []

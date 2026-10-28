@@ -1,0 +1,15 @@
+.venv/
+.venv-esphome/
+__pycache__/
+*.egg-info/
+.env
+config/local.json
+esphome/secrets.yaml
+esphome/.esphome/
+reports/local/
+models/
+downloads/
+*.apk
+*.wav
+*.onnx
+*.tflite

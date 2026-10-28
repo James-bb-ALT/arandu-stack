@@ -1,0 +1,479 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nlu-ptbr:protocol:v1:response",
+  "title": "NLU protocol v1 response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "outcome"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "outcome": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/planOutcome"
+        },
+        {
+          "$ref": "#/$defs/clarificationOutcome"
+        },
+        {
+          "$ref": "#/$defs/abstentionOutcome"
+        },
+        {
+          "$ref": "#/$defs/protocolErrorOutcome"
+        }
+      ]
+    }
+  },
+  "x-protocolVersion": 1,
+  "x-maxWireBytes": 65536,
+  "x-maxNestingDepth": 32,
+  "x-maxStructuralItems": 4096,
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128,
+      "pattern": "^[a-z](?:[a-z0-9_-]*[a-z0-9])?:[a-z](?:[a-z0-9_-]*[a-z0-9])?$"
+    },
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      },
+      "x-invariant": "start is less than end and both are UTF-8 byte boundaries in the request"
+    },
+    "entity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id",
+        "generation"
+      ],
+      "properties": {
+        "type": {
+          "const": "entity"
+        },
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        }
+      }
+    },
+    "slotValue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "span"
+          ],
+          "properties": {
+            "type": {
+              "const": "evidence_text"
+            },
+            "span": {
+              "$ref": "#/$defs/span"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "integer"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": -9223372036854775808,
+              "maximum": 9223372036854775807
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "boolean"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "$ref": "#/$defs/entity"
+        }
+      ]
+    },
+    "slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "value"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "value": {
+          "$ref": "#/$defs/slotValue"
+        }
+      }
+    },
+    "planNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "capability",
+        "operation",
+        "slots",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "capability": {
+          "$ref": "#/$defs/identifier"
+        },
+        "operation": {
+          "$ref": "#/$defs/identifier"
+        },
+        "slots": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/slot"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/span"
+          }
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to",
+        "kind"
+      ],
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/identifier"
+        },
+        "to": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "enum": [
+            "precedes",
+            "requires"
+          ]
+        }
+      }
+    },
+    "planOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "catalog_generation",
+        "nodes",
+        "relations"
+      ],
+      "properties": {
+        "type": {
+          "const": "plan"
+        },
+        "catalog_generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/planNode"
+          }
+        },
+        "relations": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/relation"
+          }
+        }
+      },
+      "x-invariants": [
+        "node identifiers are unique",
+        "relations are unique, non-self, acyclic, and reference existing nodes",
+        "entity generations equal catalog_generation"
+      ]
+    },
+    "clarificationOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "intent",
+        "confidence_bps",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "intent": {
+          "$ref": "#/$defs/identifier"
+        },
+        "confidence_bps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/span"
+          }
+        }
+      }
+    },
+    "clarificationOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "options"
+      ],
+      "properties": {
+        "type": {
+          "const": "clarification"
+        },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/clarificationOption"
+          }
+        }
+      },
+      "x-invariant": "option identifiers are unique"
+    },
+    "abstentionOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "reason"
+      ],
+      "properties": {
+        "type": {
+          "const": "abstention"
+        },
+        "reason": {
+          "enum": [
+            "insufficient_evidence",
+            "ambiguous",
+            "unsupported"
+          ]
+        }
+      }
+    },
+    "protocolErrorWithLimit": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "code",
+            "limit"
+          ],
+          "properties": {
+            "type": {
+              "const": "protocol_error"
+            },
+            "code": {
+              "const": "input_too_large"
+            },
+            "limit": {
+              "const": 65536
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "code",
+            "limit"
+          ],
+          "properties": {
+            "type": {
+              "const": "protocol_error"
+            },
+            "code": {
+              "const": "string_too_large"
+            },
+            "limit": {
+              "const": 16384
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "code",
+            "limit"
+          ],
+          "properties": {
+            "type": {
+              "const": "protocol_error"
+            },
+            "code": {
+              "const": "nesting_too_deep"
+            },
+            "limit": {
+              "const": 32
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "code",
+            "limit"
+          ],
+          "properties": {
+            "type": {
+              "const": "protocol_error"
+            },
+            "code": {
+              "const": "structural_limit_exceeded"
+            },
+            "limit": {
+              "const": 4096
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "code",
+            "limit"
+          ],
+          "properties": {
+            "type": {
+              "const": "protocol_error"
+            },
+            "code": {
+              "const": "numeric_token_too_long"
+            },
+            "limit": {
+              "const": 20
+            }
+          }
+        }
+      ]
+    },
+    "protocolErrorWithoutLimit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "code",
+        "limit"
+      ],
+      "properties": {
+        "type": {
+          "const": "protocol_error"
+        },
+        "code": {
+          "enum": [
+            "invalid_utf8",
+            "non_integer_number",
+            "malformed_json",
+            "unsupported_version",
+            "invalid_identifier",
+            "invalid_span",
+            "invalid_graph",
+            "empty_plan",
+            "invalid_outcome",
+            "encoding_failure"
+          ]
+        },
+        "limit": {
+          "type": "null"
+        }
+      }
+    },
+    "protocolErrorOutcome": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/protocolErrorWithLimit"
+        },
+        {
+          "$ref": "#/$defs/protocolErrorWithoutLimit"
+        }
+      ],
+      "x-maxEncodedBytes": 256
+    }
+  }
+}

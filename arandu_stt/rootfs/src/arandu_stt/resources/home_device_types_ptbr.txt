@@ -1,0 +1,94 @@
+luz
+lâmpada
+luminária
+abajur
+lustre
+plafon
+fita LED
+LED
+iluminação
+ventilador
+ventilador de teto
+ventilador de mesa
+ventilador de coluna
+ar-condicionado
+ar condicionado
+aquecedor
+climatizador
+umidificador
+desumidificador
+purificador de ar
+geladeira
+refrigerador
+freezer
+fogão
+cooktop
+forno
+forno elétrico
+micro-ondas
+microondas
+air fryer
+fritadeira
+cafeteira
+chaleira
+torradeira
+liquidificador
+batedeira
+processador
+lava-louças
+lava louças
+máquina de lavar
+lavadora
+secadora
+lava e seca
+aspirador
+robô aspirador
+televisão
+TV
+projetor
+home theater
+soundbar
+caixa de som
+alto-falante
+speaker
+Echo
+Alexa
+Chromecast
+Apple TV
+Fire TV
+computador
+PC
+notebook
+monitor
+impressora
+impressora 3D
+roteador
+modem
+repetidor
+câmera
+campainha
+interfone
+fechadura
+porta
+portão
+janela
+persiana
+cortina
+tomada
+interruptor
+relé
+sensor
+sensor de presença
+sensor de movimento
+sensor de temperatura
+sensor de umidade
+sensor de chuva
+sensor de fumaça
+sensor de gás
+sensor de luminosidade
+termostato
+irrigação
+bomba
+chuveiro
+boiler
+aquecedor de água

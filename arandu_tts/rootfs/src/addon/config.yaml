@@ -1,0 +1,49 @@
+name: "Arandu TTS"
+slug: "arandu_tts"
+version: "0.2.0"
+description: "Wyoming + laboratório Web: Piper e Pocket TTS, gravação e clonagem de vozes"
+url: "https://github.com/kyutai-labs/pocket-tts"
+startup: services
+init: false
+arch:
+  - amd64
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:waveform
+panel_title: "Arandu TTS"
+ports:
+  10212/tcp: 10212
+ports_description:
+  10212/tcp: "Wyoming TTS"
+map:
+  - share:rw
+options:
+  voice: "pt_BR-faber-medium"
+  auto_download: true
+  preload: true
+  cpu_threads: 2
+  pocket_enabled: true
+  pocket_preload: false
+  pocket_threads: 2
+  hf_token: ""
+  pocket_fallback: true
+  fallback_voice: "pt_BR-faber-medium"
+  remote_fallback: true
+  remote_url: ""
+  remote_token: ""
+  log_level: "INFO"
+schema:
+  voice: str
+  auto_download: bool
+  preload: bool
+  cpu_threads: int(1,8)
+  pocket_enabled: bool
+  pocket_preload: bool
+  pocket_threads: int(1,8)
+  hf_token: password
+  pocket_fallback: bool
+  fallback_voice: str
+  remote_fallback: bool
+  remote_url: str
+  remote_token: password
+  log_level: list(INFO|DEBUG|WARNING|ERROR)

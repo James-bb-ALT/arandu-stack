@@ -1,0 +1,1 @@
+{"version":1,"outcome":{"type":"plan","catalog_generation":1,"nodes":[{"id":"fixture_tecnica:node","capability":"fixture_tecnica:capability","operation":"fixture_tecnica:operation","slots":[],"evidence":[{"start":0,"end":17}]}],"relations":[]}}

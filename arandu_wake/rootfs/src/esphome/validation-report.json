@@ -1,0 +1,27 @@
+{
+  "date_local": "2026-10-14",
+  "timezone": "America/Bahia",
+  "platform": "Windows",
+  "python": "3.13",
+  "esphome": "2026.9.1",
+  "esp_idf": "5.5.5",
+  "yaml_sha256": "dfe0f078bfc42bee9508c59025618afa6eaa00025ffc0e86f902c73bc771af32",
+  "validation_script": "passed",
+  "schema_validation": "passed",
+  "cpp_generation": "passed",
+  "full_firmware_compilation": "passed",
+  "image_size_bytes": 1116707,
+  "static_diram_bytes": 131527,
+  "diram_region_bytes": 341760,
+  "application_partition_bytes": 3932160,
+  "test_credentials_only": true,
+  "hardware_identified": false,
+  "physical_audio_test": "not_run",
+  "flash_executed": false,
+  "deployed": false,
+  "warnings": [
+    "GPIO3 is a strapping pin; verify physical circuit before uploading",
+    "Third-party ESPHome/TFLite compiler warnings",
+    "CMake object path length warning in the initial long temporary build path"
+  ]
+}

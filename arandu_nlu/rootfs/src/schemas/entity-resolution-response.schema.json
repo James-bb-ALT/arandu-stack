@@ -1,0 +1,43 @@
+{
+  "$id": "urn:arandu-nlu:entity-resolution:response",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Entity resolution response",
+  "description": "Wire-shape projection of local_nlu::ResolutionOutcome (internally tagged on outcome, deny_unknown_fields). Candidates are canonically sorted stable IDs emitted by the implementation, always two or more. Transport errors use the invalid_request envelope, never this schema.",
+  "type": "object",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "registry_id", "evidence"],
+      "properties": {
+        "outcome": {"const": "resolved"},
+        "registry_id": {"type": "string"},
+        "evidence": {
+          "type": "string",
+          "enum": ["external_entity_id", "explicit_registry_alias", "display_name_with_constraint"]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "candidates"],
+      "properties": {
+        "outcome": {"const": "ambiguous"},
+        "candidates": {
+          "type": "array",
+          "minItems": 2,
+          "items": {"type": "string"}
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome"],
+      "properties": {
+        "outcome": {"const": "no_match"}
+      }
+    }
+  ]
+}

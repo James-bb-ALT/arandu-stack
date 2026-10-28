@@ -1,0 +1,30 @@
+{
+  "nlu": {
+    "source": "Arandu NLU",
+    "files": 1808
+  },
+  "stt": {
+    "source": "Arandu STT/arandu-stt-github",
+    "files": 106
+  },
+  "tts": {
+    "source": "Arandu TTS",
+    "files": 54
+  },
+  "wake": {
+    "source": "Arandu Wake",
+    "files": 38
+  },
+  "decision": {
+    "source": "Arandu Decision",
+    "files": 10
+  },
+  "llm": {
+    "source": "Arandu LLM",
+    "files": 10
+  },
+  "wakegen": {
+    "source": "Arandu_Wake_Dataset_Generation",
+    "files": 34
+  }
+}

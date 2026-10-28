@@ -1,0 +1,420 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/schemas/p11-semantic-plan-v1.schema.json",
+  "title": "P11 semantic plan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "catalog_generation",
+    "execution_class",
+    "nodes",
+    "relations",
+    "independent_pairs",
+    "argument_shares"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "p11-semantic-plan-v1"
+    },
+    "catalog_generation": {
+      "$ref": "#/$defs/generation"
+    },
+    "execution_class": {
+      "enum": [
+        "partial_safe",
+        "atomic_only",
+        "non_executable"
+      ]
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "relations": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/relation"
+      }
+    },
+    "independent_pairs": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/independent_pair"
+      }
+    },
+    "argument_shares": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/argument_share"
+      }
+    }
+  },
+  "$defs": {
+    "generation": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 18446744073709551615
+    },
+    "byte_offset": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z][A-Za-z0-9_:.-]*$"
+    },
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "begin_byte",
+        "end_byte"
+      ],
+      "properties": {
+        "begin_byte": {
+          "$ref": "#/$defs/byte_offset"
+        },
+        "end_byte": {
+          "$ref": "#/$defs/byte_offset"
+        }
+      }
+    },
+    "entity_value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "catalog_generation"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "catalog_generation": {
+          "$ref": "#/$defs/generation"
+        }
+      }
+    },
+    "entity_slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "entity"
+        },
+        "value": {
+          "$ref": "#/$defs/entity_value"
+        }
+      }
+    },
+    "integer_slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "integer"
+        },
+        "value": {
+          "type": "integer",
+          "minimum": -9223372036854775808,
+          "maximum": 9223372036854775807
+        }
+      }
+    },
+    "boolean_slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "boolean"
+        },
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
+    "text_slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "const": "text"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      }
+    },
+    "slot": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/entity_slot"
+        },
+        {
+          "$ref": "#/$defs/integer_slot"
+        },
+        {
+          "$ref": "#/$defs/boolean_slot"
+        },
+        {
+          "$ref": "#/$defs/text_slot"
+        }
+      ]
+    },
+    "predicate_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "begin_byte",
+        "end_byte"
+      ],
+      "properties": {
+        "kind": {
+          "const": "predicate"
+        },
+        "begin_byte": {
+          "$ref": "#/$defs/byte_offset"
+        },
+        "end_byte": {
+          "$ref": "#/$defs/byte_offset"
+        }
+      }
+    },
+    "argument_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "slot",
+        "begin_byte",
+        "end_byte"
+      ],
+      "properties": {
+        "kind": {
+          "const": "argument"
+        },
+        "slot": {
+          "$ref": "#/$defs/identifier"
+        },
+        "begin_byte": {
+          "$ref": "#/$defs/byte_offset"
+        },
+        "end_byte": {
+          "$ref": "#/$defs/byte_offset"
+        }
+      }
+    },
+    "negation_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "begin_byte",
+        "end_byte"
+      ],
+      "properties": {
+        "kind": {
+          "const": "negation"
+        },
+        "begin_byte": {
+          "$ref": "#/$defs/byte_offset"
+        },
+        "end_byte": {
+          "$ref": "#/$defs/byte_offset"
+        }
+      }
+    },
+    "evidence": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/predicate_evidence"
+        },
+        {
+          "$ref": "#/$defs/argument_evidence"
+        },
+        {
+          "$ref": "#/$defs/negation_evidence"
+        }
+      ]
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "intent",
+        "capability",
+        "operation",
+        "polarity",
+        "slots",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "intent": {
+          "$ref": "#/$defs/identifier"
+        },
+        "capability": {
+          "$ref": "#/$defs/identifier"
+        },
+        "operation": {
+          "$ref": "#/$defs/identifier"
+        },
+        "polarity": {
+          "enum": [
+            "affirmed",
+            "negated"
+          ]
+        },
+        "slots": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/slot"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/evidence"
+          }
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to",
+        "kind",
+        "evidence"
+      ],
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/identifier"
+        },
+        "to": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "enum": [
+            "precedes",
+            "requires"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/span"
+          }
+        }
+      }
+    },
+    "independent_pair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "left",
+        "right"
+      ],
+      "properties": {
+        "left": {
+          "$ref": "#/$defs/identifier"
+        },
+        "right": {
+          "$ref": "#/$defs/identifier"
+        }
+      }
+    },
+    "argument_share": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from_node",
+        "from_slot",
+        "to_node",
+        "to_slot",
+        "evidence"
+      ],
+      "properties": {
+        "from_node": {
+          "$ref": "#/$defs/identifier"
+        },
+        "from_slot": {
+          "$ref": "#/$defs/identifier"
+        },
+        "to_node": {
+          "$ref": "#/$defs/identifier"
+        },
+        "to_slot": {
+          "$ref": "#/$defs/identifier"
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/span"
+          }
+        }
+      }
+    }
+  }
+}

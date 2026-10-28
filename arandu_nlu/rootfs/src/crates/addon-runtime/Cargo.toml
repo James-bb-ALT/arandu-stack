@@ -1,0 +1,28 @@
+[package]
+name = "addon-runtime"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "addon_runtime"
+path = "src/lib.rs"
+
+[dependencies]
+ha-adapter = { path = "../ha-adapter" }
+ha-catalog = { path = "../ha-catalog" }
+nlu-data = { path = "../nlu-data" }
+nlu-core = { path = "../nlu-core" }
+nlu-server = { path = "../nlu-server" }
+noise-channel = { path = "../noise-channel" }
+policy-engine = { path = "../policy-engine" }
+protocol = { path = "../protocol" }
+runtime-security = { path = "../runtime-security" }
+serde_json.workspace = true
+session-engine = { path = "../session-engine" }
+wyoming-runtime = { path = "../wyoming-runtime" }
+
+[lints.rust]
+unsafe_code = "forbid"

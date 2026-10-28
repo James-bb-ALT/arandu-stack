@@ -1,0 +1,14 @@
+name: Build manual dos apps
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [arandu_stack, arandu_nlu, arandu_stt, arandu_tts, arandu_decision, arandu_llm, arandu_wake]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir sem testes ou inferência
+        run: docker build -t arandu/${{ matrix.app }}:local ./${{ matrix.app }}

@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nlu-ptbr:protocol:v2:request",
+  "title": "NLU protocol v2 request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "request"
+  ],
+  "properties": {
+    "version": {
+      "const": 2
+    },
+    "request": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/interpretRequest"
+        },
+        {
+          "$ref": "#/$defs/continueRequest"
+        },
+        {
+          "$ref": "#/$defs/confirmRequest"
+        },
+        {
+          "$ref": "#/$defs/cancelRequest"
+        },
+        {
+          "$ref": "#/$defs/healthRequest"
+        }
+      ]
+    }
+  },
+  "x-protocolVersion": 2,
+  "x-maxWireBytes": 131072,
+  "x-maxDecodedStringBytes": 16384,
+  "x-maxNestingDepth": 32,
+  "x-maxStructuralItems": 4096,
+  "x-maxIntegerTokenBytes": 20,
+  "$defs": {
+    "sessionId": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$",
+      "x-decodedBytes": 32
+    },
+    "confirmationId": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 18446744073709551615
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128,
+      "pattern": "^[a-z](?:[a-z0-9_-]*[a-z0-9])?:[a-z](?:[a-z0-9_-]*[a-z0-9])?$"
+    },
+    "entityRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "generation"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 18446744073709551615
+        }
+      }
+    },
+    "interpretRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "session_id",
+        "text"
+      ],
+      "properties": {
+        "type": {
+          "const": "interpret"
+        },
+        "session_id": {
+          "$ref": "#/$defs/sessionId"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 16384,
+          "x-maxUtf8Bytes": 16384
+        }
+      }
+    },
+    "continueRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "session_id",
+        "selection"
+      ],
+      "properties": {
+        "type": {
+          "const": "continue"
+        },
+        "session_id": {
+          "$ref": "#/$defs/sessionId"
+        },
+        "selection": {
+          "$ref": "#/$defs/entityRef"
+        }
+      }
+    },
+    "confirmRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "session_id",
+        "confirmation_id",
+        "plan"
+      ],
+      "properties": {
+        "type": {
+          "const": "confirm"
+        },
+        "session_id": {
+          "$ref": "#/$defs/sessionId"
+        },
+        "confirmation_id": {
+          "$ref": "#/$defs/confirmationId"
+        },
+        "plan": {
+          "$ref": "urn:nlu-ptbr:protocol:v2:response#/$defs/composedPlan"
+        }
+      }
+    },
+    "cancelRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "session_id"
+      ],
+      "properties": {
+        "type": {
+          "const": "cancel"
+        },
+        "session_id": {
+          "$ref": "#/$defs/sessionId"
+        }
+      }
+    },
+    "healthRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "health"
+        }
+      }
+    }
+  }
+}

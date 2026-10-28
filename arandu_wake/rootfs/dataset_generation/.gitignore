@@ -1,0 +1,10 @@
+.venv/
+.cuda-wheels/
+archive/
+hf-cache/
+data/
+logs/
+state/
+__pycache__/
+.env
+*.egg-info/

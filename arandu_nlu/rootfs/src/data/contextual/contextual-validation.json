@@ -1,0 +1,47 @@
+{
+  "contextual_postbuild_tests": 70,
+  "coverage_matrix": "docs/nlu-2.0/CONTEXTUAL_GAP_COVERAGE.md",
+  "distribution_source_digest": "d7abcb62ed457fe6ad38ec3a6467a227fb978d6dd0142a5c33e1bec9ce32a7f5",
+  "gate": "tools/mlp-check PASS",
+  "isolated_store": "PASS; 611 files under addon/",
+  "limits": [
+    "HA/external providers simulated",
+    "No deployment or hardware triangulation",
+    "No STT checkout accessed or modified"
+  ],
+  "logs_sha256": {
+    "contextual-0.4.0-aarch64-build.log": "2bd8d8cd86769c691d236d605563dea389fea2771523a325db23a0d8c6b426cd",
+    "contextual-0.4.0-aarch64-smoke.log": "b7097459cca4270a3ecda38501cfa37f448f915591147c732b96e3c91fb87e5e",
+    "contextual-0.4.0-amd64-build.log": "d7c8eef576e69ab8b366991e535659737098bb38355c1f0c6fc5c60a367303d3",
+    "contextual-0.4.0-amd64-smoke.log": "b7097459cca4270a3ecda38501cfa37f448f915591147c732b96e3c91fb87e5e",
+    "contextual-0.4.0-bench.log": "30beeab1009831443ad8fa24ff9ac47c5cba919aab06e5390632565773b8a80b",
+    "contextual-0.4.0-check.log": "5b108855590133a8ef05419fec06239d6a9f4285f06f36d43a41062244cfa50a",
+    "contextual-0.4.0-corpus.log": "a6c5975b80ec571affcee3840200b3fed39451120baf06620686dd66789840fe",
+    "contextual-0.4.0-extraction.log": "56f883517e24cd285ef6062a75bcd880d96bd31c0665741467d32c8e6fde2333",
+    "contextual-0.4.0-package-build.log": "63b74e73fa81335a36c94f26058e82717caee17e25bfe69012c023dce1ebd141",
+    "contextual-0.4.0-package-repeat.log": "6691a721ae5777a00786d7fc2868b792d15d4bf995ea43d74aacba0b2da00a22",
+    "contextual-0.4.0-package-smoke.log": "b7097459cca4270a3ecda38501cfa37f448f915591147c732b96e3c91fb87e5e",
+    "contextual-0.4.0-package.log": "6691a721ae5777a00786d7fc2868b792d15d4bf995ea43d74aacba0b2da00a22",
+    "contextual-0.4.0-store.log": "00f1554519cf4c67297bcb8d47d867c7c9f378b1907c55369c354c0cc17b3998"
+  },
+  "phases": [
+    "F0",
+    "F1",
+    "F2",
+    "F3",
+    "F4",
+    "F5",
+    "F6",
+    "F7"
+  ],
+  "python_prebuild_skipped": 42,
+  "python_tests_unique": 146,
+  "reviews": {
+    "product": "PASS; final frozen code",
+    "security_privacy_licensing_package": "PASS; same code"
+  },
+  "rust_tests": 93,
+  "source_digest": "04165cf4af8fc290edd7ff015dfd5358c24f0dd6cc9c99b242a2f0ec61fbb87c",
+  "status": "PASS",
+  "version": "0.4.0"
+}

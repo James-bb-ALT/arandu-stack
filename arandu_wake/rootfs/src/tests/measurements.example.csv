@@ -1,0 +1,1 @@
+timestamp,device_id,hardware_version,software_version,detection_mode,test,attempts,successes,wake_ms,capture_delay_ms,pipeline_ms,audible_total_ms,cpu_percent,ram_mb,false_positives,exposure_minutes,result,notes

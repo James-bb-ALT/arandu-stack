@@ -1,0 +1,15 @@
+{
+  "checkpoint": "nvidia/stt_pt_fastconformer_hybrid_large_pc",
+  "revision": "036da25fa32e3f11c11105448482845950840685",
+  "batch_size": 1,
+  "accumulate_grad_batches": 8,
+  "max_epochs": 30,
+  "learning_rate": 0.00001,
+  "precision": "auto",
+  "accelerator": "auto",
+  "num_workers": 0,
+  "patience": 5,
+  "seed": 42,
+  "freeze_encoder": false,
+  "gradient_clip_val": 1.0
+}

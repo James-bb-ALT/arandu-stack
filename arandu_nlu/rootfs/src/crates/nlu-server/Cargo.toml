@@ -1,0 +1,20 @@
+[package]
+name = "nlu-server"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "nlu_server"
+path = "src/lib.rs"
+
+[dependencies]
+ha-catalog = { path = "../ha-catalog" }
+intent-engine = { path = "../intent-engine" }
+nlu-core = { path = "../nlu-core" }
+plan-engine = { path = "../plan-engine" }
+policy-engine = { path = "../policy-engine" }
+protocol = { path = "../protocol" }
+session-engine = { path = "../session-engine" }

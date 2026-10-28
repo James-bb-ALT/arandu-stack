@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nlu.local/schemas/pos-split-manifest-v1.schema.json",
+  "title": "POS split manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "compiler_id",
+    "dataset_id",
+    "dataset_version",
+    "digest_contract",
+    "source",
+    "partition",
+    "splits"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "compiler_id": {"const": "p08-pos-split-compiler-v1"},
+    "dataset_id": {"const": "p08-pos-context-splits-v1"},
+    "dataset_version": {"const": "1.0.0"},
+    "digest_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "collection_encoding", "origin_fields"],
+      "properties": {
+        "algorithm": {"const": "sha256"},
+        "collection_encoding": {
+          "const": "canonical-json-sorted-unique-array-v1"
+        },
+        "origin_fields": {
+          "const": ["source_id", "corpus_version", "generator_id"]
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "corpus_version",
+        "generator_id",
+        "license",
+        "locale",
+        "claim_scope",
+        "source_manifest_path",
+        "source_manifest_sha256",
+        "corpus_manifest_path",
+        "corpus_manifest_sha256",
+        "specification_path",
+        "specification_sha256",
+        "generator_path",
+        "generator_sha256",
+        "artifact_path",
+        "artifact_bytes",
+        "artifact_sha256",
+        "artifact_records"
+      ],
+      "properties": {
+        "source_id": {"const": "project-authored-synthetic-ptbr-v1"},
+        "corpus_version": {"const": "1.0.0"},
+        "generator_id": {"const": "p02-generator-v1"},
+        "license": {"const": "Apache-2.0"},
+        "locale": {"const": "pt-BR"},
+        "claim_scope": {"const": "internal_conformance_only"},
+        "source_manifest_path": {
+          "const": "data/manifests/project-authored-synthetic-ptbr-v1.json"
+        },
+        "source_manifest_sha256": {
+          "const": "d9e1ca32ec0f92aa6b5fc6c1d4f232f93389e0bf8031267d23daddf7287006c5"
+        },
+        "corpus_manifest_path": {
+          "const": "data/project-authored/p02-v1/manifest.json"
+        },
+        "corpus_manifest_sha256": {
+          "const": "a251485ba2f8d5032603200b7e171954213383aeceac9a8f394edb09a265e72a"
+        },
+        "specification_path": {
+          "const": "data/project-authored/p02-v1/specification.yaml"
+        },
+        "specification_sha256": {
+          "const": "f72451f03d1a5e2e4955b5d2857bd7d33b3b012912d920e53a3d85719f14859d"
+        },
+        "generator_path": {"const": "tools/generate-p02-corpus.rb"},
+        "generator_sha256": {
+          "const": "ff8817afc2c2f13d539ab7d10720cab407d769ca3a6189dcc55d43ea052689d1"
+        },
+        "artifact_path": {
+          "const": "data/project-authored/p02-v1/pos-context.jsonl"
+        },
+        "artifact_bytes": {"const": 222999},
+        "artifact_sha256": {
+          "const": "85ad18caf3ae749d3ec0135c3c01ce6d754f831d395abdc44ff1c3643a18fac8"
+        },
+        "artifact_records": {"const": 241}
+      }
+    },
+    "partition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "split_order",
+        "records",
+        "documents",
+        "tokens",
+        "case_ids_sha256",
+        "document_ids_sha256",
+        "text_sha256s_sha256",
+        "origins_sha256",
+        "origin_count",
+        "families",
+        "sentence_disjoint",
+        "document_disjoint",
+        "family_disjoint",
+        "complete"
+      ],
+      "properties": {
+        "split_order": {"const": ["train", "development", "heldout"]},
+        "records": {"const": 241},
+        "documents": {"const": 25},
+        "tokens": {"const": 1763},
+        "case_ids_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "document_ids_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "text_sha256s_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "origins_sha256": {
+          "const": "7c9b3c0943f43dcc2327fcaec2edc61ff2eedc8e5a2c62f714c1c07cb388b757"
+        },
+        "origin_count": {"const": 1},
+        "families": {
+          "const": [
+            "pos-ambiguity-heldout-v1",
+            "pos-command-train-v1",
+            "pos-query-development-v1",
+            "pos-state-heldout-v1"
+          ]
+        },
+        "sentence_disjoint": {"const": true},
+        "document_disjoint": {"const": true},
+        "family_disjoint": {"const": true},
+        "complete": {"const": true}
+      }
+    },
+    "splits": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {"$ref": "#/$defs/split"}
+    }
+  },
+  "$defs": {
+    "split": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "split",
+        "path",
+        "bytes",
+        "sha256",
+        "records",
+        "documents",
+        "tokens",
+        "case_ids_sha256",
+        "document_ids_sha256",
+        "text_sha256s_sha256",
+        "origins_sha256",
+        "origin_count",
+        "families"
+      ],
+      "properties": {
+        "split": {"enum": ["train", "development", "heldout"]},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer", "minimum": 1, "maximum": 1048576},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "records": {"type": "integer", "minimum": 1, "maximum": 241},
+        "documents": {"type": "integer", "minimum": 1, "maximum": 25},
+        "tokens": {"type": "integer", "minimum": 1, "maximum": 1763},
+        "case_ids_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "document_ids_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "text_sha256s_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "origins_sha256": {
+          "const": "7c9b3c0943f43dcc2327fcaec2edc61ff2eedc8e5a2c62f714c1c07cb388b757"
+        },
+        "origin_count": {"const": 1},
+        "families": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

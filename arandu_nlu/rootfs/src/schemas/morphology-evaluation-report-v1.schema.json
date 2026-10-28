@@ -1,0 +1,288 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nlu.local/schemas/morphology-evaluation-report-v1.schema.json",
+  "title": "Morphology evaluation report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "domain",
+    "runner_id",
+    "analyzer_id",
+    "dataset_id",
+    "dataset_version",
+    "split_id",
+    "claim_scope",
+    "locale",
+    "source_id",
+    "source_manifest_sha256",
+    "manifest_sha256",
+    "artifact_sha256",
+    "case_ids_sha256",
+    "runtime_package_sha256",
+    "grouping",
+    "metric_spec",
+    "limitations",
+    "metrics",
+    "error_analysis"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "domain": {"const": "morphology"},
+    "runner_id": {"const": "morphology-eval-v1"},
+    "analyzer_id": {"const": "lang-ptbr-lexical-evidence-morphology-v1"},
+    "dataset_id": {"const": "p07-morphology-internal-conformance"},
+    "dataset_version": {"const": "1.0.0"},
+    "split_id": {"const": "p07-morphology-internal-conformance-v1"},
+    "claim_scope": {"const": "internal_conformance_only"},
+    "locale": {"const": "pt-BR"},
+    "source_id": {"const": "project-authored-synthetic-ptbr-v1"},
+    "source_manifest_sha256": {
+      "const": "d9e1ca32ec0f92aa6b5fc6c1d4f232f93389e0bf8031267d23daddf7287006c5"
+    },
+    "manifest_sha256": {
+      "const": "2a3ff2ffa947749010c735b1f45af31a9d2a477cdfefa7ed8f7cafabb288a0b7"
+    },
+    "artifact_sha256": {
+      "const": "ebee221611e4cbf6206a755022d163e4c96f7eb1a42626d7032773bfb8c793dc"
+    },
+    "case_ids_sha256": {
+      "const": "6e481a12ebd00c62635e0fc13381993f96256987fe37ee67f66efdac8b1131bf"
+    },
+    "runtime_package_sha256": {
+      "const": "ec24f2335f64d694931450fb5ad6aefe3e924d1e29b23e046f128491dfe79e27"
+    },
+    "grouping": {"const": "exact-surface-analysis-set-v1"},
+    "metric_spec": {"const": "exact-morphology-set-metrics-v1"},
+    "limitations": {"$ref": "#/$defs/limitations"},
+    "metrics": {"$ref": "#/$defs/metrics"},
+    "error_analysis": {"$ref": "#/$defs/errorAnalysis"}
+  },
+  "$defs": {
+    "limitations": {
+      "const": [
+        "project_authored_labels_share_generator_with_runtime_lexicon",
+        "feature_bearing_source_analyses_only",
+        "four_featureless_lexicon_analyses_unscored",
+        "no_expected_unknown_surfaces",
+        "internal_conformance_not_independent_accuracy_or_generalization"
+      ]
+    },
+    "fractionMetric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "dataset_id",
+        "dataset_version",
+        "split_id",
+        "claim_scope",
+        "limitations",
+        "numerator",
+        "denominator"
+      ],
+      "properties": {
+        "domain": {"const": "morphology"},
+        "dataset_id": {"const": "p07-morphology-internal-conformance"},
+        "dataset_version": {"const": "1.0.0"},
+        "split_id": {"const": "p07-morphology-internal-conformance-v1"},
+        "claim_scope": {"const": "internal_conformance_only"},
+        "limitations": {"$ref": "#/$defs/limitations"},
+        "numerator": {"type": "integer", "minimum": 0},
+        "denominator": {"type": "integer", "minimum": 0}
+      }
+    },
+    "analysisCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "dataset_id",
+        "dataset_version",
+        "split_id",
+        "claim_scope",
+        "limitations",
+        "true_positive",
+        "false_positive",
+        "false_negative"
+      ],
+      "properties": {
+        "domain": {"const": "morphology"},
+        "dataset_id": {"const": "p07-morphology-internal-conformance"},
+        "dataset_version": {"const": "1.0.0"},
+        "split_id": {"const": "p07-morphology-internal-conformance-v1"},
+        "claim_scope": {"const": "internal_conformance_only"},
+        "limitations": {"$ref": "#/$defs/limitations"},
+        "true_positive": {"type": "integer", "minimum": 0},
+        "false_positive": {"type": "integer", "minimum": 0},
+        "false_negative": {"type": "integer", "minimum": 0}
+      }
+    },
+    "confusionMatrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "dataset_id",
+        "dataset_version",
+        "split_id",
+        "claim_scope",
+        "limitations",
+        "labels",
+        "matrix"
+      ],
+      "properties": {
+        "domain": {"const": "morphology"},
+        "dataset_id": {"const": "p07-morphology-internal-conformance"},
+        "dataset_version": {"const": "1.0.0"},
+        "split_id": {"const": "p07-morphology-internal-conformance-v1"},
+        "claim_scope": {"const": "internal_conformance_only"},
+        "limitations": {"$ref": "#/$defs/limitations"},
+        "labels": {"const": ["unknown", "unique", "ambiguous"]},
+        "matrix": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {"type": "integer", "minimum": 0}
+          }
+        }
+      }
+    },
+    "canonicalAnalysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lemma", "pos", "features"],
+      "properties": {
+        "lemma": {"type": "string", "minLength": 1},
+        "pos": {
+          "enum": ["ADJ", "ADP", "ADV", "CCONJ", "DET", "NOUN", "VERB"]
+        },
+        "features": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        }
+      }
+    },
+    "caseIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9._:-]{1,256}$"
+      }
+    },
+    "issue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "error_type",
+            "surface",
+            "case_ids",
+            "expected_analysis"
+          ],
+          "properties": {
+            "error_type": {"const": "missing_analysis"},
+            "surface": {"type": "string", "minLength": 1},
+            "case_ids": {"$ref": "#/$defs/caseIds"},
+            "expected_analysis": {"$ref": "#/$defs/canonicalAnalysis"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "error_type",
+            "surface",
+            "case_ids",
+            "observed_analysis"
+          ],
+          "properties": {
+            "error_type": {"const": "unexpected_analysis"},
+            "surface": {"type": "string", "minLength": 1},
+            "case_ids": {"$ref": "#/$defs/caseIds"},
+            "observed_analysis": {"$ref": "#/$defs/canonicalAnalysis"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "error_type",
+            "surface",
+            "case_ids",
+            "expected",
+            "observed"
+          ],
+          "properties": {
+            "error_type": {"const": "cardinality_mismatch"},
+            "surface": {"type": "string", "minLength": 1},
+            "case_ids": {"$ref": "#/$defs/caseIds"},
+            "expected": {"type": "integer", "minimum": 0},
+            "observed": {"type": "integer", "minimum": 0}
+          }
+        }
+      ]
+    },
+    "errorAnalysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "dataset_id",
+        "dataset_version",
+        "split_id",
+        "claim_scope",
+        "limitations",
+        "taxonomy",
+        "errors"
+      ],
+      "properties": {
+        "domain": {"const": "morphology"},
+        "dataset_id": {"const": "p07-morphology-internal-conformance"},
+        "dataset_version": {"const": "1.0.0"},
+        "split_id": {"const": "p07-morphology-internal-conformance-v1"},
+        "claim_scope": {"const": "internal_conformance_only"},
+        "limitations": {"$ref": "#/$defs/limitations"},
+        "taxonomy": {
+          "const": [
+            "missing_analysis",
+            "unexpected_analysis",
+            "cardinality_mismatch"
+          ]
+        },
+        "errors": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/issue"}
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exact_surface_sets",
+        "analysis_counts",
+        "analysis_precision",
+        "analysis_recall",
+        "ambiguity_preservation",
+        "confusion_matrix"
+      ],
+      "properties": {
+        "exact_surface_sets": {"$ref": "#/$defs/fractionMetric"},
+        "analysis_counts": {"$ref": "#/$defs/analysisCounts"},
+        "analysis_precision": {"$ref": "#/$defs/fractionMetric"},
+        "analysis_recall": {"$ref": "#/$defs/fractionMetric"},
+        "ambiguity_preservation": {"$ref": "#/$defs/fractionMetric"},
+        "confusion_matrix": {"$ref": "#/$defs/confusionMatrix"}
+      }
+    }
+  }
+}

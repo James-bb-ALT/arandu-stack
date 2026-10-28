@@ -1,0 +1,18 @@
+[package]
+name = "intent-engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "intent_engine"
+path = "src/lib.rs"
+
+[dependencies]
+lang-ptbr = { path = "../lang-ptbr" }
+nlu-core = { path = "../nlu-core" }
+nlu-data = { path = "../nlu-data" }
+serde.workspace = true
+serde_json.workspace = true

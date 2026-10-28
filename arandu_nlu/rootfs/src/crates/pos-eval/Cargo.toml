@@ -1,0 +1,30 @@
+[package]
+name = "pos-eval"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+default = []
+evaluator = ["dep:lang-ptbr"]
+
+[lib]
+name = "pos_eval"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pos-train"
+path = "src/bin/pos-train.rs"
+
+[[bin]]
+name = "pos-eval"
+path = "src/bin/pos-eval.rs"
+required-features = ["evaluator"]
+
+[dependencies]
+lang-ptbr = { path = "../lang-ptbr", optional = true }
+nlu-data = { path = "../nlu-data" }
+serde.workspace = true
+serde_json.workspace = true

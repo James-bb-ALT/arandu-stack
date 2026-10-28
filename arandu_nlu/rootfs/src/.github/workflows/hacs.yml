@@ -1,0 +1,43 @@
+name: HACS validation
+
+'on':
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  distribution:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout public commit without credentials or submodule operations
+        env:
+          CHECKOUT_REF: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$CHECKOUT_REF" =~ ^[0-9a-f]{40}$ ]]
+          git init .
+          git remote add origin https://github.com/jaimevictor/Arandu-NLU.git
+          git fetch --no-tags --depth=1 -- origin "$CHECKOUT_REF"
+          git sparse-checkout set --no-cone '/*' '!/*/' '/.github/' '/addon/' '/custom_components/' '/data/' '/tests/' '/tools/' '!/implementation-clean-room'
+          git checkout --detach FETCH_HEAD
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - run: python3 tools/hacs.py
+      - run: python3 -m unittest discover -s tests/mlp -p 'test_distribution.py'
+      - run: python3 -m unittest discover -s tests/mlp -p 'test_hacs.py'
+  official-hacs:
+    runs-on: ubuntu-24.04
+    steps:
+      # Official HACS action image pinned directly; action@SHA wraps a mutable main image.
+      - uses: docker://ghcr.io/hacs/action@sha256:dc92fdad2f6ffbe74bffb7269d781ea8e064f52d9bb486cdf3925d74e7ab6ebf
+        env:
+          INPUT_CATEGORY: integration
+          INPUT_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_COMMENT: 'false'
+          # Catalog-only metadata absent today; no technical integration check is ignored.
+          INPUT_IGNORE: description topics

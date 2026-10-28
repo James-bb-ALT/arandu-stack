@@ -1,0 +1,10 @@
+[package]
+name = "serde_json"
+version = "1.0.141"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+description = "FIXTURE_TECNICA resolver-only package; compilation is prohibited"
+
+[lib]
+path = "src/lib.rs"

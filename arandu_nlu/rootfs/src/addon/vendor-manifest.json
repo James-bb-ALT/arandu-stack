@@ -1,0 +1,161 @@
+{
+  "packages": [
+    {
+      "archive_sha256": "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682",
+      "file_count": 15,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "itoa",
+      "total_bytes": 52360,
+      "tree_sha256": "0911df19b2f42804465bf7e90bc1879569d1bcbec4df836570224c8ebf0ea65e",
+      "version": "1.0.18"
+    },
+    {
+      "archive_sha256": "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98",
+      "file_count": 60,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "memchr",
+      "total_bytes": 594162,
+      "tree_sha256": "e7f61f6f04e7915c31fb2fd3ea7a605004cc035edd0a09ee671c836cb13dc06a",
+      "version": "2.8.3"
+    },
+    {
+      "archive_sha256": "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9",
+      "file_count": 34,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "proc-macro2",
+      "total_bytes": 273214,
+      "tree_sha256": "efa1e61eeb2a59cc6ac0a7d80413e9675030e751e864f56b251d186ccd71e277",
+      "version": "1.0.107"
+    },
+    {
+      "archive_sha256": "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001",
+      "file_count": 36,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "quote",
+      "total_bytes": 140200,
+      "tree_sha256": "f8b258b8ead2f2e0a4e11880b9c5ec4bf2a87de7d06b791e41f02767ba8e9484",
+      "version": "1.0.47"
+    },
+    {
+      "archive_sha256": "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f",
+      "file_count": 39,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "ryu",
+      "total_bytes": 186476,
+      "tree_sha256": "eb0529bcafb735e831b90a7de9833af839c2ebe77adf62a02aca75e4127f171c",
+      "version": "1.0.23"
+    },
+    {
+      "archive_sha256": "9a8e94ea7f378bd32cbbd37198a4a91436180c5bb472411e48b5ec2e2124ae9e",
+      "file_count": 34,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "serde",
+      "total_bytes": 564553,
+      "tree_sha256": "e3bb05f4b728f080c48a9810f2cbda2e99e7445ee2fea8ab2fb1a26ed609aa19",
+      "version": "1.0.228"
+    },
+    {
+      "archive_sha256": "41d385c7d4ca58e59fc732af25c3983b67ac852c1a25000afe1175de458b67ad",
+      "file_count": 28,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "serde_core",
+      "total_bytes": 395275,
+      "tree_sha256": "faaaf4c86caf04b4df42a34fa8cd7dc905081a1caa6e4ff8e84d9dbc887a068b",
+      "version": "1.0.228"
+    },
+    {
+      "archive_sha256": "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79",
+      "file_count": 37,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "serde_derive",
+      "total_bytes": 336536,
+      "tree_sha256": "b072fa810d36f5d7d3307b61ba44452e42b88cc9d6d1f44ae7147fcddafa66fd",
+      "version": "1.0.228"
+    },
+    {
+      "archive_sha256": "402a6f66d8c709116cf22f558eab210f5a50187f702eb4d7e5ef38d9a7f1c79c",
+      "file_count": 89,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "serde_json",
+      "total_bytes": 754538,
+      "tree_sha256": "0b48fdb0a4794b35fbc66fd65106ce8a09bf99b70e05023aa0e2d289dabefd7c",
+      "version": "1.0.145"
+    },
+    {
+      "archive_sha256": "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297",
+      "file_count": 106,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "syn",
+      "total_bytes": 2315804,
+      "tree_sha256": "4c15c02975a441a44dd1b8821eef10cdebe6179393580eb5e0047cbe579d36f7",
+      "version": "2.0.119"
+    },
+    {
+      "archive_sha256": "bb4ebadaa0af04fab11ae01eb5f9fdb5f9c5b875506e210e71c07873528baa7f",
+      "file_count": 27,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "tinyvec",
+      "total_bytes": 253475,
+      "tree_sha256": "041a25f9252cb84214956543e3a9d578f8c62cd066e52b41a65d208f06ee50ed",
+      "version": "1.12.0"
+    },
+    {
+      "archive_sha256": "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20",
+      "file_count": 9,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "tinyvec_macros",
+      "total_bytes": 15739,
+      "tree_sha256": "4099130d6dc0cfc2915f7ceed4d02aa75c422b471ba6a80a2fa5fdc40bf6645e",
+      "version": "0.1.1"
+    },
+    {
+      "archive_sha256": "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75",
+      "file_count": 27,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "unicode-ident",
+      "total_bytes": 339156,
+      "tree_sha256": "6779a6f01c35c5ddcae28507b3f076cd527787458975d786d17be8dae525f81c",
+      "version": "1.0.24"
+    },
+    {
+      "archive_sha256": "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8",
+      "file_count": 26,
+      "generated_files": [
+        ".cargo-checksum.json"
+      ],
+      "name": "unicode-normalization",
+      "total_bytes": 732553,
+      "tree_sha256": "e842308eb5b14de841a6b9b7f983aacf8de6893c162cad311ecd08c65c2dee18",
+      "version": "0.1.25"
+    }
+  ],
+  "schema_version": 1,
+  "source": "verified crates.io .crate archives",
+  "transformation": "safe regular-file extraction plus deterministic .cargo-checksum.json generation"
+}

@@ -1,0 +1,13 @@
+[package]
+name = "ha-adapter"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "ha_adapter"
+path = "src/lib.rs"
+
+[dependencies]

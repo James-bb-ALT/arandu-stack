@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Arandu · Comparação de voz</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Arandu, início"
+        ><span class="brand-mark" aria-hidden="true">a</span>ARANDU<span
+          class="brand-detail"
+          >laboratório de voz</span
+        ></a
+      ><span class="local-badge"><span></span>LOCAL · ÁUDIO PRIVADO</span>
+    </header>
+    <main>
+      <div class="heading">
+        <div>
+          <p class="eyebrow">FASTCONFORMER / PT-BR</p>
+          <h1>Compare o reconhecimento.</h1>
+          <p class="intro" id="introText">
+            A mesma gravação, o modelo original e a adaptação para suas vozes.
+          </p>
+        </div>
+        <div class="dataset-note">
+          <strong id="datasetCount">170</strong
+          ><span
+            >gravações · 7 participantes<br />teste separado do
+            treinamento</span
+          >
+        </div>
+      </div>
+      <section class="training-strip" aria-label="Estado do experimento">
+        <div class="status-dot" id="statusDot"></div>
+        <div class="status-text">
+          <strong id="phase">Preparando treinamento</strong
+          ><span id="progressMessage"
+            >Configurando o ambiente para sua RTX 3080.</span
+          >
+        </div>
+        <div class="epoch-note" id="epochNote">RTX 3080 · 10 GB</div>
+      </section>
+      <section class="summary" aria-label="Métricas do teste independente">
+        <article class="metric-card">
+          <div class="card-label">
+            <span class="model-label" id="baselineLabel">01 / ORIGINAL</span
+            ><span class="tag" id="baselineTag">INT8</span>
+          </div>
+          <div class="big-metric">
+            <strong id="originalWer">20,0<span>%</span></strong
+            ><span>WER no teste</span>
+          </div>
+          <div class="metric-bottom">
+            <span>CER <b id="originalCer">6,58%</b></span
+            ><span id="testCount">17 frases de teste</span>
+          </div>
+        </article>
+        <article class="metric-card candidate-card">
+          <div class="card-label">
+            <span class="model-label" id="candidateLabel">02 / ADAPTADO</span
+            ><span class="tag" id="candidateTag">EM PREPARAÇÃO</span>
+          </div>
+          <div class="big-metric">
+            <strong id="candidateWer">—</strong
+            ><span id="candidateMetricNote">Avaliação após treinamento</span>
+          </div>
+          <div class="metric-bottom">
+            <span>CER <b id="candidateCer">—</b></span
+            ><span id="delta">Resultado ainda pendente</span>
+          </div>
+        </article>
+        <article class="curve-card">
+          <div class="card-label">
+            <span class="model-label">VALIDAÇÃO DURANTE O TREINO</span
+            ><span class="tag" id="bestEpoch">—</span>
+          </div>
+          <div id="curve" class="curve-empty">
+            A curva aparecerá quando o treino começar.
+          </div>
+          <p class="caption" id="curveCaption">
+            O melhor checkpoint é escolhido pela validação. O teste fica
+            reservado para o final.
+          </p>
+        </article>
+      </section>
+      <section class="workspace" aria-labelledby="compareTitle">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">ESCUTE E COMPARE</p>
+            <h2 id="compareTitle">Uma frase de cada vez.</h2>
+          </div>
+          <div class="tabs" role="tablist" aria-label="Origem do áudio">
+            <button
+              id="datasetTab"
+              class="active"
+              role="tab"
+              aria-selected="true"
+              aria-controls="datasetPanel"
+            >
+              Gravações do dataset</button
+            ><button
+              id="uploadTab"
+              role="tab"
+              aria-selected="false"
+              aria-controls="uploadPanel"
+            >
+              Seu áudio
+            </button>
+          </div>
+        </div>
+        <div id="datasetPanel" role="tabpanel" aria-labelledby="datasetTab">
+          <div class="filters">
+            <label
+              >Participante<select id="speakerSelect">
+                <option value="">Todos os participantes</option>
+              </select></label
+            ><label
+              >Conjunto<select id="splitSelect">
+                <option value="test">Teste · avaliação independente</option>
+                <option value="validation">Validação</option>
+                <option value="train">Treinamento</option>
+              </select></label
+            ><label class="sample-select"
+              >Gravação<select id="sampleSelect"></select></label
+            ><button class="primary" id="compareButton">
+              Comparar gravação <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+          <div class="audio-row">
+            <audio id="sampleAudio" controls preload="none"></audio
+            ><span id="audioDuration"></span
+            ><button class="text-button" id="nextSample">
+              Próxima frase →
+            </button>
+          </div>
+        </div>
+        <div
+          id="uploadPanel"
+          role="tabpanel"
+          aria-labelledby="uploadTab"
+          hidden
+        >
+          <div class="upload-row">
+            <label class="file-zone" for="audioFile"
+              ><strong>Escolha uma gravação</strong
+              ><span>OGG, WAV, MP4, M4A ou WebM · até 35 segundos</span
+              ><input
+                id="audioFile"
+                type="file"
+                accept="audio/*,video/mp4,.m4a,.ogg"
+            /></label>
+            <div class="record-zone">
+              <button class="secondary" id="recordButton">
+                <span class="record-dot" aria-hidden="true"></span>Gravar no
+                microfone</button
+              ><span id="recordHint"
+                >O navegador solicitará acesso ao microfone.</span
+              >
+            </div>
+          </div>
+          <label class="reference-label"
+            >Transcrição de referência
+            <span>(opcional, para calcular erros)</span
+            ><input
+              id="uploadReference"
+              placeholder="O que você disse na gravação?" /></label
+          ><audio id="uploadAudio" controls hidden></audio
+          ><button class="primary" id="uploadCompareButton" disabled>
+            Comparar meu áudio ↗
+          </button>
+        </div>
+        <div class="reference-box">
+          <p class="model-label">TEXTO DE REFERÊNCIA</p>
+          <p id="referenceText">
+            Selecione uma gravação para ouvir e comparar.
+          </p>
+        </div>
+        <div class="comparison-grid" aria-live="polite">
+          <article class="transcript-card">
+            <div class="card-label">
+              <span class="model-label" id="baselineTranscriptLabel">ORIGINAL</span
+              ><span class="latency" id="originalLatency">—</span>
+            </div>
+            <div id="originalText" class="transcript empty">
+              A transcrição aparecerá aqui.
+            </div>
+            <div class="transcript-footer" id="originalErrors">
+              FastConformer CTC original · INT8
+            </div>
+          </article>
+          <article class="transcript-card adapted-transcript">
+            <div class="card-label">
+              <span class="model-label" id="candidateTranscriptLabel">ADAPTADO</span
+              ><span class="latency" id="adaptedLatency">—</span>
+            </div>
+            <div id="adaptedText" class="transcript empty">
+              O modelo adaptado ficará disponível após o treinamento.
+            </div>
+            <div class="transcript-footer" id="adaptedErrors">
+              Encoder original · decoder CTC adaptado
+            </div>
+          </article>
+        </div>
+        <p class="error-message" id="errorMessage" role="alert" hidden></p>
+        <div class="legend">
+          <span
+            ><i class="error-swatch"></i>Palavra diferente da referência</span
+          ><span>WER/CER ignoram caixa e pontuação; preservam acentos.</span>
+        </div>
+      </section>
+      <section class="participant-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">TESTE INDEPENDENTE</p>
+            <h2>Resultados por participante.</h2>
+          </div>
+          <span class="caption"
+            >Conjunto pequeno: use como comparação preliminar.</span
+          >
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Participante</th>
+                <th>Frases</th>
+                <th>WER original</th>
+                <th>WER adaptado</th>
+                <th>Diferença</th>
+              </tr>
+            </thead>
+            <tbody id="speakerResults">
+              <tr>
+                <td colspan="5">Carregando linha de base…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <footer>
+        <span>ARANDU STT · Experimento local</span
+        ><span id="finalNote">O modelo de produção permanece preservado.</span>
+      </footer>
+    </main>
+    <script src="/app.js?v=20261014-recording"></script>
+  </body>
+</html>

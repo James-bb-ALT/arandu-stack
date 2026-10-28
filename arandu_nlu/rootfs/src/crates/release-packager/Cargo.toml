@@ -1,0 +1,15 @@
+[package]
+name = "release-packager"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "release_packager"
+path = "src/lib.rs"
+
+# Release tooling remains isolated so it cannot change product dependency
+# resolution or enter a shipped runtime graph.
+[workspace]

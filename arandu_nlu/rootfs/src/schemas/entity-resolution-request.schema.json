@@ -1,0 +1,76 @@
+{
+  "$id": "urn:arandu-nlu:entity-resolution:request",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Entity resolution request",
+  "description": "Wire-shape projection of local_nlu::ResolutionRequest (addon/engine/src/resolution.rs). Mirrors serde shapes exactly: required versus optional fields, JSON types, closed objects (deny_unknown_fields), the Action enum, and the two-integer span. Semantic validations (byte lengths, control characters, identifier shape, catalog identity, generation equality, span coverage, constraint satisfiability) are enforced by the Rust implementation and map to no_match, so they are intentionally absent here; this schema must accept every input the endpoint answers.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["text", "catalog", "generation", "mention"],
+  "properties": {
+    "text": {"type": "string"},
+    "catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["catalog_id", "generation", "areas", "entities"],
+      "properties": {
+        "catalog_id": {"type": "string"},
+        "generation": {"type": "string"},
+        "areas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["area_id", "names"],
+            "properties": {
+              "area_id": {"type": "string"},
+              "names": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        },
+        "entities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["registry_id", "entity_id", "domain", "display_name", "aliases", "capabilities"],
+            "properties": {
+              "registry_id": {"type": "string"},
+              "entity_id": {"type": "string"},
+              "domain": {"type": "string"},
+              "area_id": {"type": ["string", "null"]},
+              "display_name": {"type": "string"},
+              "aliases": {"type": "array", "items": {"type": "string"}},
+              "capabilities": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["get_state", "set_fan_percentage", "turn_off", "turn_on"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "generation": {"type": "string"},
+    "mention": {"type": "string"},
+    "span": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {"type": "integer", "minimum": 0}
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "area_id": {"type": ["string", "null"]},
+        "domain": {"type": ["string", "null"]},
+        "capability": {
+          "type": ["string", "null"],
+          "enum": ["get_state", "set_fan_percentage", "turn_off", "turn_on", null]
+        }
+      }
+    }
+  }
+}

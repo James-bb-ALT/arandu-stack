@@ -1,0 +1,63 @@
+"""Local NLU Home Assistant companion integration."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
+
+
+async def async_setup(_: HomeAssistant, __: dict[str, Any]) -> bool:
+    return True
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+    from .client import ClientError, LocalNluClient, normalize_endpoint
+    from .const import CONF_CONTEXTUAL_ENABLED, CONF_ENDPOINT, CONF_SHADOW_ENABLED, CONF_V2_ENABLED, PLATFORMS
+    from .runtime import LocalNluRuntime
+
+    try:
+        endpoint = normalize_endpoint(entry.data[CONF_ENDPOINT])
+    except (KeyError, ClientError):
+        return False
+    client = LocalNluClient(async_get_clientsession(hass), endpoint)
+    entry.runtime_data = LocalNluRuntime(
+        hass,
+        client,
+        lambda: bool(entry.options.get(CONF_V2_ENABLED, False)),
+        lambda: bool(entry.options.get(CONF_SHADOW_ENABLED, False)),
+        lambda: bool(entry.options.get(CONF_CONTEXTUAL_ENABLED, True)),
+        lambda: dict(entry.options),
+    )
+    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    from .ai_lab import async_register
+    await async_register(hass)
+    return True
+
+
+async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    # Clearing dialogue on every saved options change prevents change/restore replay.
+    # Runtime options are read live; no restart or automatic add-on update is needed.
+    runtime = entry.runtime_data
+    if runtime._contextual is not None:
+        runtime._contextual.options_changed()
+    runtime._pending.clear()
+
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    from .const import PLATFORMS
+
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded:
+        if getattr(entry.runtime_data, "_contextual", None) is not None:
+            entry.runtime_data._contextual.close()
+        try:
+            del entry.runtime_data
+        except AttributeError:
+            pass
+    return unloaded

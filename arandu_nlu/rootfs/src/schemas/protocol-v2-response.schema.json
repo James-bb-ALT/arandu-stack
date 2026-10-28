@@ -1,0 +1,1101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nlu-ptbr:protocol:v2:response",
+  "title": "NLU protocol v2 response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "outcome",
+    "diagnostics"
+  ],
+  "properties": {
+    "version": {
+      "const": 2
+    },
+    "outcome": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/completePlanOutcome"
+        },
+        {
+          "$ref": "#/$defs/entityClarificationOutcome"
+        },
+        {
+          "$ref": "#/$defs/abstentionOutcome"
+        },
+        {
+          "$ref": "#/$defs/policyDenialOutcome"
+        },
+        {
+          "$ref": "#/$defs/confirmationRequiredOutcome"
+        },
+        {
+          "$ref": "#/$defs/policyAcceptedOutcome"
+        },
+        {
+          "$ref": "#/$defs/cancellationOutcome"
+        },
+        {
+          "$ref": "#/$defs/healthOutcome"
+        },
+        {
+          "$ref": "#/$defs/protocolErrorOutcome"
+        }
+      ]
+    },
+    "diagnostics": {
+      "type": "array",
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/diagnostic"
+      }
+    }
+  },
+  "x-protocolVersion": 2,
+  "x-maxWireBytes": 131072,
+  "x-maxDecodedStringBytes": 16384,
+  "x-maxNestingDepth": 32,
+  "x-maxStructuralItems": 4096,
+  "x-maxIntegerTokenBytes": 20,
+  "x-maxDiagnostics": 8,
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128,
+      "pattern": "^[a-z](?:[a-z0-9_-]*[a-z0-9])?:[a-z](?:[a-z0-9_-]*[a-z0-9])?$"
+    },
+    "nullableIdentifier": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sessionId": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$",
+      "x-decodedBytes": 32
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 18446744073709551615
+    },
+    "nullableGeneration": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/generation"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      },
+      "x-invariant": "start is less than end and both are UTF-8 byte boundaries in the request"
+    },
+    "entityRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "generation"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "generation": {
+          "$ref": "#/$defs/generation"
+        }
+      }
+    },
+    "slotValue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "span"
+          ],
+          "properties": {
+            "type": {
+              "const": "evidence_text"
+            },
+            "span": {
+              "$ref": "#/$defs/span"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "integer"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": -9223372036854775808,
+              "maximum": 9223372036854775807
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "value"
+          ],
+          "properties": {
+            "type": {
+              "const": "boolean"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "id",
+            "generation"
+          ],
+          "properties": {
+            "type": {
+              "const": "entity"
+            },
+            "id": {
+              "$ref": "#/$defs/identifier"
+            },
+            "generation": {
+              "$ref": "#/$defs/generation"
+            }
+          }
+        }
+      ]
+    },
+    "slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "value"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "value": {
+          "$ref": "#/$defs/slotValue"
+        }
+      }
+    },
+    "planNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "capability",
+        "operation",
+        "slots",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "capability": {
+          "$ref": "#/$defs/identifier"
+        },
+        "operation": {
+          "$ref": "#/$defs/identifier"
+        },
+        "slots": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/slot"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/span"
+          }
+        }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to",
+        "kind"
+      ],
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/identifier"
+        },
+        "to": {
+          "$ref": "#/$defs/identifier"
+        },
+        "kind": {
+          "enum": [
+            "precedes",
+            "requires"
+          ]
+        }
+      }
+    },
+    "evidenceAtom": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "span"
+          ],
+          "properties": {
+            "kind": {
+              "const": "predicate"
+            },
+            "span": {
+              "$ref": "#/$defs/span"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "slot",
+            "span"
+          ],
+          "properties": {
+            "kind": {
+              "const": "argument"
+            },
+            "slot": {
+              "$ref": "#/$defs/identifier"
+            },
+            "span": {
+              "$ref": "#/$defs/span"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "span"
+          ],
+          "properties": {
+            "kind": {
+              "const": "negation"
+            },
+            "span": {
+              "$ref": "#/$defs/span"
+            }
+          }
+        }
+      ]
+    },
+    "clause": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node",
+        "intent",
+        "polarity",
+        "evidence"
+      ],
+      "properties": {
+        "node": {
+          "$ref": "#/$defs/identifier"
+        },
+        "intent": {
+          "$ref": "#/$defs/identifier"
+        },
+        "polarity": {
+          "enum": [
+            "affirmed",
+            "negated"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/evidenceAtom"
+          }
+        }
+      }
+    },
+    "relationEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "relation",
+        "evidence"
+      ],
+      "properties": {
+        "relation": {
+          "$ref": "#/$defs/relation"
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/span"
+          }
+        }
+      }
+    },
+    "independentPair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "left",
+        "right"
+      ],
+      "properties": {
+        "left": {
+          "$ref": "#/$defs/identifier"
+        },
+        "right": {
+          "$ref": "#/$defs/identifier"
+        }
+      },
+      "x-invariant": "left and right are distinct canonical plan node identifiers"
+    },
+    "argumentEndpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node",
+        "slot"
+      ],
+      "properties": {
+        "node": {
+          "$ref": "#/$defs/identifier"
+        },
+        "slot": {
+          "$ref": "#/$defs/identifier"
+        }
+      }
+    },
+    "argumentShare": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to",
+        "evidence"
+      ],
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/argumentEndpoint"
+        },
+        "to": {
+          "$ref": "#/$defs/argumentEndpoint"
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/span"
+          }
+        }
+      }
+    },
+    "composedPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "catalog_generation",
+        "execution_class",
+        "nodes",
+        "relations",
+        "clauses",
+        "relation_evidence",
+        "independent_pairs",
+        "argument_shares"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "maxLength": 16384,
+          "x-maxUtf8Bytes": 16384
+        },
+        "catalog_generation": {
+          "$ref": "#/$defs/generation"
+        },
+        "execution_class": {
+          "enum": [
+            "partial_safe",
+            "atomic_only",
+            "non_executable"
+          ]
+        },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/planNode"
+          }
+        },
+        "relations": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/relation"
+          }
+        },
+        "clauses": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/clause"
+          }
+        },
+        "relation_evidence": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/relationEvidence"
+          }
+        },
+        "independent_pairs": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/independentPair"
+          }
+        },
+        "argument_shares": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/argumentShare"
+          }
+        }
+      },
+      "x-maxAggregateItems": 4096,
+      "x-invariants": [
+        "all identifiers, slots, evidence, relations, clauses, independent pairs, and shares satisfy nlu-core ComposedPlan validation",
+        "all spans are checked half-open UTF-8 byte spans in the immutable request",
+        "all entity generations equal catalog_generation",
+        "execution_class is exactly the class derived by nlu-core"
+      ]
+    },
+    "diagnosticNoLimit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "node",
+        "limit"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "insufficient_evidence",
+            "ambiguous",
+            "unsupported",
+            "session_unavailable",
+            "session_expired",
+            "invalid_selection",
+            "stale_catalog_generation",
+            "policy_rule_missing",
+            "policy_denied",
+            "unsupported_graph_class",
+            "confirmation_unavailable",
+            "confirmation_expired"
+          ]
+        },
+        "node": {
+          "$ref": "#/$defs/nullableIdentifier"
+        },
+        "limit": {
+          "type": "null"
+        }
+      }
+    },
+    "diagnostic": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/diagnosticNoLimit"
+        },
+        {
+          "$ref": "#/$defs/wireByteDiagnostic"
+        },
+        {
+          "$ref": "#/$defs/stringByteDiagnostic"
+        },
+        {
+          "$ref": "#/$defs/structuralItemDiagnostic"
+        },
+        {
+          "$ref": "#/$defs/planNodeDiagnostic"
+        },
+        {
+          "$ref": "#/$defs/relationDiagnostic"
+        },
+        {
+          "$ref": "#/$defs/slotDiagnostic"
+        },
+        {
+          "$ref": "#/$defs/evidenceDiagnostic"
+        },
+        {
+          "$ref": "#/$defs/referentDiagnostic"
+        },
+        {
+          "$ref": "#/$defs/diagnosticLimitDiagnostic"
+        }
+      ]
+    },
+    "wireByteDiagnostic": {
+      "$ref": "#/$defs/diagnosticLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "wire_byte_limit"
+        },
+        "limit": {
+          "const": 131072
+        }
+      }
+    },
+    "stringByteDiagnostic": {
+      "$ref": "#/$defs/diagnosticLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "string_byte_limit"
+        },
+        "limit": {
+          "const": 16384
+        }
+      }
+    },
+    "structuralItemDiagnostic": {
+      "$ref": "#/$defs/diagnosticLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "structural_item_limit"
+        },
+        "limit": {
+          "const": 4096
+        }
+      }
+    },
+    "planNodeDiagnostic": {
+      "$ref": "#/$defs/diagnosticLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "plan_node_limit"
+        },
+        "limit": {
+          "const": 64
+        }
+      }
+    },
+    "relationDiagnostic": {
+      "$ref": "#/$defs/diagnosticLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "relation_limit"
+        },
+        "limit": {
+          "const": 256
+        }
+      }
+    },
+    "slotDiagnostic": {
+      "$ref": "#/$defs/diagnosticLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "slot_limit"
+        },
+        "limit": {
+          "const": 32
+        }
+      }
+    },
+    "evidenceDiagnostic": {
+      "$ref": "#/$defs/diagnosticLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "evidence_limit"
+        },
+        "limit": {
+          "const": 64
+        }
+      }
+    },
+    "referentDiagnostic": {
+      "$ref": "#/$defs/diagnosticLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "referent_limit"
+        },
+        "limit": {
+          "const": 16
+        }
+      }
+    },
+    "diagnosticLimitDiagnostic": {
+      "$ref": "#/$defs/diagnosticLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "diagnostic_limit"
+        },
+        "limit": {
+          "const": 8
+        }
+      }
+    },
+    "diagnosticLimitBase": {
+      "type": "object",
+      "required": [
+        "code",
+        "node",
+        "limit"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "node": {
+          "$ref": "#/$defs/nullableIdentifier"
+        },
+        "limit": {
+          "type": "integer"
+        }
+      }
+    },
+    "completePlanOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "plan"
+      ],
+      "properties": {
+        "type": {
+          "const": "complete_plan"
+        },
+        "plan": {
+          "$ref": "#/$defs/composedPlan"
+        }
+      }
+    },
+    "entityClarificationOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "continuation",
+        "session_id",
+        "referents"
+      ],
+      "properties": {
+        "type": {
+          "const": "entity_clarification"
+        },
+        "continuation": {
+          "const": true
+        },
+        "session_id": {
+          "$ref": "#/$defs/sessionId"
+        },
+        "referents": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/entityRef"
+          }
+        }
+      },
+      "x-invariant": "all referents use one catalog generation"
+    },
+    "abstentionOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "reason"
+      ],
+      "properties": {
+        "type": {
+          "const": "abstention"
+        },
+        "reason": {
+          "enum": [
+            "insufficient_evidence",
+            "ambiguous",
+            "unsupported"
+          ]
+        }
+      }
+    },
+    "policyDenialOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "reason"
+      ],
+      "properties": {
+        "type": {
+          "const": "policy_denial"
+        },
+        "reason": {
+          "enum": [
+            "missing_rule",
+            "explicit_deny",
+            "unsupported_graph_class",
+            "non_executable",
+            "stale_catalog_generation",
+            "stale_policy_generation",
+            "contradiction",
+            "confirmation_mismatch"
+          ]
+        }
+      }
+    },
+    "riskClass": {
+      "enum": [
+        "read_only",
+        "routine",
+        "sensitive",
+        "critical"
+      ]
+    },
+    "confirmationId": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 18446744073709551615
+    },
+    "confirmationRequiredOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "session_id",
+        "confirmation_id",
+        "risk",
+        "plan"
+      ],
+      "properties": {
+        "type": {
+          "const": "confirmation_required"
+        },
+        "session_id": {
+          "$ref": "#/$defs/sessionId"
+        },
+        "confirmation_id": {
+          "$ref": "#/$defs/confirmationId"
+        },
+        "risk": {
+          "$ref": "#/$defs/riskClass"
+        },
+        "plan": {
+          "$ref": "#/$defs/composedPlan"
+        }
+      }
+    },
+    "policyAcceptedOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "authorizes_execution",
+        "risk",
+        "plan"
+      ],
+      "properties": {
+        "type": {
+          "const": "policy_accepted"
+        },
+        "authorizes_execution": {
+          "const": false
+        },
+        "risk": {
+          "$ref": "#/$defs/riskClass"
+        },
+        "plan": {
+          "$ref": "#/$defs/composedPlan"
+        }
+      }
+    },
+    "cancellationOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "status"
+      ],
+      "properties": {
+        "type": {
+          "const": "cancellation"
+        },
+        "status": {
+          "enum": [
+            "cancelled",
+            "unavailable"
+          ]
+        }
+      }
+    },
+    "healthOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "readiness",
+        "supported_versions",
+        "catalog_generation",
+        "policy_generation",
+        "configuration_generation"
+      ],
+      "properties": {
+        "type": {
+          "const": "health"
+        },
+        "readiness": {
+          "enum": [
+            "ready",
+            "reloading",
+            "not_ready"
+          ]
+        },
+        "supported_versions": {
+          "const": [
+            1,
+            2
+          ],
+          "maxItems": 2
+        },
+        "catalog_generation": {
+          "$ref": "#/$defs/nullableGeneration"
+        },
+        "policy_generation": {
+          "$ref": "#/$defs/nullableGeneration"
+        },
+        "configuration_generation": {
+          "$ref": "#/$defs/nullableGeneration"
+        }
+      }
+    },
+    "protocolErrorWithLimit": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/inputTooLargeError"
+        },
+        {
+          "$ref": "#/$defs/stringTooLargeError"
+        },
+        {
+          "$ref": "#/$defs/nestingTooDeepError"
+        },
+        {
+          "$ref": "#/$defs/structuralLimitError"
+        },
+        {
+          "$ref": "#/$defs/numericTokenError"
+        }
+      ]
+    },
+    "inputTooLargeError": {
+      "$ref": "#/$defs/protocolErrorLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "input_too_large"
+        },
+        "limit": {
+          "const": 131072
+        }
+      }
+    },
+    "stringTooLargeError": {
+      "$ref": "#/$defs/protocolErrorLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "string_too_large"
+        },
+        "limit": {
+          "const": 16384
+        }
+      }
+    },
+    "nestingTooDeepError": {
+      "$ref": "#/$defs/protocolErrorLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "nesting_too_deep"
+        },
+        "limit": {
+          "const": 32
+        }
+      }
+    },
+    "structuralLimitError": {
+      "$ref": "#/$defs/protocolErrorLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "structural_limit_exceeded"
+        },
+        "limit": {
+          "const": 4096
+        }
+      }
+    },
+    "numericTokenError": {
+      "$ref": "#/$defs/protocolErrorLimitBase",
+      "unevaluatedProperties": false,
+      "properties": {
+        "code": {
+          "const": "numeric_token_too_long"
+        },
+        "limit": {
+          "const": 20
+        }
+      }
+    },
+    "protocolErrorLimitBase": {
+      "type": "object",
+      "required": [
+        "type",
+        "code",
+        "limit"
+      ],
+      "properties": {
+        "type": {
+          "const": "protocol_error"
+        },
+        "code": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer"
+        }
+      }
+    },
+    "protocolErrorWithoutLimit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "code",
+        "limit"
+      ],
+      "properties": {
+        "type": {
+          "const": "protocol_error"
+        },
+        "code": {
+          "enum": [
+            "invalid_utf8",
+            "non_integer_number",
+            "malformed_json",
+            "unsupported_version",
+            "invalid_identifier",
+            "invalid_span",
+            "invalid_graph",
+            "empty_plan",
+            "invalid_outcome",
+            "encoding_failure"
+          ]
+        },
+        "limit": {
+          "type": "null"
+        }
+      }
+    },
+    "protocolErrorOutcome": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/protocolErrorWithLimit"
+        },
+        {
+          "$ref": "#/$defs/protocolErrorWithoutLimit"
+        }
+      ],
+      "x-maxEncodedBytes": 256
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nlu-ptbr:protocol:v1:request",
+  "title": "NLU protocol v1 request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "request"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "request": {
+      "$ref": "#/$defs/request"
+    }
+  },
+  "x-protocolVersion": 1,
+  "x-maxWireBytes": 65536,
+  "x-maxNestingDepth": 32,
+  "$defs": {
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "maxLength": 16384,
+          "x-maxUtf8Bytes": 16384
+        }
+      }
+    }
+  }
+}

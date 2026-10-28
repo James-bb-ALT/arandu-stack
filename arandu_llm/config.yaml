@@ -1,0 +1,18 @@
+name: Arandu LLM
+slug: arandu_llm
+version: "0.1.0"
+description: Tucano 2 Qwen 0.5B — propostas locais passivas
+url: https://github.com/jaimevictor/arandu-stack
+arch: [amd64]
+startup: application
+boot: manual
+init: false
+stage: experimental
+ports:
+  11558/tcp: null
+options:
+  auto_download: false
+  threads: 2
+schema:
+  auto_download: bool
+  threads: int(1,4)

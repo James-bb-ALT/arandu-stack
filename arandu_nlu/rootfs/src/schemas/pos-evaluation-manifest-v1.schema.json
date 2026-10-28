@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nlu.local/schemas/pos-evaluation-manifest-v1.schema.json",
+  "title": "POS evaluation manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "domain",
+    "runner_id",
+    "dataset_id",
+    "dataset_version",
+    "split",
+    "claim_scope",
+    "locale",
+    "source_id",
+    "source_manifest_sha256",
+    "original_artifact_sha256",
+    "split_manifest_path",
+    "split_manifest_sha256",
+    "heldout",
+    "model",
+    "baseline_id",
+    "selected_id",
+    "metric_spec",
+    "confusion_labels",
+    "expected_labels",
+    "error_taxonomy",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "domain": {"const": "pos"},
+    "runner_id": {"const": "pos-eval-v1"},
+    "dataset_id": {"const": "p08-pos-internal-conformance"},
+    "dataset_version": {"const": "1.0.0"},
+    "split": {"const": "heldout"},
+    "claim_scope": {"const": "internal_conformance_only"},
+    "locale": {"const": "pt-BR"},
+    "source_id": {"const": "project-authored-synthetic-ptbr-v1"},
+    "source_manifest_sha256": {
+      "const": "d9e1ca32ec0f92aa6b5fc6c1d4f232f93389e0bf8031267d23daddf7287006c5"
+    },
+    "original_artifact_sha256": {
+      "const": "85ad18caf3ae749d3ec0135c3c01ce6d754f831d395abdc44ff1c3643a18fac8"
+    },
+    "split_manifest_path": {
+      "const": "data/evaluation/p08/pos-v1/splits/split-manifest.json"
+    },
+    "split_manifest_sha256": {
+      "const": "bd6ef5cf79e188d43eb6b6ecddd4de7e5f767aab14316a3a4b677a04d9c2fb5c"
+    },
+    "heldout": {"$ref": "#/$defs/heldout"},
+    "model": {"$ref": "#/$defs/model"},
+    "baseline_id": {
+      "const": "lang-ptbr-independent-evidence-pos-baseline-v1"
+    },
+    "selected_id": {"const": "lang-ptbr-adjacent-transition-pos-v1"},
+    "metric_spec": {"const": "exact-pos-candidate-set-aggregate-v1"},
+    "confusion_labels": {"const": ["unknown", "unique", "ambiguous"]},
+    "expected_labels": {
+      "const": ["ADJ", "ADP", "DET", "NOUN", "NUM", "VERB", "X"]
+    },
+    "error_taxonomy": {
+      "const": [
+        "exact_set_mismatch",
+        "missing_expected_candidate",
+        "unexpected_candidate",
+        "unexpected_unknown",
+        "unresolved_ambiguity"
+      ]
+    },
+    "limitations": {"$ref": "#/$defs/limitations"}
+  },
+  "$defs": {
+    "heldout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "records",
+        "documents",
+        "origin_count",
+        "tokens",
+        "case_ids_sha256",
+        "document_ids_sha256",
+        "text_sha256s_sha256",
+        "origins_sha256"
+      ],
+      "properties": {
+        "path": {
+          "const": "data/evaluation/p08/pos-v1/splits/heldout.jsonl"
+        },
+        "sha256": {
+          "const": "876e85049fb391b5171641e206b7bc2b4ae2bb4e1d58f36858bf1b5c91812dd7"
+        },
+        "records": {"const": 81},
+        "documents": {"const": 9},
+        "origin_count": {"const": 1},
+        "tokens": {"const": 643},
+        "case_ids_sha256": {
+          "const": "273c254d3dd18c2f296330f6affbd8e4f33bbc0ed35bb2c2de38480a9c5bf93f"
+        },
+        "document_ids_sha256": {
+          "const": "26ed164850cb01339215158824eb5c2f2f832b9516abad1cbe13326aeae1926b"
+        },
+        "text_sha256s_sha256": {
+          "const": "b1dc1f1aa9598155c783b43871136ba64b9959996d0972e464840f8975c970c4"
+        },
+        "origins_sha256": {
+          "const": "7c9b3c0943f43dcc2327fcaec2edc61ff2eedc8e5a2c62f714c1c07cb388b757"
+        }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_id",
+        "algorithm_id",
+        "compiler_id",
+        "config_id",
+        "package_path",
+        "package_sha256",
+        "package_bytes",
+        "manifest_path",
+        "manifest_sha256"
+      ],
+      "properties": {
+        "model_id": {"const": "p08-pos-transition-model-v1"},
+        "algorithm_id": {
+          "const": "adjacent-singleton-presence-noncascading-v1"
+        },
+        "compiler_id": {
+          "const": "nlu-data-pos-transition-compiler-v1"
+        },
+        "config_id": {"const": "p08-pos-config-v1"},
+        "package_path": {"const": "data/pos/p08/package.bin"},
+        "package_sha256": {
+          "const": "23beb6dd464c4bd03d69bb374be210fd3a187661c37673194f466b4270b8020c"
+        },
+        "package_bytes": {"const": 47},
+        "manifest_path": {
+          "const": "data/pos/p08/package-manifest.json"
+        },
+        "manifest_sha256": {
+          "const": "f89eaa786f37456d5e1d47e522ceea7bd96f41b272bdc9a6ca99407d7cc2b0bc"
+        }
+      }
+    },
+    "limitations": {
+      "const": [
+        "project_authored_labels_share_generator_with_runtime_lexicon",
+        "single_source_origin_not_origin_disjoint",
+        "templatic_internal_conformance_not_independent_accuracy",
+        "heldout_unknown_subset_contains_four_expected_x_tokens",
+        "no_unseen_language_or_cross_origin_generalization_claim"
+      ]
+    }
+  }
+}

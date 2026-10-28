@@ -1,0 +1,4 @@
+fastapi>=0.110,<1
+uvicorn>=0.27,<1
+numpy>=1.26,<3
+sherpa-onnx==1.13.8

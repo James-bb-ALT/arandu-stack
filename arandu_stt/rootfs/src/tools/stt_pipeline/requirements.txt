@@ -1,0 +1,6 @@
+# Dataset preparation and unittest use Python's standard library only.
+# Install FFmpeg/FFprobe as external executables (not pip packages).
+# Acoustic ONNX evaluation; matches the existing production runtime.
+numpy>=1.26,<3
+sherpa-onnx==1.13.8
+psutil>=5.9,<8

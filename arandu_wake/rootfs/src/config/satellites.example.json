@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "home_assistant": {
+    "url": "http://homeassistant.local:8123",
+    "pipeline_name": "Arandu",
+    "pipeline_id": null,
+    "expected_engines": {"stt_engine": null, "conversation_engine": null, "tts_engine": null}
+  },
+  "wake_word": "alexa",
+  "satellites": [
+    {"id": "respeaker-sala", "name": "ReSpeaker Sala", "type": "esphome", "address": "respeaker-sala.local", "room": "sala", "pipeline": "Arandu", "mode": "central", "sensitivity": 0.5, "connection_entity": null, "listening_entity": null},
+    {"id": "echomuse-sala", "name": "Echo Dot Sala", "type": "echomuse", "address": "echomuse-sala.local", "room": "sala", "pipeline": "Arandu", "mode": "local", "sensitivity": null, "connection_entity": null, "listening_entity": null},
+    {"id": "echo-show-quarto", "name": "Echo Show Quarto", "type": "android", "address": "echo-show-quarto", "room": "quarto", "pipeline": "Arandu", "mode": "local", "sensitivity": null, "connection_entity": null, "listening_entity": null}
+  ]
+}

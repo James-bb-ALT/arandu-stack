@@ -1,0 +1,10 @@
+{
+  "upstream": "nvidia/stt_pt_fastconformer_hybrid_large_pc",
+  "upstream_license": "CC-BY-NC-4.0",
+  "converted_repo": "csukuangfj/sherpa-onnx-nemo-stt_pt_fastconformer_hybrid_large_pc-int8",
+  "revision": "f5df0c1e1db4a779d106f4722886557f3466cc42",
+  "model_filename": "model.int8.onnx",
+  "model_bytes": 131279704,
+  "model_sha256": "cc4135abd8cf485f2588fa584a9fd2e006e26ab5cae23703e3db37c9151f75b5",
+  "tokens_sha256": "c79cd022b6b04e090901e1acce380ad9476bb6a3694112199b835256bb079b9b"
+}

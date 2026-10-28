@@ -1,0 +1,31 @@
+category,raw,expected,corrected,wer_original,wer_corrected,cer_original,cer_corrected,latency_ms_median,first_pass_ms,confidence,low_confidence
+device_error,liga o ventulador do quarto,liga o ventilador do quarto,liga o ventilador do quarto,0.2,0.0,0.037037037037037035,0.0,0.4047500260639936,1.114,0.943963,False
+name_area,liga o ventulador do escritorio de jaime,liga o ventilador do escritório de Jaime,liga o ventilador do escritório de Jaime,0.2857142857142857,0.0,0.05,0.0,0.5298000178299844,0.536,0.954122,False
+sensor_error,qual a temperatua do quarto,qual a temperatura do quarto,qual a temperatura do quarto,0.2,0.0,0.03571428571428571,0.0,0.38925002445466816,0.946,0.972635,False
+legacy_action_error,desligua o ventulador,desliga o ventilador,desliga o ventilador,0.6666666666666666,0.0,0.1,0.0,0.6271500024013221,1.106,0.833227,False
+media_error,bota meu spotifai pra tocar,bota meu Spotify pra tocar,bota meu Spotify pra tocar,0.2,0.0,0.07692307692307693,0.0,0.3918000147677958,0.811,0.947974,False
+ha_compound_error,liga lava lemp,liga Lava Lamp,liga Lava Lamp,0.3333333333333333,0.0,0.07142857142857142,0.0,0.2487500023562461,0.687,0.85342,True
+lock_ambiguity,destranca a porda,destranca a porta,destranca a porta,0.3333333333333333,0.0,0.058823529411764705,0.0,0.2571500081103295,0.685,0.750415,True
+correct_negation,não desliga o ventilador,não desliga o ventilador,não desliga o ventilador,0.0,0.0,0.0,0.0,0.142550008604303,0.152,0.98,False
+correct_plural,liga as luzes dos quartos,liga as luzes dos quartos,liga as luzes dos quartos,0.0,0.0,0.0,0.0,0.17929999739862978,0.182,0.98,False
+correct_names,Pedro e Rafael,Pedro e Rafael,Pedro e Rafael,0.0,0.0,0.0,0.0,0.10755000403150916,0.115,0.98,False
+correct_informal,liga aí o ventilador,liga aí o ventilador,liga aí o ventilador,0.0,0.0,0.0,0.0,0.13775000115856528,0.144,0.98,False
+correct_informal,bota o ventilador pra funcionar,bota o ventilador pra funcionar,bota o ventilador pra funcionar,0.0,0.0,0.0,0.0,0.1702499866951257,0.183,0.98,False
+correct_informal,acende a luz daqui,acende a luz daqui,acende a luz daqui,0.0,0.0,0.0,0.0,0.13914998271502554,0.139,0.98,False
+correct_sensor,tá fazendo quantos graus no quarto,tá fazendo quantos graus no quarto,tá fazendo quantos graus no quarto,0.0,0.0,0.0,0.0,0.20414998289197683,0.227,0.98,False
+correct_phone,onde tá meu telefone,onde tá meu telefone,onde tá meu telefone,0.0,0.0,0.0,0.0,0.1379000023007393,0.144,0.98,False
+correct_media,bota meu Spotify pra tocar,bota meu Spotify pra tocar,bota meu Spotify pra tocar,0.0,0.0,0.0,0.0,0.17370001296512783,0.176,0.98,False
+correct_compound,liga o ar-condicionado,liga o ar-condicionado,liga o ar-condicionado,0.0,0.0,0.0,0.0,0.10899998596869409,0.113,0.98,False
+split_compound,liga o ar condicionado,liga o ar-condicionado,liga o ar-condicionado,0.6666666666666666,0.0,0.045454545454545456,0.0,0.11560000712051988,0.147,0.98,False
+correct_wifi,desliga o Wi-Fi,desliga o Wi-Fi,desliga o Wi-Fi,0.0,0.0,0.0,0.0,0.10814997949637473,0.11,0.98,False
+numeric,"ajusta para 22,5°C e 50% às 19:30","ajusta para 22,5°C e 50% às 19:30","ajusta para 22,5°C e 50% às 19:30",0.0,0.0,0.0,0.0,0.2468499878887087,0.277,0.98,False
+numeric,"ajusta para -2,5 graus","ajusta para -2,5 graus","ajusta para -2,5 graus",0.0,0.0,0.0,0.0,0.13940001372247934,0.145,0.98,False
+punctuation,Pode ligar o ventilador?,Pode ligar o ventilador?,pode ligar o ventilador?,0.0,0.0,0.0,0.0,0.139150011818856,0.147,0.98,False
+punctuation_error,Qual a temperatua no quarto?,Qual a temperatura no quarto?,qual a temperatura no quarto?,0.2,0.0,0.034482758620689655,0.0,0.388449989259243,0.46,0.972635,False
+correct_general,hoje estudei história brasileira,hoje estudei história brasileira,hoje estudei história brasileira,0.0,0.0,0.0,0.0,0.1420000335201621,0.151,0.98,False
+correct_general,amanhã vou ler um livro,amanhã vou ler um livro,amanhã vou ler um livro,0.0,0.0,0.0,0.0,0.17225000192411244,0.262,0.98,False
+correct_general,gosto de música e cinema,gosto de música e cinema,gosto de música e cinema,0.0,0.0,0.0,0.0,0.17240000306628644,0.178,0.98,False
+correct_general,a poda,a poda,a poda,0.0,0.0,0.0,0.0,0.07340003503486514,0.074,0.98,False
+unknown_general_limitation,antropologia epistemológica,antropologia epistemológica,Antônia pistola,0.0,1.0,0.0,0.5185185185185185,0.5295000155456364,1.558,0.516252,True
+unknown_low_confidence,xyzqvv,xyzqvv,xícara,0.0,1.0,0.0,0.8333333333333334,0.08460000390186906,0.158,0.175577,True
+valid_homophone_limitation,destranca a poda,destranca a porta,destranca a poda,0.3333333333333333,0.3333333333333333,0.11764705882352941,0.11764705882352941,0.10889998520724475,0.118,0.98,False

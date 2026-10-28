@@ -1,0 +1,38 @@
+services:
+  arandu-tts:
+    build: .
+    container_name: arandu-tts
+    restart: unless-stopped
+    ports:
+      - "10212:10212"
+      # Segurança: UI acessível apenas do próprio host por padrão.
+      - "127.0.0.1:8099:8099"
+    volumes:
+      - ./voices:/data/voices
+      - ./hf-cache:/data/hf-cache
+    environment:
+      ARANDU_URI: tcp://0.0.0.0:10212
+      ARANDU_VOICES_DIR: /data/voices
+      ARANDU_DEFAULT_VOICE: ${ARANDU_DEFAULT_VOICE:-pt_BR-faber-medium}
+      ARANDU_AUTO_DOWNLOAD: "1"
+      ARANDU_PRELOAD: "1"
+      ARANDU_PIPER_THREADS: ${ARANDU_PIPER_THREADS:-2}
+      HF_TOKEN: ${HF_TOKEN:-}
+      ARANDU_POCKET_ENABLED: "1"
+      ARANDU_POCKET_LANGUAGE: portuguese
+      ARANDU_POCKET_PRELOAD: "0"
+      ARANDU_POCKET_THREADS: ${ARANDU_POCKET_THREADS:-2}
+      ARANDU_POCKET_FALLBACK: "1"
+      ARANDU_WEB_ENABLED: "1"
+      ARANDU_WEB_HOST: "0.0.0.0"
+      ARANDU_WEB_PORT: "8099"
+      ARANDU_WEB_TOKEN: ${ARANDU_WEB_TOKEN:-}
+      ARANDU_FALLBACK_VOICE: ${ARANDU_FALLBACK_VOICE:-pt_BR-faber-medium}
+      ARANDU_REMOTE_FALLBACK: "1"
+      ARANDU_REMOTE_URL: ${ARANDU_REMOTE_URL:-}
+      ARANDU_REMOTE_TOKEN: ${ARANDU_REMOTE_TOKEN:-}
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m

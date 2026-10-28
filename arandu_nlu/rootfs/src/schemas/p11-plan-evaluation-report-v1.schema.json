@@ -1,0 +1,520 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/schemas/p11-plan-evaluation-report-v1.schema.json",
+  "title": "P11 plan evaluation report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "runner_id",
+    "metric_specification",
+    "split",
+    "sources",
+    "projections",
+    "recognizer",
+    "composer",
+    "comparison_contract",
+    "results",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "runner_id": {
+      "const": "plan-eval-v1"
+    },
+    "metric_specification": {
+      "const": "exact-p11-outcome-full-graph-and-canonical-bytes-v1"
+    },
+    "split": {
+      "$ref": "#/$defs/split"
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    },
+    "projections": {
+      "$ref": "#/$defs/projections"
+    },
+    "recognizer": {
+      "$ref": "#/$defs/recognizer"
+    },
+    "composer": {
+      "$ref": "#/$defs/composer"
+    },
+    "comparison_contract": {
+      "$ref": "#/$defs/comparison_contract"
+    },
+    "results": {
+      "$ref": "#/$defs/results"
+    },
+    "limitations": {
+      "const": [
+        "project_authored_internal_conformance_only",
+        "not_independent_language_accuracy",
+        "p02_and_p11_sources_reported_separately",
+        "no_heldout_access",
+        "graph_execution_class_is_not_execution_authority",
+        "no_acceptance_threshold_defined"
+      ]
+    }
+  },
+  "$defs": {
+    "split": {
+      "enum": [
+        "train",
+        "development"
+      ]
+    },
+    "hash": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_:.-]*$"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 963
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_type",
+        "corpus_version",
+        "generator_id",
+        "oracle_origin",
+        "claim_scope",
+        "split",
+        "physical_sha256",
+        "records"
+      ],
+      "properties": {
+        "source_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "source_type": {
+          "const": "PROJECT_AUTHORED_SYNTHETIC"
+        },
+        "corpus_version": {
+          "const": "1.0.0"
+        },
+        "generator_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "oracle_origin": {
+          "$ref": "#/$defs/identifier"
+        },
+        "claim_scope": {
+          "const": "internal_conformance_only"
+        },
+        "split": {
+          "$ref": "#/$defs/split"
+        },
+        "physical_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "records": {
+          "$ref": "#/$defs/count"
+        }
+      }
+    },
+    "projections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pre_resolution_projection_id",
+        "pre_resolution_projection_sha256",
+        "plan_projection_id",
+        "plan_projection_sha256"
+      ],
+      "properties": {
+        "pre_resolution_projection_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "pre_resolution_projection_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "plan_projection_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "plan_projection_sha256": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "recognizer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "algorithm_id",
+        "configuration_id",
+        "package_sha256",
+        "package_manifest_sha256"
+      ],
+      "properties": {
+        "schema_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "algorithm_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "configuration_id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "package_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "package_manifest_sha256": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "composer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "algorithm_id"
+      ],
+      "properties": {
+        "schema_id": {
+          "const": "p11-semantic-plan-v1"
+        },
+        "algorithm_id": {
+          "const": "p11-closed-train-template-composer-v1"
+        }
+      }
+    },
+    "comparison_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome_fields",
+        "full_graph_fields",
+        "canonical_bytes_required",
+        "acceptance_threshold"
+      ],
+      "properties": {
+        "outcome_fields": {
+          "const": [
+            "outcome_kind",
+            "abstention_reason"
+          ]
+        },
+        "full_graph_fields": {
+          "const": [
+            "intent",
+            "capability",
+            "operation",
+            "entity_slot_value",
+            "integer_slot_value",
+            "text_slot_value",
+            "typed_evidence_span",
+            "polarity",
+            "relation_evidence",
+            "independence",
+            "argument_share",
+            "execution_class",
+            "canonical_bytes"
+          ]
+        },
+        "canonical_bytes_required": {
+          "const": true
+        },
+        "acceptance_threshold": {
+          "const": null
+        }
+      }
+    },
+    "recognizer_outcomes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "matches",
+        "clarifications",
+        "abstentions",
+        "errors"
+      ],
+      "properties": {
+        "matches": {
+          "$ref": "#/$defs/count"
+        },
+        "clarifications": {
+          "$ref": "#/$defs/count"
+        },
+        "abstentions": {
+          "$ref": "#/$defs/count"
+        },
+        "errors": {
+          "$ref": "#/$defs/count"
+        }
+      }
+    },
+    "composer_outcomes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plans",
+        "clarifications",
+        "abstentions",
+        "not_run",
+        "errors"
+      ],
+      "properties": {
+        "plans": {
+          "$ref": "#/$defs/count"
+        },
+        "clarifications": {
+          "$ref": "#/$defs/count"
+        },
+        "abstentions": {
+          "$ref": "#/$defs/count"
+        },
+        "not_run": {
+          "$ref": "#/$defs/count"
+        },
+        "errors": {
+          "$ref": "#/$defs/count"
+        }
+      }
+    },
+    "fraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "numerator",
+        "denominator"
+      ],
+      "properties": {
+        "numerator": {
+          "$ref": "#/$defs/count"
+        },
+        "denominator": {
+          "$ref": "#/$defs/count"
+        }
+      }
+    },
+    "source_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "p02",
+        "p11_negation",
+        "total"
+      ],
+      "properties": {
+        "p02": {
+          "$ref": "#/$defs/count"
+        },
+        "p11_negation": {
+          "$ref": "#/$defs/count"
+        },
+        "total": {
+          "$ref": "#/$defs/count"
+        }
+      }
+    },
+    "expected_outcomes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plans",
+        "abstentions"
+      ],
+      "properties": {
+        "plans": {
+          "$ref": "#/$defs/count"
+        },
+        "abstentions": {
+          "$ref": "#/$defs/count"
+        }
+      }
+    },
+    "graph_stratum": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "stratum",
+        "graph_shape",
+        "expected_outcome",
+        "total",
+        "intent_exact",
+        "outcome_exact",
+        "graph_exact",
+        "canonical_bytes_exact",
+        "exact_semantics",
+        "recognizer_outcomes",
+        "composer_outcomes"
+      ],
+      "properties": {
+        "source": {
+          "enum": [
+            "p02",
+            "p11_negation"
+          ]
+        },
+        "stratum": {
+          "$ref": "#/$defs/identifier"
+        },
+        "graph_shape": {
+          "$ref": "#/$defs/identifier"
+        },
+        "expected_outcome": {
+          "enum": [
+            "plan",
+            "abstention"
+          ]
+        },
+        "total": {
+          "$ref": "#/$defs/count"
+        },
+        "intent_exact": {
+          "$ref": "#/$defs/count"
+        },
+        "outcome_exact": {
+          "$ref": "#/$defs/count"
+        },
+        "graph_exact": {
+          "$ref": "#/$defs/count"
+        },
+        "canonical_bytes_exact": {
+          "$ref": "#/$defs/count"
+        },
+        "exact_semantics": {
+          "$ref": "#/$defs/count"
+        },
+        "recognizer_outcomes": {
+          "$ref": "#/$defs/recognizer_outcomes"
+        },
+        "composer_outcomes": {
+          "$ref": "#/$defs/composer_outcomes"
+        }
+      }
+    },
+    "reconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "records_expected",
+        "records_observed",
+        "source_total",
+        "expected_outcome_total",
+        "recognizer_outcome_total",
+        "composer_outcome_total",
+        "stratum_total",
+        "plan_graph_denominator",
+        "graph_comparisons_accounted",
+        "complete"
+      ],
+      "properties": {
+        "records_expected": {
+          "$ref": "#/$defs/count"
+        },
+        "records_observed": {
+          "$ref": "#/$defs/count"
+        },
+        "source_total": {
+          "$ref": "#/$defs/count"
+        },
+        "expected_outcome_total": {
+          "$ref": "#/$defs/count"
+        },
+        "recognizer_outcome_total": {
+          "$ref": "#/$defs/count"
+        },
+        "composer_outcome_total": {
+          "$ref": "#/$defs/count"
+        },
+        "stratum_total": {
+          "$ref": "#/$defs/count"
+        },
+        "plan_graph_denominator": {
+          "$ref": "#/$defs/count"
+        },
+        "graph_comparisons_accounted": {
+          "$ref": "#/$defs/count"
+        },
+        "complete": {
+          "const": true
+        }
+      }
+    },
+    "results": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_counts",
+        "expected_outcomes",
+        "recognizer_outcomes",
+        "composer_outcomes",
+        "intent_exact",
+        "outcome_exact",
+        "graph_exact",
+        "canonical_bytes_exact",
+        "exact_semantics",
+        "graph_strata",
+        "prediction_digest_sha256",
+        "reconciliation"
+      ],
+      "properties": {
+        "source_counts": {
+          "$ref": "#/$defs/source_counts"
+        },
+        "expected_outcomes": {
+          "$ref": "#/$defs/expected_outcomes"
+        },
+        "recognizer_outcomes": {
+          "$ref": "#/$defs/recognizer_outcomes"
+        },
+        "composer_outcomes": {
+          "$ref": "#/$defs/composer_outcomes"
+        },
+        "intent_exact": {
+          "$ref": "#/$defs/fraction"
+        },
+        "outcome_exact": {
+          "$ref": "#/$defs/fraction"
+        },
+        "graph_exact": {
+          "$ref": "#/$defs/fraction"
+        },
+        "canonical_bytes_exact": {
+          "$ref": "#/$defs/fraction"
+        },
+        "exact_semantics": {
+          "$ref": "#/$defs/fraction"
+        },
+        "graph_strata": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "$ref": "#/$defs/graph_stratum"
+          }
+        },
+        "prediction_digest_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "reconciliation": {
+          "$ref": "#/$defs/reconciliation"
+        }
+      }
+    }
+  }
+}

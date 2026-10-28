@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "scripts": {
+    "participante_01/roteiro.txt": {
+      "encoding": "utf-8-sig",
+      "exclude_lines": [1, 5],
+      "include_lines": [3]
+    }
+  },
+  "audio": {
+    "participante_01/01.m4a.mp4": {
+      "script": "participante_01/roteiro.txt",
+      "phrase_id": 1,
+      "stream_index": 0
+    },
+    "participante_01/01_copia.ogg": {
+      "skip": true
+    }
+  }
+}

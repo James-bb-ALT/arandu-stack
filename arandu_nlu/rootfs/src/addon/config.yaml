@@ -1,0 +1,13 @@
+name: ARANDU NLU
+version: 0.5.1
+slug: ptbr_nlu
+description: Local contextual Brazilian Portuguese intelligence for Home Assistant
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: auto
+init: false
+stage: stable
+watchdog: http://[HOST]:[PORT:11555]/health
+schema: false

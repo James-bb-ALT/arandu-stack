@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/schemas/intent-output-v1.schema.json",
+  "title": "P09 canonical intent-recognition output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "outcome"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "outcome": {"enum": ["match", "clarification", "abstention"]},
+    "match": {"$ref": "#/$defs/match"},
+    "alternatives": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 32,
+      "items": {"$ref": "#/$defs/match"}
+    },
+    "reason": {"const": "insufficient_evidence"}
+  },
+  "oneOf": [
+    {
+      "required": ["match"],
+      "not": {"anyOf": [{"required": ["alternatives"]}, {"required": ["reason"]}]}
+    },
+    {
+      "required": ["alternatives"],
+      "not": {"anyOf": [{"required": ["match"]}, {"required": ["reason"]}]}
+    },
+    {
+      "required": ["reason"],
+      "not": {"anyOf": [{"required": ["match"]}, {"required": ["alternatives"]}]}
+    }
+  ],
+  "$defs": {
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["begin_byte", "end_byte"],
+      "properties": {
+        "begin_byte": {"type": "integer", "minimum": 0},
+        "end_byte": {"type": "integer", "minimum": 1}
+      }
+    },
+    "value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"enum": ["mention", "text", "integer"]},
+        "text": {"type": "string", "minLength": 1},
+        "integer": {"type": "integer"}
+      },
+      "oneOf": [
+        {
+          "required": ["text"],
+          "not": {"required": ["integer"]}
+        },
+        {
+          "required": ["integer"],
+          "not": {"required": ["text"]}
+        }
+      ]
+    },
+    "slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slot_id", "role", "occurrence", "value", "evidence"],
+      "properties": {
+        "slot_id": {"type": "string", "minLength": 3, "maxLength": 128},
+        "role": {"type": "string", "minLength": 1, "maxLength": 64},
+        "occurrence": {"type": "integer", "minimum": 0, "maximum": 7},
+        "value": {"$ref": "#/$defs/value"},
+        "evidence": {"$ref": "#/$defs/span"}
+      }
+    },
+    "match": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intent_id", "score", "evidence", "slots"],
+      "properties": {
+        "intent_id": {"type": "string", "minLength": 3, "maxLength": 128},
+        "score": {"type": "integer", "minimum": 0, "maximum": 10000},
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {"$ref": "#/$defs/span"}
+        },
+        "slots": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {"$ref": "#/$defs/slot"}
+        }
+      }
+    }
+  }
+}

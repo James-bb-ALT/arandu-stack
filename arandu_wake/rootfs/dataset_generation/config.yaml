@@ -1,0 +1,61 @@
+schema_version: 1
+dataset_id: arandu-qwen-ptbr-v2
+seed: 20261015
+targets:
+  positive: 50000
+  negative_hard: 25000
+  negative_general: 25000
+voice_bank:
+  profiles: 200
+  # Alterar para 500+ somente antes de iniciar OUTRA versão do dataset.
+  splits: {train: 0.8, validation: 0.1, test: 0.1}
+  samples_per_turn: 8
+  max_reference_attempts: 5
+  # Corte de revisão apenas: cosine do encoder não foi calibrado como classificador de identidade.
+  max_speaker_cosine_similarity: 0.94
+  accent_policy_version: pt-BR-v2
+  reference_text: "Bom dia! Você pode pegar o celular? A gente vai tomar café depois do trabalho. Hoje está um dia bonito aqui no Brasil."
+models:
+  design: Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign
+  base: Qwen/Qwen3-TTS-12Hz-0.6B-Base
+  asr: Systran/faster-whisper-tiny
+resources:
+  prepare_voice_bank_first: true
+  device: cuda
+  cpu_threads: 2
+  cpu_dtype: {design: bfloat16, base: float32}
+  cpu_min_free_gb: {design: 5.5, base: 4.0}
+  cuda_min_free_gb: {design: 4.75, base: 2.75}
+  cuda_headroom_gb: 0.75
+  retry_wait_seconds: 30
+  minimum_disk_free_gb: 15
+  max_consecutive_failures: 12
+generation:
+  locale: pt-BR
+  language: Portuguese
+  temperature: 0.8
+  top_p: 0.95
+  repetition_penalty: 1.05
+  max_new_tokens: 256
+  reference_max_new_tokens: 512
+  max_attempts_per_sample: 4
+  isolated_fraction: 0.7
+  context_fraction: 0.2
+  special_fraction: 0.1
+  leading_silence_seconds: [0.05, 0.22]
+  trailing_silence_seconds: [0.10, 0.25]
+  speed_range: [0.92, 1.08]
+audio:
+  sample_rate: 16000
+  min_word_seconds: 0.25
+  max_word_seconds: 4.0
+  max_general_seconds: 14.0
+  maximum_clipped_fraction: 0.003
+  minimum_rms_dbfs: -48
+  maximum_silence_fraction: 0.8
+asr:
+  enabled: true
+  cpu_threads: 1
+  # Ausência/ambiguidade de Arandu no STT vira review; não descarte em massa.
+  pronunciation_policy: review_if_unconfirmed
+external_negatives: []

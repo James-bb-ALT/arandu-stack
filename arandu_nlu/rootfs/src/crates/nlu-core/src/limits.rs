@@ -1,0 +1,13 @@
+pub const MAX_REQUEST_BYTES: usize = 65_536;
+pub const MAX_IDENTIFIER_BYTES: usize = 128;
+pub const MAX_HYPOTHESES: usize = 32;
+pub const MAX_PLAN_NODES: usize = 64;
+pub const MAX_RELATIONS: usize = 256;
+pub const MAX_SLOTS_PER_NODE: usize = 32;
+pub const MAX_EVIDENCE_SPANS: usize = 64;
+pub const MAX_ARGUMENT_SHARES: usize = 256;
+pub const MAX_INDEPENDENT_PAIRS: usize = 256;
+pub const MAX_RELATION_EVIDENCE_SPANS: usize = 64;
+pub const MAX_CANONICAL_PLAN_BYTES: usize = 65_536;
+pub const MAX_CLARIFICATION_OPTIONS: usize = 16;
+pub const MAX_AGGREGATE_ITEMS: usize = 4_096;

@@ -1,0 +1,19 @@
+[package]
+name = "session-engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "session_engine"
+path = "src/lib.rs"
+
+[dependencies]
+nlu-core = { path = "../nlu-core" }
+plan-engine = { path = "../plan-engine" }
+
+[dev-dependencies]
+ha-catalog = { path = "../ha-catalog" }
+intent-engine = { path = "../intent-engine" }

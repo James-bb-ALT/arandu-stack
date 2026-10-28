@@ -1,0 +1,28 @@
+{
+  "commit": "cd3cac0be30050b6899555f83eba0e74da984c6f",
+  "evaluation_kind": "internal corpus conformance; no generalization claim",
+  "families": 26,
+  "intents": 165,
+  "license": "MIT (repository license; dataset manifest says user_supplied)",
+  "reference_inputs": [
+    {
+      "path": "arandu_stt/datasets/commands/arandu_comandos_comuns_ptbr_v2.csv",
+      "sha256": "e7ca830fa2c314a3bcee973e5aef1146cbebfbb936d9ede2c9026b7b9a2a1ced"
+    },
+    {
+      "path": "arandu_stt/datasets/household/arandu_household_entities_ptbr.csv",
+      "sha256": "ff7450b2d36c7fc4c1371d20dd8bec0422d302ddf19e55f6a2ef461f3db3be5d"
+    },
+    {
+      "path": "arandu_stt/datasets/lexicon/arandu_lexico_generico_palavras_ptbr.csv",
+      "sha256": "df10f4102c5d0cee9f111836d8329d1aa243223ac9b3709cabba8b80048ee863"
+    },
+    {
+      "path": "arandu_stt/datasets/names/arandu_nomes_comuns_brasil.csv",
+      "sha256": "92c73ee407984dce75bd37014499ec485c3b2398c60a72bafba8e61fff9f3e3e"
+    }
+  ],
+  "rows": 1946,
+  "sha256": "e7ca830fa2c314a3bcee973e5aef1146cbebfbb936d9ede2c9026b7b9a2a1ced",
+  "source": "https://github.com/jaimevictor/Arandu-STT"
+}

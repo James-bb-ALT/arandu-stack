@@ -3,7 +3,8 @@
 Assistente local e modular em português para Home Assistant. Um repositório reúne
 Wake, STT, NLU, Decision, LLM, TTS e o painel de administração.
 
-[Adicionar à loja do Home Assistant](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fjaimevictor%2Farandu-stack)
+[![Abrir Arandu Stack no HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jaimevictor&repository=arandu-stack&category=integration)
+[![Adicionar os apps Arandu ao Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fjaimevictor%2Farandu-stack)
 
 ## Instalação
 

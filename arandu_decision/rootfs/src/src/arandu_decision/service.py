@@ -64,7 +64,7 @@ def create_app(root, executable=None, threads=2):
         import ipaddress
         peer = ipaddress.ip_address(request.remote or "0.0.0.0")
         internal = peer in ipaddress.ip_network("172.30.32.0/23")
-        if request.headers.get("Origin") or (not internal and request.headers.get("Host") not in {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}) or request.headers.get("X-Arandu-Lab") != "1":
+        if request.headers.get("Origin") or (not internal and not peer.is_loopback) or (not internal and request.headers.get("Host") not in {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}) or request.headers.get("X-Arandu-Lab") != "1":
             raise web.HTTPForbidden()
         try:
             return await handler(request)

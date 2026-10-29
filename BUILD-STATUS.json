@@ -1,35 +1,49 @@
 {
-  "source_commit": "372e4bbe952a484120582800d021ef2229f3d11d",
+  "source_commit": "33910501d8a3fc5f91f7a6e1e80a42e096aab2b6",
   "app": "Arandu Assistant",
-  "version": "0.2.0",
+  "version": "0.3.0",
+  "integration_version": "0.6.2",
   "platform": "linux/amd64",
   "home_assistant_store_apps": 1,
-  "store_config": "arandu_stack/config.yaml",
   "docker_build": "passed",
-  "image": "arandu-assistant:0.2.0",
-  "image_id": "sha256:0952af3be9bcc20579324d32ef959571d7759ff95b159e39435ceadfb601e29c",
-  "modules_bundled": [
-    "wake",
-    "stt",
-    "nlu",
-    "decision",
-    "llm",
-    "tts"
-  ],
-  "observed_local_startup": {
-    "container": "arandu-assistant-local",
-    "ui_http_status": 200,
-    "all_module_runtimes_installed": true,
-    "nlu": "started",
-    "wake": "stopped",
-    "stt": "stopped",
-    "decision": "stopped",
-    "llm": "stopped",
-    "tts": "stopped"
+  "image": "arandu-assistant:0.3.0",
+  "image_id": "sha256:a058b5db8325bbc11d5db90951c2dca42ae1813629061dacc2abad615012ef94",
+  "configuration_ui": "typed fields, switches and selects for every module option except enabled, controlled by module buttons",
+  "visible_settings_counts": {
+    "wake": 4,
+    "stt": 12,
+    "nlu": 4,
+    "decision": 4,
+    "llm": 5,
+    "tts": 15
   },
+  "wake_words": [
+    "alexa",
+    "hey_jarvis",
+    "hey_mycroft",
+    "hey_rhasspy",
+    "okay_nabu"
+  ],
+  "wake_selection": "enforced globally for every Detect event; only selected model advertised",
+  "voices": {
+    "default": "pt_BR-arandu-medium",
+    "alternative": "pt_BR-faber-medium",
+    "included_in_git_and_image": true,
+    "git_blob_hashes_match_manifest": true,
+    "arandu_export": "Piper legacy TorchScript ONNX export from saved checkpoint epoch 145 / step 348356",
+    "raw_training_data_published": false
+  },
+  "observed_local_startup": {
+    "ui_http_status": 200,
+    "nlu": "started",
+    "other_modules": "stopped",
+    "tts_selected_voice": "pt_BR-arandu-medium"
+  },
+  "ui_visual_review": "Wake, Decision and TTS forms opened for inspection; no settings saved and no synthesis invoked",
+  "python_syntax": "parsed",
   "tests_run": false,
+  "audio_synthesis_run": false,
   "benchmarks_run": false,
-  "inference_run": false,
   "home_assistant_deployment_validated": false,
-  "note": "One app replaces the seven-app layout. Only NLU starts by default. Startup observation and HTTP status did not issue commands or invoke models. Tests remain manual by user request."
+  "note": "ONNX export traces the model to produce the artifact; no audio was generated for testing. Test cases were added for manual execution only."
 }

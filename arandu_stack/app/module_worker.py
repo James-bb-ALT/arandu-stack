@@ -5,7 +5,7 @@ import os
 import sys
 import logging
 
-key = sys.argv[1]
+key = sys.argv.pop(1)  # Consume the dispatcher argument before a module parses its CLI.
 data = Path(os.environ['ARANDU_MODULE_DATA'])
 options = json.loads((data / 'options.json').read_text())
 logging.basicConfig(level=getattr(logging, options.get('log_level', 'INFO')), format='%(asctime)s %(levelname)s %(name)s: %(message)s')

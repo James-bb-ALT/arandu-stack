@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import tempfile
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -12,7 +13,7 @@ REPO = "csukuangfj/sherpa-onnx-nemo-stt_pt_fastconformer_hybrid_large_pc-int8"
 MODEL = "model.int8.onnx"
 UPSTREAM = "nvidia/stt_pt_fastconformer_hybrid_large_pc"
 ADAPTED_VERSION = "arandu-ctc-20261014-continued-fp32"
-ADAPTED_URL = "https://github.com/jaimevictor/Arandu-STT/releases/download/v2.2.0"
+ADAPTED_URL = "https://github.com/jaimevictor/arandu-stack/releases/download/stt-model-v2.2.0"
 ADAPTED_HASHES = {
     "model.onnx": "68fff73a46efa49914df12fa74e83e3e36803ab80a8fbea86b6f7c8684e3c112",
     "tokens.txt": "c79cd022b6b04e090901e1acce380ad9476bb6a3694112199b835256bb079b9b",
@@ -84,7 +85,11 @@ def ensure_model(dest: Path, variant: str = "adapted") -> dict:
             with tempfile.NamedTemporaryFile(dir=dest, suffix=".download", delete=False) as output:
                 temporary = Path(output.name)
                 request = urllib.request.Request(f"{ADAPTED_URL}/{filename}", headers={"User-Agent": "Arandu-STT/2.2.0"})
-                with urllib.request.urlopen(request, timeout=120) as response:
+                try:
+                    response = urllib.request.urlopen(request, timeout=120)
+                except urllib.error.HTTPError as exc:
+                    raise RuntimeError(f"Download STT indisponível (HTTP {exc.code}): {ADAPTED_URL}/{filename}. Verifique o acesso à release pública do modelo.") from exc
+                with response:
                     while chunk := response.read(4 * 1024 * 1024):
                         output.write(chunk)
             if sha256(temporary) != expected:

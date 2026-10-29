@@ -1,3 +1,10 @@
+# 0.3.2
+
+- TTS: remove o argumento interno do dispatcher antes do parser do servidor Wyoming.
+- STT: baixa pesos adaptados da release pública do Stack, sem exigir acesso ao repositório privado.
+- Preserva os hashes SHA256 do modelo e informa a URL em falhas HTTP.
+- Regressões manuais adicionadas; testes e inferências não executados.
+
 # 0.3.1
 
 - Página Logs reúne aplicativo e todos os módulos, com filtro e atualização automática.

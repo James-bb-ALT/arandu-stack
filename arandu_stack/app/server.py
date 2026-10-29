@@ -11,7 +11,7 @@ from aiohttp import ClientSession, ClientTimeout, ClientError, web
 from modules import ModuleManager
 from logs import LogStore, SOURCES, LOGGER
 
-APP_VERSION = '0.3.1'
+APP_VERSION = '0.3.2'
 
 MODULES = {
     'wake': ('arandu_wake', 'Wake', 'Palavra de ativação · Wyoming'),

@@ -3,7 +3,7 @@ param()
 $ErrorActionPreference = 'Stop'
 $assistantRoot = [IO.Path]::GetFullPath($PSScriptRoot)
 $assistantName = 'arandu-assistant-local'
-$assistantImage = 'arandu-assistant:0.3.1'
+$assistantImage = 'arandu-assistant:0.3.2'
 $assistantExisting = & docker ps -a --filter "name=^/$assistantName$" --format '{{.Names}}'
 if ($LASTEXITCODE -ne 0) { throw 'Inicie o Docker Desktop antes de abrir o Arandu Assistant.' }
 if ($assistantExisting -contains $assistantName) {

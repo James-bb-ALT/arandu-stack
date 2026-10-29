@@ -1,13 +1,13 @@
 {
-  "source_commit": "515267182c158e34fa4adf9438fcff0eae3a04b4",
+  "source_commit": "397ffa37764231a62e7ad35a30eb1390bdc31660",
   "app": "Arandu Assistant",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "integration_version": "0.6.2",
   "platform": "linux/amd64",
   "home_assistant_store_apps": 1,
   "docker_build": "passed",
-  "image": "arandu-assistant:0.3.1",
-  "image_id": "sha256:daa36482d5beb45cb83e028abee23ebe817e254842571a8e63f92c4106fa0c3c",
+  "image": "arandu-assistant:0.3.2",
+  "image_id": "sha256:57254925734f55e21bd2268d74908b481b2cd638b164c160416616c0cfeeedab",
   "configuration_ui": "typed fields, switches and selects for every module option except enabled, controlled by module buttons",
   "visible_settings_counts": {
     "wake": 4,
@@ -35,17 +35,17 @@
   },
   "observed_local_startup": {
     "ui_http_status": 200,
+    "version": "0.3.2",
     "nlu": "started",
-    "other_modules": "stopped",
-    "tts_selected_voice": "pt_BR-arandu-medium"
+    "other_modules": "stopped"
   },
-  "ui_visual_review": "Logs page opened locally with real controller/NLU events and all seven sources; no module activated for inspection.",
+  "ui_visual_review": "Unchanged since 0.3.1; not repeated.",
   "python_syntax": "parsed",
   "tests_run": false,
   "audio_synthesis_run": false,
   "benchmarks_run": false,
   "home_assistant_deployment_validated": false,
-  "note": "Build, syntax parsing and local log API/UI observation only. No STT/TTS/model tests or benchmark runs. The reported HA failures were not diagnosed; this release makes their logs accessible.",
+  "note": "TTS dispatcher argument consumed before CLI parsing. STT adapted weights mirrored to public release with identical hashes; unauthenticated HEAD returned HTTP 200 for model and tokens. No tests, inference or HA deployment executed.",
   "logs": {
     "sources": [
       "app",
@@ -56,7 +56,7 @@
       "llm",
       "tts"
     ],
-    "api_read": "passed locally after startup",
+    "api_read": "Previously observed on 0.3.1; not yet repeated for 0.3.2.",
     "automatic_refresh_seconds": 5,
     "per_source_max_bytes": 131072,
     "selectable_lines": [
@@ -67,5 +67,14 @@
     "download": "same redacted snippets displayed by UI",
     "existing_module_files": "preserved",
     "startup_failure_isolation": "implemented; regression checks added for manual execution"
+  },
+  "regression_tests_added": [
+    "tests/test_module_startup.py"
+  ],
+  "stt_public_weights": {
+    "release": "stt-model-v2.2.0",
+    "sha256_verified": true,
+    "anonymous_http_status": 200,
+    "model_bytes": 456405387
   }
 }

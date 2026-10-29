@@ -1,13 +1,13 @@
 {
-  "source_commit": "33910501d8a3fc5f91f7a6e1e80a42e096aab2b6",
+  "source_commit": "515267182c158e34fa4adf9438fcff0eae3a04b4",
   "app": "Arandu Assistant",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "integration_version": "0.6.2",
   "platform": "linux/amd64",
   "home_assistant_store_apps": 1,
   "docker_build": "passed",
-  "image": "arandu-assistant:0.3.0",
-  "image_id": "sha256:a058b5db8325bbc11d5db90951c2dca42ae1813629061dacc2abad615012ef94",
+  "image": "arandu-assistant:0.3.1",
+  "image_id": "sha256:daa36482d5beb45cb83e028abee23ebe817e254842571a8e63f92c4106fa0c3c",
   "configuration_ui": "typed fields, switches and selects for every module option except enabled, controlled by module buttons",
   "visible_settings_counts": {
     "wake": 4,
@@ -39,11 +39,33 @@
     "other_modules": "stopped",
     "tts_selected_voice": "pt_BR-arandu-medium"
   },
-  "ui_visual_review": "Wake, Decision and TTS forms opened for inspection; no settings saved and no synthesis invoked",
+  "ui_visual_review": "Logs page opened locally with real controller/NLU events and all seven sources; no module activated for inspection.",
   "python_syntax": "parsed",
   "tests_run": false,
   "audio_synthesis_run": false,
   "benchmarks_run": false,
   "home_assistant_deployment_validated": false,
-  "note": "ONNX export traces the model to produce the artifact; no audio was generated for testing. Test cases were added for manual execution only."
+  "note": "Build, syntax parsing and local log API/UI observation only. No STT/TTS/model tests or benchmark runs. The reported HA failures were not diagnosed; this release makes their logs accessible.",
+  "logs": {
+    "sources": [
+      "app",
+      "wake",
+      "stt",
+      "nlu",
+      "decision",
+      "llm",
+      "tts"
+    ],
+    "api_read": "passed locally after startup",
+    "automatic_refresh_seconds": 5,
+    "per_source_max_bytes": 131072,
+    "selectable_lines": [
+      100,
+      300,
+      1000
+    ],
+    "download": "same redacted snippets displayed by UI",
+    "existing_module_files": "preserved",
+    "startup_failure_isolation": "implemented; regression checks added for manual execution"
+  }
 }

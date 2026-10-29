@@ -1,0 +1,164 @@
+"""One app, isolated module processes. Never passes HA credentials to children."""
+from __future__ import annotations
+import asyncio
+import copy
+import json
+import os
+from pathlib import Path
+import signal
+import sys
+
+DEFAULTS = {
+    'nlu': {'enabled': True},
+    'wake': {'enabled': False, 'threshold': .5, 'trigger_level': 1},
+    'stt': {'enabled': False, 'auto_download': False, 'model_variant': 'adapted', 'threads': 2,
+            'padding_ms': 0, 'profile': 'full', 'debug_text': False, 'refresh_inventory': False,
+            'lexical_enabled': True, 'closed_vocabulary': True, 'generic_weight': 7,
+            'home_assistant_weight': 10, 'inventory_refresh_seconds': 0},
+    'decision': {'enabled': False, 'auto_download': False, 'threads': 2},
+    'llm': {'enabled': False, 'auto_download': False, 'threads': 2},
+    'tts': {'enabled': False, 'voice': 'pt_BR-faber-medium', 'auto_download': False,
+            'preload': True, 'cpu_threads': 2, 'pocket_enabled': False, 'pocket_preload': False,
+            'pocket_threads': 2, 'pocket_fallback': False, 'fallback_voice': 'pt_BR-faber-medium',
+            'remote_fallback': False, 'remote_url': '', 'remote_token': '', 'hf_token': '', 'log_level': 'INFO'},
+}
+PORTS = {'nlu': 11555, 'wake': 10400, 'stt': 10350, 'tts': 10212, 'decision': 11557, 'llm': 11558}
+
+def validate_options(key, options):
+    if key not in DEFAULTS or not isinstance(options, dict) or set(options) - set(DEFAULTS[key]):
+        raise ValueError('Módulo ou opção desconhecida')
+    for name, value in options.items():
+        expected = DEFAULTS[key][name]
+        if isinstance(expected, bool):
+            valid = type(value) is bool
+        elif isinstance(expected, int):
+            valid = type(value) is int and 0 <= value <= 86400
+        elif isinstance(expected, float):
+            valid = type(value) in (float, int) and .01 <= value <= .99
+        else:
+            valid = isinstance(value, str) and len(value) <= 1024 and not any(ord(c) < 32 for c in value)
+        if not valid:
+            raise ValueError('Valor inválido: ' + name)
+        if name in {'threads', 'cpu_threads', 'pocket_threads'} and not 1 <= value <= 4:
+            raise ValueError('Threads deve ficar entre 1 e 4')
+        if name == 'trigger_level' and not 1 <= value <= 20:
+            raise ValueError('Trigger level deve ficar entre 1 e 20')
+    merged = {**DEFAULTS[key], **options}
+    if key == 'stt' and (merged['model_variant'] not in {'adapted', 'original'} or merged['padding_ms'] not in {0,100,200,300} or merged['profile'] not in {'raw','normalize_only','acoustic_only','fuzzy_only','inventory_only','full','legacy_full'}):
+        raise ValueError('Perfil STT inválido')
+    if key == 'tts' and merged['log_level'] not in {'INFO', 'DEBUG', 'WARNING', 'ERROR'}:
+        raise ValueError('Log level inválido')
+    return merged
+
+class ModuleManager:
+    def __init__(self, data, local=False):
+        self.data = data
+        self.local = local
+        self.file = data / 'modules.json'
+        self.processes = {}
+        self.logs = {}
+        self.watchers = {}
+        self.config = copy.deepcopy(DEFAULTS)
+        self.lock = asyncio.Lock()
+        if self.file.exists():
+            stored = json.loads(self.file.read_text(encoding='utf-8'))
+            if not isinstance(stored, dict) or set(stored) - set(DEFAULTS):
+                raise ValueError('Configuração de módulos inválida')
+            for key, options in stored.items():
+                self.config[key] = validate_options(key, options)
+
+    def installed(self, key):
+        return Path('/usr/bin/local-nlu').is_file() if key == 'nlu' else Path(f'/opt/venvs/{key}/bin/python').is_file()
+
+    def save(self):
+        self.data.mkdir(parents=True, exist_ok=True)
+        temp = self.file.with_suffix('.tmp')
+        temp.write_text(json.dumps(self.config, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        temp.replace(self.file)
+
+    async def status(self, key):
+        if key not in DEFAULTS:
+            raise ValueError('Módulo desconhecido')
+        process = self.processes.get(key)
+        running = bool(process and process.returncode is None)
+        return {'id': key, 'installed': self.installed(key), 'state': 'started' if running else ('error' if process and self.config[key]['enabled'] else 'stopped'),
+                'enabled': self.config[key]['enabled'], 'options': dict(self.config[key]),
+                'port': PORTS[key], 'exit_code': process.returncode if process else None,
+                'slug': 'Módulo interno · porta ' + str(PORTS[key]), 'schema': {}}
+
+    async def configure(self, key, options):
+        if key not in DEFAULTS:
+            raise ValueError('Módulo desconhecido')
+        # enabled is controlled only by start/stop so persisted state matches lifecycle.
+        merged = validate_options(key, {**self.config[key], **options})
+        if merged['enabled'] != self.config[key]['enabled']:
+            raise ValueError('Use Ativar/Desativar para mudar enabled')
+        self.config[key] = merged
+        self.save()
+
+    async def start(self, key, persist=True):
+        if key not in DEFAULTS or not self.installed(key):
+            raise ValueError('Runtime não instalado neste ambiente; instale o app Arandu Assistant')
+        current = self.processes.get(key)
+        if current and current.returncode is None:
+            return
+        directory = self.data / 'modules' / key
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / 'options.json').write_text(json.dumps(self.config[key]), encoding='utf-8')
+        environment = {k: v for k, v in os.environ.items() if k not in {'SUPERVISOR_TOKEN','HASSIO_TOKEN','HA_TOKEN','HASS_TOKEN','HF_TOKEN'}}
+        environment.update(ARANDU_MODULE_DATA=str(directory), OMP_NUM_THREADS='2', OPENBLAS_NUM_THREADS='2')
+        if key == 'stt' and self.config[key].get('refresh_inventory') and os.environ.get('SUPERVISOR_TOKEN'):
+            environment['SUPERVISOR_TOKEN'] = os.environ['SUPERVISOR_TOKEN']
+        command = ['/usr/bin/local-nlu', 'serve', '--listen', '0.0.0.0:11555'] if key == 'nlu' else [f'/opt/venvs/{key}/bin/python', '/opt/assistant/module_worker.py', key]
+        log = (directory / 'runtime.log').open('ab')
+        previous_log = self.logs.pop(key, None)
+        if previous_log:
+            previous_log.close()
+        self.logs[key] = log
+        self.processes[key] = await asyncio.create_subprocess_exec(*command, env=environment, stdout=log, stderr=log, start_new_session=True)
+        process = self.processes[key]
+        async def reap_children():
+            await process.wait()
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+        self.watchers[key] = asyncio.create_task(reap_children())
+        if persist:
+            self.config[key]['enabled'] = True
+            self.save()
+
+    async def stop(self, key, persist=True):
+        if key not in DEFAULTS:
+            raise ValueError('Módulo desconhecido')
+        process = self.processes.get(key)
+        if process and process.returncode is None:
+            # Kill the process group as well: LLM workers may own a llama-server child.
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            try:
+                await asyncio.wait_for(process.wait(), 15)
+            except TimeoutError:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                await process.wait()
+        if persist:
+            self.config[key]['enabled'] = False
+            self.save()
+
+    async def startup(self):
+        if not self.local:
+            for key, options in self.config.items():
+                if options['enabled']:
+                    await self.start(key, persist=False)
+
+    async def close(self):
+        for key in DEFAULTS:
+            await self.stop(key, persist=False)
+        for log in self.logs.values():
+            log.close()
+        await asyncio.gather(*self.watchers.values(), return_exceptions=True)

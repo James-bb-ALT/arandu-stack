@@ -8,6 +8,7 @@ from pathlib import Path
 import secrets
 import unicodedata
 from aiohttp import ClientSession, ClientTimeout, ClientError, web
+from modules import ModuleManager
 
 MODULES = {
     'wake': ('arandu_wake', 'Wake', 'Palavra de ativação · Wyoming'),
@@ -38,49 +39,11 @@ def validate_phrases(value):
         result.append({**row, 'phrase': row['phrase'].strip(), 'command': row['command'].strip()})
     return result
 
-class Supervisor:
-    def __init__(self):
-        self.token = os.environ.get('SUPERVISOR_TOKEN')
-        self.prefix = None
-
-    async def call(self, path, body=None):
-        if not self.token:
-            raise ValueError('Supervisor indisponível neste PC; controle de módulos requer HA OS/Supervised')
-        async with ClientSession(timeout=ClientTimeout(total=120), trust_env=False) as session:
-            async with session.request('POST' if body is not None else 'GET', 'http://supervisor' + path,
-                    json=body, headers={'Authorization': 'Bearer ' + self.token}) as response:
-                data = await response.json()
-                if response.status != 200 or data.get('result') != 'ok':
-                    raise ValueError('Supervisor recusou a operação; confira se o módulo está instalado')
-                return data.get('data', {})
-
-    async def slug(self, key):
-        if key not in MODULES:
-            raise ValueError('Módulo desconhecido')
-        if self.prefix is None:
-            info = await self.call('/addons/self/info')
-            slug = info['slug']
-            if not slug.endswith('_arandu_stack'):
-                raise ValueError('Identidade do painel incompatível')
-            self.prefix = slug[:-len('arandu_stack')]
-        return self.prefix + MODULES[key][0]
-
-    async def status(self, key):
-        slug = await self.slug(key)
-        try:
-            info = await self.call('/addons/' + slug + '/info')
-            return {'id': key, 'name': MODULES[key][1], 'description': MODULES[key][2], 'slug': slug,
-                    'installed': True, 'state': info.get('state'), 'version': info.get('version'),
-                    'options': redact(info.get('options', {})), 'schema': info.get('schema', {})}
-        except ValueError:
-            return {'id': key, 'name': MODULES[key][1], 'description': MODULES[key][2], 'slug': slug,
-                    'installed': False, 'state': 'not_installed', 'options': {}, 'schema': {}}
-
 def redact(value):
     return {k: v for k, v in value.items() if not any(term in k.lower() for term in ('token', 'secret', 'password'))}
 
 def create_app(data_dir, local=False):
-    supervisor = Supervisor()
+    manager = ModuleManager(data_dir, local)
     data_dir.mkdir(parents=True, exist_ok=True)
     phrases_file = data_dir / 'phrases.json'
     csrf = secrets.token_urlsafe(32)
@@ -92,7 +55,11 @@ def create_app(data_dir, local=False):
     async def boundary(request, handler):
         # Only the Supervisor ingress proxy reaches UI; runtime is internal read-only.
         peer = request.remote
-        if local:
+        if os.environ.get('ARANDU_LOCAL_CONTAINER') == '1':
+            import ipaddress
+            if request.host not in {'127.0.0.1:8770', 'localhost:8770'} or not peer or not ipaddress.ip_address(peer).is_private:
+                raise web.HTTPForbidden()
+        elif local:
             if peer not in {'127.0.0.1', '::1'} or request.host not in {'127.0.0.1:8770', 'localhost:8770'}:
                 raise web.HTTPForbidden()
         elif request.path not in {'/runtime', '/status', '/infer'} and peer != '172.30.32.2':
@@ -120,33 +87,32 @@ def create_app(data_dir, local=False):
     async def index(request):
         return web.FileResponse(Path(__file__).parent / 'static/index.html')
     async def state(request):
-        if local:
-            modules = [{'id': k, 'name': v[1], 'description': v[2], 'installed': False,
-                        'state': 'supervisor_required', 'options': {}, 'schema': {}} for k, v in MODULES.items()]
-        else:
-            modules = await asyncio.gather(*(supervisor.status(k) for k in MODULES))
+        modules = []
+        for key in MODULES:
+            row = await manager.status(key)
+            row.update(name=MODULES[key][1], description=MODULES[key][2], options=redact(row['options']))
+            modules.append(row)
         return web.json_response({'modules': modules, 'phrases': phrases(), 'csrf': csrf, 'local': local})
     async def control(request):
         key, action = request.match_info['key'], request.match_info['action']
         if action not in {'start', 'stop', 'restart', 'options'}:
             raise ValueError('Operação inválida')
         async with lock:
-            slug = await supervisor.slug(key)
             body = await request.json()
+            if not isinstance(body, dict):
+                raise ValueError('Objeto JSON obrigatório')
             if action == 'options':
                 options = body.get('options')
                 if not isinstance(options, dict):
                     raise ValueError('Opções devem ser objeto JSON')
-                info = await supervisor.call('/addons/' + slug + '/info')
-                unknown = set(options) - set(info.get('options', {}))
-                if unknown:
-                    raise ValueError('Opção desconhecida: ' + ', '.join(sorted(unknown)))
-                await supervisor.call('/addons/' + slug + '/options', {'options': {**info.get('options', {}), **options}})
+                await manager.configure(key, options)
+            elif action == 'start':
+                await manager.start(key)
+            elif action == 'stop':
+                await manager.stop(key)
             else:
-                await supervisor.call('/addons/' + slug + '/' + action, {})
-                # Persist the choice across host restarts, not only the current process.
-                if action in {'start', 'stop'}:
-                    await supervisor.call('/addons/' + slug + '/options', {'boot': 'auto' if action == 'start' else 'manual'})
+                await manager.stop(key, persist=False)
+                await manager.start(key)
             return web.json_response({'saved': True, 'restart_required': action == 'options'})
     async def save_phrases(request):
         rows = validate_phrases((await request.json()).get('phrases'))
@@ -156,12 +122,13 @@ def create_app(data_dir, local=False):
             temporary.replace(phrases_file)
         return web.json_response({'saved': True, 'count': len(rows)})
     async def runtime(request):
-        nlu = await supervisor.status('nlu')
+        nlu = await manager.status('nlu')
         return web.json_response({'nlu_enabled': nlu['state'] == 'started', 'phrases': phrases()})
     async def model_request(key, path, payload=None):
-        slug = await supervisor.slug(key)
+        if key not in {'decision', 'llm'}:
+            raise ValueError('Módulo de inferência inválido')
         port = 11557 if key == 'decision' else 11558
-        url = 'http://' + slug.replace('_', '-') + ':' + str(port) + path
+        url = 'http://127.0.0.1:' + str(port) + path
         async with ClientSession(timeout=ClientTimeout(total=185), trust_env=False) as session:
             async with session.request('GET' if payload is None else 'POST', url, json=payload,
                     headers={'X-Arandu-Lab': '1'}, allow_redirects=False) as response:
@@ -195,6 +162,12 @@ def create_app(data_dir, local=False):
                 raise ValueError('Este módulo Decision usa E5 Small; outros modelos pertencem ao Lab experimental no PC')
             key = 'decision'
         return web.json_response(await model_request(key, '/infer', payload))
+    async def startup(app):
+        await manager.startup()
+    async def cleanup(app):
+        await manager.close()
+    app.on_startup.append(startup)
+    app.on_cleanup.append(cleanup)
     app.router.add_get('/', index)
     app.router.add_get('/api/state', state)
     app.router.add_post('/api/modules/{key}/{action}', control)

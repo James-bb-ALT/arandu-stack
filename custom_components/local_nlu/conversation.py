@@ -35,7 +35,7 @@ class LocalNluConversationEntity(
     """Process one PT-BR utterance without retaining it."""
 
     _attr_has_entity_name = True
-    _attr_name = "ARANDU NLU"
+    _attr_name = "Arandu Assistant"
     _attr_supported_features = conversation.ConversationEntityFeature.CONTROL
 
     def __init__(self, config_entry: ConfigEntry) -> None:

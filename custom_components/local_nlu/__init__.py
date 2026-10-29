@@ -21,7 +21,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from .runtime import LocalNluRuntime
 
     try:
-        endpoint = normalize_endpoint(entry.data[CONF_ENDPOINT])
+        endpoint = normalize_endpoint(entry.options.get(CONF_ENDPOINT, entry.data[CONF_ENDPOINT]))
     except (KeyError, ClientError):
         return False
     client = LocalNluClient(async_get_clientsession(hass), endpoint)
@@ -41,6 +41,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    from .client import normalize_endpoint
+    from .const import CONF_ENDPOINT
+    selected_endpoint = normalize_endpoint(entry.options.get(CONF_ENDPOINT, entry.data[CONF_ENDPOINT]))
+    if selected_endpoint != entry.runtime_data._client._endpoint:
+        await hass.config_entries.async_reload(entry.entry_id)
+        return
     # Clearing dialogue on every saved options change prevents change/restore replay.
     # Runtime options are read live; no restart or automatic add-on update is needed.
     runtime = entry.runtime_data

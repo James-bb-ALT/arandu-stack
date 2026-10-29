@@ -1,107 +1,115 @@
-# Arandu Stack
+# Arandu Assistant
 
-Assistente local e modular em português para Home Assistant. Um repositório reúne
-Wake, STT, NLU, Decision, LLM, TTS e o painel de administração.
+Um único app para Home Assistant com **Wake, STT, NLU, Decision, LLM e TTS**.
+Todos os motores estão incluídos na mesma instalação. Você ativa, desativa e
+configura cada módulo pela WebUI, sem instalar seis apps separados.
 
-[![Abrir Arandu Stack no HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jaimevictor&repository=arandu-stack&category=integration)
+[![Abrir Arandu Assistant no HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jaimevictor&repository=arandu-stack&category=integration)
 [![Adicionar os apps Arandu ao Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fjaimevictor%2Farandu-stack)
 
 ## Instalação
 
-1. No Home Assistant OS/Supervised, adicione este repositório à loja de apps.
-2. Instale **Arandu Stack** e os módulos desejados. Abra a WebUI do painel.
-3. Adicione este repositório ao HACS como **Integração**, instale **Arandu NLU** e
-   reinicie o Home Assistant. Alternativamente, copie `custom_components/local_nlu`
-   para `/config/custom_components/local_nlu` e reinicie.
-4. Adicione a integração **ARANDU NLU**. Informe o endpoint interno do módulo NLU.
-   Nas opções da integração, informe também `stack_endpoint`, o endereço do painel.
-5. Adicione os módulos de áudio pela integração **Wyoming** e configure o pipeline Assist.
+1. Adicione este repositório à loja de apps do Home Assistant OS/Supervised.
+2. Instale somente **Arandu Assistant** e abra sua WebUI.
+3. Ative os módulos que deseja usar. O NLU inicia por padrão; os demais começam
+   desativados. Desativar encerra o processo e seus subprocessos, liberando memória.
+4. Para usar o agente de conversa e as frases personalizadas, instale a integração
+   **Arandu Assistant** pelo HACS e reinicie o HA. Essa integração é a ponte
+   necessária dentro do HA Core; o código dela está neste mesmo repositório.
+5. Configure o endpoint NLU com o hostname do único app e porta **11555**.
+   Configure o endpoint do painel no mesmo hostname, porta **8099**.
+6. Para áudio, adicione os módulos habilitados pela integração **Wyoming** e
+   escolha os motores no pipeline Assist.
 
-Os nomes internos usam o prefixo da loja. Por exemplo, se o painel mostrar
-`abcd1234_ptbr_nlu`, o endpoint NLU será `http://abcd1234-ptbr-nlu:11555` e o
-endpoint Stack será `http://abcd1234-arandu-stack:8099`. Use o prefixo real
-mostrado no seu painel, não o exemplo. No Wyoming informe o hostname sem `http://`
-e a porta do módulo.
+Exemplo de hostname: `<prefixo-da-loja>-arandu-stack`. O slug `arandu_stack`
+foi preservado para atualizar o app anterior sem perder as frases salvas.
+NLU e painel usam o mesmo hostname; mudam apenas as portas.
+A integração mantém o domínio técnico `local_nlu` para compatibilidade.
 
-| Módulo | Implementação | Porta interna | Opcional |
+## O que está dentro do app
+
+| Módulo interno | Motor | Porta | Inicialização padrão |
 | --- | --- | --- | --- |
-| Arandu Stack | WebUI de administração via Ingress | 8099 | Para controle central/frases |
-| Wake | Wyoming openWakeWord + ferramentas de satélites Arandu | 10400 | Sim |
-| STT | FastConformer INT8 + contexto lexical | 10350 | Sim |
-| NLU | Interpretador contextual Rust + integração HA | 11555 | Para agente Arandu |
-| Decision | Multilingual E5 Small, CPU | 11557 | Sim |
-| LLM | Tucano 2 Qwen 0.5B Instruct, GGUF comunitário Q4_K_M | 11558 | Sim |
-| TTS | Piper / Pocket | 10212 | Sim |
+| NLU | Interpretador contextual Rust | 11555 | Ativado |
+| Wake | Wyoming openWakeWord | 10400 | Desativado |
+| STT | FastConformer INT8 | 10350 | Desativado |
+| Decision | Multilingual E5 Small, CPU | 11557, somente loopback | Desativado |
+| LLM | Tucano 2 Qwen 0.5B Instruct, GGUF comunitário Q4_K_M | 11558, somente loopback | Desativado |
+| TTS | Piper / Pocket | 10212 | Desativado |
 
-Instalar um módulo não torna os outros obrigatórios. Você pode usar STT/TTS/Wake
-de outros fornecedores com o agente NLU. Decision e LLM continuam experimentais:
-não assumem automaticamente a execução de comandos do agente de produção.
+Uma imagem, um app, um painel e uma configuração persistente. Os módulos mantêm
+processos e ambientes Python isolados; dependências instaladas não significam
+modelos carregados. O painel inicia apenas os módulos habilitados.
+O pacote fica maior no disco porque já contém os runtimes de todos os motores;
+pesos e vozes são baixados separadamente.
 
-## WebUI
+## Configuração e frases
 
-- **Módulos:** estado consultado no Supervisor; ativar, desativar e reiniciar
-  cada app individualmente. Ativar/desativar também altera a inicialização automática.
-- **Configurar:** opções existentes em JSON, validadas pelo Supervisor. Salve e
-  reinicie o módulo. Tokens e senhas atuais são ocultados e preservados.
-- **Frases personalizadas:** cadastro, edição, exclusão e ativação de até 200
-  atalhos. Exemplo: `hora do cinema` → `apague a luz da sala`.
+Na WebUI você pode ativar, desativar, reiniciar e editar as opções de cada módulo.
+As escolhas ficam salvas para a próxima inicialização. Salve as opções e reinicie
+o módulo para aplicar. O campo `enabled` é controlado pelos botões Ativar/Desativar.
 
-As frases usam correspondência exata após normalização Unicode, caixa e espaços.
-Não são regex nem treinamento. A expansão ocorre uma vez, antes do NLU, preservando
-usuário, dispositivo e contexto da conversa. A integração continua validando
-exposição, disponibilidade, capacidades e permissões reais antes de executar.
+Cadastre até 200 atalhos, por exemplo:
 
-O endpoint Stack é opcional. Quando configurado, indisponibilidade do painel ou
-NLU desativado interrompe a conversa com uma resposta explícita. Quando vazio,
-o NLU funciona de forma independente, sem os atalhos do painel.
+`hora do cinema` → `apague a luz da sala`
 
-## Modelos e privacidade
+A correspondência é exata após normalização Unicode, caixa e espaços. A expansão
+ocorre uma única vez, sem regex ou execução de código. A integração preserva
+usuário, dispositivo e contexto e continua validando exposição, disponibilidade,
+capacidades e permissões antes de executar ações.
 
-Nenhum peso é incluído no Git. Decision e LLM começam com `auto_download: false`;
-ative essa opção e reinicie para baixar a revisão fixada. STT/TTS/Wake podem baixar
-modelos/vozes na primeira inicialização, conforme as opções de cada app.
-O build do LLM compila llama.cpp em CPU, sem otimizações específicas da máquina.
+As políticas e preferências de dispositivos do NLU continuam nas opções da
+integração HA. Decision e LLM permanecem experimentais: estão disponíveis no
+AI Lab, sem assumir automaticamente a execução do agente de produção.
+O gateway do painel encaminha o catálogo autorizado aos motores internos.
 
-O painel usa Ingress sem porta publicada para a LAN e recebe credencial manager
-do Supervisor somente para controle dos slugs Arandu da própria loja. Limite
-o acesso ao painel a administradores. Os motores Decision/LLM não recebem
-credenciais do HA e propõem resultados sem executar serviços.
+## Modelos e dados
 
-Não são enviados caches, pesos, áudio, inventário residencial, tokens ou ambientes
-virtuais. O código dos módulos fica em `<app>/rootfs/src`; código de geração de
-dataset Wake fica em `arandu_wake/rootfs/dataset_generation`. `rootfs` impede que
-o Supervisor interprete configurações internas do código-fonte como novos apps.
-Os diretórios originais do workspace não são alterados.
+Nenhum peso acompanha o Git. STT, Decision, LLM e TTS começam com
+`auto_download: false`. Para baixar os modelos/vozes, habilite essa opção no
+módulo e reinicie. Wake segue o carregamento de modelos do upstream.
+Os pesos ficam no armazenamento persistente do app e não são apagados ao desativar.
 
-## Estado desta versão
+Cada módulo tem suas opções e cache próprios. NLU, Decision, LLM e Wake não recebem
+credenciais do HA. O STT pode receber a credencial somente para o sincronismo
+contextual já existente, quando `refresh_inventory` é habilitado explicitamente.
+O app não precisa mais da permissão manager do Supervisor para controlar módulos.
 
-Versão inicial experimental, focada em HA OS/Supervised **amd64**. O NLU também
-mantém suporte a aarch64; os demais módulos precisam de validação antes dessa arquitetura.
-O repositório contém os builds locais de cada app e a integração instalável via HACS.
-Instalação e fluxo de voz completo em um HA real ainda precisam de validação.
-Nenhum teste, benchmark ou inferência foi executado nesta entrega por solicitação
-do usuário; builds e consultas de status não carregam modelos.
-Os sete builds Docker passaram em linux/amd64, incluindo compilação do NLU a
-partir do Git. Veja [o registro e os limites da verificação](BUILD-STATUS.json).
+## Atualização da primeira versão
 
-## Desenvolvimento e testes manuais
+O app antes chamado **Arandu Stack** passa a se chamar **Arandu Assistant**, com o
+mesmo slug e porta de painel. As frases são preservadas. A configuração de módulos
+passa a ser interna.
 
-`tests/test_control.py` cobre contratos do painel. `Testar painel.cmd` executa os
-testes quando você clicar. Os testes próprios de cada módulo foram preservados.
-O AI Lab do NLU também mantém seus datasets sintéticos e botões de benchmark.
-O workflow de build é exclusivamente manual, sem executar testes ao publicar.
+Os seis apps antigos, se você chegou a instalá-los, não são desinstalados
+automaticamente. Pare-os para evitar processamento duplicado, transfira as opções
+desejadas pela WebUI e só depois remova os antigos quando confirmar o novo fluxo.
+Na integração, atualize o endpoint NLU nas opções para o hostname do app único;
+essa alteração recarrega o cliente automaticamente. STT/TTS/Wake também passam
+a usar esse mesmo hostname nas entradas Wyoming.
 
-Para abrir apenas a WebUI neste PC: `Iniciar painel.cmd`. O modo local mostra
-explicitamente que o Supervisor não está conectado; não simula módulos ativos.
-O AI Lab que já estava em execução continua separado em http://127.0.0.1:8766.
+## Desenvolvimento e validação
+
+Versão experimental **0.2.0**, para HA OS/Supervised amd64.
+O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
+ao app e não cria apps adicionais na loja. A integração HA fica em
+`custom_components/local_nlu/`.
+
+`Testar painel.cmd` executa os testes manuais do controlador. Os testes próprios
+dos motores e os benchmarks clicáveis do AI Lab foram preservados. O workflow
+de build é exclusivamente manual. Nenhum teste, benchmark ou inferência é iniciado
+ao publicar o código. Consulte [o registro de build](BUILD-STATUS.json).
+
+A execução completa em um Home Assistant real ainda precisa de validação.
+No Windows com Docker Desktop, `Iniciar painel.cmd` inicia o mesmo app completo
+em http://127.0.0.1:8770. Dados ficam em `.local-data`, fora do Git. Pesos E5/Tucano
+já presentes no cache do AI Lab são reutilizados por montagem somente leitura,
+sem download adicional. Mantenha auto_download desativado para esses pesos locais.
+O AI Lab anterior permanece separado em http://127.0.0.1:8766, para comparação.
 
 ## Licenças
 
-Código novo do painel e integração: Apache-2.0. Cada módulo e dependência mantém
-sua licença original: NLU/Decision/LLM Apache-2.0; TTS GPL-3.0-or-later;
-modelos E5 MIT e Tucano Apache-2.0. Quantização Tucano é comunitária, não oficial.
-Consulte os arquivos LICENSE e THIRD_PARTY_NOTICES dentro dos módulos para os
-demais componentes. Não há redistribuição de pesos por este repositório.
-
-Referências de implementação: [apps e configuração do HA](https://contributors.home-assistant.io/apps/reference/configuration/),
-[API do Supervisor](https://contributors.home-assistant.io/apps/supervisor-api/apps/).
+Código novo do controlador e integração: Apache-2.0. Cada motor e dependência
+mantém a licença original; TTS é GPL-3.0-or-later. Pesos E5: MIT. Pesos Tucano:
+Apache-2.0; a quantização GGUF é comunitária. As licenças e avisos dos componentes
+foram preservados junto ao código-fonte.

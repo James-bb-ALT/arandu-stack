@@ -12,7 +12,7 @@ import time
 from inventory_sync import minimal_inventory, sync_inventory
 from model_download import ADAPTED_VERSION, ensure_model
 
-DATA = Path("/data")
+DATA = Path(os.environ.get('ARANDU_MODULE_DATA', '/data'))
 OPTIONS = DATA / "options.json"
 INVENTORY = DATA / "arandu_ha_inventory.json"
 MODEL_DIR = DATA / "models" / "int8"
@@ -28,6 +28,10 @@ def options() -> dict:
 
 
 def refresh_inventory(required: bool) -> None:
+    if not required and not INVENTORY.is_file():
+        INVENTORY.parent.mkdir(parents=True, exist_ok=True)
+        INVENTORY.write_text(json.dumps(minimal_inventory(), ensure_ascii=False) + '\n', encoding='utf-8')
+        return
     if not required and INVENTORY.is_file():
         print("[INVENTORY] Reutilizando inventário persistente", flush=True)
         return
@@ -51,18 +55,19 @@ def main() -> None:
     cfg = options()
     variant = str(cfg.get("model_variant", "adapted"))
     model_dir = MODEL_DIR if variant == "original" else DATA / "models" / ADAPTED_VERSION
-    ensure_model(model_dir, variant=variant)
+    if cfg.get('auto_download', True):
+        ensure_model(model_dir, variant=variant)
     refresh_inventory(bool(cfg.get("refresh_inventory", True)))
 
     cmd = [
-        sys.executable, "/app/server.py",
+        sys.executable, str(Path(__file__).with_name('server.py')),
         "--model-dir", str(model_dir),
         "--inventory", str(INVENTORY),
         "--uri", "tcp://0.0.0.0:10350",
         "--threads", str(int(cfg.get("threads", 2))),
         "--padding-ms", str(int(cfg.get("padding_ms", 0))),
         "--profile", str(cfg.get("profile", "full")),
-        "--metrics", "/data/metrics.jsonl",
+        "--metrics", str(DATA / 'metrics.jsonl'),
         "--inventory-refresh-seconds", str(int(cfg.get('inventory_refresh_seconds', 60))),
         "--generic-weight", str(cfg.get('generic_weight', 7)),
         "--ha-weight", str(cfg.get('home_assistant_weight', 10)),

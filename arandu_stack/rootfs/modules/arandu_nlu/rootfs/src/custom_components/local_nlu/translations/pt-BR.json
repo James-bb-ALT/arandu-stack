@@ -42,7 +42,8 @@
           "excluded_from_bulk_actions": "Excluir de ações coletivas",
           "low_battery_threshold": "Limite de bateria baixa (%)",
           "fallback_user_id": "Usuário para pipelines sem identidade",
-          "configure_identity_bindings": "Configurar associações por dispositivo/satélite"
+          "configure_identity_bindings": "Configurar associações por dispositivo/satélite",
+          "endpoint": "Endpoint NLU do Arandu Assistant (porta 11555)"
         },
         "data_description": {
           "fallback_user_id": "Usuário cujas permissões serão utilizadas quando o Home Assistant não informar a identidade da pipeline de voz. Selecione — para desativar."
@@ -68,5 +69,5 @@
       "invalid_identity_configuration": "As associações de identidade são inválidas ou excedem o limite."
     }
   },
-  "title": "ARANDU NLU"
+  "title": "Arandu Assistant"
 }

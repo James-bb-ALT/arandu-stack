@@ -28,6 +28,13 @@ from .const import (
 )
 
 
+def _endpoint_value(value):
+    try:
+        return normalize_endpoint(value)
+    except ClientError as exc:
+        raise vol.Invalid('Endpoint local inválido') from exc
+
+
 class LocalNluConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Configure exactly one local add-on endpoint."""
 
@@ -57,7 +64,7 @@ class LocalNluConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 await self.async_set_unique_id(DOMAIN)
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
-                    title="ARANDU NLU",
+                    title="Arandu Assistant",
                     data={CONF_ENDPOINT: endpoint, 'stack_endpoint': user_input.get('stack_endpoint', '')},
                 )
         return self.async_show_form(
@@ -102,6 +109,7 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Optional(CONF_FALLBACK_USER_ID, default=options.get(CONF_FALLBACK_USER_ID, "")): self._user_selector(users),
+                    vol.Optional(CONF_ENDPOINT, default=options.get(CONF_ENDPOINT, self.config_entry.data[CONF_ENDPOINT])): vol.All(str, _endpoint_value),
                     vol.Optional('stack_endpoint', default=options.get('stack_endpoint', self.config_entry.data.get('stack_endpoint', ''))): str,
                     vol.Optional("configure_identity_bindings", default=False): bool,
                     vol.Optional(CONF_CONTEXTUAL_ENABLED, default=bool(options.get(CONF_CONTEXTUAL_ENABLED, True))): bool,

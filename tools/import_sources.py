@@ -21,7 +21,7 @@ manifest = {}
 for name, origin in SOURCES.items():
     source = WORKSPACE / origin
     folder = {'nlu': 'arandu_nlu', 'stt': 'arandu_stt', 'tts': 'arandu_tts', 'wake': 'arandu_wake', 'decision': 'arandu_decision', 'llm': 'arandu_llm', 'wakegen': 'arandu_wake'}[name]
-    destination = ROOT / folder / 'rootfs' / ('dataset_generation' if name == 'wakegen' else 'src')
+    destination = ROOT / 'arandu_stack/rootfs/modules' / folder / 'rootfs' / ('dataset_generation' if name == 'wakegen' else 'src')
     count = 0
     paths = []
     for directory, directories, names in os.walk(source):

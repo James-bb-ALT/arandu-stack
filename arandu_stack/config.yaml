@@ -1,7 +1,7 @@
-name: Arandu Stack
+name: Arandu Assistant
 slug: arandu_stack
-version: "0.1.0"
-description: Painel central dos módulos Arandu e frases personalizadas
+version: "0.2.0"
+description: Assistente completo local — Wake, STT, NLU, Decision, LLM e TTS em um app
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
 startup: application
@@ -11,8 +11,13 @@ stage: experimental
 ingress: true
 ingress_port: 8099
 panel_icon: mdi:leaf
-panel_title: Arandu Stack
-hassio_api: true
-hassio_role: manager
+panel_title: Arandu Assistant
+homeassistant_api: true
+ports:
+  11555/tcp: null
+  10350/tcp: null
+  10212/tcp: null
+  10400/tcp: null
+discovery: [wyoming]
 options: {}
 schema: false

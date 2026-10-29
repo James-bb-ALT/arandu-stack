@@ -1,3 +1,11 @@
+# 0.3.0
+
+- Formulários tipados para todos os módulos, com switches, campos e seletores.
+- Palavra de ativação global: Alexa, Hey Jarvis, Hey Mycroft, Hey Rhasspy e Okay Nabu.
+- Voz Piper Arandu treinada, exportada e incluída como padrão; Faber Medium também incluída.
+- Controles efetivos de Decision, LLM e políticas NLU; proteção dos tokens ao salvar.
+- Migração do padrão TTS preserva escolhas posteriores do usuário e guarda backup das opções antigas.
+
 # 0.2.0
 
 - Um único app Arandu Assistant inclui os seis motores.

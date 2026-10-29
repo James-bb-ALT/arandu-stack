@@ -21,6 +21,7 @@ RUN python -m venv --system-site-packages /opt/venvs/stt && /opt/venvs/stt/bin/p
 RUN python -m venv --system-site-packages /opt/venvs/tts && /opt/venvs/tts/bin/pip install --no-cache-dir '/opt/modules/arandu_tts/rootfs/src[pocket]'
 RUN python -m venv --system-site-packages /opt/venvs/wake && /opt/venvs/wake/bin/pip install --no-cache-dir -r /opt/modules/arandu_wake/rootfs/src/requirements-detector.txt /opt/modules/arandu_wake/rootfs/src
 COPY app /opt/assistant
+COPY assets /opt/assistant-assets
 WORKDIR /opt/assistant
 EXPOSE 8099 11555 10350 10212 10400
 CMD ["python", "server.py"]

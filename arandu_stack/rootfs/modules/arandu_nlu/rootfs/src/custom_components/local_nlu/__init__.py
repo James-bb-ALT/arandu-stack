@@ -31,7 +31,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         lambda: bool(entry.options.get(CONF_V2_ENABLED, False)),
         lambda: bool(entry.options.get(CONF_SHADOW_ENABLED, False)),
         lambda: bool(entry.options.get(CONF_CONTEXTUAL_ENABLED, True)),
-        lambda: dict(entry.options),
+        lambda: {**dict(entry.options), **getattr(entry.runtime_data, '_stack_options', {})},
     )
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -50,6 +50,8 @@ async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> Non
     # Clearing dialogue on every saved options change prevents change/restore replay.
     # Runtime options are read live; no restart or automatic add-on update is needed.
     runtime = entry.runtime_data
+    runtime._stack_options = {}
+    runtime._stack_policy = {}
     if runtime._contextual is not None:
         runtime._contextual.options_changed()
     runtime._pending.clear()

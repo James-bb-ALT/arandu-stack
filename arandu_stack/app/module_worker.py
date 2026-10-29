@@ -17,12 +17,14 @@ if key in {'decision', 'llm'}:
     root.mkdir(exist_ok=True)
     if options.get('auto_download'):
         service.install(root)
-    web.run_app(service.create_app(root, '/usr/local/bin/llama-server' if key == 'llm' else None, options['threads']), host='127.0.0.1', port=service.PORT, access_log=None)
+    web.run_app(service.create_app(root, '/usr/local/bin/llama-server' if key == 'llm' else None, options['threads'], runtime_settings=options), host='127.0.0.1', port=service.PORT, access_log=None)
 elif key == 'tts':
     from arandu_tts.addon_main import configure
     from arandu_tts.server import main
     configure(options)
-    os.environ.update(ARANDU_WEB_ENABLED='0', ARANDU_VOICES_DIR=str(data / 'voices'), HF_HOME=str(data / 'hub'), XDG_CACHE_HOME=str(data / 'cache'))
+    from bundled_voices import prepare
+    prepare(data / 'voices')
+    os.environ.update(ARANDU_WEB_ENABLED='0', ARANDU_VOICES_DIR=str(data / 'voices'), HF_HOME=str(data / 'hub'), XDG_CACHE_HOME=str(data / 'cache'), ARANDU_MAX_CHARS=str(options['max_chars']))
     main()
 elif key == 'stt':
     root = sources / 'arandu_stt/rootfs/src/arandu_stt'
@@ -34,7 +36,7 @@ elif key == 'stt':
             raise SystemExit('Pesos STT ausentes: habilite auto_download nas opções e reinicie o módulo.')
     launcher.main()
 elif key == 'wake':
-    os.execv(sys.executable, [sys.executable, '-m', 'wyoming_openwakeword', '--uri', 'tcp://0.0.0.0:10400',
-        '--threshold', str(options['threshold']), '--trigger-level', str(options['trigger_level'])])
+    from wake_service import run
+    run(options)
 else:
     raise SystemExit('Módulo desconhecido')

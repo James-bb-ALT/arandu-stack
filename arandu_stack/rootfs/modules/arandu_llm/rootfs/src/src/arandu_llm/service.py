@@ -53,10 +53,10 @@ def retrieve(text, catalog):
     ranking = sorted(ranking, key=lambda r: (-r["raw_score"], r["entity_id"], r["intent"]))
     return {"ranking": [r for r in ranking if r["raw_score"] > 0][:8], "retrieval": "lexical-full-catalog", "eligible_pairs": len(ranking)}
 
-def create_app(root, executable=None, threads=2):
+def create_app(root, executable=None, threads=2, runtime_settings=None):
     from aiohttp import web
     os.environ.update(HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1", TOKENIZERS_PARALLELISM="false")
-    adapter = Llama(root, executable, threads)
+    adapter = Llama(root, executable, threads, settings=runtime_settings)
     lock, tasks = asyncio.Lock(), set()
 
     @web.middleware

@@ -53,7 +53,7 @@ def retrieve(text, catalog):
     ranking = sorted(ranking, key=lambda r: (-r["raw_score"], r["entity_id"], r["intent"]))
     return {"ranking": [r for r in ranking if r["raw_score"] > 0][:8], "retrieval": "lexical-full-catalog", "eligible_pairs": len(ranking)}
 
-def create_app(root, executable=None, threads=2):
+def create_app(root, executable=None, threads=2, runtime_settings=None):
     from aiohttp import web
     os.environ.update(HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1", TOKENIZERS_PARALLELISM="false")
     adapter = Encoder(root, threads)
@@ -103,7 +103,10 @@ def create_app(root, executable=None, threads=2):
                 text = body.get("text")
                 if not isinstance(text, str) or not 1 <= len(text) <= 512 or any(ord(c) < 32 for c in text):
                     raise ValueError("Texto deve ter 1–512 caracteres em uma linha")
-                result = await asyncio.to_thread(adapter.infer, text, catalog, KEY, body.get("config", {}))
+                config = dict(body.get('config') or {})
+                config.update({k: v for k, v in (runtime_settings or {}).items() if k in {'threshold', 'min_margin'}})
+                result = await asyncio.to_thread(adapter.infer, text, catalog, KEY, config)
+                result['applied_config'] = config
                 result.update(catalog_fingerprint=digest(catalog), catalog_entities=len(catalog["entities"]), service="arandu-decision")
                 return result
         task = asyncio.create_task(work())

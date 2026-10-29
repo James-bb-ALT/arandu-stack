@@ -123,7 +123,7 @@ def create_app(data_dir, local=False):
         return web.json_response({'saved': True, 'count': len(rows)})
     async def runtime(request):
         nlu = await manager.status('nlu')
-        return web.json_response({'nlu_enabled': nlu['state'] == 'started', 'phrases': phrases()})
+        return web.json_response({'nlu_enabled': nlu['state'] == 'started', 'nlu_options': {k:v for k,v in manager.config['nlu'].items() if k != 'enabled'}, 'phrases': phrases()})
     async def model_request(key, path, payload=None):
         if key not in {'decision', 'llm'}:
             raise ValueError('Módulo de inferência inválido')

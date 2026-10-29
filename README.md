@@ -45,9 +45,23 @@ pesos e vozes são baixados separadamente.
 
 ## Configuração e frases
 
-Na WebUI você pode ativar, desativar, reiniciar e editar as opções de cada módulo.
-As escolhas ficam salvas para a próxima inicialização. Salve as opções e reinicie
-o módulo para aplicar. O campo `enabled` é controlado pelos botões Ativar/Desativar.
+Na WebUI você pode ativar, desativar, reiniciar e configurar cada módulo usando
+campos, switches e dropdowns. Não há editor JSON. Salve as opções e reinicie o
+módulo, ou use **Salvar e reiniciar** quando ele estiver ativo.
+
+| Módulo | Ajustes expostos na UI |
+| --- | --- |
+| Wake | Alexa, Hey Jarvis, Hey Mycroft, Hey Rhasspy ou Okay Nabu; threshold; trigger level; intervalo entre detecções |
+| STT | Modelo adaptado/original, perfil, threads, padding, léxico, vocabulário e sincronização de contexto |
+| NLU | Frases personalizadas, limite do comando, duração do contexto e aviso de bateria |
+| Decision | Download, threads, confiança calibrada e margem mínima |
+| LLM | Download, threads, contexto, limite de tokens e temperatura |
+| TTS | Voz, pré-carga, threads, limite da fala, reserva, Pocket e servidor remoto |
+
+A palavra selecionada no Wake é aplicada a todas as conexões do serviço, inclusive
+quando um cliente solicita outro nome. Recarregue o motor Wake no Assist após mudar.
+Os ajustes NLU são aplicados pela integração HACS 0.6.2 ou posterior.
+Tokens ficam ocultos; deixar um campo de senha vazio mantém o valor salvo.
 
 Cadastre até 200 atalhos, por exemplo:
 
@@ -65,9 +79,15 @@ O gateway do painel encaminha o catálogo autorizado aos motores internos.
 
 ## Modelos e dados
 
-Nenhum peso acompanha o Git. STT, Decision, LLM e TTS começam com
-`auto_download: false`. Para baixar os modelos/vozes, habilite essa opção no
-módulo e reinicie. Wake segue o carregamento de modelos do upstream.
+As vozes Piper **Arandu** e **Faber Medium** acompanham o app, com arquivos ONNX,
+configurações e hashes versionados. Arandu, exportada do checkpoint local salvo
+na época 145, é o padrão. Use o dropdown do TTS para selecionar Faber Medium.
+Não há download para alternar entre essas duas vozes. A voz fixada explicitamente
+em um pipeline Assist deve ser alterada também nesse pipeline.
+
+Outros pesos não acompanham o Git. STT, Decision, LLM e TTS começam com
+`auto_download: false`; habilite essa opção quando precisar baixar outros modelos.
+Wake segue o carregamento de modelos do upstream.
 Os pesos ficam no armazenamento persistente do app e não são apagados ao desativar.
 
 Cada módulo tem suas opções e cache próprios. NLU, Decision, LLM e Wake não recebem
@@ -90,7 +110,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **0.2.0**, para HA OS/Supervised amd64.
+Versão experimental **0.3.0**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

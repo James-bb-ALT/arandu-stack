@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "default": "pt_BR-arandu-medium",
+  "voices": [
+    {
+      "id": "pt_BR-arandu-medium",
+      "name": "Arandu — voz treinada",
+      "language": "pt_BR",
+      "sample_rate": 22050,
+      "checkpoint_epoch": 145,
+      "checkpoint_global_step": 348356,
+      "piper_source_revision": "639388b6317fc4731e91d53da42aea68fd4166ff"
+    },
+    {
+      "id": "pt_BR-faber-medium",
+      "name": "Faber Medium",
+      "language": "pt_BR",
+      "sample_rate": 22050,
+      "source": "https://huggingface.co/rhasspy/piper-voices",
+      "source_revision": "5041a7a49ae5b3a0f30e6837769eb03fdbb231bd",
+      "upstream_repository_license": "MIT",
+      "upstream_dataset_license": "CC0"
+    }
+  ],
+  "files": [
+    {
+      "name": "pt_BR-arandu-medium.onnx",
+      "bytes": 63516051,
+      "sha256": "c0c4d1a5d9f623cb6d6dbb06ee1d5ff2d091249867120ea5ab09863497c36052"
+    },
+    {
+      "name": "pt_BR-arandu-medium.onnx.json",
+      "bytes": 5238,
+      "sha256": "404331e99b0d4e0634224661c78e6ef3a86c8f1e35e641095e9d6e90d6355299"
+    },
+    {
+      "name": "pt_BR-faber-medium.onnx",
+      "bytes": 63201294,
+      "sha256": "858555e3a064209c57088fe6bd70c4c3dc54d03eaa00c45d5ecaf43a33f95aa7"
+    },
+    {
+      "name": "pt_BR-faber-medium.onnx.json",
+      "bytes": 4855,
+      "sha256": "7e694de195ae3fc36dd732c445eb04fb49b649854893cb5506b978f0d50a1d6f"
+    }
+  ]
+}

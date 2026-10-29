@@ -9,13 +9,29 @@ from types import SimpleNamespace
 from unittest.mock import patch, AsyncMock
 
 sys.path.insert(0, str(Path(__file__).parents[1] / 'arandu_stack/app'))
-from modules import ModuleManager, validate_options
+from modules import ModuleManager, validate_options, DEFAULTS
+from settings import FIELDS
 
 spec = importlib.util.spec_from_file_location('arandu_control', Path(__file__).parents[1] / 'arandu_stack/app/server.py')
 control = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(control)
 
 class Phrases(unittest.TestCase):
+    def test_every_option_has_a_typed_ui_field(self):
+        for module, defaults in DEFAULTS.items():
+            self.assertEqual({row['id'] for row in FIELDS[module]}, set(defaults) - {'enabled'})
+
+    def test_only_supported_wake_words_are_accepted(self):
+        self.assertEqual(validate_options('wake', {'wake_word': 'hey_jarvis'})['wake_word'], 'hey_jarvis')
+        with self.assertRaises(ValueError):
+            validate_options('wake', {'wake_word': 'not_a_supported_model'})
+
+    def test_runtime_fields_have_bounds(self):
+        with self.assertRaises(ValueError):
+            validate_options('llm', {'max_tokens': 100000})
+        with self.assertRaises(ValueError):
+            validate_options('decision', {'threshold': .1})
+
     def test_unicode_and_spaces(self):
         self.assertEqual(control.normalize('  CAFÉ   Sala '), control.normalize('cafe\u0301 sala'))
 
@@ -33,6 +49,23 @@ class Phrases(unittest.TestCase):
         self.assertEqual(control.redact({'threads': 2, 'hf_token': 'fixture', 'remote_token': 'fixture'}), {'threads': 2})
 
 class Scope(unittest.IsolatedAsyncioTestCase):
+    async def test_trained_voice_migration_preserves_later_user_choice(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            (path/'modules.json').write_text(json.dumps({'tts': {'voice': 'pt_BR-faber-medium'}}), encoding='utf-8')
+            manager = ModuleManager(path, local=True)
+            self.assertEqual(manager.config['tts']['voice'], 'pt_BR-arandu-medium')
+            self.assertTrue((path/'modules-v1-backup.json').is_file())
+            await manager.configure('tts', {'voice': 'pt_BR-faber-medium'})
+            self.assertEqual(ModuleManager(path, local=True).config['tts']['voice'], 'pt_BR-faber-medium')
+
+    async def test_partial_form_keeps_existing_secret(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = ModuleManager(Path(directory), local=True)
+            manager.config['tts']['hf_token'] = 'FIXTURE_TECNICA_TOKEN'
+            await manager.configure('tts', {'cpu_threads': 3})
+            self.assertEqual(manager.config['tts']['hf_token'], 'FIXTURE_TECNICA_TOKEN')
     async def test_only_known_internal_modules(self):
         with self.assertRaises(ValueError):
             validate_options('../other', {})

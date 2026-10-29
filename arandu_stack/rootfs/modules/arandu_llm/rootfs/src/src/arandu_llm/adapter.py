@@ -37,7 +37,7 @@ class Llama:
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
         started = time.perf_counter()
-        self.process = await asyncio.create_subprocess_exec(self.executable, "-m", str(model), "--host", "127.0.0.1", "--port", str(port), "-t", str(self.threads), "-c", str(self.settings['context_size']), "-ngl", "0", "--parallel", "1", "--jinja", stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+        self.process = await asyncio.create_subprocess_exec(self.executable, "-m", str(model), "--host", "127.0.0.1", "--port", str(port), "-t", str(self.threads), "-c", str(self.settings['context_size']), "-ngl", "0", "--parallel", "1", "--jinja")
         try:
             async with asyncio.timeout(90), aiohttp.ClientSession() as session:
                 for _ in range(300):

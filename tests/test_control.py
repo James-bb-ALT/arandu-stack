@@ -49,6 +49,17 @@ class Phrases(unittest.TestCase):
         self.assertEqual(control.redact({'threads': 2, 'hf_token': 'fixture', 'remote_token': 'fixture'}), {'threads': 2})
 
 class Scope(unittest.IsolatedAsyncioTestCase):
+    async def test_module_start_failure_does_not_take_down_log_page(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = ModuleManager(Path(directory))
+            manager.config['stt']['enabled'] = True
+            async def start(key, persist=True):
+                if key == 'stt':
+                    raise OSError('FIXTURE_START_FAILURE')
+            with patch.object(manager, 'start', AsyncMock(side_effect=start)):
+                await manager.startup()
+            self.assertIn('FIXTURE_START_FAILURE', manager.failures['stt'])
+
     async def test_trained_voice_migration_preserves_later_user_choice(self):
         import json
         with tempfile.TemporaryDirectory() as directory:

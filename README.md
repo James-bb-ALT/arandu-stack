@@ -77,6 +77,24 @@ integração HA. Decision e LLM permanecem experimentais: estão disponíveis no
 AI Lab, sem assumir automaticamente a execução do agente de produção.
 O gateway do painel encaminha o catálogo autorizado aos motores internos.
 
+## Logs e diagnóstico
+
+Abra **Logs** no menu do Arandu Assistant. Escolha todos ou filtre por aplicativo,
+Wake, STT, NLU, Decision, LLM ou TTS. A página atualiza a cada cinco segundos
+enquanto estiver aberta; você pode pausar, atualizar manualmente e baixar os
+registros exibidos. O botão **Ver erro** de um módulo abre sua fonte diretamente.
+
+Erros antigos dos módulos continuam disponíveis após atualizar, pois os arquivos
+persistentes não são removidos. A página mostra até 100, 300 ou 1.000 linhas finais,
+limitadas a 128 KiB por fonte. Tracebacks e códigos de saída são preservados.
+Credenciais conhecidas são ocultadas. Se debug_text estiver ligado no STT,
+os logs podem conter textos reconhecidos; confira antes de compartilhar.
+
+O app também envia seus próprios eventos e falhas ao registro principal do HA.
+Se o aplicativo inteiro não conseguir iniciar, consulte esse registro no HA.
+O log do controlador tem rotação de 2 MiB e três cópias anteriores; os arquivos
+dos módulos mantêm seu histórico existente.
+
 ## Modelos e dados
 
 As vozes Piper **Arandu** e **Faber Medium** acompanham o app, com arquivos ONNX,
@@ -110,7 +128,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **0.3.0**, para HA OS/Supervised amd64.
+Versão experimental **0.3.1**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

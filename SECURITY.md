@@ -19,3 +19,9 @@ sendo a fronteira de autorização e execução. Falhas ao obter a configuraçã
 painel interrompem o comando quando o endpoint está configurado.
 
 Não publique inventário residencial, áudio, pesos ou credenciais em issues.
+
+A página Logs lê somente fontes fixas dentro de /data. Caminhos arbitrários e
+links que escapem do diretório são recusados. A leitura é limitada a 128 KiB por
+fonte e o texto é renderizado como texto puro. Tokens configurados, credenciais
+conhecidas do ambiente e formatos comuns de autenticação são ocultados antes de
+enviar os registros ao navegador. O download usa os mesmos trechos tratados.

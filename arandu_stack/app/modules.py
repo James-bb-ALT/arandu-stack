@@ -10,6 +10,7 @@ import sys
 import math
 from urllib.parse import urlsplit
 from settings import FIELDS, VOICE_ID, schema
+from logs import LogStore
 
 DEFAULTS = {
     'nlu': {'enabled': True, 'custom_phrases_enabled': True, 'max_input_chars': 512, 'session_ttl': 60, 'low_battery_threshold': 20},
@@ -73,7 +74,7 @@ def validate_options(key, options, data=Path('/data')):
     return merged
 
 class ModuleManager:
-    def __init__(self, data, local=False):
+    def __init__(self, data, local=False, journal=None):
         self.data = data
         self.local = local
         self.file = data / 'modules.json'
@@ -81,6 +82,9 @@ class ModuleManager:
         self.logs = {}
         self.watchers = {}
         self.config = copy.deepcopy(DEFAULTS)
+        self.journal = journal or LogStore(data, lambda: self.config)
+        self.stopping = set()
+        self.failures = {}
         self.lock = asyncio.Lock()
         if self.file.exists():
             document = json.loads(self.file.read_text(encoding='utf-8'))
@@ -114,8 +118,9 @@ class ModuleManager:
             raise ValueError('Módulo desconhecido')
         process = self.processes.get(key)
         running = bool(process and process.returncode is None)
-        return {'id': key, 'installed': self.installed(key), 'state': 'started' if running else ('error' if process and self.config[key]['enabled'] else 'stopped'),
+        return {'id': key, 'installed': self.installed(key), 'state': 'started' if running else ('error' if key in self.failures or process and self.config[key]['enabled'] else 'stopped'),
                 'enabled': self.config[key]['enabled'], 'options': dict(self.config[key]),
+                'last_error': self.journal.redact(self.failures.get(key, '')),
                 'port': PORTS[key], 'exit_code': process.returncode if process else None,
                 'slug': 'Módulo interno · porta ' + str(PORTS[key]), 'schema': schema(key, self.config[key], self.data)}
 
@@ -128,9 +133,14 @@ class ModuleManager:
             raise ValueError('Use Ativar/Desativar para mudar enabled')
         self.config[key] = merged
         self.save()
+        self.journal.event(key, 'Configurações salvas; reinicie o módulo para aplicar.')
 
     async def start(self, key, persist=True):
-        if key not in DEFAULTS or not self.installed(key):
+        if key not in DEFAULTS:
+            raise ValueError('Módulo desconhecido')
+        if not self.installed(key):
+            self.failures[key] = 'Runtime não instalado.'
+            self.journal.event(key, 'Runtime não instalado; não foi possível iniciar.', error=True)
             raise ValueError('Runtime não instalado neste ambiente; instale o app Arandu Assistant')
         current = self.processes.get(key)
         if current and current.returncode is None:
@@ -143,15 +153,28 @@ class ModuleManager:
         if key == 'stt' and self.config[key].get('refresh_inventory') and os.environ.get('SUPERVISOR_TOKEN'):
             environment['SUPERVISOR_TOKEN'] = os.environ['SUPERVISOR_TOKEN']
         command = ['/usr/bin/local-nlu', 'serve', '--listen', '0.0.0.0:11555'] if key == 'nlu' else [f'/opt/venvs/{key}/bin/python', '/opt/assistant/module_worker.py', key]
-        log = (directory / 'runtime.log').open('ab')
+        self.journal.event(key, 'Iniciando módulo.')
+        log = self.journal.path(key).open('ab')
         previous_log = self.logs.pop(key, None)
         if previous_log:
             previous_log.close()
         self.logs[key] = log
-        self.processes[key] = await asyncio.create_subprocess_exec(*command, env=environment, stdout=log, stderr=log, start_new_session=True)
+        try:
+            self.processes[key] = await asyncio.create_subprocess_exec(*command, env=environment, stdout=log, stderr=log, start_new_session=True)
+        except OSError as exc:
+            self.failures[key] = str(exc)
+            self.journal.event(key, 'Falha ao iniciar processo: ' + str(exc), error=True)
+            raise
         process = self.processes[key]
+        self.failures.pop(key, None)
+        self.journal.event(key, 'Processo iniciado; PID ' + str(process.pid) + '.')
         async def reap_children():
-            await process.wait()
+            code = await process.wait()
+            intentional = process.pid in self.stopping
+            self.stopping.discard(process.pid)
+            if not intentional and self.processes.get(key) is process:
+                self.failures[key] = 'Processo encerrado; código ' + str(code) + '.'
+            self.journal.event(key, 'Processo encerrado; código ' + str(code) + ('. Parada solicitada.' if intentional else '.'), error=code != 0 and not intentional)
             try:
                 os.killpg(process.pid, signal.SIGTERM)
             except ProcessLookupError:
@@ -166,6 +189,8 @@ class ModuleManager:
             raise ValueError('Módulo desconhecido')
         process = self.processes.get(key)
         if process and process.returncode is None:
+            self.stopping.add(process.pid)
+            self.journal.event(key, 'Parada solicitada.')
             # Kill the process group as well: LLM workers may own a llama-server child.
             try:
                 os.killpg(process.pid, signal.SIGTERM)
@@ -181,13 +206,18 @@ class ModuleManager:
                 await process.wait()
         if persist:
             self.config[key]['enabled'] = False
+            self.failures.pop(key, None)
             self.save()
 
     async def startup(self):
         if not self.local:
             for key, options in self.config.items():
                 if options['enabled']:
-                    await self.start(key, persist=False)
+                    try:
+                        await self.start(key, persist=False)
+                    except Exception as exc:
+                        self.failures[key] = str(exc)
+                        self.journal.event(key, 'Inicialização falhou: ' + str(exc), error=True)
 
     async def close(self):
         for key in DEFAULTS:

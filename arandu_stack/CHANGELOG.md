@@ -1,3 +1,12 @@
+# 0.3.1
+
+- Página Logs reúne aplicativo e todos os módulos, com filtro e atualização automática.
+- Atalho Ver erro/Logs nos cartões e download dos trechos exibidos.
+- Tracebacks, saída do llama-server, falhas de inicialização e códigos de saída visíveis.
+- Credenciais conhecidas ocultadas; leitura limitada a arquivos de log fixos.
+- Falha de um módulo na inicialização não impede a abertura da interface.
+- Arquivos de logs existentes preservados durante a atualização.
+
 # 0.3.0
 
 - Formulários tipados para todos os módulos, com switches, campos e seletores.

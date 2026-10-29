@@ -9,6 +9,9 @@ import secrets
 import unicodedata
 from aiohttp import ClientSession, ClientTimeout, ClientError, web
 from modules import ModuleManager
+from logs import LogStore, SOURCES, LOGGER
+
+APP_VERSION = '0.3.1'
 
 MODULES = {
     'wake': ('arandu_wake', 'Wake', 'Palavra de ativação · Wyoming'),
@@ -43,8 +46,16 @@ def redact(value):
     return {k: v for k, v in value.items() if not any(term in k.lower() for term in ('token', 'secret', 'password'))}
 
 def create_app(data_dir, local=False):
-    manager = ModuleManager(data_dir, local)
     data_dir.mkdir(parents=True, exist_ok=True)
+    reference = [None]
+    journal = LogStore(data_dir, lambda: reference[0].config if reference[0] else {})
+    journal.configure_logging()
+    try:
+        manager = ModuleManager(data_dir, local, journal=journal)
+    except Exception:
+        LOGGER.exception('Falha ao carregar as configurações do Arandu Assistant')
+        raise
+    reference[0] = manager
     phrases_file = data_dir / 'phrases.json'
     csrf = secrets.token_urlsafe(32)
     lock = asyncio.Lock()
@@ -79,9 +90,14 @@ def create_app(data_dir, local=False):
             response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'"
             return response
         except (ValueError, KeyError, TypeError) as exc:
+            LOGGER.warning('Solicitação recusada (%s): %s', request.path, str(exc))
             return web.json_response({'error': str(exc)[:240]}, status=422)
         except (ClientError, TimeoutError):
+            LOGGER.exception('Serviço indisponível (%s)', request.path)
             return web.json_response({'error': 'Serviço indisponível ou tempo limite excedido'}, status=503)
+        except OSError:
+            LOGGER.exception('Falha de arquivo ou processo (%s)', request.path)
+            return web.json_response({'error': 'Falha de arquivo ou processo; consulte a página Logs'}, status=503)
 
     app = web.Application(client_max_size=2_097_152, middlewares=[boundary])
     async def index(request):
@@ -92,7 +108,27 @@ def create_app(data_dir, local=False):
             row = await manager.status(key)
             row.update(name=MODULES[key][1], description=MODULES[key][2], options=redact(row['options']))
             modules.append(row)
-        return web.json_response({'modules': modules, 'phrases': phrases(), 'csrf': csrf, 'local': local})
+        return web.json_response({'modules': modules, 'phrases': phrases(), 'csrf': csrf, 'local': local, 'version': APP_VERSION})
+    async def logs(request):
+        selected = request.query.get('source', 'all')
+        if selected != 'all' and selected not in SOURCES:
+            raise ValueError('Fonte de log desconhecida')
+        lines = int(request.query.get('lines', '300'))
+        result = []
+        for source in SOURCES if selected == 'all' else (selected,):
+            try:
+                row = await asyncio.to_thread(journal.tail, source, lines)
+            except (OSError, ValueError) as exc:
+                if lines not in (100, 300, 1000):
+                    raise ValueError('Escolha 100, 300 ou 1000 linhas') from exc
+                row = {'id': source, 'exists': False, 'text': '', 'modified': None, 'truncated': False,
+                       'error': 'Não foi possível ler o log: ' + journal.redact(str(exc))}
+            row['name'] = 'Aplicativo' if source == 'app' else MODULES[source][1]
+            if source != 'app':
+                status = await manager.status(source)
+                row.update(state=status['state'], exit_code=status['exit_code'], last_error=status['last_error'])
+            result.append(row)
+        return web.json_response({'sources': result, 'lines': lines, 'version': APP_VERSION})
     async def control(request):
         key, action = request.match_info['key'], request.match_info['action']
         if action not in {'start', 'stop', 'restart', 'options'}:
@@ -163,13 +199,17 @@ def create_app(data_dir, local=False):
             key = 'decision'
         return web.json_response(await model_request(key, '/infer', payload))
     async def startup(app):
+        journal.event('app', 'Arandu Assistant ' + APP_VERSION + ' iniciando.')
         await manager.startup()
+        journal.event('app', 'Painel e página de logs prontos.')
     async def cleanup(app):
+        journal.event('app', 'Encerrando Arandu Assistant.')
         await manager.close()
     app.on_startup.append(startup)
     app.on_cleanup.append(cleanup)
     app.router.add_get('/', index)
     app.router.add_get('/api/state', state)
+    app.router.add_get('/api/logs', logs)
     app.router.add_post('/api/modules/{key}/{action}', control)
     app.router.add_post('/api/phrases', save_phrases)
     app.router.add_get('/runtime', runtime)

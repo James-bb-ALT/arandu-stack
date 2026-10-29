@@ -69,6 +69,8 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
         try:
             return await handler(request)
         except (ValueError, KeyError, TypeError, OSError) as exc:
+            import logging
+            logging.getLogger('arandu.decision').exception('Falha na solicitação de inferência/configuração')
             return web.json_response({"error": str(exc)[:256]}, status=422)
 
     app = web.Application(client_max_size=2_097_152, middlewares=[boundary])

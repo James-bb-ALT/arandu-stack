@@ -1,5 +1,19 @@
 # Arandu Assistant — uso
 
+## Onde ver os erros
+
+Abra a interface do Arandu Assistant e selecione **Logs**. A página reúne
+aplicativo, Wake, STT, NLU, Decision, LLM e TTS. Filtre uma fonte ou use Todos.
+O botão **Ver erro** do cartão abre o log do módulo diretamente.
+
+Ative/desative a atualização automática e escolha 100, 300 ou 1.000 linhas finais.
+Use **Baixar logs exibidos** para compartilhar o erro. Credenciais conhecidas
+são ocultadas. Arquivos antigos dos módulos são preservados na atualização.
+O limite por fonte é 128 KiB, para manter a interface responsiva.
+
+Se o aplicativo inteiro não abrir, consulte o registro principal do app no HA;
+os eventos e erros do controlador também são enviados para lá.
+
 Instale apenas este app. Abra a WebUI para ativar, parar, reiniciar e configurar
 os módulos internos. A configuração e as frases ficam no armazenamento persistente.
 Desativar encerra o grupo de processos do módulo sem remover modelos baixados.

@@ -3,10 +3,12 @@ from pathlib import Path
 import json
 import os
 import sys
+import logging
 
 key = sys.argv[1]
 data = Path(os.environ['ARANDU_MODULE_DATA'])
 options = json.loads((data / 'options.json').read_text())
+logging.basicConfig(level=getattr(logging, options.get('log_level', 'INFO')), format='%(asctime)s %(levelname)s %(name)s: %(message)s')
 sources = Path('/opt/modules')
 
 if key in {'decision', 'llm'}:

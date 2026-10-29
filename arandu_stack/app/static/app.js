@@ -1,5 +1,6 @@
 'use strict';
 let state=null, editing=null, dirty=false;
+let activeTab='modules',logTimer=null,logsBusy=false,logsPending=false,latestLogs=null,logsSignature='';
 const $=id=>document.getElementById(id);
 function el(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
 function notice(text,error=false){$('notice').textContent=text;$('notice').classList.toggle('error',error);}
@@ -32,6 +33,9 @@ function renderModules(){
     const restart=el('button','Reiniciar','secondary');
     restart.onclick=()=>task(async()=>{await api('modules/'+module.id+'/restart',{});await refresh();});
     [toggle,config,restart].forEach(b=>{if(!module.installed){b.disabled=true;b.dataset.unavailable='true';}actions.append(b);});
+    const logs=el('button',module.state==='error'?'Ver erro':'Logs','secondary');
+    logs.onclick=()=>{ $('logsSource').value=module.id; selectTab('logs'); };
+    actions.append(logs);
     card.append(actions,el('div',module.slug||'Módulo incluído no Arandu Assistant.','slug'));$('cards').append(card);
   });
 }
@@ -123,7 +127,70 @@ function phraseRow(row){
   item.append(enabled,phrase,el('span','→','arrow'),command,remove);return item;
 }
 function renderPhrases(){$('phraseRows').replaceChildren(...state.phrases.map(phraseRow));if(!state.phrases.length)$('phraseRows').append(phraseRow({phrase:'',command:'',enabled:true}));}
-document.querySelectorAll('[data-tab]').forEach(button=>button.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b===button));['modules','phrases','help'].forEach(id=>$(id).hidden=id!==button.dataset.tab);});
+function selectTab(id){
+  activeTab=id;clearTimeout(logTimer);
+  document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
+  ['modules','phrases','logs','help'].forEach(section=>$(section).hidden=section!==id);
+  if(id==='logs')refreshLogs();
+}
+document.querySelectorAll('[data-tab]').forEach(button=>button.onclick=()=>selectTab(button.dataset.tab));
+
+function logState(source){
+  const labels={started:'Ativo',stopped:'Parado',error:'Falha'};
+  return source.id==='app'?'Aplicativo':(labels[source.state]||'Estado indisponível')+(source.exit_code!==null&&source.exit_code!==undefined?' · saída '+source.exit_code:'');
+}
+function renderLogs(data){
+  const positions=new Map([...$('logsContent').querySelectorAll('.log-source')].map(card=>{const pre=card.querySelector('pre');return [card.dataset.source,{top:pre.scrollTop,bottom:pre.scrollHeight-pre.clientHeight-pre.scrollTop<8}];}));
+  $('logsContent').replaceChildren();
+  for(const source of data.sources){
+    const card=el('article',undefined,'log-source'),heading=el('div',undefined,'log-heading');
+    card.dataset.source=source.id;
+    heading.append(el('h3',source.name),el('span',logState(source),source.state==='error'?'log-error':'log-meta'));
+    card.append(heading);
+    if(source.modified)card.append(el('p','Última gravação: '+new Date(source.modified).toLocaleString(),'log-meta'));
+    if(source.last_error)card.append(el('p',source.last_error,'log-error'));
+    const text=source.error||source.text||(source.exists?'Nenhuma mensagem registrada até agora.':'Ainda não há arquivo de log desta fonte.');
+    card.append(el('pre',text,'log-output'));
+    if(source.truncated)card.append(el('p','Exibindo o trecho final do arquivo. Registros anteriores foram mantidos no app.','log-meta'));
+    $('logsContent').append(card);
+    const previous=positions.get(source.id),pre=card.querySelector('pre');
+    pre.scrollTop=previous&&!previous.bottom?previous.top:pre.scrollHeight;
+  }
+}
+async function refreshLogs(){
+  clearTimeout(logTimer);
+  if(logsBusy){logsPending=true;return;}
+  if(activeTab!=='logs'||document.hidden)return;
+  logsBusy=true;latestLogs=null;$('logsRefresh').disabled=true;
+  $('logsDownload').disabled=true;$('logsDownload').dataset.unavailable='true';
+  const source=$('logsSource').value,lines=$('logsLines').value;
+  $('logsStatus').textContent='Consultando registros…';
+  try{
+    const data=await api('logs?source='+encodeURIComponent(source)+'&lines='+encodeURIComponent(lines));
+    if(source===$('logsSource').value&&lines===$('logsLines').value){
+      latestLogs=data;
+      const signature=JSON.stringify(data);
+      if(signature!==logsSignature){renderLogs(data);logsSignature=signature;}
+      $('logsStatus').textContent='Atualizado às '+new Date().toLocaleTimeString()+' · Arandu Assistant '+data.version;
+      $('logsDownload').disabled=false;delete $('logsDownload').dataset.unavailable;
+    }
+  }catch(error){logsSignature='';$('logsStatus').textContent=error.message;$('logsContent').replaceChildren(el('p','Não foi possível consultar os registros. Tente atualizar novamente.','log-error'));}
+  finally{
+    logsBusy=false;$('logsRefresh').disabled=false;
+    const pending=logsPending;logsPending=false;
+    if(activeTab==='logs'&&!document.hidden&&(pending||$('logsAuto').checked))logTimer=setTimeout(refreshLogs,pending?0:5000);
+  }
+}
+$('logsRefresh').onclick=refreshLogs;
+$('logsSource').onchange=refreshLogs;$('logsLines').onchange=refreshLogs;
+$('logsAuto').onchange=()=>{$('logsAuto').checked?refreshLogs():clearTimeout(logTimer);};
+document.addEventListener('visibilitychange',()=>{clearTimeout(logTimer);if(!document.hidden&&activeTab==='logs'&&$('logsAuto').checked)refreshLogs();});
+$('logsDownload').onclick=()=>{
+  if(!latestLogs)return;
+  const text=['Arandu Assistant '+latestLogs.version,'Trechos finais dos logs; credenciais conhecidas ocultadas.','',...latestLogs.sources.flatMap(source=>['=== '+source.name+' · '+logState(source)+' ===',source.modified?'Última gravação: '+source.modified:'Sem gravação',source.last_error||'',source.error||source.text||'Sem registros.',''])].join('\n');
+  const url=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'})),link=el('a');
+  link.href=url;link.download='arandu-assistant-logs.txt';link.hidden=true;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
 $('refresh').onclick=()=>task(refresh);
 $('addPhrase').onclick=()=>{$('phraseRows').append(phraseRow({phrase:'',command:'',enabled:true}));dirty=true;};
 $('savePhrases').onclick=()=>task(async()=>{

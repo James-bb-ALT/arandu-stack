@@ -62,8 +62,10 @@ módulo, ou use **Salvar e reiniciar** quando ele estiver ativo.
 
 A palavra selecionada no Wake é aplicada a todas as conexões do serviço, inclusive
 quando um cliente solicita outro nome. Recarregue o motor Wake no Assist após mudar.
-Use a integração HACS **0.6.3 ou posterior**: ela aceita o hostname do app
-unificado `…-arandu-stack`, além do hostname legado `…-ptbr-nlu`.
+Use a integração HACS **0.6.4 ou posterior**: endpoints vazios são preenchidos
+automaticamente pelo app instalado no Supervisor, após verificar a saúde do NLU.
+Entradas com nomes padrão antigos passam a se chamar Arandu Assistant; IDs,
+políticas e nomes personalizados são preservados.
 Tokens ficam ocultos; deixar um campo de senha vazio mantém o valor salvo.
 
 Cadastre até 200 atalhos, por exemplo:

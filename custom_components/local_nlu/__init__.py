@@ -19,11 +19,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     from .client import ClientError, LocalNluClient, normalize_endpoint
     from .const import CONF_CONTEXTUAL_ENABLED, CONF_ENDPOINT, CONF_SHADOW_ENABLED, CONF_V2_ENABLED, PLATFORMS
     from .runtime import LocalNluRuntime
+    from .endpoint_discovery import prepare_entry
+    from homeassistant.exceptions import ConfigEntryNotReady
 
     try:
-        endpoint = normalize_endpoint(entry.options.get(CONF_ENDPOINT, entry.data[CONF_ENDPOINT]))
-    except (KeyError, ClientError):
-        return False
+        endpoint = await prepare_entry(hass, entry, async_get_clientsession(hass))
+    except (KeyError, ClientError) as exc:
+        raise ConfigEntryNotReady('Não foi possível localizar o NLU do Arandu Assistant; aguardando o app e o Supervisor.') from exc
     client = LocalNluClient(async_get_clientsession(hass), endpoint)
     entry.runtime_data = LocalNluRuntime(
         hass,
@@ -43,7 +45,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
     from .client import normalize_endpoint
     from .const import CONF_ENDPOINT
-    selected_endpoint = normalize_endpoint(entry.options.get(CONF_ENDPOINT, entry.data[CONF_ENDPOINT]))
+    value = entry.options.get(CONF_ENDPOINT, entry.data.get(CONF_ENDPOINT, ''))
+    if not value:
+        await hass.config_entries.async_reload(entry.entry_id)
+        return
+    selected_endpoint = normalize_endpoint(value)
     if selected_endpoint != entry.runtime_data._client._endpoint:
         await hass.config_entries.async_reload(entry.entry_id)
         return

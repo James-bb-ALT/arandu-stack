@@ -10,11 +10,11 @@
     "step": {
       "user": {
         "data": {
-          "endpoint": "Endpoint local do add-on",
+          "endpoint": "Endpoint NLU (automático, porta 11555)",
           "stack_endpoint": "Endpoint Arandu Stack (opcional, porta 8099)"
         },
-        "description": "Informe o endpoint HTTP interno exposto pelo add-on Local NLU.",
-        "title": "Conectar Local NLU"
+        "description": "O endereço é preenchido a partir do app instalado no Supervisor. Deixe vazio para detectar automaticamente; fora do HA OS, informe o endereço manualmente.",
+        "title": "Conectar Arandu Assistant"
       }
     }
   },
@@ -43,7 +43,7 @@
           "low_battery_threshold": "Limite de bateria baixa (%)",
           "fallback_user_id": "Usuário para pipelines sem identidade",
           "configure_identity_bindings": "Configurar associações por dispositivo/satélite",
-          "endpoint": "Endpoint NLU do Arandu Assistant (porta 11555)"
+          "endpoint": "Endpoint NLU (vazio para detectar automaticamente)"
         },
         "data_description": {
           "fallback_user_id": "Usuário cujas permissões serão utilizadas quando o Home Assistant não informar a identidade da pipeline de voz. Selecione — para desativar."
@@ -66,7 +66,8 @@
       "invalid_identity_user": "Escolha um usuário ativo.",
       "choose_one_identity_origin": "Escolha apenas um satélite ou dispositivo.",
       "invalid_identity_origin": "A origem selecionada não está disponível.",
-      "invalid_identity_configuration": "As associações de identidade são inválidas ou excedem o limite."
+      "invalid_identity_configuration": "As associações de identidade são inválidas ou excedem o limite.",
+      "cannot_connect": "Não foi possível detectar o app ou acessar o NLU. Confirme se o módulo está ativo."
     }
   },
   "title": "Arandu Assistant"

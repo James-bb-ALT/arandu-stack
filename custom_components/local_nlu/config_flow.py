@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
 
 from .client import ClientError, LocalNluClient, normalize_endpoint
+from .endpoint_discovery import installed_endpoints, resolve_endpoints
 from .const import (
     CONF_ENDPOINT,
     CONF_SHADOW_ENABLED,
@@ -29,6 +30,8 @@ from .const import (
 
 
 def _endpoint_value(value):
+    if isinstance(value, str) and not value.strip():
+        return ''
     try:
         return normalize_endpoint(value)
     except ClientError as exc:
@@ -53,7 +56,7 @@ class LocalNluConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
-                endpoint = normalize_endpoint(user_input[CONF_ENDPOINT])
+                endpoint, panel, _ = await resolve_endpoints(self.hass, async_get_clientsession(self.hass), user_input.get(CONF_ENDPOINT, ''), user_input.get('stack_endpoint', ''))
                 client = LocalNluClient(
                     async_get_clientsession(self.hass), endpoint
                 )
@@ -65,17 +68,21 @@ class LocalNluConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
                     title="Arandu Assistant",
-                    data={CONF_ENDPOINT: endpoint, 'stack_endpoint': user_input.get('stack_endpoint', '')},
+                    data={CONF_ENDPOINT: endpoint, 'stack_endpoint': panel},
                 )
+        try:
+            default_endpoint, default_panel = installed_endpoints(self.hass)
+        except ClientError:
+            default_endpoint, default_panel = '', ''
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(
+                    vol.Optional(
                         CONF_ENDPOINT,
-                        default=DEFAULT_ENDPOINT,
+                        default=default_endpoint,
                     ): str,
-                    vol.Optional('stack_endpoint', default=''): str,
+                    vol.Optional('stack_endpoint', default=default_panel): str,
                 }
             ),
             errors=errors,
@@ -93,9 +100,14 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             # Preserve options not represented by this form, including existing bindings.
             options = {**self.config_entry.options, **user_input}
+            try:
+                endpoint, panel, _ = await resolve_endpoints(self.hass, async_get_clientsession(self.hass), options.get(CONF_ENDPOINT, self.config_entry.data.get(CONF_ENDPOINT, '')), options.get('stack_endpoint', self.config_entry.data.get('stack_endpoint', '')))
+                options.update(endpoint=endpoint, stack_endpoint=panel)
+            except ClientError:
+                errors['base'] = 'cannot_connect'
             if options.get(CONF_FALLBACK_USER_ID) and options[CONF_FALLBACK_USER_ID] not in users:
                 errors[CONF_FALLBACK_USER_ID] = "invalid_identity_user"
-            else:
+            elif not errors:
                 if not options.get(CONF_FALLBACK_USER_ID):
                     options.pop(CONF_FALLBACK_USER_ID, None)
                 configure_bindings = options.pop("configure_identity_bindings", False)
@@ -109,7 +121,7 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Optional(CONF_FALLBACK_USER_ID, default=options.get(CONF_FALLBACK_USER_ID, "")): self._user_selector(users),
-                    vol.Optional(CONF_ENDPOINT, default=options.get(CONF_ENDPOINT, self.config_entry.data[CONF_ENDPOINT])): vol.All(str, _endpoint_value),
+                    vol.Optional(CONF_ENDPOINT, default=options.get(CONF_ENDPOINT, self.config_entry.data.get(CONF_ENDPOINT, ''))): vol.All(str, _endpoint_value),
                     vol.Optional('stack_endpoint', default=options.get('stack_endpoint', self.config_entry.data.get('stack_endpoint', ''))): str,
                     vol.Optional("configure_identity_bindings", default=False): bool,
                     vol.Optional(CONF_CONTEXTUAL_ENABLED, default=bool(options.get(CONF_CONTEXTUAL_ENABLED, True))): bool,

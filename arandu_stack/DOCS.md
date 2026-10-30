@@ -54,17 +54,26 @@ encerra com erro aparece como Falha; não há ciclo de reinício automático.
 
 Instale a integração HACS Arandu Assistant para usar o agente e os atalhos de frases.
 Informe o endpoint do NLU e o endpoint do painel nas opções da integração.
-Atualize a integração HACS para 0.6.3 ou posterior para aceitar o hostname do app
+Atualize a integração HACS para 0.6.4 ou posterior para detectar o endpoint e aceitar o hostname do app
 unificado e aplicar as políticas NLU
 editadas no painel. No Wake, a palavra selecionada vale para todas as conexões.
 
 Se a pipeline disser que não conseguiu acessar o serviço local do NLU:
 
 1. Confira se o módulo NLU está ativo e sem erro nos logs do app.
-2. Atualize **Arandu Assistant no HACS para 0.6.3** e reinicie o Home Assistant.
-3. Nas opções da integração, use `http://<hostname-do-app>:11555` no endpoint NLU
-   e `http://<hostname-do-app>:8099` no endpoint do painel. Use o mesmo hostname
-   da conexão Wyoming; evite localhost e o hostname do app antigo que foi parado.
+2. Atualize **Arandu Assistant no HACS para 0.6.4** e reinicie o Home Assistant.
+3. Deixe os endpoints vazios para preenchimento automático. A integração consulta
+   o app instalado no Supervisor e verifica `/health` antes de salvar as portas
+   11555 (NLU) e 8099 (painel). Se o app ainda estiver carregando, o HA tenta novamente.
+
+A entrada existente **Arandu NLU** passa a se chamar **Arandu Assistant** quando
+ela usava o nome padrão. Seu ID permanece igual, preservando a seleção da pipeline.
+Endereços personalizados não são substituídos. Endereço legado NLU inacessível só
+migra se houver exatamente um Stack instalado e seu NLU responder corretamente.
+Os valores anteriores ficam em `endpoint_migration_backup` nos dados da entrada,
+para permitir restaurá-los pelas opções. Nenhuma entrada é apagada ou recriada.
+Sem Supervisor, ou com vários Stacks instalados, informe explicitamente o endpoint
+`http://<hostname-do-app>:11555`; o painel opcional usa a porta 8099.
 
 A integração registra um código de falha em **Configurações → Sistema → Logs**:
 `transport` indica falha de transporte (inclui DNS, conexão e timeout), `status`

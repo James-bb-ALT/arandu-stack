@@ -58,7 +58,8 @@ def voice_info(cfg: Config):
 
 class _State:
     """Estado de sessão de texto incremental de cada conexão Wyoming."""
-    def __init__(self) -> None:
+    def __init__(self, streaming: bool = False) -> None:
+        self.streaming = streaming
         self.buffer = SentenceBuffer()
         self.voice_name: str | None = None
         self.started = False
@@ -147,6 +148,11 @@ async def serve(cfg: Config) -> None:
                     await self.write_event(voice_info(cfg).event())
                     return True
                 if Synthesize.is_type(event.type):
+                    if self.state is not None and self.state.streaming:
+                        # HA sends the accumulated text for legacy servers after chunks.
+                        # A streaming server must not synthesize that message again.
+                        LOG.debug('Synthesize de compatibilidade ignorado durante streaming')
+                        return True
                     request = Synthesize.from_event(event)
                     self.state = _State()
                     name = request.voice.name if request.voice else None
@@ -154,7 +160,7 @@ async def serve(cfg: Config) -> None:
                     return True
                 if SynthesizeStart.is_type(event.type):
                     request = SynthesizeStart.from_event(event)
-                    self.state = _State()
+                    self.state = _State(streaming=True)
                     self.state.voice_name = request.voice.name if request.voice else None
                     return True
                 if SynthesizeChunk.is_type(event.type):

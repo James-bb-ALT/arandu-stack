@@ -123,6 +123,33 @@ async def test_wyoming_streaming_text(monkeypatch, tmp_path):
         "audio-start", "audio-chunk", "audio-chunk", "audio-stop", "synthesize-stopped"
     ]
 
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('text', ['Luz acesa.', 'Luz acesa sem pontuação'])
+async def test_ha_streaming_compatibility_message_is_not_spoken_twice(monkeypatch, tmp_path, text):
+    mock_wyoming(monkeypatch)
+    (tmp_path / 'test.onnx').write_bytes(b'dummy')
+    (tmp_path / 'test.onnx.json').write_text('{"language": {"code": "pt_BR"}}')
+    monkeypatch.setattr(arandu_server, 'ensure_default_model', lambda _: None)
+    spoken = []
+    class FakeEngine:
+        def __init__(self, cfg):
+            pass
+        async def stream(self, text, voice):
+            spoken.append(text)
+            yield PCMChunk(b'\x00\x00' * 32, 22050, 2, 1)
+    monkeypatch.setattr(arandu_server, 'SpeechEngine', FakeEngine)
+    await arandu_server.serve(Config(voices_dir=tmp_path, default_voice='test', preload=False))
+    handler = FakeServer.instance.factory(None, None)
+    for event in [E('synthesize-start', voice=None), E('synthesize-chunk', text=text),
+                  E('synthesize', text=text, voice=None), E('synthesize-stop')]:
+        assert await handler.handle_event(event)
+    assert spoken == [text]
+    assert [event.type for event in handler.sent] == ['audio-start', 'audio-chunk', 'audio-stop', 'synthesize-stopped']
+    # A later independent request for the same words must still be spoken.
+    assert await handler.handle_event(E('synthesize', text=text, voice=None))
+    assert spoken == [text, text]
+
 @pytest.mark.asyncio
 async def test_remote_gpu_failure_falls_back_to_piper(monkeypatch, tmp_path):
     mock_wyoming(monkeypatch)

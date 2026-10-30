@@ -11,7 +11,6 @@ import math
 from urllib.parse import urlsplit
 from settings import FIELDS, VOICE_ID, schema
 from logs import LogStore
-from discovery import announce, KINDS
 
 DEFAULTS = {
     'nlu': {'enabled': True, 'custom_phrases_enabled': True, 'max_input_chars': 512, 'session_ttl': 60, 'low_battery_threshold': 20},
@@ -82,7 +81,6 @@ class ModuleManager:
         self.processes = {}
         self.logs = {}
         self.watchers = {}
-        self.discovery_tasks = {}
         self.config = copy.deepcopy(DEFAULTS)
         self.journal = journal or LogStore(data, lambda: self.config)
         self.stopping = set()
@@ -124,7 +122,7 @@ class ModuleManager:
                 'enabled': self.config[key]['enabled'], 'options': dict(self.config[key]),
                 'last_error': self.journal.redact(self.failures.get(key, '')),
                 'port': PORTS[key], 'exit_code': process.returncode if process else None,
-                'slug': 'Módulo interno · porta ' + str(PORTS[key]), 'schema': schema(key, self.config[key], self.data)}
+                'slug': ('Wyoming conjunto · porta 10212 · recarregue a integração ao ativar um novo módulo' if key in {'stt', 'tts', 'wake'} else 'Módulo interno · porta ' + str(PORTS[key])), 'schema': schema(key, self.config[key], self.data)}
 
     async def configure(self, key, options):
         if key not in DEFAULTS:
@@ -182,12 +180,6 @@ class ModuleManager:
             except ProcessLookupError:
                 pass
         self.watchers[key] = asyncio.create_task(reap_children())
-        if key in KINDS:
-            previous = self.discovery_tasks.pop(key, None)
-            if previous:
-                previous.cancel()
-                await asyncio.gather(previous, return_exceptions=True)
-            self.discovery_tasks[key] = asyncio.create_task(announce(key, PORTS[key], process, self.journal))
         if persist:
             self.config[key]['enabled'] = True
             self.save()
@@ -195,10 +187,6 @@ class ModuleManager:
     async def stop(self, key, persist=True):
         if key not in DEFAULTS:
             raise ValueError('Módulo desconhecido')
-        discovery = self.discovery_tasks.pop(key, None)
-        if discovery:
-            discovery.cancel()
-            await asyncio.gather(discovery, return_exceptions=True)
         process = self.processes.get(key)
         if process and process.returncode is None:
             self.stopping.add(process.pid)

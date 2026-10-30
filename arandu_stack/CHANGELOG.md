@@ -1,3 +1,11 @@
+# 0.3.4
+
+- STT, TTS e Wake compartilham descoberta automática por uma integração Wyoming na porta 10212.
+- Gateway reúne Describe/Info dos módulos ativos e encaminha áudio ao motor correspondente.
+- Endereço TTS existente preservado; recarregue a integração para criar também a entidade STT.
+- TTS ignora a mensagem completa de compatibilidade recebida durante streaming, evitando falar a mesma frase duas vezes.
+- Testes de regressão com transportes fake adicionados, sem executar modelos ou testes.
+
 # 0.3.3
 
 - Inclui os seis datasets obrigatórios do corretor lexical STT e o manifesto original.

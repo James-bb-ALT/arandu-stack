@@ -9,9 +9,11 @@ import secrets
 import unicodedata
 from aiohttp import ClientSession, ClientTimeout, ClientError, web
 from modules import ModuleManager
+from wyoming_gateway import WyomingGateway
+from discovery import announce_stack
 from logs import LogStore, SOURCES, LOGGER
 
-APP_VERSION = '0.3.3'
+APP_VERSION = '0.3.4'
 
 MODULES = {
     'wake': ('arandu_wake', 'Wake', 'Palavra de ativação · Wyoming'),
@@ -200,10 +202,20 @@ def create_app(data_dir, local=False):
         return web.json_response(await model_request(key, '/infer', payload))
     async def startup(app):
         journal.event('app', 'Arandu Assistant ' + APP_VERSION + ' iniciando.')
+        app['wyoming_gateway'] = WyomingGateway(manager, journal)
+        if not local:
+            await app['wyoming_gateway'].start()
         await manager.startup()
+        if not local:
+            app['wyoming_discovery'] = asyncio.create_task(announce_stack(app['wyoming_gateway'], journal))
         journal.event('app', 'Painel e página de logs prontos.')
     async def cleanup(app):
         journal.event('app', 'Encerrando Arandu Assistant.')
+        discovery = app.get('wyoming_discovery')
+        if discovery:
+            discovery.cancel()
+            await asyncio.gather(discovery, return_exceptions=True)
+        await app['wyoming_gateway'].close()
         await manager.close()
     app.on_startup.append(startup)
     app.on_cleanup.append(cleanup)

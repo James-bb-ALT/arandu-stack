@@ -18,8 +18,10 @@ configura cada módulo pela WebUI, sem instalar seis apps separados.
    necessária dentro do HA Core; o código dela está neste mesmo repositório.
 5. Configure o endpoint NLU com o hostname do único app e porta **11555**.
    Configure o endpoint do painel no mesmo hostname, porta **8099**.
-6. Para áudio, adicione os módulos habilitados pela integração **Wyoming** e
-   escolha os motores no pipeline Assist.
+6. Para áudio, configure o **Arandu Wyoming descoberto automaticamente**. STT,
+   TTS e Wake ativos compartilham a porta **10212**. Depois escolha os motores
+   na pipeline Assist. Se já configurou o TTS, recarregue essa integração após
+   ativar o STT para que o HA crie a entidade de reconhecimento.
 
 Exemplo de hostname: `<prefixo-da-loja>-arandu-stack`. O slug `arandu_stack`
 foi preservado para atualizar o app anterior sem perder as frases salvas.
@@ -31,8 +33,8 @@ A integração mantém o domínio técnico `local_nlu` para compatibilidade.
 | Módulo interno | Motor | Porta | Inicialização padrão |
 | --- | --- | --- | --- |
 | NLU | Interpretador contextual Rust | 11555 | Ativado |
-| Wake | Wyoming openWakeWord | 10400 | Desativado |
-| STT | FastConformer INT8 | 10350 | Desativado |
+| Wake | Wyoming openWakeWord | 10212 conjunta; 10400 direta | Desativado |
+| STT | FastConformer PT-BR | 10212 conjunta; 10350 direta | Desativado |
 | Decision | Multilingual E5 Small, CPU | 11557, somente loopback | Desativado |
 | LLM | Tucano 2 Qwen 0.5B Instruct, GGUF comunitário Q4_K_M | 11558, somente loopback | Desativado |
 | TTS | Piper / Pocket | 10212 | Desativado |
@@ -128,7 +130,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **0.3.3**, para HA OS/Supervised amd64.
+Versão experimental **0.3.4**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

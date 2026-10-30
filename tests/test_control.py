@@ -91,6 +91,11 @@ class Scope(unittest.IsolatedAsyncioTestCase):
                     body=await response.json()
                     self.assertEqual(body['code'],'upstream_http_422')
                     self.assertNotIn('FIXTURE_PRIVATE_TOKEN',str(body))
+                    Response.content.payload=b'{"code":"llm_output_truncated","phase":"validation","error":"FIXTURE_PRIVATE_TOKEN"}'
+                    response=await client.post('/infer',json={'action':'llm'},headers=headers)
+                    body=await response.json()
+                    self.assertEqual(body['code'],'llm_output_truncated')
+                    self.assertNotIn('FIXTURE_PRIVATE_TOKEN',str(body))
                     blocked=await client.post('/synthesize',json={'text':'x','engine':'piper'},headers={'Host':'127.0.0.1:8770'})
                     self.assertEqual(blocked.status,403)
             finally:

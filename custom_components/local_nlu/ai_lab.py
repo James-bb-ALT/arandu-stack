@@ -42,16 +42,24 @@ async def local_request(session, endpoint, path, *, payload=None, body=None, tim
                 raise ValueError("Resposta excedeu limite")
         if response.status != 200:
             code, phase = f"http_{response.status}", "connection" if response.status in (502, 503, 504) else "inference"
+            messages = {
+                "llm_output_truncated": "LLM atingiu o limite de tokens. Nenhuma ação autorizada. Nas opções do módulo LLM, use max_tokens 192 ou 256, salve e reinicie o módulo.",
+                "llm_invalid_json": "LLM retornou JSON inválido. Nenhuma ação autorizada. Confira o limite de geração e os logs do runtime.",
+                "llm_response_invalid": "LLM retornou um envelope de resposta inválido. Nenhuma ação autorizada.",
+                "llm_response_incomplete": "LLM não concluiu a resposta normalmente. Nenhuma ação autorizada.",
+            }
             try:
                 diagnostic = json.loads(raw)
                 upstream = diagnostic.get("code", "")
                 if type(upstream) is str and upstream.startswith("upstream_http_") and upstream.removeprefix("upstream_http_").isdigit():
                     code = upstream
                     phase = diagnostic.get("phase") if diagnostic.get("phase") in {"loading", "retrieval", "inference", "validation"} else "unknown"
+                elif type(upstream) is str and upstream in messages:
+                    code, phase = upstream, "validation"
             except (ValueError, AttributeError):
                 pass
             raise StageError(code, phase,
-                             f"Serviço local retornou HTTP {response.status}. Consulte os logs do módulo.")
+                             messages.get(code, f"Serviço local retornou HTTP {response.status}. Consulte os logs do módulo."))
         return (bytes(raw), dict(response.headers)) if binary else json.loads(raw)
 
 

@@ -1,3 +1,11 @@
+# 0.4.1 / HACS 0.7.1
+
+- LLM verifica `finish_reason` antes de interpretar o JSON. Geração encerrada por limite de tokens é recusada mesmo se o fragmento formar JSON válido; nenhuma ação parcial é autorizada.
+- Diagnósticos distinguem `llm_output_truncated`, `llm_invalid_json`, `llm_response_invalid` e `llm_response_incomplete`, preservando os códigos até o AI Lab sem expor a saída bruta.
+- Opção max_tokens explica o risco de limites baixos e recomenda 192 ou 256. O valor salvo continua respeitado, sem aumento silencioso nem nova tentativa automática.
+- Erros de saída não descarregam o servidor saudável, evitando uma nova carga de pesos no próximo teste. Falhas de processo/transporte continuam encerrando o servidor.
+- Prompt solicita JSON compacto. Serviço interno LLM 0.1.2; correção do adaptador exige atualizar o app, além da integração para as mensagens do Lab.
+
 # 0.4.0 / HACS 0.7.0
 
 - Toggles independentes de Decision e LLM nas opções HACS, desligados por padrão e aplicados sem recriar o agente.

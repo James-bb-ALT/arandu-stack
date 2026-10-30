@@ -16,7 +16,7 @@ llama-server é um executável externo obrigatório. Sem Decision, a seleção l
 
 HTTP loopback :11558: GET /status e POST /infer, cabeçalho X-Arandu-Lab: 1, sem Origin. Inferência: JSON {action: "llm", text: "...", catalog: {areas: [...], entities: [...]}}. Campos de entidade: entity_id, name, domain, actions, aliases, area_id, attributes.available; áreas: area_id, names. Limites: 2 MiB, 8192 entidades, 2048 áreas, texto 512 caracteres. Catálogo excedente é recusado inteiro. Cada resposta inclui fingerprint e quantidade de entidades, além de tempos e uso de memória quando disponíveis.
 
-Ação adicional: unload. Processo llama.cpp é encerrado após cada solicitação.
+Ação adicional: unload. O servidor llama.cpp é reutilizado até unload/stop ou falha de runtime. Erros de conteúdo mantêm o servidor carregado. `finish_reason=length` recusa toda a proposta; configure max_tokens 192 ou 256 para o contrato JSON e reinicie o módulo após salvar. Não há reparo de JSON, aumento automático do limite nem repetição automática de inferência.
 
 O AI Lab detecta o serviço pela porta. Pacote ausente, serviço parado ou pesos ausentes: componente indisponível, sem fallback escondido. Os demais modelos experimentais permanecem no Lab. Nenhum serviço consulta a base HA diretamente ou recebe token HA.
 

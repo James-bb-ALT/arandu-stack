@@ -13,7 +13,7 @@ from wyoming_gateway import WyomingGateway
 from discovery import announce_stack
 from logs import LogStore, SOURCES, LOGGER
 
-APP_VERSION = '0.4.0'
+APP_VERSION = '0.4.1'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""
@@ -183,13 +183,16 @@ def create_app(data_dir, local=False):
                 if response.status != 200:
                     # Preserve HTTP failure classification without forwarding raw model output.
                     phase = 'unknown'
+                    code = 'upstream_http_' + str(response.status)
                     try:
                         diagnostic = json.loads(raw)
                         if diagnostic.get('phase') in {'loading', 'retrieval', 'inference', 'validation'}:
                             phase = diagnostic['phase']
+                        if key == 'llm' and diagnostic.get('code') in {'llm_output_truncated', 'llm_invalid_json', 'llm_response_invalid', 'llm_response_incomplete'}:
+                            code = diagnostic['code']
                     except (ValueError, AttributeError):
                         pass
-                    raise web.HTTPBadGateway(text=json.dumps({'stage': key, 'code': 'upstream_http_' + str(response.status),
+                    raise web.HTTPBadGateway(text=json.dumps({'stage': key, 'code': code,
                         'phase': phase, 'message': 'Módulo recusou a solicitação; consulte os logs do módulo.'}), content_type='application/json')
                 return json.loads(raw)
     async def synthesize(request):

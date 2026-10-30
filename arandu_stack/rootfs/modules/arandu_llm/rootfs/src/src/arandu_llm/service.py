@@ -9,7 +9,7 @@ import shutil
 import sys
 import time
 from .contracts import MODELS, candidates, digest
-from .adapter import Llama
+from .adapter import Llama, LlmOutputError
 
 KEY = "tucano"
 PORT = 11558
@@ -69,6 +69,10 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
             raise web.HTTPForbidden()
         try:
             return await handler(request)
+        except LlmOutputError as exc:
+            import logging
+            logging.getLogger('arandu.llm').warning('Saída recusada: code=%s phase=validation', exc.code)
+            return web.json_response({"error": str(exc), "code": exc.code, "phase": "validation"}, status=422)
         except (ValueError, KeyError, TypeError, OSError) as exc:
             import logging
             logging.getLogger('arandu.llm').exception('Falha na solicitação de inferência/configuração')
@@ -79,7 +83,7 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
     async def status(request):
         installed = (root / KEY / "arandu-model.json").is_file() and (root / KEY / MODELS[KEY]["file"]).is_file()
         available = installed and bool(executable and Path(executable).is_file())
-        return web.json_response({"package": "arandu-llm", "version": "0.1.1", "protocol": "arandu-inference-v1",
+        return web.json_response({"package": "arandu-llm", "version": "0.1.2", "protocol": "arandu-inference-v1",
             "models": [{"id": KEY, **MODELS[KEY], "installed": installed, "available": bool(available),
                 "reason": None if available else "Pesos ou runtime ausentes"}], "busy": lock.locked(), "threads": threads})
 

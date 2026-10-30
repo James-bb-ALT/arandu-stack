@@ -98,6 +98,25 @@ Benchmark, comparação, calibração, gravação e histórico continuam dispon�
 
 ## Problemas identificados por leitura e regressões
 
+### Saída LLM incompleta ou JSON inválido (app 0.4.1 / HACS 0.7.1)
+
+O adaptador verifica `choices[0].finish_reason` antes de interpretar a ação.
+`length` produz `llm_output_truncated`: aumente **LLM → Limite da resposta**
+para 192 ou 256, salve e reinicie o módulo LLM. Limites como 64 podem cortar o
+contrato JSON. O valor configurado não é aumentado silenciosamente.
+`stop` com JSON malformado produz `llm_invalid_json`; outros encerramentos ou
+envelopes inválidos também são recusados. Nenhum fragmento é reparado ou executado.
+O servidor carregado é preservado quando o problema se limita ao conteúdo da saída.
+
+Um log com 64 tokens gerados e JSONDecodeError sugere truncamento, mas somente
+o `finish_reason` confirma esse diagnóstico. A carga e a inferência terem sido
+concluídas não validam a ação. Avisos de GPU em uma compilação CPU não demonstram
+a causa de uma falha de JSON. A implementação de
+[response_format na revisão fixada do llama.cpp](https://github.com/ggml-org/llama.cpp/blob/f1a7dea99aae1623bad10c4ce31fe220033ab7f6/tools/server/server-common.cpp)
+aceita o wrapper `json_schema.schema` já usado pelo adaptador.
+
+### Outros problemas corrigidos
+
 - LLM isolado chamava Decision e a integração validava somente IDs do ranking externo. Agora a chamada é independente e valida o ranking da recuperação retornada pelo próprio LLM.
 - O app desativava a WebUI TTS, mas o Lab tentava `/api/synthesize` na porta do painel. O módulo agora oferece síntese somente em loopback 11559; `/synthesize` no gateway faz uma ponte limitada ao WAV e exige os mesmos controles de origem do `/infer`. Nenhuma porta de síntese nova é publicada.
 - O gateway descartava o status do erro do modelo. Agora preserva `upstream_http_<status>` com estágio/fase, sem encaminhar corpos brutos que poderiam conter dados sensíveis.

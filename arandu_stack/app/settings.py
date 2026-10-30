@@ -25,7 +25,7 @@ FIELDS = {
               field('min_margin', 'Margem mínima entre candidatos', 'number', 'Decisão', min=.001, max=1, step=.001)],
  'llm': [DOWNLOAD, THREADS,
          field('context_size', 'Janela de contexto (tokens)', 'select', 'Geração', choices=[(2048,'2.048'),(4096,'4.096'),(8192,'8.192')]),
-         field('max_tokens', 'Limite da resposta (tokens)', 'number', 'Geração', min=64, max=512, step=1),
+         field('max_tokens', 'Limite da resposta (tokens)', 'number', 'Geração', min=64, max=512, step=1, help='Recomendado: 192 ou 256 para o contrato JSON completo. Limites baixos, como 64, podem interromper a resposta; nenhuma ação parcial é aceita. Reinicie o módulo após salvar.'),
          field('temperature', 'Temperatura', 'number', 'Geração', min=0, max=1, step=.05, help='Zero produz respostas mais previsíveis.')],
  'stt': [field('model_variant', 'Modelo de reconhecimento', 'select', choices=[('adapted','Arandu adaptado'),('original','FastConformer original')]),
          DOWNLOAD, THREADS,

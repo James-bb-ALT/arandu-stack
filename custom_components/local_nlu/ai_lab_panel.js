@@ -11,6 +11,7 @@ class AranduAILab extends HTMLElement {
       entry_id: this.$('entry').value || undefined, stt_endpoint: this.$('sttEndpoint').value,
       tts_endpoint: this.$('ttsEndpoint').value, tts_token: this.$('ttsToken').value,
       model: this.$('decision').value, mode: this.$('mode').value, llm_model:this.$('llm').value || 'tucano',
+      test_area_id: this.$('testArea').value,
       threshold: Number(this.$('threshold').value), min_margin: Number(this.$('margin').value), ...extra}});
   }
   async task(fn) {
@@ -49,6 +50,9 @@ class AranduAILab extends HTMLElement {
         <p id="layerReadiness" role="status">Verifique os modelos para consultar a pipeline real.</p>
         <label for="stt">STT · FastConformer existente</label><select id="stt"><option value="original">Original</option><option value="adapted">Adaptado (se instalado)</option></select>
         <label for="mode">Modo de interpretação</label><select id="mode"><option value="pipeline">Pipeline com fallbacks</option><option value="nlu">NLU Rust isolado</option><option value="decision">Decision isolado</option><option value="llm">LLM isolado + recuperação</option></select>
+        <label for="testArea">Área de origem do teste</label><select id="testArea"><option value="">Padrão da integração / sem contexto</option></select>
+        <p id="testAreaStatus" class="muted" role="status">Carregando áreas do catálogo…</p>
+        <p class="muted"><small>Texto digitado não traz um satélite. Escolha um cômodo para testar essa origem. Esta seleção não altera a pipeline real.</small></p>
         <label for="decision">Decision Engine</label><select id="decision"><option value="e5-small">Arandu Decision · E5 Small · verificar serviço</option></select>
         <label for="llm">LLM local</label><select id="llm"><option value="tucano">Arandu LLM · Tucano 2 Qwen 0.5B · verificar serviço</option></select>
         <label for="threshold">Confiança calibrada mínima (exclusiva)</label><input id="threshold" type="number" min="0.5" max="1" step="0.01" value="0.5">
@@ -103,6 +107,7 @@ class AranduAILab extends HTMLElement {
     };
     this.$('decision').onchange=()=>{this.invalidate();const policy=this.saved('policies',{})[this.$('decision').value]||{threshold:.5,margin:.08};this.$('threshold').value=policy.threshold;this.$('margin').value=policy.margin;};
     this.$('text').oninput=()=>this.invalidate();this.$('mode').onchange=()=>this.invalidate();this.$('llm').onchange=()=>this.invalidate();
+    this.$('testArea').onchange=()=>this.invalidate();
     this.$('run').onclick = () => this.task(() => this.run());
     for(const [id,kind] of [['demoAll','all'],['demoNlu','nlu'],['demoDecision','decision'],['demoLlm','llm']])this.$(id).onclick=()=>this.task(()=>this.runDemo(kind));
     this.$('demoStop').onclick=()=>{this.demoStopRequested=true;this.$('demoStop').disabled=true;this.$('demoStatus').textContent='Parada solicitada. A inferência atual termina antes de interromper a fila.';};
@@ -170,6 +175,14 @@ class AranduAILab extends HTMLElement {
     let result;
     try{result=await this.call('status');}catch(error){result={models:[],error:error.message||String(error)};}
     this.modelStatus=result.models;
+    try {
+      const catalog=await this.call('catalog'),previous=this.$('testArea').value;
+      this.$('testArea').replaceChildren();
+      const empty=document.createElement('option');empty.value='';empty.textContent='Padrão da integração / sem contexto';this.$('testArea').append(empty);
+      for(const area of catalog.areas || []){const option=document.createElement('option');option.value=area.area_id;option.textContent=area.names?.[0] || area.area_id;this.$('testArea').append(option);}
+      if([...this.$('testArea').options].some(o=>o.value===previous))this.$('testArea').value=previous;
+      this.$('testAreaStatus').textContent=(catalog.areas || []).length+' áreas disponíveis para simulação.';
+    } catch(error) { this.$('testAreaStatus').textContent='Não foi possível carregar as áreas de teste: '+(error.message || error); }
     try {
       const state=await this.call('readiness'),p=state.production_policy,d=state.decision;
       this.$('layerReadiness').textContent='Pipeline real: NLU ativo; Decision '+(p.decision?'habilitado':'desabilitado')+'; LLM '+(p.llm?'habilitado':'desabilitado')+'. Decision: '+(d.calibration_valid===true?'calibração válida; aceitação depende da confiança e margem de cada hipótese':d.calibration_valid===false?'não calibrado; somente diagnóstico':'indisponível; calibração não verificada')+'. Os testes abaixo são independentes.';
@@ -257,6 +270,7 @@ class AranduAILab extends HTMLElement {
   }
   async run(previous) {
     const input = previous || {text:this.$('text').value, model:this.$('decision').value || 'e5-small', llm_model:this.$('llm').value || 'tucano', mode:this.$('mode').value,
+      test_area_id:this.$('testArea').value,
       threshold:Number(this.$('threshold').value), min_margin:Number(this.$('margin').value)};
     this.lastInput = structuredClone(input); this.last = await this.call('run', input);
     this.last.input_origin = this.transcription?.text === input.text ? 'transcrito' : 'digitado';
@@ -268,8 +282,8 @@ class AranduAILab extends HTMLElement {
     const labels = {turn_on:'ligar',turn_off:'desligar',query:'consultar'};
     const statuses = {executed:'executado',accepted:'aceito',rejected:'rejeitado',ambiguous:'aguardando esclarecimento',uncalibrated:'não calibrado',skipped:'não necessário',error:'erro'};
     const stageNames={vad:'VAD',stt:'STT',nlu:'NLU',decision:'Decision',llm:'LLM',validation:'Validação HA',ha:'Home Assistant',response:'Resposta',tts:'TTS'};
-    const reasons = {joint_calibration_missing:'Sem calibração válida para este catálogo e modelo. A hipótese não autoriza uma ação.',insufficient_margin:'Candidatos próximos demais. É necessário esclarecer o alvo.',below_threshold:'Confiança calibrada abaixo do mínimo.',joint_calibrated:'Confiança calibrada e margem suficientes.',no_eligible_candidate:'Nenhum candidato elegível.'};
-    Object.assign(reasons,{semantic_proposal_rejected:'A proposta contém área, alvo ou ação que não pude validar. Nenhuma ação autorizada.',action_or_target_unresolved:'Dispositivo ou ação precisam de esclarecimento. Nenhuma ação autorizada.',target_context_unresolved:'Não consegui confirmar o dispositivo no cômodo solicitado ou de origem.'});
+    const reasons = {joint_calibration_missing:'Sem calibração válida para este catálogo e modelo. A hipótese não autoriza uma ação.',insufficient_margin:'Hipóteses de ação/dispositivo ficaram próximas. Isso não identifica, sozinho, qual parte está ambígua.',below_threshold:'Confiança calibrada abaixo do mínimo.',joint_calibrated:'Confiança calibrada e margem suficientes.',no_eligible_candidate:'Nenhum candidato elegível.'};
+    Object.assign(reasons,{semantic_proposal_rejected:'A proposta contém área, alvo ou ação que não pude validar. Nenhuma ação autorizada.',action_or_target_unresolved:'Dispositivo ou ação precisam de esclarecimento. Nenhuma ação autorizada.',target_context_unresolved:'Não consegui confirmar qual dispositivo corresponde ao pedido. Verifique os candidatos e a área do teste.'});
     const entities = new Map((result.catalog?.entities || []).map(r=>[r.entity_id,r]));
     const areas = new Map((result.catalog?.areas || []).map(a=>[a.area_id,a.names?.[0] || a.area_id]));
     const policy = result.production_policy;
@@ -277,6 +291,7 @@ class AranduAILab extends HTMLElement {
     const interpretation = this.$('interpretations'); interpretation.replaceChildren();
     const paragraph = (parent,title,value) => { const p=document.createElement('p'),strong=document.createElement('strong');strong.textContent=title+': ';p.append(strong,document.createTextNode(value));parent.append(p); };
     paragraph(interpretation,'Comando recebido',`${result.text} (${result.input_origin || 'digitado'})`);
+    if(result.test_context)paragraph(interpretation,'Origem do teste',result.test_context.origin_area?`${areas.get(result.test_context.origin_area) || result.test_context.origin_area} · ${result.test_context.source==='lab_selection'?'selecionada no Lab':'padrão da integração'}`:'Sem área e sem satélite. Escolha a área de origem para testar esse contexto.');
     for (const name of ['nlu','decision','llm']) {
       const stage=result.stages[name] || {}, output=stage.output || {}, p=output.proposal || output;
       const top=name==='decision'?output.ranking?.[0]:null;
@@ -288,7 +303,8 @@ class AranduAILab extends HTMLElement {
       if(name==='decision'&&output.analysis){
         const a=output.analysis,actionTop=a.action?.ranking?.[0];
         paragraph(interpretation,'Ação analisada',`${a.action?.text || 'não identificada'} · hipótese: ${labels[actionTop?.intent] || actionTop?.intent || 'nenhuma'}${Number.isFinite(actionTop?.semantic_similarity)?' · similaridade '+actionTop.semantic_similarity.toFixed(4):''}`);
-        paragraph(interpretation,'Dispositivo analisado',a.device?.name || 'ainda ambíguo ou não identificado');
+        const candidates=a.device?.candidates || [];
+        paragraph(interpretation,'Dispositivo analisado',a.device?.name || (candidates.length?'Ambíguo: '+candidates.map(c=>(c.name || c.entity_id)+' · '+(areas.get(c.area_id) || 'sem cômodo')).join('; '):'nenhum candidato inequívoco'));
         paragraph(interpretation,'Área analisada',`${areas.get(a.area?.area_id) || 'não identificada'} · ${{explicit:'dita no comando',origin:'origem da conversa',unknown:'sem contexto'}[a.area?.source] || 'sem contexto'}`);
       }
     }

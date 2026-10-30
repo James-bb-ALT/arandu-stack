@@ -141,6 +141,20 @@ nunca viram operações sem ação explícita e validação posterior. Instale a
 HACS juntos para manter o novo contrato compatível.
 
 O painel indica **teste independente**: suas seleções não alteram produção.
+Desde app 0.5.1 / HACS 0.8.1, use **Área de origem do teste** para escolher um
+cômodo do catálogo real. O teste digitado não possui satélite; sem seleção,
+somente a área padrão já configurada na integração pode fornecer contexto.
+A seleção é enviada igualmente ao NLU, Decision e LLM e aparece em `test_context`.
+Ela não muda a área padrão nem cria uma origem de satélite em produção.
+
+A análise diferencia o nome principal do aparelho de referências incidentais
+em sensores: “ventilador” não precisa empatar com “velocidade do ventilador”.
+Quando a ação proposta só é compatível com um candidato, essa capacidade também
+entra na resolução. Dois ventiladores compatíveis em cômodos diferentes continuam
+ambíguos sem contexto: o painel e a pergunta listam as alternativas. Nesse caso,
+selecione uma área de teste ou diga o cômodo no comando. O fragmento da ação
+continua separado mesmo quando o dispositivo ainda estiver ambíguo.
+
 O resumo mostra comando digitado/transcrito, entendimento de cada camada,
 hipótese Decision mesmo quando rejeitada, ação final, nome amigável, ID, cômodo,
 origem da proposta, validação e possibilidade de execução. A simulação inicial

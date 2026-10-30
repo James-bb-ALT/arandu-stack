@@ -1,3 +1,11 @@
+# 0.5.1 / HACS 0.8.1
+
+- Corrige empates entre a referência ao aparelho e uma menção incidental em sensores relacionados, como “Ventilador” e “Velocidade do ventilador”. A resolução também verifica compatibilidade com a ação proposta; dois aparelhos realmente equivalentes continuam ambíguos.
+- A separação do fragmento de ação não depende mais de resolver primeiro um dispositivo único. Os candidatos empatados aparecem no diagnóstico e na pergunta, em vez de somente “não entendi”.
+- AI Lab permite escolher Área de origem do teste. A mesma área é enviada a NLU, Decision e LLM; não cria um satélite nem altera opções de produção. A seleção invalida tokens de execução antigos e o backend confere o vínculo à área do teste.
+- Margem do ranking conjunto deixa de ser apresentada como prova de ambiguidade exclusiva do alvo. Códigos de resolução de contexto recebem explicação em português.
+- Serviços Decision/LLM 0.2.1. Atualize app 0.5.1 e HACS 0.8.1 juntos.
+
 # 0.5.0 / HACS 0.8.0
 
 - Decision apresenta análise em três partes: ação, dispositivo e área. A ação usa similaridade semântica do fragmento e proximidade lexical genérica; o dispositivo tem ranking próprio; a área mantém a precedência de origem/menção explícita. Sem mapas de substituição de palavras.

@@ -6,6 +6,14 @@ Nenhuma instalação no HA ou alteração de uma pipeline real foi feita nesta s
 
 ## Entrega
 
+Atualização app 0.5.1 / HACS 0.8.1: resolução diferencia a referência principal
+ao aparelho de menções em sensores associados e verifica a ação compatível.
+Ambiguidades reais listam os candidatos. O Lab ganhou seleção explícita da área
+de teste, compartilhada pelas três camadas e separada da política de produção.
+Validação: **193 testes Python, 4 testes JS e 27 subtestes passaram**; 68 testes
+com Rust real continuam dependentes do ambiente. O catálogo real do usuário e
+as inferências com seus pesos não foram acessados nesta sessão.
+
 Atualização app 0.5.0 / HACS 0.8.0: Decision agora publica diagnósticos separados
 de ação, dispositivo e área; o LLM recebe essa análise quando necessário.
 Hipóteses incertas são confirmadas na conversa, vinculadas à sessão e ao catálogo,

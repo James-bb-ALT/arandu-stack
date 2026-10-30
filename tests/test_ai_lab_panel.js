@@ -62,3 +62,13 @@ test('three-part analysis and hypothesis never imply permission to execute',()=>
   assert.match(text(nodes.answer),/É isso\?.*aguardando confirmação/);
   assert.match(text(nodes.finalAction),/Executaria a ação\?.*Não.*Aguarda confirmação/);
 });
+
+test('typed test without origin displays real ambiguity and offers area context',()=>{
+  const result=fixture();
+  result.test_context={origin_area:null,source:'none'};
+  result.stages.decision={status:'executed',output:{decision_status:'ambiguous',reason:'insufficient_margin',analysis:{action:{text:'leva'},device:{candidates:[{entity_id:'fan.a',name:'Ventilador A',area_id:'sala'},{entity_id:'fan.b',name:'Ventilador B'}]},area:{source:'unknown'}}}};
+  const nodes=render(result);
+  assert.match(text(nodes.interpretations),/Sem área e sem satélite/);
+  assert.match(text(nodes.interpretations),/Ambíguo: Ventilador A · Sala; Ventilador B/);
+  assert.match(text(nodes.interpretations),/qual parte está ambígua/);
+});

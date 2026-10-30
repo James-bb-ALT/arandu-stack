@@ -15,7 +15,7 @@ from custom_components.local_nlu.contextual_runtime import ContextualRuntime
 from custom_components.local_nlu.contextual_catalog import Snapshot
 from custom_components.local_nlu.intelligence import fallback, proposal_route
 from custom_components.local_nlu.ai_lab_core import digest, validate_proposal
-from custom_components.local_nlu.semantic_context import clarification, resolve_device, decomposition
+from custom_components.local_nlu.semantic_context import clarification, resolve_device, decomposition, device_candidates
 from arandu_llm.adapter import parse_completion, completion_schema
 from arandu_llm.contracts import validate_proposal as llm_validate
 from arandu_llm.service import retrieve
@@ -57,6 +57,34 @@ class ClarificationTests(unittest.TestCase):
         value=catalog()
         value['entities'][0]['attributes']['available']=False
         self.assertEqual(clarification('leva o ventilador',value,{'origin_area':'office'})['target_entities'],[])
+
+    def test_device_mention_is_not_tied_with_an_associated_sensor(self):
+        value=catalog()
+        value['entities']=value['entities'][:1]
+        value['entities'].append({'entity_id':'sensor.speed','name':'Velocidade do ventilador',
+            'aliases':[],'area_id':'office','domain':'sensor','actions':['query'],'attributes':{'available':True}})
+        self.assertEqual(resolve_device('leva o ventilador',value)['entity_id'],'fan.office')
+        self.assertEqual(resolve_device('qual a velocidade do ventilador',value)['entity_id'],'sensor.speed')
+        self.assertEqual(decomposition('leva o ventilador',value)['action']['text'],'leva')
+
+    def test_action_eligibility_disambiguates_sensor_without_hiding_real_fans(self):
+        value=catalog()
+        value['entities'].append({'entity_id':'sensor.fan','name':'Ventilador velocidade','aliases':[],
+            'area_id':'office','domain':'sensor','actions':['query'],'attributes':{'available':True}})
+        self.assertEqual(resolve_device('leva o ventilador',value,{'origin_area':'office'},action='turn_on')['entity_id'],'fan.office')
+        self.assertIsNone(resolve_device('leva o ventilador',value,action='turn_on'))
+        self.assertEqual(len(device_candidates('leva o ventilador',value,action='turn_on')),2)
+
+    def test_real_device_ambiguity_names_choices_and_still_separates_action(self):
+        value=catalog()
+        partial=clarification('leva o ventilador',value)
+        self.assertIn('mais de um dispositivo',partial['clarification_question'])
+        self.assertIn('Escritório de Jaime',partial['clarification_question'])
+        self.assertIn('Sala',partial['clarification_question'])
+        analysis=decomposition('leva o ventilador',value)
+        self.assertEqual(analysis['action']['text'],'leva')
+        self.assertEqual(len(analysis['device']['candidates']),2)
+        self.assertIsNone(analysis['device']['entity_id'])
 
     def test_model_area_name_causes_abstention_instead_of_execution_or_http_error(self):
         result=parse_completion(output(proposed('Escritório de Jaime')),catalog(),{'fan.office','fan.living'},192,
@@ -104,6 +132,50 @@ class ClarificationTests(unittest.TestCase):
 
 
 class RuntimeClarificationTests(unittest.IsolatedAsyncioTestCase):
+    async def test_lab_execution_token_cannot_move_to_another_test_area(self):
+        from custom_components.local_nlu.ai_lab import Lab
+        hass=hass_()
+        hass.auth.user.id='user'
+        entry=SimpleNamespace(entry_id='fixture',options={},runtime_data=SimpleNamespace(_client=Client(plan(operation()))))
+        hass.config_entries=SimpleNamespace(async_entries=lambda _: [entry])
+        core=SimpleNamespace(Context=lambda user_id:SimpleNamespace(user_id=user_id))
+        with patch.dict(sys.modules,{'homeassistant.core':core}):
+            lab=Lab(hass)
+            result=await lab._handle(hass.auth.user,{'command':'run','mode':'nlu','text':'liga a luz da sala','test_area_id':'area_sala'},None,'http://127.0.0.1:8770')
+            self.assertIn('execution_token',result)
+            with self.assertRaises(ValueError):
+                await lab._handle(hass.auth.user,{'command':'execute','token':result['execution_token'],'confirm':True,'test_area_id':'area_quarto'},None,'http://127.0.0.1:8770')
+        self.assertEqual(hass.services.calls,[])
+
+    async def test_lab_area_selection_is_test_only_and_shared_by_both_models(self):
+        from custom_components.local_nlu.ai_lab import Lab
+        hass=hass_()
+        hass.auth.user.id='user'
+        add(hass,'other_fan','fan.other','Ventilador',{'supported_features':49},area='area_sala')
+        original={}
+        client=Client({'version':4,'status':'no_match'})
+        entry=SimpleNamespace(entry_id='fixture',options=original,runtime_data=SimpleNamespace(_client=client))
+        hass.config_entries=SimpleNamespace(async_entries=lambda _: [entry])
+        bodies=[]
+        async def infer(session,worker,path,*,payload,**kwargs):
+            bodies.append(payload)
+            if payload['action']=='decision':
+                return {'decision_status':'ambiguous','proposal':None,'ranking':[]}
+            return {'proposal':proposed(target='fan.ventilador'),'retrieval':{'ranking':[{'entity_id':'fan.ventilador','intent':'turn_on'}]}}
+        core=SimpleNamespace(Context=lambda user_id:SimpleNamespace(user_id=user_id))
+        with patch.dict(sys.modules,{'homeassistant.core':core}),patch('custom_components.local_nlu.ai_lab.local_request',infer):
+            lab=Lab(hass)
+            result=await lab._handle(hass.auth.user,{'command':'run','mode':'pipeline','text':'leva o ventilador','test_area_id':'area_quarto'},None,'http://127.0.0.1:8770')
+            self.assertEqual(client.requests[0]['origin_area'],'area_quarto')
+            self.assertTrue(all(body['context']['origin_area']=='area_quarto' for body in bodies))
+            self.assertEqual(result['test_context'],{'origin_area':'area_quarto','source':'lab_selection'})
+            self.assertTrue(result['confirmation_required'])
+            self.assertNotIn('execution_token',result)
+            self.assertEqual(entry.options,{})
+            self.assertEqual(hass.services.calls,[])
+            with self.assertRaisesRegex(ValueError,'área de teste'):
+                await lab._handle(hass.auth.user,{'command':'run','text':'liga ventilador','test_area_id':'inexistent'},None,'http://127.0.0.1:8770')
+
     async def test_lab_rejected_guess_becomes_a_question_without_execution(self):
         from custom_components.local_nlu.ai_lab import Lab
         hass=hass_()

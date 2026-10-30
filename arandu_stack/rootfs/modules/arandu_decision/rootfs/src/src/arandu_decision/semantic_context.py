@@ -29,7 +29,7 @@ def understood_action(text):
     return matches[0] if len(matches) == 1 else None
 
 
-def resolve_device(text, catalog, context=None, allowed=None):
+def device_candidates(text, catalog, context=None, allowed=None, action=None):
     """Explicit area wins; otherwise use registered origin, never a model area."""
     query = normalized(text)
     words = set(query.split()) - STOP
@@ -38,17 +38,25 @@ def resolve_device(text, catalog, context=None, allowed=None):
         normalized(name) and (" " + normalized(name) + " ") in (" " + query + " ")
         for name in area["names"])}
     if len(mentioned) > 1:
-        return None
+        return []
     origin = (context or {}).get("origin_area")
     area = next(iter(mentioned)) if mentioned else origin if origin in areas else None
     # An explicit spatial phrase outside known areas must not silently use origin.
-    if not mentioned and re.search(r"\b(?:no|na|nos|nas|em|do|da|dos|das)\s+", text.casefold()):
-        return None
+    if not mentioned:
+        qualifiers = re.findall(r"\b(?:no|na|nos|nas|em|do|da|dos|das)\s+\w+", query)
+        if qualifiers:
+            labels = [normalized(label) for item in catalog["entities"]
+                      for label in [item["name"], *item.get("aliases", [])]
+                      if normalized(label) and (" " + normalized(label) + " ") in (" " + query + " ")]
+            if any(not any((" " + qualifier + " ") in (" " + label + " ") for label in labels) for qualifier in qualifiers):
+                return []
     scores = {}
     for row in catalog["entities"]:
         if allowed is not None and row["entity_id"] not in allowed:
             continue
         if row.get("attributes", {}).get("available") is not True:
+            continue
+        if action is not None and action not in row["actions"]:
             continue
         if area is not None and row.get("area_id") != area:
             continue
@@ -56,17 +64,37 @@ def resolve_device(text, catalog, context=None, allowed=None):
         names = set(normalized(" ".join([row["name"], *row.get("aliases", [])])).split())
         evidence = words & (names - room_words - STOP)
         if evidence:
-            scores[row["entity_id"]] = (len(evidence), row)
+            heads = [next((word for word in normalized(label).split() if word not in STOP and word not in room_words), None)
+                     for label in [row["name"], *row.get("aliases", [])]]
+            # A device noun matches the device itself before an incidental mention
+            # in "velocidade do ventilador". Two genuine fans remain tied.
+            score = (len(evidence), int(any(head in words for head in heads if head)))
+            scores[row["entity_id"]] = (score, row)
     if not scores:
-        return None
+        return []
     best = max(score for score, _ in scores.values())
     winners = [row for score, row in scores.values() if score == best]
-    return winners[0] if len(winners) == 1 else None
+    return sorted(winners, key=lambda row: row["entity_id"])
+
+
+def resolve_device(text, catalog, context=None, allowed=None, action=None):
+    rows = device_candidates(text, catalog, context, allowed, action)
+    return rows[0] if len(rows) == 1 else None
 
 
 def clarification(text, catalog, context=None, allowed=None, reason="not_understood"):
     row = resolve_device(text, catalog, context, allowed)
     question = "Não entendi o que você deseja. Pode repetir dizendo o dispositivo e a ação?"
+    matches = device_candidates(text, catalog, context, allowed)
+    if len(matches) > 1:
+        labels = []
+        for item in matches[:4]:
+            area = next((a for a in catalog["areas"] if a["area_id"] == item.get("area_id")), None)
+            label = item["name"]
+            if area and area["names"] and normalized(area["names"][0]) not in normalized(label):
+                label += " (" + area["names"][0] + ")"
+            labels.append(label)
+        question = "Encontrei mais de um dispositivo: " + "; ".join(labels) + ". De qual você está falando?"
     if row:
         label = row["name"]
         area = next((a for a in catalog["areas"] if a["area_id"] == row.get("area_id")), None)
@@ -102,13 +130,18 @@ def decomposition(text, catalog, context=None):
         excluded.update(normalized(" ".join([row["name"], *row.get("aliases", [])])).split())
     if area_id:
         excluded.update(normalized(" ".join(areas[area_id]["names"])).split())
+    matches = device_candidates(text, catalog, context)
+    verbs = set().union(*ACTIONS.values())
+    for candidate in matches:
+        excluded.update(set(normalized(" ".join([candidate["name"], *candidate.get("aliases", [])])).split()) - verbs)
     action_words = [word for word in query.split() if word not in excluded]
     ranking = [{"intent": action, "lexical_similarity": max(
         (SequenceMatcher(None, word, verb).ratio() for word in action_words for verb in verbs),
         default=0.0)} for action, verbs in ACTIONS.items()]
     ranking.sort(key=lambda item: (-item["lexical_similarity"], item["intent"]))
     return {"action": {"text": " ".join(action_words), "exact": understood_action(text), "ranking": ranking},
-            "device": {"entity_id": row["entity_id"] if row else None, "name": row["name"] if row else None, "unambiguous": row is not None},
+            "device": {"entity_id": row["entity_id"] if row else None, "name": row["name"] if row else None, "unambiguous": row is not None,
+                       "candidates": [{"entity_id": item["entity_id"], "name": item["name"], "area_id": item.get("area_id")} for item in matches[:8]]},
             "area": {"area_id": area_id, "source": "explicit" if explicit else "origin" if area_id else "unknown"},
             "note": "Similaridades são hipóteses, não probabilidades nem autorização."}
 

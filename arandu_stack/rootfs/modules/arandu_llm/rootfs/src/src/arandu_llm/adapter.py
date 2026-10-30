@@ -50,7 +50,7 @@ def parse_completion(output, catalog, ids, max_tokens, *, text=None, context=Non
         if (proposal["intent"] in (None, "conversation") or not hypothesis_allowed(text)
                 or (known is not None and known != proposal["intent"])):
             return clarification(text, catalog, context, ids, reason="action_or_target_unresolved")
-        row = resolve_device(text, catalog, context, ids)
+        row = resolve_device(text, catalog, context, ids, action=proposal["intent"])
         if row is None or proposal["target_entities"] != [row["entity_id"]]:
             return clarification(text, catalog, context, ids, reason="target_context_unresolved")
     return proposal
@@ -156,7 +156,7 @@ class Llama:
                     pass
                 confirmation = result["intent"] in ACTION_TEXT and (understood_action(payload["text"]) is None or result["requires_clarification"])
                 if confirmation:
-                    row = resolve_device(payload["text"], catalog, payload.get("context"), ids)
+                    row = resolve_device(payload["text"], catalog, payload.get("context"), ids, action=result["intent"])
                     result = {**result, "requires_clarification": True,
                               "clarification_question": confirmation_question(result["intent"], row, catalog)}
                 return {"proposal": result, "confirmation_required": confirmation, "load_ms": load_ms, "inference_ms": (time.perf_counter() - before) * 1000, "model": key, "cpu_ms": cpu_ms, "memory_bytes": memory}

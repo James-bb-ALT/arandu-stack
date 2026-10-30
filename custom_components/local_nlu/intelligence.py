@@ -61,7 +61,7 @@ def grounded_target(text, proposal, catalog, context=None):
         return False
     if len(proposal["target_entities"]) != 1:
         return False
-    row = resolve_device(text, catalog, context)
+    row = resolve_device(text, catalog, context, action=proposal["intent"])
     return (row is not None and row["entity_id"] == proposal["target_entities"][0]
             and proposal["intent"] in row["actions"])
 

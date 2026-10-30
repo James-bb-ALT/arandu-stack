@@ -169,7 +169,7 @@ class Lab:
                 return {"production_policy": policy, "decision": readiness}
             if command == "execute":
                 saved = self.proposals.pop(payload.get("token"), None)
-                if not saved or saved["user"] != user.id or saved["entry"] != entry.entry_id or saved["catalog"] != digest(catalog) or saved["options"] != digest(options):
+                if not saved or saved["user"] != user.id or saved["entry"] != entry.entry_id or saved["catalog"] != digest(catalog) or saved["options"] != digest(options) or saved.get("test_area_id", "") != payload.get("test_area_id", ""):
                     raise ValueError("Proposta expirada, alterada ou já utilizada; processe novamente")
                 if payload.get("confirm") is not True:
                     raise ValueError("Confirmação explícita obrigatória")
@@ -184,17 +184,22 @@ class Lab:
                 return await local_request(session, worker, "/infer", payload=body, timeout=180)
             if command not in ("run", "compare"):
                 raise ValueError("Comando desconhecido")
+            test_area_id = payload.get("test_area_id", "")
+            if type(test_area_id) is not str or (test_area_id and test_area_id not in {a["area_id"] for a in catalog["areas"]}):
+                raise ValueError("Escolha uma área de teste existente no catálogo")
+            selected_area = test_area_id or origin_area(self.hass, SimpleNamespace(device_id=None, satellite_id=None), options)
+            test_context = {"origin_area": selected_area, "source": "lab_selection" if test_area_id else "integration_default" if selected_area else "none"}
             settings(payload)
             await runtime._send(snapshot)
 
             async def nlu(text):
                 raw = await runtime.client.async_interpret_v4({"version": 4, "generation": catalog["generation"], "text": text,
-                    "origin_area": origin_area(self.hass, SimpleNamespace(device_id=None, satellite_id=None), options), "origin_area_source": "default" if options.get("default_area") else "unknown", "last_area": None, "last_targets": [], "pending": None})
+                    "origin_area": selected_area, "origin_area_source": "default" if selected_area else "unknown", "last_area": None, "last_targets": [], "pending": None})
                 parse(raw)
                 return raw
 
             async def run(text, model, mode):
-                semantic_context = {"origin_area": origin_area(self.hass, SimpleNamespace(device_id=None, satellite_id=None), options)}
+                semantic_context = {"origin_area": selected_area}
                 async def decision(data):
                     threshold, margin = settings(payload)
                     response = await local_request(session, worker, "/infer", payload={**data, "action": "decision", "catalog": catalog, "context": semantic_context,
@@ -217,7 +222,7 @@ class Lab:
                     return {**raw, "proposal": proposal}
                 result = await pipeline(text, nlu, decision, llm, mode=mode, timeout=95)
                 result.update(dry_run=True, catalog_generation=catalog["generation"], model=model,
-                              catalog=catalog, test_mode="independent",
+                              catalog=catalog, test_mode="independent", test_context=test_context,
                               production_policy={"nlu": True, "decision": options.get("decision_enabled", False), "llm": options.get("llm_enabled", False)})
                 proposal = result["proposal"]
                 if proposal and result["source"] != "nlu":
@@ -295,7 +300,7 @@ class Lab:
                 if len(self.proposals) >= 32:
                     self.proposals.pop(next(iter(self.proposals)))
                 self.proposals[token] = {"user": user.id, "entry": entry.entry_id, "catalog": digest(catalog), "options": digest(options),
-                                         "operations": operations, "text": result["text"], "expires": time.monotonic() + 30}
+                                         "operations": operations, "text": result["text"], "test_area_id": test_area_id, "expires": time.monotonic() + 30}
                 result["execution_token"] = token
             return result
         finally:

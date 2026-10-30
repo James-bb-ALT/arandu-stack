@@ -1,0 +1,13 @@
+# Grammar vocabulary, without preferential source or frequency bias.
+a o as os um uma uns umas de da do das dos em na no nas nos
+para pra pro pros pras por pelo pela pelos pelas ao aos à às
+e ou mas nem não sim se que porque pois quando enquanto como
+com sem entre sobre sob até após antes durante contra desde
+eu tu você vocês ele ela eles elas nós vós me te lhe lhes nos vos
+meu minha meus minhas seu sua seus suas nosso nossa nossos nossas
+esse essa esses essas este esta estes estas isso isto aquele aquela aquilo
+quem qual quais quanto quanta quantos quantas onde aqui aí ali lá daqui daí
+é são era eram foi foram ser está estão estava estavam tá tô tou tava tão
+tem têm tinha tinham ter tenho temos vou vai vão vamos ir pode posso podemos
+já ainda também só bem muito mais menos favor porfavor mim si cada tudo nada
+algum alguma alguns algumas nenhum nenhuma outro outra outros outras ambos

@@ -22,6 +22,23 @@ NLU: porta 11555. Painel: 8099. Wyoming STT: 10350; TTS: 10212; Wake: 10400.
 Use o mesmo hostname do app em todas as integrações. Decision e LLM atendem
 somente em loopback e são acessados pelo gateway do painel.
 
+## Selecionar STT e TTS no Assist
+
+1. Ative os módulos desejados e aguarde o log **Wyoming anunciado ao Home Assistant** no TTS.
+2. Abra **Configurações → Dispositivos e serviços** e configure o TTS Wyoming descoberto. Para STT e Wake, adicione **Wyoming Protocol** usando o endereço mostrado nos logs de cada módulo.
+3. Edite seu assistente e selecione o reconhecimento STT e a voz TTS Arandu. O satélite deve usar esse assistente.
+
+Um processo rodando ainda não é uma integração configurada. O anúncio só ocorre
+após o serviço responder ao protocolo Wyoming, incluindo o carregamento inicial.
+Se não houver descoberta, adicione **Wyoming Protocol** manualmente com o hostname
+informado no log e porta 10212 para TTS, 10350 para STT ou 10400 para Wake.
+No HA OS, essa conexão usa a rede interna; não é necessário publicar portas no host.
+Fora do Supervisor, configure endereço e portas acessíveis manualmente.
+O Supervisor mantém um anúncio por app/serviço; o Stack reserva esse anúncio ao
+TTS para que os outros módulos não substituam seu endereço. Se a descoberta
+Wyoming já estiver configurada com a porta STT, adicione o TTS manualmente na
+porta 10212; preserve a integração STT existente.
+
 As vozes Piper Arandu e Faber Medium já estão incluídas. Arandu é o padrão e pode
 ser trocada pelo dropdown do TTS, sem download. Outros modelos podem exigir
 auto_download habilitado para baixar seus pesos. O NLU não exige modelo externo.

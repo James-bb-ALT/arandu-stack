@@ -1,0 +1,22 @@
+# Explicit supplemental coverage, not a frequency corpus or generated validation data.
+liga aí o ventilador
+bota o ventilador pra funcionar
+acende a luz daqui
+tá fazendo quantos graus no quarto
+onde tá meu telefone
+bota meu Spotify pra tocar
+destranca a porta
+destranque a porta
+tranca a porta
+tranque a porta
+Wi-Fi
+quartos banheiros escritórios cozinhas salas corredores garagens varandas
+ventiladores televisões torneiras cafeteiras sensores termômetros termostatos
+tomadas aparelhos portas janelas fechaduras cortinas persianas lâmpadas luminárias
+acesos acesas apagados apagadas ligados ligadas desligados desligadas
+°C °F graus celsius fahrenheit porcento porcentagem
+kg g km m cm mm l ml litros watts W kW kWh Hz MHz GHz segundos minutos horas
+# Small general-language supplement; closed vocabulary remains finite.
+hoje estudei história brasileira
+amanhã vou ler um livro
+gosto de música e cinema

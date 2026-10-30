@@ -1,3 +1,12 @@
+# 0.3.3
+
+- Inclui os seis datasets obrigatórios do corretor lexical STT e o manifesto original.
+- Construção da imagem falha se algum dataset obrigatório estiver ausente ou vazio.
+- Controlador anuncia TTS ao Supervisor após resposta Wyoming Describe válida.
+- STT e Wake mostram conexão manual nos logs, sem sobrescrever o único anúncio Wyoming permitido por app.
+- Descoberta tem nova tentativa automática e diagnóstico nos logs do módulo, sem passar credenciais aos motores.
+- Configure os serviços descobertos em Dispositivos e serviços antes de selecioná-los no Assist.
+
 # 0.3.2
 
 - TTS: remove o argumento interno do dispatcher antes do parser do servidor Wyoming.

@@ -1,0 +1,570 @@
+﻿id,nome_canonico,forma_normalizada,sexo,tipo_nome,componentes,forma_sem_acento,variantes_graficas,variantes_componentes,apelidos_comuns,pais,uso_arandu
+1,Adalberto,adalberto,masculino,simples,Adalberto,Adalberto,,,,Brasil,vocabulário ASR / contexto doméstico
+2,Ademir,ademir,masculino,simples,Ademir,Ademir,,,,Brasil,vocabulário ASR / contexto doméstico
+3,Adilson,adilson,masculino,simples,Adilson,Adilson,,,,Brasil,vocabulário ASR / contexto doméstico
+4,Adolfo,adolfo,masculino,simples,Adolfo,Adolfo,,,,Brasil,vocabulário ASR / contexto doméstico
+5,Adriana,adriana,feminino,simples,Adriana,Adriana,,,,Brasil,vocabulário ASR / contexto doméstico
+6,Adriano,adriano,masculino,simples,Adriano,Adriano,,,,Brasil,vocabulário ASR / contexto doméstico
+7,Agatha,agatha,feminino,simples,Agatha,Agatha,,,,Brasil,vocabulário ASR / contexto doméstico
+8,Ailton,ailton,masculino,simples,Ailton,Ailton,,,,Brasil,vocabulário ASR / contexto doméstico
+9,Airton,airton,masculino,simples,Airton,Airton,,,,Brasil,vocabulário ASR / contexto doméstico
+10,Alan,alan,masculino,simples,Alan,Alan,,,,Brasil,vocabulário ASR / contexto doméstico
+11,Alana,alana,feminino,simples,Alana,Alana,,,,Brasil,vocabulário ASR / contexto doméstico
+12,Alberto,alberto,masculino,simples,Alberto,Alberto,,,,Brasil,vocabulário ASR / contexto doméstico
+13,Alcides,alcides,masculino,simples,Alcides,Alcides,,,,Brasil,vocabulário ASR / contexto doméstico
+14,Alessandra,alessandra,feminino,simples,Alessandra,Alessandra,,,Alê,Brasil,vocabulário ASR / contexto doméstico
+15,Alex,alex,masculino,simples,Alex,Alex,,,,Brasil,vocabulário ASR / contexto doméstico
+16,Alexandre,alexandre,masculino,simples,Alexandre,Alexandre,,,Alex|Xande,Brasil,vocabulário ASR / contexto doméstico
+17,Alexandro,alexandro,masculino,simples,Alexandro,Alexandro,,,,Brasil,vocabulário ASR / contexto doméstico
+18,Alexia,alexia,feminino,simples,Alexia,Alexia,,,,Brasil,vocabulário ASR / contexto doméstico
+19,Alice,alice,feminino,simples,Alice,Alice,,,,Brasil,vocabulário ASR / contexto doméstico
+20,Aline,aline,feminino,simples,Aline,Aline,,,,Brasil,vocabulário ASR / contexto doméstico
+21,Allana,allana,feminino,simples,Allana,Allana,,,,Brasil,vocabulário ASR / contexto doméstico
+22,Alícia,alicia,feminino,simples,Alícia,Alicia,Alicia,,,Brasil,vocabulário ASR / contexto doméstico
+23,Amanda,amanda,feminino,simples,Amanda,Amanda,,,,Brasil,vocabulário ASR / contexto doméstico
+24,Amélia,amelia,feminino,simples,Amélia,Amelia,Amelia,,,Brasil,vocabulário ASR / contexto doméstico
+25,Ana,ana,feminino,simples,Ana,Ana,,,,Brasil,vocabulário ASR / contexto doméstico
+26,Ana Beatriz,ana beatriz,feminino,composto,Ana|Beatriz,Ana Beatriz,,,,Brasil,vocabulário ASR / contexto doméstico
+27,Ana Carolina,ana carolina,feminino,composto,Ana|Carolina,Ana Carolina,,,,Brasil,vocabulário ASR / contexto doméstico
+28,Ana Cecília,ana cecilia,feminino,composto,Ana|Cecília,Ana Cecilia,Ana Cecilia,,,Brasil,vocabulário ASR / contexto doméstico
+29,Ana Clara,ana clara,feminino,composto,Ana|Clara,Ana Clara,,,,Brasil,vocabulário ASR / contexto doméstico
+30,Ana Gabriela,ana gabriela,feminino,composto,Ana|Gabriela,Ana Gabriela,,,,Brasil,vocabulário ASR / contexto doméstico
+31,Ana Julia,ana julia,feminino,composto,Ana|Julia,Ana Julia,,,,Brasil,vocabulário ASR / contexto doméstico
+32,Ana Júlia,ana julia,feminino,composto,Ana|Júlia,Ana Julia,Ana Julia,Julia,,Brasil,vocabulário ASR / contexto doméstico
+33,Ana Laura,ana laura,feminino,composto,Ana|Laura,Ana Laura,,,,Brasil,vocabulário ASR / contexto doméstico
+34,Ana Liz,ana liz,feminino,composto,Ana|Liz,Ana Liz,,,,Brasil,vocabulário ASR / contexto doméstico
+35,Ana Luiza,ana luiza,feminino,composto,Ana|Luiza,Ana Luiza,,Luíza|Luísa,,Brasil,vocabulário ASR / contexto doméstico
+36,Ana Luísa,ana luisa,feminino,composto,Ana|Luísa,Ana Luisa,Ana Luisa,Luisa|Luiza,,Brasil,vocabulário ASR / contexto doméstico
+37,Ana Lívia,ana livia,feminino,composto,Ana|Lívia,Ana Livia,Ana Livia,,,Brasil,vocabulário ASR / contexto doméstico
+38,Ana Maria,ana maria,feminino,composto,Ana|Maria,Ana Maria,,,,Brasil,vocabulário ASR / contexto doméstico
+39,Ana Paula,ana paula,feminino,composto,Ana|Paula,Ana Paula,,,,Brasil,vocabulário ASR / contexto doméstico
+40,Ana Sophia,ana sophia,feminino,composto,Ana|Sophia,Ana Sophia,,Sofia,,Brasil,vocabulário ASR / contexto doméstico
+41,Ana Vitória,ana vitoria,feminino,composto,Ana|Vitória,Ana Vitoria,Ana Vitoria,Vitoria,,Brasil,vocabulário ASR / contexto doméstico
+42,Anderson,anderson,masculino,simples,Anderson,Anderson,Andersson,,,Brasil,vocabulário ASR / contexto doméstico
+43,Andersson,andersson,masculino,simples,Andersson,Andersson,,,,Brasil,vocabulário ASR / contexto doméstico
+44,André,andre,masculino,simples,André,Andre,Andre,,,Brasil,vocabulário ASR / contexto doméstico
+45,Andréa,andrea,feminino,simples,Andréa,Andrea,Andrea,,,Brasil,vocabulário ASR / contexto doméstico
+46,Angela,angela,feminino,simples,Angela,Angela,,,,Brasil,vocabulário ASR / contexto doméstico
+47,Angelo,angelo,masculino,simples,Angelo,Angelo,,,,Brasil,vocabulário ASR / contexto doméstico
+48,Angélica,angelica,feminino,simples,Angélica,Angelica,Angelica,,,Brasil,vocabulário ASR / contexto doméstico
+49,Anna Liz,anna liz,feminino,composto,Anna|Liz,Anna Liz,,,,Brasil,vocabulário ASR / contexto doméstico
+50,Anthony,anthony,masculino,simples,Anthony,Anthony,,,,Brasil,vocabulário ASR / contexto doméstico
+51,Anthony Gabriel,anthony gabriel,masculino,composto,Anthony|Gabriel,Anthony Gabriel,,,,Brasil,vocabulário ASR / contexto doméstico
+52,Antonella,antonella,feminino,simples,Antonella,Antonella,,,,Brasil,vocabulário ASR / contexto doméstico
+53,Antonio,antonio,masculino,simples,Antonio,Antonio,,,,Brasil,vocabulário ASR / contexto doméstico
+54,Antony,antony,masculino,simples,Antony,Antony,,,,Brasil,vocabulário ASR / contexto doméstico
+55,Antônia,antonia,feminino,simples,Antônia,Antonia,Antonia,,,Brasil,vocabulário ASR / contexto doméstico
+56,Antônio,antonio,masculino,simples,Antônio,Antonio,Antonio,,Tonho|Toni,Brasil,vocabulário ASR / contexto doméstico
+57,Aparecida,aparecida,feminino,simples,Aparecida,Aparecida,,,,Brasil,vocabulário ASR / contexto doméstico
+58,Apollo,apollo,masculino,simples,Apollo,Apollo,,,,Brasil,vocabulário ASR / contexto doméstico
+59,Ari,ari,masculino,simples,Ari,Ari,,,,Brasil,vocabulário ASR / contexto doméstico
+60,Ariane,ariane,feminino,simples,Ariane,Ariane,,,,Brasil,vocabulário ASR / contexto doméstico
+61,Armando,armando,masculino,simples,Armando,Armando,,,,Brasil,vocabulário ASR / contexto doméstico
+62,Arnaldo,arnaldo,masculino,simples,Arnaldo,Arnaldo,,,,Brasil,vocabulário ASR / contexto doméstico
+63,Arthur,arthur,masculino,simples,Arthur,Arthur,,,,Brasil,vocabulário ASR / contexto doméstico
+64,Arthur Gabriel,arthur gabriel,masculino,composto,Arthur|Gabriel,Arthur Gabriel,,,,Brasil,vocabulário ASR / contexto doméstico
+65,Arthur Miguel,arthur miguel,masculino,composto,Arthur|Miguel,Arthur Miguel,,,,Brasil,vocabulário ASR / contexto doméstico
+66,Asafe,asafe,masculino,simples,Asafe,Asafe,,,,Brasil,vocabulário ASR / contexto doméstico
+67,Augusto,augusto,masculino,simples,Augusto,Augusto,,,,Brasil,vocabulário ASR / contexto doméstico
+68,Aurora,aurora,feminino,simples,Aurora,Aurora,,,,Brasil,vocabulário ASR / contexto doméstico
+69,Ayla,ayla,feminino,simples,Ayla,Ayla,,,,Brasil,vocabulário ASR / contexto doméstico
+70,Aylla,aylla,feminino,simples,Aylla,Aylla,,,,Brasil,vocabulário ASR / contexto doméstico
+71,Beatriz,beatriz,feminino,simples,Beatriz,Beatriz,,,Bia,Brasil,vocabulário ASR / contexto doméstico
+72,Bella,bella,feminino,simples,Bella,Bella,,,,Brasil,vocabulário ASR / contexto doméstico
+73,Benedita,benedita,feminino,simples,Benedita,Benedita,,,,Brasil,vocabulário ASR / contexto doméstico
+74,Benedito,benedito,masculino,simples,Benedito,Benedito,,,,Brasil,vocabulário ASR / contexto doméstico
+75,Benicio,benicio,masculino,simples,Benicio,Benicio,,,,Brasil,vocabulário ASR / contexto doméstico
+76,Benjamim,benjamim,masculino,simples,Benjamim,Benjamim,,,,Brasil,vocabulário ASR / contexto doméstico
+77,Benjamin,benjamin,masculino,simples,Benjamin,Benjamin,,,,Brasil,vocabulário ASR / contexto doméstico
+78,Bento,bento,masculino,simples,Bento,Bento,,,,Brasil,vocabulário ASR / contexto doméstico
+79,Benício,benicio,masculino,simples,Benício,Benicio,Benicio,,,Brasil,vocabulário ASR / contexto doméstico
+80,Bernardo,bernardo,masculino,simples,Bernardo,Bernardo,,,Bê|Bêrn,Brasil,vocabulário ASR / contexto doméstico
+81,Bianca,bianca,feminino,simples,Bianca,Bianca,,,,Brasil,vocabulário ASR / contexto doméstico
+82,Brayan,brayan,masculino,simples,Brayan,Brayan,,,,Brasil,vocabulário ASR / contexto doméstico
+83,Brenda,brenda,feminino,simples,Brenda,Brenda,,,,Brasil,vocabulário ASR / contexto doméstico
+84,Breno,breno,masculino,simples,Breno,Breno,,,,Brasil,vocabulário ASR / contexto doméstico
+85,Bruna,bruna,feminino,simples,Bruna,Bruna,,,Bru,Brasil,vocabulário ASR / contexto doméstico
+86,Bruno,bruno,masculino,simples,Bruno,Bruno,,,Bru,Brasil,vocabulário ASR / contexto doméstico
+87,Bruno Henrique,bruno henrique,masculino,composto,Bruno|Henrique,Bruno Henrique,,,Bru,Brasil,vocabulário ASR / contexto doméstico
+88,Bryan,bryan,masculino,simples,Bryan,Bryan,,,,Brasil,vocabulário ASR / contexto doméstico
+89,Bárbara,barbara,feminino,simples,Bárbara,Barbara,Barbara,,,Brasil,vocabulário ASR / contexto doméstico
+90,Caetano,caetano,masculino,simples,Caetano,Caetano,,,,Brasil,vocabulário ASR / contexto doméstico
+91,Caio,caio,masculino,simples,Caio,Caio,,,,Brasil,vocabulário ASR / contexto doméstico
+92,Caleb,caleb,masculino,simples,Caleb,Caleb,,,,Brasil,vocabulário ASR / contexto doméstico
+93,Calebe,calebe,masculino,simples,Calebe,Calebe,,,,Brasil,vocabulário ASR / contexto doméstico
+94,Camila,camila,feminino,simples,Camila,Camila,,,Cami|Mila,Brasil,vocabulário ASR / contexto doméstico
+95,Carla,carla,feminino,simples,Carla,Carla,,,,Brasil,vocabulário ASR / contexto doméstico
+96,Carlos Alberto,carlos alberto,masculino,composto,Carlos|Alberto,Carlos Alberto,,,Cacá,Brasil,vocabulário ASR / contexto doméstico
+97,Carlos Eduardo,carlos eduardo,masculino,composto,Carlos|Eduardo,Carlos Eduardo,,,Cacá,Brasil,vocabulário ASR / contexto doméstico
+98,Carmem,carmem,feminino,simples,Carmem,Carmem,,,,Brasil,vocabulário ASR / contexto doméstico
+99,Carmen,carmen,feminino,simples,Carmen,Carmen,,,,Brasil,vocabulário ASR / contexto doméstico
+100,Carolina,carolina,feminino,simples,Carolina,Carolina,,,Carol,Brasil,vocabulário ASR / contexto doméstico
+101,Caroline,caroline,feminino,simples,Caroline,Caroline,,,,Brasil,vocabulário ASR / contexto doméstico
+102,Catarina,catarina,feminino,simples,Catarina,Catarina,,,,Brasil,vocabulário ASR / contexto doméstico
+103,Caua,caua,masculino,simples,Caua,Caua,,,,Brasil,vocabulário ASR / contexto doméstico
+104,Cauã,caua,masculino,simples,Cauã,Caua,Caua,,,Brasil,vocabulário ASR / contexto doméstico
+105,Cauê,caue,masculino,simples,Cauê,Caue,Caue,,,Brasil,vocabulário ASR / contexto doméstico
+106,Cecilia,cecilia,feminino,simples,Cecilia,Cecilia,,,,Brasil,vocabulário ASR / contexto doméstico
+107,Cecília,cecilia,feminino,simples,Cecília,Cecilia,Cecilia,,,Brasil,vocabulário ASR / contexto doméstico
+108,Cesar,cesar,masculino,simples,Cesar,Cesar,,,,Brasil,vocabulário ASR / contexto doméstico
+109,Christiane,christiane,feminino,simples,Christiane,Christiane,,,,Brasil,vocabulário ASR / contexto doméstico
+110,Christiano,christiano,masculino,simples,Christiano,Christiano,,,,Brasil,vocabulário ASR / contexto doméstico
+111,Christina,christina,feminino,simples,Christina,Christina,,,,Brasil,vocabulário ASR / contexto doméstico
+112,Cicero,cicero,masculino,simples,Cicero,Cicero,,,,Brasil,vocabulário ASR / contexto doméstico
+113,Clara,clara,feminino,simples,Clara,Clara,,,,Brasil,vocabulário ASR / contexto doméstico
+114,Clarice,clarice,feminino,simples,Clarice,Clarice,,,,Brasil,vocabulário ASR / contexto doméstico
+115,Claudio,claudio,masculino,simples,Claudio,Claudio,,,,Brasil,vocabulário ASR / contexto doméstico
+116,Cleber,cleber,masculino,simples,Cleber,Cleber,,,,Brasil,vocabulário ASR / contexto doméstico
+117,Cláudia,claudia,feminino,simples,Cláudia,Claudia,Claudia,,Clau,Brasil,vocabulário ASR / contexto doméstico
+118,Cláudio,claudio,masculino,simples,Cláudio,Claudio,Claudio,,,Brasil,vocabulário ASR / contexto doméstico
+119,Cléber,cleber,masculino,simples,Cléber,Cleber,Cleber,,,Brasil,vocabulário ASR / contexto doméstico
+120,Cristiane,cristiane,feminino,simples,Cristiane,Cristiane,Christiane,,Cris,Brasil,vocabulário ASR / contexto doméstico
+121,Cristiano,cristiano,masculino,simples,Cristiano,Cristiano,Christiano,,,Brasil,vocabulário ASR / contexto doméstico
+122,Cristina,cristina,feminino,simples,Cristina,Cristina,Christina,,Cris,Brasil,vocabulário ASR / contexto doméstico
+123,Cássia,cassia,feminino,simples,Cássia,Cassia,Cassia,,,Brasil,vocabulário ASR / contexto doméstico
+124,Célia,celia,feminino,simples,Célia,Celia,Celia,,,Brasil,vocabulário ASR / contexto doméstico
+125,César,cesar,masculino,simples,César,Cesar,Cesar,,,Brasil,vocabulário ASR / contexto doméstico
+126,Cícero,cicero,masculino,simples,Cícero,Cicero,Cicero,,,Brasil,vocabulário ASR / contexto doméstico
+127,Daiane,daiane,feminino,simples,Daiane,Daiane,,,,Brasil,vocabulário ASR / contexto doméstico
+128,Dalva,dalva,feminino,simples,Dalva,Dalva,,,,Brasil,vocabulário ASR / contexto doméstico
+129,Damião,damiao,masculino,simples,Damião,Damiao,Damiao,,,Brasil,vocabulário ASR / contexto doméstico
+130,Daniel,daniel,masculino,simples,Daniel,Daniel,,,Dani,Brasil,vocabulário ASR / contexto doméstico
+131,Daniela,daniela,feminino,simples,Daniela,Daniela,,,Dani,Brasil,vocabulário ASR / contexto doméstico
+132,Daniele,daniele,feminino,simples,Daniele,Daniele,,,,Brasil,vocabulário ASR / contexto doméstico
+133,Danilo,danilo,masculino,simples,Danilo,Danilo,,,,Brasil,vocabulário ASR / contexto doméstico
+134,Dante,dante,masculino,simples,Dante,Dante,,,,Brasil,vocabulário ASR / contexto doméstico
+135,Davi,davi,masculino,simples,Davi,Davi,,,,Brasil,vocabulário ASR / contexto doméstico
+136,Davi Lucas,davi lucas,masculino,composto,Davi|Lucas,Davi Lucas,,,,Brasil,vocabulário ASR / contexto doméstico
+137,Davi Lucca,davi lucca,masculino,composto,Davi|Lucca,Davi Lucca,,,,Brasil,vocabulário ASR / contexto doméstico
+138,Davi Luiz,davi luiz,masculino,composto,Davi|Luiz,Davi Luiz,,Luis|Luís,,Brasil,vocabulário ASR / contexto doméstico
+139,Davi Miguel,davi miguel,masculino,composto,Davi|Miguel,Davi Miguel,,,,Brasil,vocabulário ASR / contexto doméstico
+140,David,david,masculino,simples,David,David,,,,Brasil,vocabulário ASR / contexto doméstico
+141,Denis,denis,masculino,simples,Denis,Denis,,,,Brasil,vocabulário ASR / contexto doméstico
+142,Denise,denise,feminino,simples,Denise,Denise,,,,Brasil,vocabulário ASR / contexto doméstico
+143,Diana,diana,feminino,simples,Diana,Diana,,,,Brasil,vocabulário ASR / contexto doméstico
+144,Diego,diego,masculino,simples,Diego,Diego,,,,Brasil,vocabulário ASR / contexto doméstico
+145,Diogo,diogo,masculino,simples,Diogo,Diogo,,,,Brasil,vocabulário ASR / contexto doméstico
+146,Dom,dom,masculino,simples,Dom,Dom,,,,Brasil,vocabulário ASR / contexto doméstico
+147,Douglas,douglas,masculino,simples,Douglas,Douglas,,,,Brasil,vocabulário ASR / contexto doméstico
+148,Débora,debora,feminino,simples,Débora,Debora,Debora,,,Brasil,vocabulário ASR / contexto doméstico
+149,Ederson,ederson,masculino,simples,Ederson,Ederson,,,,Brasil,vocabulário ASR / contexto doméstico
+150,Edgar,edgar,masculino,simples,Edgar,Edgar,,,,Brasil,vocabulário ASR / contexto doméstico
+151,Edmilson,edmilson,masculino,simples,Edmilson,Edmilson,,,,Brasil,vocabulário ASR / contexto doméstico
+152,Edna,edna,feminino,simples,Edna,Edna,,,,Brasil,vocabulário ASR / contexto doméstico
+153,Edson,edson,masculino,simples,Edson,Edson,,,,Brasil,vocabulário ASR / contexto doméstico
+154,Eduarda,eduarda,feminino,simples,Eduarda,Eduarda,,,,Brasil,vocabulário ASR / contexto doméstico
+155,Eduardo,eduardo,masculino,simples,Eduardo,Eduardo,,,Dudu|Edu,Brasil,vocabulário ASR / contexto doméstico
+156,Elaine,elaine,feminino,simples,Elaine,Elaine,,,,Brasil,vocabulário ASR / contexto doméstico
+157,Eliane,eliane,feminino,simples,Eliane,Eliane,,,,Brasil,vocabulário ASR / contexto doméstico
+158,Elias,elias,masculino,simples,Elias,Elias,,,,Brasil,vocabulário ASR / contexto doméstico
+159,Elisa,elisa,feminino,simples,Elisa,Elisa,,,,Brasil,vocabulário ASR / contexto doméstico
+160,Elisabeth,elisabeth,feminino,simples,Elisabeth,Elisabeth,,,,Brasil,vocabulário ASR / contexto doméstico
+161,Eliseu,eliseu,masculino,simples,Eliseu,Eliseu,,,,Brasil,vocabulário ASR / contexto doméstico
+162,Elizabete,elizabete,feminino,simples,Elizabete,Elizabete,,,,Brasil,vocabulário ASR / contexto doméstico
+163,Eloa,eloa,feminino,simples,Eloa,Eloa,,,,Brasil,vocabulário ASR / contexto doméstico
+164,Eloah,eloah,feminino,simples,Eloah,Eloah,,,,Brasil,vocabulário ASR / contexto doméstico
+165,Eloá,eloa,feminino,simples,Eloá,Eloa,Eloa,,,Brasil,vocabulário ASR / contexto doméstico
+166,Emanuel,emanuel,masculino,simples,Emanuel,Emanuel,,,,Brasil,vocabulário ASR / contexto doméstico
+167,Emanuella,emanuella,feminino,simples,Emanuella,Emanuella,,,,Brasil,vocabulário ASR / contexto doméstico
+168,Emanuelly,emanuelly,feminino,simples,Emanuelly,Emanuelly,,,,Brasil,vocabulário ASR / contexto doméstico
+169,Emerson,emerson,masculino,simples,Emerson,Emerson,,,,Brasil,vocabulário ASR / contexto doméstico
+170,Emilly,emilly,feminino,simples,Emilly,Emilly,,,,Brasil,vocabulário ASR / contexto doméstico
+171,Emília,emilia,feminino,simples,Emília,Emilia,Emilia,,,Brasil,vocabulário ASR / contexto doméstico
+172,Enrico,enrico,masculino,simples,Enrico,Enrico,,,,Brasil,vocabulário ASR / contexto doméstico
+173,Enzo,enzo,masculino,simples,Enzo,Enzo,,,,Brasil,vocabulário ASR / contexto doméstico
+174,Enzo Gabriel,enzo gabriel,masculino,composto,Enzo|Gabriel,Enzo Gabriel,,,,Brasil,vocabulário ASR / contexto doméstico
+175,Enzo Miguel,enzo miguel,masculino,composto,Enzo|Miguel,Enzo Miguel,,,,Brasil,vocabulário ASR / contexto doméstico
+176,Eric,eric,masculino,simples,Eric,Eric,,,,Brasil,vocabulário ASR / contexto doméstico
+177,Erica,erica,feminino,simples,Erica,Erica,,,,Brasil,vocabulário ASR / contexto doméstico
+178,Erick,erick,masculino,simples,Erick,Erick,,,,Brasil,vocabulário ASR / contexto doméstico
+179,Erico,erico,masculino,simples,Erico,Erico,,,,Brasil,vocabulário ASR / contexto doméstico
+180,Ester,ester,feminino,simples,Ester,Ester,Esther,,,Brasil,vocabulário ASR / contexto doméstico
+181,Esther,esther,feminino,simples,Esther,Esther,,,,Brasil,vocabulário ASR / contexto doméstico
+182,Eva,eva,feminino,simples,Eva,Eva,,,,Brasil,vocabulário ASR / contexto doméstico
+183,Evandro,evandro,masculino,simples,Evandro,Evandro,,,,Brasil,vocabulário ASR / contexto doméstico
+184,Evelyn,evelyn,feminino,simples,Evelyn,Evelyn,,,,Brasil,vocabulário ASR / contexto doméstico
+185,Everaldo,everaldo,masculino,simples,Everaldo,Everaldo,,,,Brasil,vocabulário ASR / contexto doméstico
+186,Everton,everton,masculino,simples,Everton,Everton,Ewerton,,,Brasil,vocabulário ASR / contexto doméstico
+187,Ewerton,ewerton,masculino,simples,Ewerton,Ewerton,,,,Brasil,vocabulário ASR / contexto doméstico
+188,Ezequiel,ezequiel,masculino,simples,Ezequiel,Ezequiel,,,,Brasil,vocabulário ASR / contexto doméstico
+189,Fabiana,fabiana,feminino,simples,Fabiana,Fabiana,,,Fabi,Brasil,vocabulário ASR / contexto doméstico
+190,Fabio,fabio,masculino,simples,Fabio,Fabio,,,,Brasil,vocabulário ASR / contexto doméstico
+191,Fabrício,fabricio,masculino,simples,Fabrício,Fabricio,Fabricio,,,Brasil,vocabulário ASR / contexto doméstico
+192,Felipe,felipe,masculino,simples,Felipe,Felipe,Filipe|Phillipe|Philippe,,Fê,Brasil,vocabulário ASR / contexto doméstico
+193,Felipe Augusto,felipe augusto,masculino,composto,Felipe|Augusto,Felipe Augusto,,Filipe|Phillipe|Philippe,Fê,Brasil,vocabulário ASR / contexto doméstico
+194,Felipe Gabriel,felipe gabriel,masculino,composto,Felipe|Gabriel,Felipe Gabriel,,Filipe|Phillipe|Philippe,Fê,Brasil,vocabulário ASR / contexto doméstico
+195,Fernanda,fernanda,feminino,simples,Fernanda,Fernanda,,,Fê|Nanda,Brasil,vocabulário ASR / contexto doméstico
+196,Fernando,fernando,masculino,simples,Fernando,Fernando,,,Fê|Nando,Brasil,vocabulário ASR / contexto doméstico
+197,Filipe,filipe,masculino,simples,Filipe,Filipe,Felipe,,,Brasil,vocabulário ASR / contexto doméstico
+198,Flavio,flavio,masculino,simples,Flavio,Flavio,,,,Brasil,vocabulário ASR / contexto doméstico
+199,Flávia,flavia,feminino,simples,Flávia,Flavia,Flavia,,,Brasil,vocabulário ASR / contexto doméstico
+200,Flávio,flavio,masculino,simples,Flávio,Flavio,Flavio,,,Brasil,vocabulário ASR / contexto doméstico
+201,Francisca,francisca,feminino,simples,Francisca,Francisca,,,,Brasil,vocabulário ASR / contexto doméstico
+202,Francisco,francisco,masculino,simples,Francisco,Francisco,,,Chico|Fran,Brasil,vocabulário ASR / contexto doméstico
+203,Fábio,fabio,masculino,simples,Fábio,Fabio,Fabio,,Fabi,Brasil,vocabulário ASR / contexto doméstico
+204,Fátima,fatima,feminino,simples,Fátima,Fatima,Fatima,,,Brasil,vocabulário ASR / contexto doméstico
+205,Gabriel,gabriel,masculino,simples,Gabriel,Gabriel,,,Gabi|Biel,Brasil,vocabulário ASR / contexto doméstico
+206,Gabriel Henrique,gabriel henrique,masculino,composto,Gabriel|Henrique,Gabriel Henrique,,,Gabi|Biel,Brasil,vocabulário ASR / contexto doméstico
+207,Gabriela,gabriela,feminino,simples,Gabriela,Gabriela,,,Gabi,Brasil,vocabulário ASR / contexto doméstico
+208,Gabrielly,gabrielly,feminino,simples,Gabrielly,Gabrielly,,,,Brasil,vocabulário ASR / contexto doméstico
+209,Gael,gael,masculino,simples,Gael,Gael,,,,Brasil,vocabulário ASR / contexto doméstico
+210,Gael Henrique,gael henrique,masculino,composto,Gael|Henrique,Gael Henrique,,,,Brasil,vocabulário ASR / contexto doméstico
+211,Geovana,geovana,feminino,simples,Geovana,Geovana,Giovana|Giovanna,,,Brasil,vocabulário ASR / contexto doméstico
+212,Geraldo,geraldo,masculino,simples,Geraldo,Geraldo,,,,Brasil,vocabulário ASR / contexto doméstico
+213,Gilberto,gilberto,masculino,simples,Gilberto,Gilberto,,,,Brasil,vocabulário ASR / contexto doméstico
+214,Giovana,giovana,feminino,simples,Giovana,Giovana,Geovana|Giovanna,,,Brasil,vocabulário ASR / contexto doméstico
+215,Giovani,giovani,masculino,simples,Giovani,Giovani,,,,Brasil,vocabulário ASR / contexto doméstico
+216,Giovanna,giovanna,feminino,simples,Giovanna,Giovanna,Giovana|Geovana,,,Brasil,vocabulário ASR / contexto doméstico
+217,Giovanni,giovanni,masculino,simples,Giovanni,Giovanni,,,,Brasil,vocabulário ASR / contexto doméstico
+218,Gisele,gisele,feminino,simples,Gisele,Gisele,,,,Brasil,vocabulário ASR / contexto doméstico
+219,Guilherme,guilherme,masculino,simples,Guilherme,Guilherme,,,Gui,Brasil,vocabulário ASR / contexto doméstico
+220,Gustavo,gustavo,masculino,simples,Gustavo,Gustavo,,,Gus|Guga,Brasil,vocabulário ASR / contexto doméstico
+221,Gustavo Henrique,gustavo henrique,masculino,composto,Gustavo|Henrique,Gustavo Henrique,,,Gus|Guga,Brasil,vocabulário ASR / contexto doméstico
+222,Hadassa,hadassa,feminino,simples,Hadassa,Hadassa,,,,Brasil,vocabulário ASR / contexto doméstico
+223,Heitor,heitor,masculino,simples,Heitor,Heitor,,,,Brasil,vocabulário ASR / contexto doméstico
+224,Helena,helena,feminino,simples,Helena,Helena,,,,Brasil,vocabulário ASR / contexto doméstico
+225,Hellena,hellena,feminino,simples,Hellena,Hellena,,,,Brasil,vocabulário ASR / contexto doméstico
+226,Heloisa,heloisa,feminino,simples,Heloisa,Heloisa,,,,Brasil,vocabulário ASR / contexto doméstico
+227,Heloísa,heloisa,feminino,simples,Heloísa,Heloisa,Heloisa,,,Brasil,vocabulário ASR / contexto doméstico
+228,Henrique,henrique,masculino,simples,Henrique,Henrique,,,Rique,Brasil,vocabulário ASR / contexto doméstico
+229,Henry,henry,masculino,simples,Henry,Henry,,,,Brasil,vocabulário ASR / contexto doméstico
+230,Henry Gabriel,henry gabriel,masculino,composto,Henry|Gabriel,Henry Gabriel,,,,Brasil,vocabulário ASR / contexto doméstico
+231,Hugo,hugo,masculino,simples,Hugo,Hugo,,,,Brasil,vocabulário ASR / contexto doméstico
+232,Ian,ian,masculino,simples,Ian,Ian,,,,Brasil,vocabulário ASR / contexto doméstico
+233,Igor,igor,masculino,simples,Igor,Igor,,,,Brasil,vocabulário ASR / contexto doméstico
+234,Ingrid,ingrid,feminino,simples,Ingrid,Ingrid,,,,Brasil,vocabulário ASR / contexto doméstico
+235,Irene,irene,feminino,simples,Irene,Irene,,,,Brasil,vocabulário ASR / contexto doméstico
+236,Isaac,isaac,masculino,simples,Isaac,Isaac,Isaque,,,Brasil,vocabulário ASR / contexto doméstico
+237,Isabel,isabel,feminino,simples,Isabel,Isabel,,,,Brasil,vocabulário ASR / contexto doméstico
+238,Isabela,isabela,feminino,simples,Isabela,Isabela,,,Isa|Bela,Brasil,vocabulário ASR / contexto doméstico
+239,Isabella,isabella,feminino,simples,Isabella,Isabella,,,,Brasil,vocabulário ASR / contexto doméstico
+240,Isabelle,isabelle,feminino,simples,Isabelle,Isabelle,,,Isa|Bela,Brasil,vocabulário ASR / contexto doméstico
+241,Isabelly,isabelly,feminino,simples,Isabelly,Isabelly,,,,Brasil,vocabulário ASR / contexto doméstico
+242,Isadora,isadora,feminino,simples,Isadora,Isadora,,,,Brasil,vocabulário ASR / contexto doméstico
+243,Isaque,isaque,masculino,simples,Isaque,Isaque,Isaac,,,Brasil,vocabulário ASR / contexto doméstico
+244,Isis,isis,feminino,simples,Isis,Isis,,,,Brasil,vocabulário ASR / contexto doméstico
+245,Ivan,ivan,masculino,simples,Ivan,Ivan,,,,Brasil,vocabulário ASR / contexto doméstico
+246,Ivone,ivone,feminino,simples,Ivone,Ivone,,,,Brasil,vocabulário ASR / contexto doméstico
+247,Jackson,jackson,masculino,simples,Jackson,Jackson,Jakson,,,Brasil,vocabulário ASR / contexto doméstico
+248,Jade,jade,feminino,simples,Jade,Jade,,,,Brasil,vocabulário ASR / contexto doméstico
+249,Jadson,jadson,masculino,simples,Jadson,Jadson,,,,Brasil,vocabulário ASR / contexto doméstico
+250,Jaime,jaime,masculino,simples,Jaime,Jaime,,,Jai,Brasil,vocabulário ASR / contexto doméstico
+251,Jair,jair,masculino,simples,Jair,Jair,,,,Brasil,vocabulário ASR / contexto doméstico
+252,Jairo,jairo,masculino,simples,Jairo,Jairo,,,,Brasil,vocabulário ASR / contexto doméstico
+253,Jakson,jakson,masculino,simples,Jakson,Jakson,,,,Brasil,vocabulário ASR / contexto doméstico
+254,Jasmine,jasmine,feminino,simples,Jasmine,Jasmine,,,,Brasil,vocabulário ASR / contexto doméstico
+255,Jean,jean,masculino,simples,Jean,Jean,,,,Brasil,vocabulário ASR / contexto doméstico
+256,Jeferson,jeferson,masculino,simples,Jeferson,Jeferson,,,,Brasil,vocabulário ASR / contexto doméstico
+257,Jefferson,jefferson,masculino,simples,Jefferson,Jefferson,Jeferson,,,Brasil,vocabulário ASR / contexto doméstico
+258,Jessica,jessica,feminino,simples,Jessica,Jessica,,,,Brasil,vocabulário ASR / contexto doméstico
+259,Joana,joana,feminino,simples,Joana,Joana,,,Jô,Brasil,vocabulário ASR / contexto doméstico
+260,Joao,joao,masculino,simples,Joao,Joao,,,,Brasil,vocabulário ASR / contexto doméstico
+261,Joaquim,joaquim,masculino,simples,Joaquim,Joaquim,,,,Brasil,vocabulário ASR / contexto doméstico
+262,Jorge,jorge,masculino,simples,Jorge,Jorge,,,,Brasil,vocabulário ASR / contexto doméstico
+263,Jose,jose,masculino,simples,Jose,Jose,,,,Brasil,vocabulário ASR / contexto doméstico
+264,Josué,josue,masculino,simples,Josué,Josue,Josue,,,Brasil,vocabulário ASR / contexto doméstico
+265,José,jose,masculino,simples,José,Jose,Jose|Zé,,Zé,Brasil,vocabulário ASR / contexto doméstico
+266,José Antônio,jose antonio,masculino,composto,José|Antônio,Jose Antonio,Jose Antonio,Jose|Zé|Antonio,Zé,Brasil,vocabulário ASR / contexto doméstico
+267,José Carlos,jose carlos,masculino,composto,José|Carlos,Jose Carlos,Jose Carlos,Jose|Zé,Zé,Brasil,vocabulário ASR / contexto doméstico
+268,José Luiz,jose luiz,masculino,composto,José|Luiz,Jose Luiz,Jose Luiz,Jose|Zé|Luis|Luís,Zé,Brasil,vocabulário ASR / contexto doméstico
+269,José Luís,jose luis,masculino,composto,José|Luís,Jose Luis,Jose Luis,Jose|Zé|Luis|Luiz,Zé,Brasil,vocabulário ASR / contexto doméstico
+270,José Miguel,jose miguel,masculino,composto,José|Miguel,Jose Miguel,Jose Miguel,Jose|Zé,Zé,Brasil,vocabulário ASR / contexto doméstico
+271,José Paulo,jose paulo,masculino,composto,José|Paulo,Jose Paulo,Jose Paulo,Jose|Zé,Zé,Brasil,vocabulário ASR / contexto doméstico
+272,José Pedro,jose pedro,masculino,composto,José|Pedro,Jose Pedro,Jose Pedro,Jose|Zé,Zé,Brasil,vocabulário ASR / contexto doméstico
+273,José Ricardo,jose ricardo,masculino,composto,José|Ricardo,Jose Ricardo,Jose Ricardo,Jose|Zé,Zé,Brasil,vocabulário ASR / contexto doméstico
+274,José Roberto,jose roberto,masculino,composto,José|Roberto,Jose Roberto,Jose Roberto,Jose|Zé,Zé,Brasil,vocabulário ASR / contexto doméstico
+275,Joyce,joyce,feminino,simples,Joyce,Joyce,,,,Brasil,vocabulário ASR / contexto doméstico
+276,João,joao,masculino,simples,João,Joao,Joao,,Jão,Brasil,vocabulário ASR / contexto doméstico
+277,João Felipe,joao felipe,masculino,composto,João|Felipe,Joao Felipe,Joao Felipe,Joao|Filipe|Phillipe|Philippe,Jão,Brasil,vocabulário ASR / contexto doméstico
+278,João Gabriel,joao gabriel,masculino,composto,João|Gabriel,Joao Gabriel,Joao Gabriel,Joao,Jão,Brasil,vocabulário ASR / contexto doméstico
+279,João Guilherme,joao guilherme,masculino,composto,João|Guilherme,Joao Guilherme,Joao Guilherme,Joao,Jão,Brasil,vocabulário ASR / contexto doméstico
+280,João Lucas,joao lucas,masculino,composto,João|Lucas,Joao Lucas,Joao Lucas,Joao,Jão,Brasil,vocabulário ASR / contexto doméstico
+281,João Miguel,joao miguel,masculino,composto,João|Miguel,Joao Miguel,Joao Miguel,Joao,Jão,Brasil,vocabulário ASR / contexto doméstico
+282,João Paulo,joao paulo,masculino,composto,João|Paulo,Joao Paulo,Joao Paulo,Joao,Jão,Brasil,vocabulário ASR / contexto doméstico
+283,João Pedro,joao pedro,masculino,composto,João|Pedro,Joao Pedro,Joao Pedro,Joao,Jão,Brasil,vocabulário ASR / contexto doméstico
+284,João Victor,joao victor,masculino,composto,João|Victor,Joao Victor,Joao Victor,Joao|Vitor|Vítor,Jão,Brasil,vocabulário ASR / contexto doméstico
+285,João Vitor,joao vitor,masculino,composto,João|Vitor,Joao Vitor,Joao Vitor,Joao|Victor|Vítor,Jão,Brasil,vocabulário ASR / contexto doméstico
+286,Juan,juan,masculino,simples,Juan,Juan,,,,Brasil,vocabulário ASR / contexto doméstico
+287,Julia,julia,feminino,simples,Julia,Julia,,,,Brasil,vocabulário ASR / contexto doméstico
+288,Juliana,juliana,feminino,simples,Juliana,Juliana,,,Ju,Brasil,vocabulário ASR / contexto doméstico
+289,Julio,julio,masculino,simples,Julio,Julio,,,,Brasil,vocabulário ASR / contexto doméstico
+290,Jéssica,jessica,feminino,simples,Jéssica,Jessica,Jessica,,,Brasil,vocabulário ASR / contexto doméstico
+291,Júlia,julia,feminino,simples,Júlia,Julia,Julia,,Ju,Brasil,vocabulário ASR / contexto doméstico
+292,Júlia Maria,julia maria,feminino,composto,Júlia|Maria,Julia Maria,Julia Maria,Julia,Ju,Brasil,vocabulário ASR / contexto doméstico
+293,Júlio,julio,masculino,simples,Júlio,Julio,Julio,,,Brasil,vocabulário ASR / contexto doméstico
+294,Kaique,kaique,masculino,simples,Kaique,Kaique,,,,Brasil,vocabulário ASR / contexto doméstico
+295,Kamilly,kamilly,feminino,simples,Kamilly,Kamilly,,,,Brasil,vocabulário ASR / contexto doméstico
+296,Karen,karen,feminino,simples,Karen,Karen,,,,Brasil,vocabulário ASR / contexto doméstico
+297,Karina,karina,feminino,simples,Karina,Karina,,,,Brasil,vocabulário ASR / contexto doméstico
+298,Kaua,kaua,masculino,simples,Kaua,Kaua,,,,Brasil,vocabulário ASR / contexto doméstico
+299,Kauã,kaua,masculino,simples,Kauã,Kaua,Kaua|Cauã|Caua,,,Brasil,vocabulário ASR / contexto doméstico
+300,Kelly,kelly,feminino,simples,Kelly,Kelly,,,,Brasil,vocabulário ASR / contexto doméstico
+301,Kevin,kevin,masculino,simples,Kevin,Kevin,,,,Brasil,vocabulário ASR / contexto doméstico
+302,Kleber,kleber,masculino,simples,Kleber,Kleber,Cléber|Cleber,,,Brasil,vocabulário ASR / contexto doméstico
+303,Kátia,katia,feminino,simples,Kátia,Katia,Katia,,,Brasil,vocabulário ASR / contexto doméstico
+304,Lara,lara,feminino,simples,Lara,Lara,,,,Brasil,vocabulário ASR / contexto doméstico
+305,Larissa,larissa,feminino,simples,Larissa,Larissa,,,Lari,Brasil,vocabulário ASR / contexto doméstico
+306,Laura,laura,feminino,simples,Laura,Laura,,,,Brasil,vocabulário ASR / contexto doméstico
+307,Laura Beatriz,laura beatriz,feminino,composto,Laura|Beatriz,Laura Beatriz,,,,Brasil,vocabulário ASR / contexto doméstico
+308,Laura Vitória,laura vitoria,feminino,composto,Laura|Vitória,Laura Vitoria,Laura Vitoria,Vitoria,,Brasil,vocabulário ASR / contexto doméstico
+309,Lavínia,lavinia,feminino,simples,Lavínia,Lavinia,Lavinia,,,Brasil,vocabulário ASR / contexto doméstico
+310,Laís,lais,feminino,simples,Laís,Lais,Lais,,,Brasil,vocabulário ASR / contexto doméstico
+311,Leandro,leandro,masculino,simples,Leandro,Leandro,,,,Brasil,vocabulário ASR / contexto doméstico
+312,Leonardo,leonardo,masculino,simples,Leonardo,Leonardo,,,Leo|Léo,Brasil,vocabulário ASR / contexto doméstico
+313,Letícia,leticia,feminino,simples,Letícia,Leticia,Leticia,,Lê|Leti,Brasil,vocabulário ASR / contexto doméstico
+314,Levi,levi,masculino,simples,Levi,Levi,,,,Brasil,vocabulário ASR / contexto doméstico
+315,Liam,liam,masculino,simples,Liam,Liam,,,,Brasil,vocabulário ASR / contexto doméstico
+316,Liz,liz,feminino,simples,Liz,Liz,,,,Brasil,vocabulário ASR / contexto doméstico
+317,Lorena,lorena,feminino,simples,Lorena,Lorena,,,,Brasil,vocabulário ASR / contexto doméstico
+318,Lorenzo,lorenzo,masculino,simples,Lorenzo,Lorenzo,,,,Brasil,vocabulário ASR / contexto doméstico
+319,Luan,luan,masculino,simples,Luan,Luan,,,,Brasil,vocabulário ASR / contexto doméstico
+320,Luana,luana,feminino,simples,Luana,Luana,,,Lu,Brasil,vocabulário ASR / contexto doméstico
+321,Luara,luara,feminino,simples,Luara,Luara,,,,Brasil,vocabulário ASR / contexto doméstico
+322,Lucas,lucas,masculino,simples,Lucas,Lucas,,,Lu|Luquinhas,Brasil,vocabulário ASR / contexto doméstico
+323,Lucas Gabriel,lucas gabriel,masculino,composto,Lucas|Gabriel,Lucas Gabriel,,,Lu|Luquinhas,Brasil,vocabulário ASR / contexto doméstico
+324,Lucas Henrique,lucas henrique,masculino,composto,Lucas|Henrique,Lucas Henrique,,,Lu|Luquinhas,Brasil,vocabulário ASR / contexto doméstico
+325,Lucca,lucca,masculino,simples,Lucca,Lucca,,,,Brasil,vocabulário ASR / contexto doméstico
+326,Lucia,lucia,feminino,simples,Lucia,Lucia,,,,Brasil,vocabulário ASR / contexto doméstico
+327,Luciana,luciana,feminino,simples,Luciana,Luciana,,,Lu,Brasil,vocabulário ASR / contexto doméstico
+328,Luciano,luciano,masculino,simples,Luciano,Luciano,,,,Brasil,vocabulário ASR / contexto doméstico
+329,Luciene,luciene,feminino,simples,Luciene,Luciene,,,,Brasil,vocabulário ASR / contexto doméstico
+330,Lucilene,lucilene,feminino,simples,Lucilene,Lucilene,,,,Brasil,vocabulário ASR / contexto doméstico
+331,Luigi,luigi,masculino,simples,Luigi,Luigi,,,,Brasil,vocabulário ASR / contexto doméstico
+332,Luis,luis,masculino,simples,Luis,Luis,,,,Brasil,vocabulário ASR / contexto doméstico
+333,Luisa,luisa,feminino,simples,Luisa,Luisa,,,,Brasil,vocabulário ASR / contexto doméstico
+334,Luiz,luiz,masculino,simples,Luiz,Luiz,Luis|Luís,,,Brasil,vocabulário ASR / contexto doméstico
+335,Luiz Carlos,luiz carlos,masculino,composto,Luiz|Carlos,Luiz Carlos,,Luis|Luís,,Brasil,vocabulário ASR / contexto doméstico
+336,Luiz Felipe,luiz felipe,masculino,composto,Luiz|Felipe,Luiz Felipe,,Luis|Luís|Filipe|Phillipe|Philippe,,Brasil,vocabulário ASR / contexto doméstico
+337,Luiz Fernando,luiz fernando,masculino,composto,Luiz|Fernando,Luiz Fernando,,Luis|Luís,,Brasil,vocabulário ASR / contexto doméstico
+338,Luiz Gustavo,luiz gustavo,masculino,composto,Luiz|Gustavo,Luiz Gustavo,,Luis|Luís,,Brasil,vocabulário ASR / contexto doméstico
+339,Luiz Henrique,luiz henrique,masculino,composto,Luiz|Henrique,Luiz Henrique,,Luis|Luís,,Brasil,vocabulário ASR / contexto doméstico
+340,Luiz Miguel,luiz miguel,masculino,composto,Luiz|Miguel,Luiz Miguel,,Luis|Luís,,Brasil,vocabulário ASR / contexto doméstico
+341,Luiz Otávio,luiz otavio,masculino,composto,Luiz|Otávio,Luiz Otavio,Luiz Otavio,Luis|Luís,,Brasil,vocabulário ASR / contexto doméstico
+342,Luiza,luiza,feminino,simples,Luiza,Luiza,Luíza|Luísa,,,Brasil,vocabulário ASR / contexto doméstico
+343,Luna,luna,feminino,simples,Luna,Luna,,,,Brasil,vocabulário ASR / contexto doméstico
+344,Lunna,lunna,feminino,simples,Lunna,Lunna,,,,Brasil,vocabulário ASR / contexto doméstico
+345,Luís,luis,masculino,simples,Luís,Luis,Luis|Luiz,,,Brasil,vocabulário ASR / contexto doméstico
+346,Luís Carlos,luis carlos,masculino,composto,Luís|Carlos,Luis Carlos,Luis Carlos,Luis|Luiz,,Brasil,vocabulário ASR / contexto doméstico
+347,Luís Felipe,luis felipe,masculino,composto,Luís|Felipe,Luis Felipe,Luis Felipe,Luis|Luiz|Filipe|Phillipe|Philippe,,Brasil,vocabulário ASR / contexto doméstico
+348,Luísa,luisa,feminino,simples,Luísa,Luisa,Luisa|Luiza,,,Brasil,vocabulário ASR / contexto doméstico
+349,Luíza,luiza,feminino,simples,Luíza,Luiza,Luiza,,,Brasil,vocabulário ASR / contexto doméstico
+350,Léo,leo,masculino,simples,Léo,Leo,Leo,,,Brasil,vocabulário ASR / contexto doméstico
+351,Lígia,ligia,feminino,simples,Lígia,Ligia,Ligia,,,Brasil,vocabulário ASR / contexto doméstico
+352,Lívia,livia,feminino,simples,Lívia,Livia,Livia,,,Brasil,vocabulário ASR / contexto doméstico
+353,Lívia Maria,livia maria,feminino,composto,Lívia|Maria,Livia Maria,Livia Maria,,,Brasil,vocabulário ASR / contexto doméstico
+354,Lúcia,lucia,feminino,simples,Lúcia,Lucia,Lucia,,,Brasil,vocabulário ASR / contexto doméstico
+355,Madalena,madalena,feminino,simples,Madalena,Madalena,,,,Brasil,vocabulário ASR / contexto doméstico
+356,Maicon,maicon,masculino,simples,Maicon,Maicon,,,,Brasil,vocabulário ASR / contexto doméstico
+357,Maitê,maite,feminino,simples,Maitê,Maite,Maite,,,Brasil,vocabulário ASR / contexto doméstico
+358,Manuela,manuela,feminino,simples,Manuela,Manuela,,,,Brasil,vocabulário ASR / contexto doméstico
+359,Manuella,manuella,feminino,simples,Manuella,Manuella,,,,Brasil,vocabulário ASR / contexto doméstico
+360,Marcela,marcela,feminino,simples,Marcela,Marcela,,,,Brasil,vocabulário ASR / contexto doméstico
+361,Marcelo,marcelo,masculino,simples,Marcelo,Marcelo,,,Celo,Brasil,vocabulário ASR / contexto doméstico
+362,Marcia,marcia,feminino,simples,Marcia,Marcia,,,,Brasil,vocabulário ASR / contexto doméstico
+363,Marcio,marcio,masculino,simples,Marcio,Marcio,,,,Brasil,vocabulário ASR / contexto doméstico
+364,Marco Antônio,marco antonio,masculino,composto,Marco|Antônio,Marco Antonio,Marco Antonio,Antonio,,Brasil,vocabulário ASR / contexto doméstico
+365,Marco Aurélio,marco aurelio,masculino,composto,Marco|Aurélio,Marco Aurelio,Marco Aurelio,,,Brasil,vocabulário ASR / contexto doméstico
+366,Marcos,marcos,masculino,simples,Marcos,Marcos,,,Marcão,Brasil,vocabulário ASR / contexto doméstico
+367,Marcos Paulo,marcos paulo,masculino,composto,Marcos|Paulo,Marcos Paulo,,,Marcão,Brasil,vocabulário ASR / contexto doméstico
+368,Marcos Vinicius,marcos vinicius,masculino,composto,Marcos|Vinicius,Marcos Vinicius,,,Marcão,Brasil,vocabulário ASR / contexto doméstico
+369,Margarida,margarida,feminino,simples,Margarida,Margarida,,,,Brasil,vocabulário ASR / contexto doméstico
+370,Maria,maria,feminino,simples,Maria,Maria,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+371,Maria Alice,maria alice,feminino,composto,Maria|Alice,Maria Alice,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+372,Maria Aparecida,maria aparecida,feminino,composto,Maria|Aparecida,Maria Aparecida,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+373,Maria Beatriz,maria beatriz,feminino,composto,Maria|Beatriz,Maria Beatriz,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+374,Maria Carolina,maria carolina,feminino,composto,Maria|Carolina,Maria Carolina,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+375,Maria Cecília,maria cecilia,feminino,composto,Maria|Cecília,Maria Cecilia,Maria Cecilia,,Mari,Brasil,vocabulário ASR / contexto doméstico
+376,Maria Clara,maria clara,feminino,composto,Maria|Clara,Maria Clara,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+377,Maria de Fátima,maria de fatima,feminino,composto,Maria|de|Fátima,Maria de Fatima,Maria de Fatima,,Mari,Brasil,vocabulário ASR / contexto doméstico
+378,Maria Eduarda,maria eduarda,feminino,composto,Maria|Eduarda,Maria Eduarda,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+379,Maria Fernanda,maria fernanda,feminino,composto,Maria|Fernanda,Maria Fernanda,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+380,Maria Flor,maria flor,feminino,composto,Maria|Flor,Maria Flor,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+381,Maria Helena,maria helena,feminino,composto,Maria|Helena,Maria Helena,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+382,Maria Isabel,maria isabel,feminino,composto,Maria|Isabel,Maria Isabel,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+383,Maria Isis,maria isis,feminino,composto,Maria|Isis,Maria Isis,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+384,Maria Julia,maria julia,feminino,composto,Maria|Julia,Maria Julia,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+385,Maria Júlia,maria julia,feminino,composto,Maria|Júlia,Maria Julia,Maria Julia,Julia,Mari,Brasil,vocabulário ASR / contexto doméstico
+386,Maria Laura,maria laura,feminino,composto,Maria|Laura,Maria Laura,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+387,Maria Liz,maria liz,feminino,composto,Maria|Liz,Maria Liz,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+388,Maria Luiza,maria luiza,feminino,composto,Maria|Luiza,Maria Luiza,,Luíza|Luísa,Mari,Brasil,vocabulário ASR / contexto doméstico
+389,Maria Luísa,maria luisa,feminino,composto,Maria|Luísa,Maria Luisa,Maria Luisa,Luisa|Luiza,Mari,Brasil,vocabulário ASR / contexto doméstico
+390,Maria Sofia,maria sofia,feminino,composto,Maria|Sofia,Maria Sofia,,Sophia,Mari,Brasil,vocabulário ASR / contexto doméstico
+391,Maria Sophia,maria sophia,feminino,composto,Maria|Sophia,Maria Sophia,,Sofia,Mari,Brasil,vocabulário ASR / contexto doméstico
+392,Maria Vitória,maria vitoria,feminino,composto,Maria|Vitória,Maria Vitoria,Maria Vitoria,Vitoria,Mari,Brasil,vocabulário ASR / contexto doméstico
+393,Mariah,mariah,feminino,simples,Mariah,Mariah,,,,Brasil,vocabulário ASR / contexto doméstico
+394,Mariana,mariana,feminino,simples,Mariana,Mariana,,,Mari,Brasil,vocabulário ASR / contexto doméstico
+395,Mariane,mariane,feminino,simples,Mariane,Mariane,,,,Brasil,vocabulário ASR / contexto doméstico
+396,Marina,marina,feminino,simples,Marina,Marina,,,,Brasil,vocabulário ASR / contexto doméstico
+397,Marta,marta,feminino,simples,Marta,Marta,,,,Brasil,vocabulário ASR / contexto doméstico
+398,Mateus,mateus,masculino,simples,Mateus,Mateus,Matheus,,Teus,Brasil,vocabulário ASR / contexto doméstico
+399,Mateus Henrique,mateus henrique,masculino,composto,Mateus|Henrique,Mateus Henrique,,Matheus,Teus,Brasil,vocabulário ASR / contexto doméstico
+400,Matheus,matheus,masculino,simples,Matheus,Matheus,Mateus,,Math|Teus,Brasil,vocabulário ASR / contexto doméstico
+401,Matheus Henrique,matheus henrique,masculino,composto,Matheus|Henrique,Matheus Henrique,,Mateus,Math|Teus,Brasil,vocabulário ASR / contexto doméstico
+402,Mathias,mathias,masculino,simples,Mathias,Mathias,,,,Brasil,vocabulário ASR / contexto doméstico
+403,Matteo,matteo,masculino,simples,Matteo,Matteo,,,,Brasil,vocabulário ASR / contexto doméstico
+404,Mauro,mauro,masculino,simples,Mauro,Mauro,,,,Brasil,vocabulário ASR / contexto doméstico
+405,Maurício,mauricio,masculino,simples,Maurício,Mauricio,Mauricio,,Mau,Brasil,vocabulário ASR / contexto doméstico
+406,Maya,maya,feminino,simples,Maya,Maya,,,,Brasil,vocabulário ASR / contexto doméstico
+407,Maycon,maycon,masculino,simples,Maycon,Maycon,,,,Brasil,vocabulário ASR / contexto doméstico
+408,Maysa,maysa,feminino,simples,Maysa,Maysa,,,,Brasil,vocabulário ASR / contexto doméstico
+409,Melina,melina,feminino,simples,Melina,Melina,,,,Brasil,vocabulário ASR / contexto doméstico
+410,Melissa,melissa,feminino,simples,Melissa,Melissa,,,,Brasil,vocabulário ASR / contexto doméstico
+411,Michael,michael,masculino,simples,Michael,Michael,Maicon|Maycon,,,Brasil,vocabulário ASR / contexto doméstico
+412,Michel,michel,masculino,simples,Michel,Michel,,,,Brasil,vocabulário ASR / contexto doméstico
+413,Michele,michele,feminino,simples,Michele,Michele,Michelle,,,Brasil,vocabulário ASR / contexto doméstico
+414,Michelle,michelle,feminino,simples,Michelle,Michelle,,,,Brasil,vocabulário ASR / contexto doméstico
+415,Miguel,miguel,masculino,simples,Miguel,Miguel,,,Migué|Miguelzinho,Brasil,vocabulário ASR / contexto doméstico
+416,Miguel Henrique,miguel henrique,masculino,composto,Miguel|Henrique,Miguel Henrique,,,Migué|Miguelzinho,Brasil,vocabulário ASR / contexto doméstico
+417,Milena,milena,feminino,simples,Milena,Milena,,,,Brasil,vocabulário ASR / contexto doméstico
+418,Milton,milton,masculino,simples,Milton,Milton,,,,Brasil,vocabulário ASR / contexto doméstico
+419,Mirella,mirella,feminino,simples,Mirella,Mirella,,,,Brasil,vocabulário ASR / contexto doméstico
+420,Monica,monica,feminino,simples,Monica,Monica,,,,Brasil,vocabulário ASR / contexto doméstico
+421,Murilo,murilo,masculino,simples,Murilo,Murilo,,,,Brasil,vocabulário ASR / contexto doméstico
+422,Márcia,marcia,feminino,simples,Márcia,Marcia,Marcia,,Má,Brasil,vocabulário ASR / contexto doméstico
+423,Márcio,marcio,masculino,simples,Márcio,Marcio,Marcio,,,Brasil,vocabulário ASR / contexto doméstico
+424,Mário,mario,masculino,simples,Mário,Mario,Mario,,,Brasil,vocabulário ASR / contexto doméstico
+425,Mônica,monica,feminino,simples,Mônica,Monica,Monica,,,Brasil,vocabulário ASR / contexto doméstico
+426,Natalia,natalia,feminino,simples,Natalia,Natalia,,,,Brasil,vocabulário ASR / contexto doméstico
+427,Nathan,nathan,masculino,simples,Nathan,Nathan,,,,Brasil,vocabulário ASR / contexto doméstico
+428,Natália,natalia,feminino,simples,Natália,Natalia,Natalia,,Nati,Brasil,vocabulário ASR / contexto doméstico
+429,Nicholas,nicholas,masculino,simples,Nicholas,Nicholas,,,,Brasil,vocabulário ASR / contexto doméstico
+430,Nicholle,nicholle,feminino,simples,Nicholle,Nicholle,,,,Brasil,vocabulário ASR / contexto doméstico
+431,Nicolas,nicolas,masculino,simples,Nicolas,Nicolas,Nicholas,,,Brasil,vocabulário ASR / contexto doméstico
+432,Nicolau,nicolau,masculino,simples,Nicolau,Nicolau,,,,Brasil,vocabulário ASR / contexto doméstico
+433,Nicole,nicole,feminino,simples,Nicole,Nicole,Nicholle,,,Brasil,vocabulário ASR / contexto doméstico
+434,Nilson,nilson,masculino,simples,Nilson,Nilson,,,,Brasil,vocabulário ASR / contexto doméstico
+435,Nilza,nilza,feminino,simples,Nilza,Nilza,,,,Brasil,vocabulário ASR / contexto doméstico
+436,Nina,nina,feminino,simples,Nina,Nina,,,,Brasil,vocabulário ASR / contexto doméstico
+437,Noah,noah,masculino,simples,Noah,Noah,,,,Brasil,vocabulário ASR / contexto doméstico
+438,Noemi,noemi,feminino,simples,Noemi,Noemi,,,,Brasil,vocabulário ASR / contexto doméstico
+439,Norberto,norberto,masculino,simples,Norberto,Norberto,,,,Brasil,vocabulário ASR / contexto doméstico
+440,Oliver,oliver,masculino,simples,Oliver,Oliver,,,,Brasil,vocabulário ASR / contexto doméstico
+441,Olivia,olivia,feminino,simples,Olivia,Olivia,,,,Brasil,vocabulário ASR / contexto doméstico
+442,Olívia,olivia,feminino,simples,Olívia,Olivia,Olivia,,,Brasil,vocabulário ASR / contexto doméstico
+443,Orlando,orlando,masculino,simples,Orlando,Orlando,,,,Brasil,vocabulário ASR / contexto doméstico
+444,Osvaldo,osvaldo,masculino,simples,Osvaldo,Osvaldo,,,,Brasil,vocabulário ASR / contexto doméstico
+445,Otto,otto,masculino,simples,Otto,Otto,,,,Brasil,vocabulário ASR / contexto doméstico
+446,Otávio,otavio,masculino,simples,Otávio,Otavio,Otavio,,,Brasil,vocabulário ASR / contexto doméstico
+447,Pablo,pablo,masculino,simples,Pablo,Pablo,,,,Brasil,vocabulário ASR / contexto doméstico
+448,Patricia,patricia,feminino,simples,Patricia,Patricia,,,,Brasil,vocabulário ASR / contexto doméstico
+449,Patrick,patrick,masculino,simples,Patrick,Patrick,,,,Brasil,vocabulário ASR / contexto doméstico
+450,Patrícia,patricia,feminino,simples,Patrícia,Patricia,Patricia,,Paty|Pati,Brasil,vocabulário ASR / contexto doméstico
+451,Paula,paula,feminino,simples,Paula,Paula,,,,Brasil,vocabulário ASR / contexto doméstico
+452,Paulo,paulo,masculino,simples,Paulo,Paulo,,,Paulinho,Brasil,vocabulário ASR / contexto doméstico
+453,Paulo Henrique,paulo henrique,masculino,composto,Paulo|Henrique,Paulo Henrique,,,Paulinho,Brasil,vocabulário ASR / contexto doméstico
+454,Paulo Roberto,paulo roberto,masculino,composto,Paulo|Roberto,Paulo Roberto,,,Paulinho,Brasil,vocabulário ASR / contexto doméstico
+455,Pedro,pedro,masculino,simples,Pedro,Pedro,,,Pe|Pedrinho,Brasil,vocabulário ASR / contexto doméstico
+456,Pedro Henrique,pedro henrique,masculino,composto,Pedro|Henrique,Pedro Henrique,,,Pe|Pedrinho,Brasil,vocabulário ASR / contexto doméstico
+457,Pedro Lucas,pedro lucas,masculino,composto,Pedro|Lucas,Pedro Lucas,,,Pe|Pedrinho,Brasil,vocabulário ASR / contexto doméstico
+458,Pedro Miguel,pedro miguel,masculino,composto,Pedro|Miguel,Pedro Miguel,,,Pe|Pedrinho,Brasil,vocabulário ASR / contexto doméstico
+459,Pedro Paulo,pedro paulo,masculino,composto,Pedro|Paulo,Pedro Paulo,,,Pe|Pedrinho,Brasil,vocabulário ASR / contexto doméstico
+460,Philippe,philippe,masculino,simples,Philippe,Philippe,,,,Brasil,vocabulário ASR / contexto doméstico
+461,Phillipe,phillipe,masculino,simples,Phillipe,Phillipe,,,,Brasil,vocabulário ASR / contexto doméstico
+462,Pietra,pietra,feminino,simples,Pietra,Pietra,,,,Brasil,vocabulário ASR / contexto doméstico
+463,Pietro,pietro,masculino,simples,Pietro,Pietro,,,,Brasil,vocabulário ASR / contexto doméstico
+464,Priscila,priscila,feminino,simples,Priscila,Priscila,,,,Brasil,vocabulário ASR / contexto doméstico
+465,Rael,rael,masculino,simples,Rael,Rael,,,,Brasil,vocabulário ASR / contexto doméstico
+466,Rafael,rafael,masculino,simples,Rafael,Rafael,,,Rafa,Brasil,vocabulário ASR / contexto doméstico
+467,Rafael Henrique,rafael henrique,masculino,composto,Rafael|Henrique,Rafael Henrique,,,Rafa,Brasil,vocabulário ASR / contexto doméstico
+468,Rafaela,rafaela,feminino,simples,Rafaela,Rafaela,,,Rafa,Brasil,vocabulário ASR / contexto doméstico
+469,Ramon,ramon,masculino,simples,Ramon,Ramon,,,,Brasil,vocabulário ASR / contexto doméstico
+470,Raquel,raquel,feminino,simples,Raquel,Raquel,,,,Brasil,vocabulário ASR / contexto doméstico
+471,Raul,raul,masculino,simples,Raul,Raul,,,,Brasil,vocabulário ASR / contexto doméstico
+472,Ravi,ravi,masculino,simples,Ravi,Ravi,,,,Brasil,vocabulário ASR / contexto doméstico
+473,Ravi Lucca,ravi lucca,masculino,composto,Ravi|Lucca,Ravi Lucca,,,,Brasil,vocabulário ASR / contexto doméstico
+474,Ravy,ravy,masculino,simples,Ravy,Ravy,,,,Brasil,vocabulário ASR / contexto doméstico
+475,Rebeca,rebeca,feminino,simples,Rebeca,Rebeca,,,,Brasil,vocabulário ASR / contexto doméstico
+476,Regina,regina,feminino,simples,Regina,Regina,,,,Brasil,vocabulário ASR / contexto doméstico
+477,Renan,renan,masculino,simples,Renan,Renan,,,,Brasil,vocabulário ASR / contexto doméstico
+478,Renata,renata,feminino,simples,Renata,Renata,,,Rê,Brasil,vocabulário ASR / contexto doméstico
+479,Renato,renato,masculino,simples,Renato,Renato,,,Rê,Brasil,vocabulário ASR / contexto doméstico
+480,Rhavi,rhavi,masculino,simples,Rhavi,Rhavi,,,,Brasil,vocabulário ASR / contexto doméstico
+481,Ricardo,ricardo,masculino,simples,Ricardo,Ricardo,,,Rico,Brasil,vocabulário ASR / contexto doméstico
+482,Rita,rita,feminino,simples,Rita,Rita,,,,Brasil,vocabulário ASR / contexto doméstico
+483,Roberta,roberta,feminino,simples,Roberta,Roberta,,,,Brasil,vocabulário ASR / contexto doméstico
+484,Roberto,roberto,masculino,simples,Roberto,Roberto,,,Beto,Brasil,vocabulário ASR / contexto doméstico
+485,Rodrigo,rodrigo,masculino,simples,Rodrigo,Rodrigo,,,Rô|Digo,Brasil,vocabulário ASR / contexto doméstico
+486,Rogério,rogerio,masculino,simples,Rogério,Rogerio,Rogerio,,,Brasil,vocabulário ASR / contexto doméstico
+487,Ronaldo,ronaldo,masculino,simples,Ronaldo,Ronaldo,,,,Brasil,vocabulário ASR / contexto doméstico
+488,Rosana,rosana,feminino,simples,Rosana,Rosana,,,,Brasil,vocabulário ASR / contexto doméstico
+489,Rosângela,rosangela,feminino,simples,Rosângela,Rosangela,Rosangela,,,Brasil,vocabulário ASR / contexto doméstico
+490,Ryan,ryan,masculino,simples,Ryan,Ryan,,,,Brasil,vocabulário ASR / contexto doméstico
+491,Rômulo,romulo,masculino,simples,Rômulo,Romulo,Romulo,,,Brasil,vocabulário ASR / contexto doméstico
+492,Sabrina,sabrina,feminino,simples,Sabrina,Sabrina,,,,Brasil,vocabulário ASR / contexto doméstico
+493,Samuel,samuel,masculino,simples,Samuel,Samuel,,,Sam,Brasil,vocabulário ASR / contexto doméstico
+494,Sandra,sandra,feminino,simples,Sandra,Sandra,,,,Brasil,vocabulário ASR / contexto doméstico
+495,Sandro,sandro,masculino,simples,Sandro,Sandro,,,,Brasil,vocabulário ASR / contexto doméstico
+496,Sara,sara,feminino,simples,Sara,Sara,Sarah,,,Brasil,vocabulário ASR / contexto doméstico
+497,Sarah,sarah,feminino,simples,Sarah,Sarah,,,,Brasil,vocabulário ASR / contexto doméstico
+498,Sergio,sergio,masculino,simples,Sergio,Sergio,,,,Brasil,vocabulário ASR / contexto doméstico
+499,Sheila,sheila,feminino,simples,Sheila,Sheila,,,,Brasil,vocabulário ASR / contexto doméstico
+500,Silvana,silvana,feminino,simples,Silvana,Silvana,,,,Brasil,vocabulário ASR / contexto doméstico
+501,Silvio,silvio,masculino,simples,Silvio,Silvio,,,,Brasil,vocabulário ASR / contexto doméstico
+502,Simone,simone,feminino,simples,Simone,Simone,,,,Brasil,vocabulário ASR / contexto doméstico
+503,Sofia,sofia,feminino,simples,Sofia,Sofia,Sophia,,,Brasil,vocabulário ASR / contexto doméstico
+504,Sofia Helena,sofia helena,feminino,composto,Sofia|Helena,Sofia Helena,,Sophia,,Brasil,vocabulário ASR / contexto doméstico
+505,Sonia,sonia,feminino,simples,Sonia,Sonia,,,,Brasil,vocabulário ASR / contexto doméstico
+506,Sophia,sophia,feminino,simples,Sophia,Sophia,Sofia,,,Brasil,vocabulário ASR / contexto doméstico
+507,Sophia Helena,sophia helena,feminino,composto,Sophia|Helena,Sophia Helena,,Sofia,,Brasil,vocabulário ASR / contexto doméstico
+508,Sophie,sophie,feminino,simples,Sophie,Sophie,,,,Brasil,vocabulário ASR / contexto doméstico
+509,Stela,stela,feminino,simples,Stela,Stela,,,,Brasil,vocabulário ASR / contexto doméstico
+510,Stella,stella,feminino,simples,Stella,Stella,,,,Brasil,vocabulário ASR / contexto doméstico
+511,Stephany,stephany,feminino,simples,Stephany,Stephany,,,,Brasil,vocabulário ASR / contexto doméstico
+512,Sueli,sueli,feminino,simples,Sueli,Sueli,,,,Brasil,vocabulário ASR / contexto doméstico
+513,Sérgio,sergio,masculino,simples,Sérgio,Sergio,Sergio,,,Brasil,vocabulário ASR / contexto doméstico
+514,Sônia,sonia,feminino,simples,Sônia,Sonia,Sonia,,,Brasil,vocabulário ASR / contexto doméstico
+515,Taina,taina,feminino,simples,Taina,Taina,,,,Brasil,vocabulário ASR / contexto doméstico
+516,Tainá,taina,feminino,simples,Tainá,Taina,Taina,,,Brasil,vocabulário ASR / contexto doméstico
+517,Tales,tales,masculino,simples,Tales,Tales,,,,Brasil,vocabulário ASR / contexto doméstico
+518,Talita,talita,feminino,simples,Talita,Talita,,,,Brasil,vocabulário ASR / contexto doméstico
+519,Tamara,tamara,feminino,simples,Tamara,Tamara,,,,Brasil,vocabulário ASR / contexto doméstico
+520,Tatiane,tatiane,feminino,simples,Tatiane,Tatiane,,,,Brasil,vocabulário ASR / contexto doméstico
+521,Teresa,teresa,feminino,simples,Teresa,Teresa,,,,Brasil,vocabulário ASR / contexto doméstico
+522,Thales,thales,masculino,simples,Thales,Thales,,,,Brasil,vocabulário ASR / contexto doméstico
+523,Theo,theo,masculino,simples,Theo,Theo,,,,Brasil,vocabulário ASR / contexto doméstico
+524,Theodoro,theodoro,masculino,simples,Theodoro,Theodoro,,,,Brasil,vocabulário ASR / contexto doméstico
+525,Thiago,thiago,masculino,simples,Thiago,Thiago,Tiago,,Thi|Ti,Brasil,vocabulário ASR / contexto doméstico
+526,Thomas,thomas,masculino,simples,Thomas,Thomas,,,,Brasil,vocabulário ASR / contexto doméstico
+527,Théo,theo,masculino,simples,Théo,Theo,Theo,,,Brasil,vocabulário ASR / contexto doméstico
+528,Tiago,tiago,masculino,simples,Tiago,Tiago,Thiago,,Ti,Brasil,vocabulário ASR / contexto doméstico
+529,Tânia,tania,feminino,simples,Tânia,Tania,Tania,,,Brasil,vocabulário ASR / contexto doméstico
+530,Valdir,valdir,masculino,simples,Valdir,Valdir,,,,Brasil,vocabulário ASR / contexto doméstico
+531,Valentim,valentim,masculino,simples,Valentim,Valentim,,,,Brasil,vocabulário ASR / contexto doméstico
+532,Valentina,valentina,feminino,simples,Valentina,Valentina,,,,Brasil,vocabulário ASR / contexto doméstico
+533,Valter,valter,masculino,simples,Valter,Valter,,,,Brasil,vocabulário ASR / contexto doméstico
+534,Valéria,valeria,feminino,simples,Valéria,Valeria,Valeria,,,Brasil,vocabulário ASR / contexto doméstico
+535,Vanderlei,vanderlei,masculino,simples,Vanderlei,Vanderlei,,,,Brasil,vocabulário ASR / contexto doméstico
+536,Vanessa,vanessa,feminino,simples,Vanessa,Vanessa,,,Vane,Brasil,vocabulário ASR / contexto doméstico
+537,Vera,vera,feminino,simples,Vera,Vera,,,,Brasil,vocabulário ASR / contexto doméstico
+538,Verônica,veronica,feminino,simples,Verônica,Veronica,Veronica,,,Brasil,vocabulário ASR / contexto doméstico
+539,Vicente,vicente,masculino,simples,Vicente,Vicente,,,,Brasil,vocabulário ASR / contexto doméstico
+540,Victor,victor,masculino,simples,Victor,Victor,Vitor|Vítor,,Vic,Brasil,vocabulário ASR / contexto doméstico
+541,Victor Hugo,victor hugo,masculino,composto,Victor|Hugo,Victor Hugo,,Vitor|Vítor,Vic,Brasil,vocabulário ASR / contexto doméstico
+542,Vinicius,vinicius,masculino,simples,Vinicius,Vinicius,,,,Brasil,vocabulário ASR / contexto doméstico
+543,Vinícius,vinicius,masculino,simples,Vinícius,Vinicius,Vinicius,,Vini,Brasil,vocabulário ASR / contexto doméstico
+544,Vitor,vitor,masculino,simples,Vitor,Vitor,Victor|Vítor,,Vit,Brasil,vocabulário ASR / contexto doméstico
+545,Vitor Gabriel,vitor gabriel,masculino,composto,Vitor|Gabriel,Vitor Gabriel,,Victor|Vítor,Vit,Brasil,vocabulário ASR / contexto doméstico
+546,Vitor Hugo,vitor hugo,masculino,composto,Vitor|Hugo,Vitor Hugo,,Victor|Vítor,Vit,Brasil,vocabulário ASR / contexto doméstico
+547,Vitoria,vitoria,feminino,simples,Vitoria,Vitoria,,,,Brasil,vocabulário ASR / contexto doméstico
+548,Vitória,vitoria,feminino,simples,Vitória,Vitoria,Vitoria,,,Brasil,vocabulário ASR / contexto doméstico
+549,Viviane,viviane,feminino,simples,Viviane,Viviane,,,,Brasil,vocabulário ASR / contexto doméstico
+550,Vítor,vitor,masculino,simples,Vítor,Vitor,Vitor|Victor,,,Brasil,vocabulário ASR / contexto doméstico
+551,Wagner,wagner,masculino,simples,Wagner,Wagner,,,,Brasil,vocabulário ASR / contexto doméstico
+552,Walace,walace,masculino,simples,Walace,Walace,,,,Brasil,vocabulário ASR / contexto doméstico
+553,Wallace,wallace,masculino,simples,Wallace,Wallace,Walace,,,Brasil,vocabulário ASR / contexto doméstico
+554,Walter,walter,masculino,simples,Walter,Walter,,,,Brasil,vocabulário ASR / contexto doméstico
+555,Washington,washington,masculino,simples,Washington,Washington,,,,Brasil,vocabulário ASR / contexto doméstico
+556,Weslei,weslei,masculino,simples,Weslei,Weslei,,,,Brasil,vocabulário ASR / contexto doméstico
+557,Wesley,wesley,masculino,simples,Wesley,Wesley,Weslei,,,Brasil,vocabulário ASR / contexto doméstico
+558,William,william,masculino,simples,William,William,,,Will,Brasil,vocabulário ASR / contexto doméstico
+559,Wilson,wilson,masculino,simples,Wilson,Wilson,,,,Brasil,vocabulário ASR / contexto doméstico
+560,Yago,yago,masculino,simples,Yago,Yago,,,,Brasil,vocabulário ASR / contexto doméstico
+561,Yan,yan,masculino,simples,Yan,Yan,,,,Brasil,vocabulário ASR / contexto doméstico
+562,Yasmim,yasmim,feminino,simples,Yasmim,Yasmim,,,,Brasil,vocabulário ASR / contexto doméstico
+563,Yasmin,yasmin,feminino,simples,Yasmin,Yasmin,Yasmim|Jasmine,,,Brasil,vocabulário ASR / contexto doméstico
+564,Yuri,yuri,masculino,simples,Yuri,Yuri,,,,Brasil,vocabulário ASR / contexto doméstico
+565,Zoe,zoe,feminino,simples,Zoe,Zoe,,,,Brasil,vocabulário ASR / contexto doméstico
+566,Zé,ze,masculino,simples,Zé,Ze,Ze,,,Brasil,vocabulário ASR / contexto doméstico
+567,Ágatha,agatha,feminino,simples,Ágatha,Agatha,Agatha,,,Brasil,vocabulário ASR / contexto doméstico
+568,Érica,erica,feminino,simples,Érica,Erica,Erica,,,Brasil,vocabulário ASR / contexto doméstico
+569,Ísis,isis,feminino,simples,Ísis,Isis,Isis,,,Brasil,vocabulário ASR / contexto doméstico

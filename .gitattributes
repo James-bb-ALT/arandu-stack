@@ -2,3 +2,4 @@
 *.cmd text eol=crlf
 **/vendor/** -text
 *.onnx -text
+arandu_stack/rootfs/modules/arandu_stt/rootfs/src/arandu_stt/datasets/** -text whitespace=cr-at-eol

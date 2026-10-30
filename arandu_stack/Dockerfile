@@ -21,6 +21,7 @@ RUN python -m venv --system-site-packages /opt/venvs/stt && /opt/venvs/stt/bin/p
 RUN python -m venv --system-site-packages /opt/venvs/tts && /opt/venvs/tts/bin/pip install --no-cache-dir '/opt/modules/arandu_tts/rootfs/src[pocket]'
 RUN python -m venv --system-site-packages /opt/venvs/wake && /opt/venvs/wake/bin/pip install --no-cache-dir -r /opt/modules/arandu_wake/rootfs/src/requirements-detector.txt /opt/modules/arandu_wake/rootfs/src
 COPY app /opt/assistant
+RUN python -c "from pathlib import Path; p=Path('/opt/modules/arandu_stt/rootfs/src/arandu_stt/datasets'); files=['functional_ptbr.txt','supplemental_ptbr.txt','lexicon/arandu_lexico_generico_palavras_ptbr.csv','household/arandu_household_entities_ptbr.csv','names/arandu_nomes_comuns_brasil.csv','commands/arandu_comandos_comuns_ptbr_v2.csv']; missing=[f for f in files if not (p/f).is_file() or not (p/f).stat().st_size]; assert not missing, 'STT datasets missing: '+str(missing)"
 COPY assets /opt/assistant-assets
 WORKDIR /opt/assistant
 EXPOSE 8099 11555 10350 10212 10400

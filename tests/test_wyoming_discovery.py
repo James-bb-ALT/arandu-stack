@@ -71,6 +71,13 @@ class Discovery(unittest.IsolatedAsyncioTestCase):
         kind, data, forwarded = await read_frame(reader)
         self.assertEqual((kind, data, forwarded), ('audio-chunk', {}, raw))
 
+    async def test_partial_info_does_not_register_tts_without_loading_stt(self):
+        manager = Mock(processes={'stt': Mock(returncode=None), 'tts': Mock(returncode=None)})
+        gateway = WyomingGateway(manager, Mock())
+        with patch.object(gateway, 'info', AsyncMock(return_value={'tts': [{'name': 'tts'}]})):
+            with self.assertRaisesRegex(ValueError, 'ainda não estão prontos'):
+                await gateway.description()
+
 
 class PackagedDatasets(unittest.TestCase):
     def test_all_lexical_resources_are_present(self):

@@ -69,6 +69,14 @@ class WyomingGateway:
         return {BACKENDS[key][1]: data[BACKENDS[key][1]] for key, data in zip(keys, results)
                 if data.get(BACKENDS[key][1]) and self.running(key)}
 
+    async def description(self):
+        data = await self.info()
+        if not data or any(self.running(key) and not data.get(kind) for key, (_, kind) in BACKENDS.items()):
+            # Core creates entity platforms only during setup. An empty or partial
+            # Info would silently omit STT until the integration is reloaded.
+            raise ValueError('Módulos Wyoming ainda não estão prontos; aguarde a inicialização')
+        return data
+
     async def start(self):
         self.server = await asyncio.start_server(self.handle, '0.0.0.0', PORT)
         self.journal.event('app', 'Wyoming conjunto na porta 10212: STT, TTS e Wake ativos em uma integração.')
@@ -90,7 +98,7 @@ class WyomingGateway:
             while frame := await asyncio.wait_for(read_frame(reader), 60):
                 kind, _, raw = frame
                 if kind == 'describe':
-                    writer.write(encode_event('info', await self.info()))
+                    writer.write(encode_event('info', await self.description()))
                     await writer.drain()
                     continue
                 key = ROUTES.get(kind)

@@ -2,7 +2,8 @@
   "config": {
     "abort": {
       "already_configured": "Local NLU is already configured.",
-      "single_instance_allowed": "Only one Local NLU instance is supported."
+      "single_instance_allowed": "Only one Local NLU instance is supported.",
+      "invalid_discovery": "Discovery does not match a valid Arandu Stack installation."
     },
     "error": {
       "cannot_connect": "Could not connect to the local add-on."
@@ -15,6 +16,10 @@
         },
         "description": "Addresses are filled from the app installed in Supervisor. Leave blank for automatic detection; enter an address manually without Supervisor.",
         "title": "Connect Arandu Assistant"
+      },
+      "hassio_confirm": {
+        "title": "Arandu Assistant",
+        "description": "Arandu Assistant was found at {endpoint}. Confirm to add the conversation agent. NLU and panel addresses will be filled automatically."
       }
     }
   },

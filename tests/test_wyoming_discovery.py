@@ -46,13 +46,27 @@ class Discovery(unittest.IsolatedAsyncioTestCase):
                 return response
             client.request.side_effect = request
             gateway = Mock(info=AsyncMock(return_value=services), running=lambda key: False)
-            with patch.dict('os.environ', {'SUPERVISOR_TOKEN': 'fixture'}), patch('discovery.ClientSession', return_value=client), patch('discovery.asyncio.sleep', AsyncMock(side_effect=asyncio.CancelledError)):
+            with patch.dict('os.environ', {'SUPERVISOR_TOKEN': 'fixture'}), patch('discovery.ClientSession', return_value=client), patch('discovery.nlu_ready', AsyncMock(return_value=False)), patch('discovery.asyncio.sleep', AsyncMock(side_effect=asyncio.CancelledError)):
                 with self.assertRaises(asyncio.CancelledError):
                     await announce_stack(gateway, Mock())
             posts = [call for call in client.request.call_args_list if call.args[0] == 'POST']
             self.assertEqual(len(posts), 1)
             if posts:
                 self.assertEqual(posts[0].kwargs['json'], {'service': 'wyoming', 'config': {'uri': 'tcp://fixture-arandu-stack:10212'}})
+
+    async def test_nlu_is_discovered_even_when_all_audio_modules_are_off(self):
+        client = MagicMock()
+        client.__aenter__.return_value = client
+        response = MagicMock()
+        response.__aenter__.return_value = response
+        response.json = AsyncMock(return_value={'result': 'ok', 'data': {'hostname': 'abcd1234-arandu-stack'}})
+        client.request.return_value = response
+        gateway = Mock(info=AsyncMock(return_value={}), running=lambda key: False)
+        with patch.dict('os.environ', {'SUPERVISOR_TOKEN': 'fixture'}), patch('discovery.ClientSession', return_value=client), patch('discovery.nlu_ready', AsyncMock(return_value=True)), patch('discovery.asyncio.sleep', AsyncMock(side_effect=asyncio.CancelledError)):
+            with self.assertRaises(asyncio.CancelledError):
+                await announce_stack(gateway, Mock())
+        posts = [call.kwargs['json'] for call in client.request.call_args_list if call.args[0] == 'POST']
+        self.assertEqual(posts, [{'service': 'local_nlu', 'config': {'host': 'abcd1234-arandu-stack'}}])
 
     async def test_gateway_combines_only_running_modules(self):
         manager = Mock(processes={'stt': Mock(returncode=None), 'tts': Mock(returncode=None), 'wake': Mock(returncode=1)})

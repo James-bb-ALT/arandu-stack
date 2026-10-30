@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
 
 from .client import ClientError, LocalNluClient, normalize_endpoint
-from .endpoint_discovery import installed_endpoints, resolve_endpoints
+from .endpoint_discovery import installed_endpoints, resolve_endpoints, from_addons
 from .const import (
     CONF_ENDPOINT,
     CONF_SHADOW_ENABLED,
@@ -42,6 +42,35 @@ class LocalNluConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Configure exactly one local add-on endpoint."""
 
     VERSION = 1
+
+    async def async_step_hassio(self, discovery_info):
+        """Offer the installed companion when Supervisor announces its app."""
+        if self._async_current_entries():
+            return self.async_abort(reason='already_configured')
+        try:
+            endpoint, panel = from_addons({discovery_info.slug: {'hostname': discovery_info.config.get('host')}})
+        except (ClientError, AttributeError, TypeError):
+            return self.async_abort(reason='invalid_discovery')
+        await self.async_set_unique_id(DOMAIN)
+        self._abort_if_unique_id_configured()
+        self._discovered_endpoints = (endpoint, panel)
+        self.context['title_placeholders'] = {'name': 'Arandu Assistant'}
+        return await self.async_step_hassio_confirm()
+
+    async def async_step_hassio_confirm(self, user_input=None):
+        errors = {}
+        endpoint, panel = self._discovered_endpoints
+        if self._async_current_entries():
+            return self.async_abort(reason='already_configured')
+        if user_input is not None:
+            try:
+                await LocalNluClient(async_get_clientsession(self.hass), endpoint).async_health()
+            except ClientError:
+                errors['base'] = 'cannot_connect'
+            else:
+                return self.async_create_entry(title='Arandu Assistant', data={CONF_ENDPOINT: endpoint, 'stack_endpoint': panel})
+        return self.async_show_form(step_id='hassio_confirm', data_schema=vol.Schema({}),
+                                   description_placeholders={'endpoint': endpoint}, errors=errors)
 
     @staticmethod
     @callback

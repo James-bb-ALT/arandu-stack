@@ -2,7 +2,8 @@
   "config": {
     "abort": {
       "already_configured": "O Local NLU já está configurado.",
-      "single_instance_allowed": "Somente uma instância do Local NLU é permitida."
+      "single_instance_allowed": "Somente uma instância do Local NLU é permitida.",
+      "invalid_discovery": "O anúncio não corresponde a uma instalação válida do Arandu Stack."
     },
     "error": {
       "cannot_connect": "Não foi possível conectar ao add-on local."
@@ -15,6 +16,10 @@
         },
         "description": "O endereço é preenchido a partir do app instalado no Supervisor. Deixe vazio para detectar automaticamente; fora do HA OS, informe o endereço manualmente.",
         "title": "Conectar Arandu Assistant"
+      },
+      "hassio_confirm": {
+        "title": "Arandu Assistant",
+        "description": "O app Arandu Assistant foi encontrado em {endpoint}. Confirme para adicionar o agente de conversa. Os endereços NLU e painel serão preenchidos automaticamente."
       }
     }
   },

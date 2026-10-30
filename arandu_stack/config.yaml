@@ -1,6 +1,6 @@
 name: Arandu Assistant
 slug: arandu_stack
-version: "0.3.4"
+version: "0.3.5"
 description: Assistente completo local — Wake, STT, NLU, Decision, LLM e TTS em um app
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
@@ -18,6 +18,6 @@ ports:
   10350/tcp: null
   10212/tcp: null
   10400/tcp: null
-discovery: [wyoming]
+discovery: [wyoming, local_nlu]
 options: {}
 schema: false

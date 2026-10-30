@@ -1,3 +1,10 @@
+# 0.3.5
+
+- App anuncia a integração Arandu Assistant (`local_nlu`) ao Supervisor quando o NLU responde à saúde, inclusive com áudio desativado.
+- Integração HACS 0.6.5 recebe a descoberta e oferece confirmação com endpoints preenchidos.
+- Entradas existentes não são duplicadas, recriadas ou reconfiguradas pelo anúncio.
+- Descoberta Wyoming permanece independente da descoberta do agente NLU.
+
 # 0.3.4
 
 - STT, TTS e Wake compartilham descoberta automática por uma integração Wyoming na porta 10212.

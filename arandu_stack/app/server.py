@@ -13,7 +13,7 @@ from wyoming_gateway import WyomingGateway
 from discovery import announce_stack
 from logs import LogStore, SOURCES, LOGGER
 
-APP_VERSION = '0.3.4'
+APP_VERSION = '0.3.5'
 
 MODULES = {
     'wake': ('arandu_wake', 'Wake', 'Palavra de ativação · Wyoming'),

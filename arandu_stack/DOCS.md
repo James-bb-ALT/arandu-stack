@@ -1,5 +1,18 @@
 # Arandu Assistant — uso
 
+## Descoberta do Arandu Assistant
+
+Use **app 0.3.5 + integração HACS 0.6.5 ou posteriores**. Instale/atualize a
+integração no HACS, reinicie o HA e mantenha o NLU ativo no app. Assim que a
+verificação de saúde responder, o app anuncia o domínio `local_nlu` ao Supervisor.
+O Arandu Assistant aparece em **Configurações → Dispositivos e serviços → Descobertos**.
+Confirme para criar o agente com os endereços preenchidos.
+
+O anúncio é separado de Wyoming e funciona sem nenhum módulo de áudio ativo.
+Entradas já configuradas são preservadas: não haverá outro cartão de descoberta,
+nem necessidade de remover e cadastrar de novo. Sem Supervisor, a adição continua manual.
+Instalar pelo HACS, isoladamente, não executa o app nem cria uma entrada no HA.
+
 ## Onde ver os erros
 
 Abra a interface do Arandu Assistant e selecione **Logs**. A página reúne

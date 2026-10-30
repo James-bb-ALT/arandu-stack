@@ -16,8 +16,10 @@ configura cada módulo pela WebUI, sem instalar seis apps separados.
 4. Para usar o agente de conversa e as frases personalizadas, instale a integração
    **Arandu Assistant** pelo HACS e reinicie o HA. Essa integração é a ponte
    necessária dentro do HA Core; o código dela está neste mesmo repositório.
-5. Configure o endpoint NLU com o hostname do único app e porta **11555**.
-   Configure o endpoint do painel no mesmo hostname, porta **8099**.
+5. Em **Dispositivos e serviços**, configure o **Arandu Assistant descoberto**.
+   Os endereços são preenchidos automaticamente pelo app. Se não houver Supervisor,
+   use Adicionar integração e informe o hostname e porta **11555** para NLU,
+   com painel opcional no mesmo hostname e porta **8099**.
 6. Para áudio, configure o **Arandu Wyoming descoberto automaticamente**. STT,
    TTS e Wake ativos compartilham a porta **10212**. Depois escolha os motores
    na pipeline Assist. Se já configurou o TTS, recarregue essa integração após
@@ -62,7 +64,11 @@ módulo, ou use **Salvar e reiniciar** quando ele estiver ativo.
 
 A palavra selecionada no Wake é aplicada a todas as conexões do serviço, inclusive
 quando um cliente solicita outro nome. Recarregue o motor Wake no Assist após mudar.
-Use a integração HACS **0.6.4 ou posterior**: endpoints vazios são preenchidos
+Use **app 0.3.5 + integração HACS 0.6.5 ou posteriores** para a descoberta automática
+do agente Arandu Assistant, independente da descoberta Wyoming de áudio. Instalar
+pelo HACS baixa os arquivos; reinicie o HA para carregar o fluxo de descoberta.
+Se já existe uma entrada configurada, ela é mantida e não aparece outro cartão.
+Endpoints vazios são preenchidos
 automaticamente pelo app instalado no Supervisor, após verificar a saúde do NLU.
 Entradas com nomes padrão antigos passam a se chamar Arandu Assistant; IDs,
 políticas e nomes personalizados são preservados.
@@ -133,7 +139,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **0.3.4**, para HA OS/Supervised amd64.
+Versão experimental **0.3.5**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

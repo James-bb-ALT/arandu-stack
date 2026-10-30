@@ -158,7 +158,7 @@ class RoutingTests(unittest.IsolatedAsyncioTestCase):
         async def llm(_): return {**proposal(), "intent": "conversation", "target_entities": []}
         result = await pipeline("FIXTURE_TECNICA", forbidden, de, llm, mode="llm")
         self.assertEqual(result["source"], "llm")
-        self.assertEqual(result["stages"]["decision"]["status"], "executed")
+        self.assertEqual(result["stages"]["decision"]["status"], "skipped")
 
 
 class ExecutionTests(unittest.IsolatedAsyncioTestCase):

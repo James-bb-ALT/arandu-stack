@@ -143,14 +143,17 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30):
                 output = await fn(payload)
             stages[name].update(status="executed", input=payload, output=output)
             if type(output) is dict:
-                for metric in ("model", "load_ms", "inference_ms", "cpu_ms", "memory_bytes"):
+                for metric in ("model", "load_ms", "retrieval_ms", "inference_ms", "cpu_ms", "memory_bytes"):
                     if metric in output:
                         stages[name][metric] = output[metric]
             return output
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            stages[name].update(status="error", error=type(exc).__name__, reason=str(exc)[:256])
+            stages[name].update(status="error", error=type(exc).__name__,
+                                error_code=getattr(exc, "code", type(exc).__name__),
+                                phase=getattr(exc, "phase", "timeout" if isinstance(exc, TimeoutError) else "validation"),
+                                reason=str(exc)[:256])
             return None
         finally:
             stages[name]["latency_ms"] = (time.perf_counter() - before) * 1000
@@ -161,7 +164,7 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30):
         result.update(proposal=nl, source="nlu")
     elif mode != "nlu":
         stages["decision"]["fallback_reason"] = (nl or {}).get("reason") or (nl or {}).get("status") or "isolated_mode"
-        de = await run("decision", decision, {"text": text, "nlu": nl})
+        de = await run("decision", decision, {"text": text, "nlu": nl}) if mode != "llm" else None
         if mode != "llm" and de and de.get("decision_status") == "accepted" and de.get("proposal"):
             result.update(proposal=de["proposal"], source="decision")
         elif mode != "decision":

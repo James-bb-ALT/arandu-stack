@@ -71,13 +71,14 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
         except (ValueError, KeyError, TypeError, OSError) as exc:
             import logging
             logging.getLogger('arandu.decision').exception('Falha na solicitação de inferência/configuração')
-            return web.json_response({"error": str(exc)[:256]}, status=422)
+            return web.json_response({"error": "Falha no módulo; consulte os logs.", "error_type": type(exc).__name__,
+                "phase": getattr(adapter, "phase", "validation")}, status=422)
 
     app = web.Application(client_max_size=2_097_152, middlewares=[boundary])
     async def status(request):
         installed = (root / KEY / "arandu-model.json").is_file() and (root / KEY / "model.safetensors").is_file()
         available = installed and True
-        return web.json_response({"package": "arandu-decision", "version": "0.1.0", "protocol": "arandu-inference-v1",
+        return web.json_response({"package": "arandu-decision", "version": "0.1.1", "protocol": "arandu-inference-v1",
             "models": [{"id": KEY, **MODELS[KEY], "installed": installed, "available": bool(available),
                 "reason": None if available else "Pesos ou runtime ausentes"}], "busy": lock.locked(), "threads": threads})
 
@@ -95,11 +96,13 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
                 if action == "unload":
                     adapter.unload()
                     return {"unloaded": True}
-                if action not in {"decision", "load", "calibrate"}:
+                if action not in {"decision", "load", "calibrate", "readiness"}:
                     raise ValueError("Ação indisponível neste pacote")
                 if action == "load":
                     return {"model_fingerprint": await asyncio.to_thread(adapter.load, KEY), "load_ms": adapter.load_ms}
                 catalog = validate_catalog(body.get("catalog"))
+                if action == "readiness":
+                    return adapter.readiness(catalog)
                 if action == "calibrate":
                     return await asyncio.to_thread(adapter.calibrate, catalog, KEY, body["train"], body["validation"])
                 text = body.get("text")

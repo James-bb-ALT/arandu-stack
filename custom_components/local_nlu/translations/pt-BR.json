@@ -30,6 +30,7 @@
         "description": "Defina um cômodo padrão somente quando ele for conhecido. Dispositivos de acesso exigem política explícita e confirmação.",
         "data": {
           "contextual_enabled": "Ativar Arandu NLU 2.0",
+          "configure_intelligence": "Camadas de inteligência",
           "stack_endpoint": "Endpoint Arandu Stack (opcional, porta 8099)",
           "session_ttl": "Validade do contexto (segundos)",
           "default_area": "ID do cômodo padrão",
@@ -52,6 +53,14 @@
         },
         "data_description": {
           "fallback_user_id": "Usuário cujas permissões serão utilizadas quando o Home Assistant não informar a identidade da pipeline de voz. Selecione — para desativar."
+        }
+      },
+      "intelligence": {
+        "title": "Camadas de inteligência",
+        "description": "O NLU é sempre o primeiro. Ative camadas independentes para falhas de compreensão. Alterações valem para novas requisições, sem reiniciar. Os processos dos modelos são iniciados separadamente no app. Decision exige calibração válida: confiança maior que 0,50 e margem mínima 0,08. Consulte instalação, disponibilidade e calibração no AI Lab. As camadas usam o runtime contextual seguro mesmo quando o modo legado estava selecionado.",
+        "data": {
+          "decision_enabled": "Usar Decision Engine",
+          "llm_enabled": "Usar LLM como fallback"
         }
       },
       "identity_binding": {

@@ -70,7 +70,9 @@ def entity(runtime):
                                  "homeassistant.config_entries": SimpleNamespace(ConfigEntry=object),
                                  "homeassistant.helpers.entity_platform": SimpleNamespace(AddConfigEntryEntitiesCallback=object)}):
         module = importlib.reload(importlib.import_module("custom_components.local_nlu.conversation"))
-        return module.LocalNluConversationEntity(SimpleNamespace(runtime_data=runtime, entry_id="fixture-entry"))
+        agent = module.LocalNluConversationEntity(SimpleNamespace(runtime_data=runtime, entry_id="fixture-entry", options={}, data={}))
+        agent.hass = getattr(runtime, "_hass", None)
+        return agent
 
 
 class IdentityFixture(unittest.IsolatedAsyncioTestCase):
@@ -219,7 +221,8 @@ class IdentityRegressionTests(IdentityFixture):
         await runtime.async_process(voice_input())
         self.assertTrue(runtime._contextual.sessions)
         self.assertTrue(runtime._contextual.catalog.cache)
-        await _async_options_updated(hass, SimpleNamespace(runtime_data=runtime))
+        client._endpoint = "http://127.0.0.1:11555"
+        await _async_options_updated(hass, SimpleNamespace(runtime_data=runtime, options={"endpoint": client._endpoint}, data={}))
         self.assertFalse(runtime._contextual.sessions)
         self.assertFalse(runtime._contextual.catalog.cache)
 

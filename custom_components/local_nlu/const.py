@@ -10,6 +10,8 @@ CONF_FALLBACK_USER_ID = "fallback_user_id"
 CONF_VOICE_IDENTITY_BINDINGS = "voice_identity_bindings"
 CONF_DEVICE_IDENTITY_BINDINGS = "device_identity_bindings"
 CONF_SHADOW_ENABLED = "shadow_enabled"
+CONF_DECISION_ENABLED = "decision_enabled"
+CONF_LLM_ENABLED = "llm_enabled"
 DEFAULT_ENDPOINT = "http://local-arandu-stack:11555"
 
 PROTOCOL_VERSION = 1

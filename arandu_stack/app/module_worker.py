@@ -26,7 +26,9 @@ elif key == 'tts':
     configure(options)
     from bundled_voices import prepare
     prepare(data / 'voices')
-    os.environ.update(ARANDU_URI='tcp://127.0.0.1:10213', ARANDU_WEB_ENABLED='0', ARANDU_VOICES_DIR=str(data / 'voices'), HF_HOME=str(data / 'hub'), XDG_CACHE_HOME=str(data / 'cache'), ARANDU_MAX_CHARS=str(options['max_chars']))
+    os.environ.update(ARANDU_URI='tcp://127.0.0.1:10213', ARANDU_WEB_ENABLED='1', ARANDU_WEB_HOST='127.0.0.1',
+        ARANDU_WEB_PORT='11559', ARANDU_WEB_INGRESS_ONLY='0', ARANDU_WEB_TOKEN='',
+        ARANDU_VOICES_DIR=str(data / 'voices'), HF_HOME=str(data / 'hub'), XDG_CACHE_HOME=str(data / 'cache'), ARANDU_MAX_CHARS=str(options['max_chars']))
     main()
 elif key == 'stt':
     root = sources / 'arandu_stt/rootfs/src/arandu_stt'

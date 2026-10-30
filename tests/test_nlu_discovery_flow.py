@@ -29,6 +29,11 @@ class FakeFlow:
 class NluDiscoveryFlow(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
+        # Keep schema class identity stable across patch.dict's module restore.
+        try:
+            import probatio
+        except ImportError:
+            pass
         namespace = types.ModuleType('_arandu_flow_fixture')
         namespace.__path__ = [str(Path(__file__).parents[1] / 'custom_components/local_nlu')]
         entries = types.ModuleType('homeassistant.config_entries')
@@ -65,6 +70,15 @@ class NluDiscoveryFlow(unittest.IsolatedAsyncioTestCase):
         flow.entries = [Mock(entry_id='keep-existing')]
         result = await flow.async_step_hassio(Mock())
         self.assertEqual(result, {'type': 'abort', 'reason': 'already_configured'})
+
+    async def test_intelligence_options_preserve_existing_configuration(self):
+        flow = self.module.LocalNluOptionsFlow()
+        previous = {'session_ttl': 90, 'voice_identity_bindings': {'fixture': 'user'}}
+        flow.config_entry = types.SimpleNamespace(options=previous, data={})
+        for decision,llm in [(False,False),(True,False),(False,True),(True,True)]:
+            result=await flow.async_step_intelligence({'decision_enabled':decision,'llm_enabled':llm})
+            self.assertEqual(result['data'],{**previous,'decision_enabled':decision,'llm_enabled':llm})
+        self.assertEqual(flow.config_entry.options,previous)
 
     async def test_unrelated_app_discovery_is_rejected(self):
         flow = self.module.LocalNluConfigFlow()

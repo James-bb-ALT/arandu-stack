@@ -1,3 +1,14 @@
+# 0.4.0 / HACS 0.7.0
+
+- Toggles independentes de Decision e LLM nas opções HACS, desligados por padrão e aplicados sem recriar o agente.
+- Fallback semântico no runtime contextual, com catálogo autorizado, revalidação de identidade/política/catálogo e executor HA existente.
+- Decision mantém calibração obrigatória, confiança exclusiva acima de 0,50 e margem mínima de 0,08. Estado de calibração consultável sem carregar pesos.
+- LLM-only dispensa Decision e valida os candidatos da recuperação própria; produção exige evidência de alvo único e recusa empates.
+- AI Lab separa hipótese, proposta, validação e execução; mostra dispositivos, áreas, motivos, estágios expansíveis e falhas de áudio separadas.
+- Gateway preserva códigos HTTP de falhas internas sem expor corpos brutos. TTS do laboratório usa uma ponte interna para o servidor de síntese em loopback.
+- LLM reutiliza um servidor por processo do módulo até unload/stop; Decision mede recuperação separadamente de inferência e carga.
+- Serviços internos Decision/LLM 0.1.1. Compatibilidade HACS/Rust diagnosticada por protocolo; versões dos componentes continuam independentes.
+
 # 0.3.5
 
 - App anuncia a integração Arandu Assistant (`local_nlu`) ao Supervisor quando o NLU responde à saúde, inclusive com áudio desativado.

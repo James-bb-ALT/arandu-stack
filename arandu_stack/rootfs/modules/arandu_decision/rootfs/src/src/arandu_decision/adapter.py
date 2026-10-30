@@ -18,6 +18,7 @@ class Encoder:
         self.key = None
         self.cache = {}
         self.load_ms = 0
+        self.phase = "loading"
 
     def unload(self):
         self.model = None
@@ -45,10 +46,29 @@ class Encoder:
             self.load_ms = (time.perf_counter() - started) * 1000
         return signature
 
+    def readiness(self, catalog):
+        """Inspect binding without loading weights or fitting calibration."""
+        manifest = self.root / "e5-small" / "arandu-model.json"
+        calibration_file = self.root / "e5-small-calibration.json"
+        valid = False
+        reason = "joint_calibration_missing"
+        if manifest.is_file() and calibration_file.is_file():
+            signature = digest({"key": "e5-small", "adapter": "embedding-v1", "manifest": json.loads(manifest.read_text())})
+            calibration = json.loads(calibration_file.read_text())
+            valid = (calibration.get("version") == VERSION and calibration.get("model") == signature
+                     and calibration.get("catalog") == digest(catalog) and calibration.get("validated") is True)
+            reason = "joint_calibrated" if valid else "calibration_model_or_catalog_changed"
+        return {"calibration_valid": valid, "can_accept": valid, "diagnostic_only": not valid,
+                "reason": reason, "loaded": self.model is not None,
+                "note": "Cada hipótese ainda exige confiança calibrada > threshold e margem suficiente."}
+
 
     def infer(self, text, catalog, key, config):
+        total_started = time.perf_counter()
+        self.phase = "loading"
         cpu_start = time.process_time()
         signature = self.load(key)
+        self.phase = "retrieval"
         started = time.perf_counter()
         rows = candidates(catalog)
         import numpy as np
@@ -61,6 +81,9 @@ class Encoder:
         missing = [d for d in descriptions if d not in self.cache]
         if missing:
             self.cache.update(zip(missing, encode(missing)))
+        retrieval_ms = (time.perf_counter() - started) * 1000
+        inference_started = time.perf_counter()
+        self.phase = "inference"
         query = encode([text], query=True)[0]
         ranking = []
         for row in rows:
@@ -69,9 +92,12 @@ class Encoder:
             ranking.append({**row, "raw_score": max(-1., min(1., min(target_score, intent_score))),
                             "target_score": target_score, "intent_score": intent_score,
                             "reason": "minimum(intent cosine, device cosine); joint candidate"})
-        return self.finish(ranking, signature, catalog, key, config, started, cpu_start)
+        result = self.finish(ranking, signature, catalog, key, config, inference_started, cpu_start)
+        result.update(retrieval_ms=retrieval_ms, total_ms=(time.perf_counter() - total_started) * 1000)
+        return result
 
     def finish(self, ranking, signature, catalog, key, config, started, cpu_start):
+        self.phase = "validation"
         calibration_file = self.root / (key + "-calibration.json")
         calibration = json.loads(calibration_file.read_text()) if calibration_file.exists() else None
         result = decision_policy(ranking, signature, catalog, config, calibration)

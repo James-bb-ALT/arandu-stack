@@ -13,7 +13,16 @@ from wyoming_gateway import WyomingGateway
 from discovery import announce_stack
 from logs import LogStore, SOURCES, LOGGER
 
-APP_VERSION = '0.3.5'
+APP_VERSION = '0.4.0'
+
+async def read_limited(content, limit):
+    """Read to EOF: StreamReader.read(n) may return only the first network chunk."""
+    raw = bytearray()
+    async for chunk in content.iter_chunked(8192):
+        raw.extend(chunk)
+        if len(raw) > limit:
+            raise ValueError('Resposta do módulo excedeu o limite de bytes')
+    return bytes(raw)
 
 MODULES = {
     'wake': ('arandu_wake', 'Wake', 'Palavra de ativação · Wyoming'),
@@ -75,15 +84,15 @@ def create_app(data_dir, local=False):
         elif local:
             if peer not in {'127.0.0.1', '::1'} or request.host not in {'127.0.0.1:8770', 'localhost:8770'}:
                 raise web.HTTPForbidden()
-        elif request.path not in {'/runtime', '/status', '/infer'} and peer != '172.30.32.2':
+        elif request.path not in {'/runtime', '/status', '/infer', '/synthesize'} and peer != '172.30.32.2':
             raise web.HTTPForbidden()
-        elif request.path in {'/runtime', '/status', '/infer'}:
+        elif request.path in {'/runtime', '/status', '/infer', '/synthesize'}:
             import ipaddress
             if not peer or ipaddress.ip_address(peer) not in ipaddress.ip_network('172.30.32.0/23'):
                 raise web.HTTPForbidden()
-        if request.path == '/infer' and (request.headers.get('Origin') or request.headers.get('X-Arandu-Lab') != '1'):
+        if request.path in {'/infer', '/synthesize'} and (request.headers.get('Origin') or request.headers.get('X-Arandu-Lab') != '1'):
             raise web.HTTPForbidden()
-        if request.method != 'GET' and request.path != '/infer' and request.headers.get('X-Arandu-CSRF') != csrf:
+        if request.method != 'GET' and request.path not in {'/infer', '/synthesize'} and request.headers.get('X-Arandu-CSRF') != csrf:
             raise web.HTTPForbidden()
         try:
             response = await handler(request)
@@ -170,17 +179,43 @@ def create_app(data_dir, local=False):
         async with ClientSession(timeout=ClientTimeout(total=185), trust_env=False) as session:
             async with session.request('GET' if payload is None else 'POST', url, json=payload,
                     headers={'X-Arandu-Lab': '1'}, allow_redirects=False) as response:
-                raw = await response.content.read(2_097_153)
-                if len(raw) > 2_097_152 or response.status != 200:
-                    raise ValueError('Módulo recusou a solicitação ou está indisponível')
+                raw = await read_limited(response.content, 2_097_152)
+                if response.status != 200:
+                    # Preserve HTTP failure classification without forwarding raw model output.
+                    phase = 'unknown'
+                    try:
+                        diagnostic = json.loads(raw)
+                        if diagnostic.get('phase') in {'loading', 'retrieval', 'inference', 'validation'}:
+                            phase = diagnostic['phase']
+                    except (ValueError, AttributeError):
+                        pass
+                    raise web.HTTPBadGateway(text=json.dumps({'stage': key, 'code': 'upstream_http_' + str(response.status),
+                        'phase': phase, 'message': 'Módulo recusou a solicitação; consulte os logs do módulo.'}), content_type='application/json')
                 return json.loads(raw)
+    async def synthesize(request):
+        body = await request.json()
+        if (type(body) is not dict or type(body.get('text')) is not str or not 1 <= len(body['text']) <= 512
+                or body.get('engine') not in {'piper', 'pocket'}):
+            raise ValueError('Texto ou motor TTS inválido')
+        async with ClientSession(timeout=ClientTimeout(total=60), trust_env=False) as session:
+            async with session.post('http://127.0.0.1:11559/api/synthesize',
+                    json={'text': body['text'], 'engine': body['engine']}, headers={'X-Arandu-UI': '1'}, allow_redirects=False) as response:
+                raw = await read_limited(response.content, 4_194_304)
+                if response.status != 200:
+                    raise web.HTTPBadGateway(text=json.dumps({'stage': 'tts', 'code': 'upstream_http_' + str(response.status),
+                        'phase': 'inference', 'message': 'TTS recusou a síntese; consulte os logs do módulo.'}), content_type='application/json')
+                if len(raw) > 4_194_304 or not raw.startswith(b'RIFF'):
+                    raise ValueError('TTS não retornou WAV válido dentro do limite')
+                return web.Response(body=raw, content_type='audio/wav',
+                    headers={'X-Arandu-Ttfb-Ms': response.headers.get('X-Arandu-Ttfb-Ms', '')})
+
     async def model_status(request):
         async def one(key, model):
             try:
                 result = await model_request(key, '/status')
                 return result['models'][0]
             except Exception:
-                return {'id': model, 'name': MODULES[key][1], 'kind': key, 'installed': False,
+                return {'id': model, 'name': MODULES[key][1], 'kind': key, 'installed': None,
                         'available': False, 'reason': 'Módulo ausente, parado ou inacessível'}
         return web.json_response({'models': await asyncio.gather(one('decision', 'e5-small'), one('llm', 'tucano'))})
     async def model_infer(request):
@@ -227,6 +262,7 @@ def create_app(data_dir, local=False):
     app.router.add_get('/runtime', runtime)
     app.router.add_get('/status', model_status)
     app.router.add_post('/infer', model_infer)
+    app.router.add_post('/synthesize', synthesize)
     app.router.add_static('/static', Path(__file__).parent / 'static')
     return app
 

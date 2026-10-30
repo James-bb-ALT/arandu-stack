@@ -241,7 +241,8 @@ class LocalNluRuntime:
         self._contextual = None
 
     async def async_process(self, user_input: Any) -> RuntimeResult:
-        if self._contextual_enabled():
+        routing = self._contextual_options()
+        if self._contextual_enabled() or routing.get("decision_enabled") is True or routing.get("llm_enabled") is True:
             if self._contextual is None:
                 from .contextual_runtime import ContextualRuntime
                 self._contextual = ContextualRuntime(self._hass, self._client, self._contextual_options)

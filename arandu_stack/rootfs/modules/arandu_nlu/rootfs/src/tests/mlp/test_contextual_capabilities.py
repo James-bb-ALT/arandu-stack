@@ -30,7 +30,7 @@ class DiagnosticsTests(unittest.IsolatedAsyncioTestCase):
         class Backend:
             async def async_diagnostics(self):
                 return {"service_version": version, "protocols": [1, 2, 3, 4], "build_id": "fixture", "execution": "passive"}
-        runtime = SimpleNamespace(_client=Backend(), _contextual_enabled=lambda: True, _v2_enabled=lambda: False)
+        runtime = SimpleNamespace(_client=Backend(), _contextual_enabled=lambda: True, _contextual_options=lambda: {}, _v2_enabled=lambda: False)
         entry = SimpleNamespace(runtime_data=runtime)
         value = await async_get_config_entry_diagnostics(None, entry)
         self.assertTrue(value["compatible"])
@@ -39,7 +39,9 @@ class DiagnosticsTests(unittest.IsolatedAsyncioTestCase):
         runtime._contextual_enabled = lambda: False
         self.assertEqual((await async_get_config_entry_diagnostics(None, entry))["protocol"], 1)
         version = "0.0.0"
-        self.assertEqual((await async_get_config_entry_diagnostics(None, entry))["warning"], "integration_addon_version_mismatch")
+        self.assertTrue((await async_get_config_entry_diagnostics(None, entry))["compatible"])
+        with patch.object(runtime._client, "async_diagnostics", return_value={"service_version": version, "protocols": [4]}):
+            self.assertEqual((await async_get_config_entry_diagnostics(None, entry))["warning"], "integration_addon_protocol_mismatch")
 
     async def test_specific_failure_speech_and_backend_failure(self):
         for reason, expected in [("unknown_area", "cômodo"), ("no_accessible_sensor", "sensor acessível"), ("sensor_unavailable", "indisponível"), ("invalid_measurement", "medição válida")]:
@@ -77,7 +79,8 @@ class DiagnosticsTests(unittest.IsolatedAsyncioTestCase):
                 class Runtime:
                     async def async_process(self, user_input):
                         return expected
-                entity = module.LocalNluConversationEntity(SimpleNamespace(runtime_data=Runtime(), entry_id="fixture"))
+                entity = module.LocalNluConversationEntity(SimpleNamespace(runtime_data=Runtime(), entry_id="fixture", options={}, data={}))
+                entity.hass = None
                 result = await entity.async_process(input_())
                 self.assertEqual((result.response.speech, result.conversation_id, result.continue_conversation), (speech, "answer", followup))
                 self.assertEqual(result.response.error is None, followup)

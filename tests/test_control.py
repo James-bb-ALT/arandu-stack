@@ -11,6 +11,7 @@ from unittest.mock import patch, AsyncMock
 sys.path.insert(0, str(Path(__file__).parents[1] / 'arandu_stack/app'))
 from modules import ModuleManager, validate_options, DEFAULTS
 from settings import FIELDS
+from aiohttp.test_utils import TestClient, TestServer
 
 spec = importlib.util.spec_from_file_location('arandu_control', Path(__file__).parents[1] / 'arandu_stack/app/server.py')
 control = importlib.util.module_from_spec(spec)
@@ -49,6 +50,52 @@ class Phrases(unittest.TestCase):
         self.assertEqual(control.redact({'threads': 2, 'hf_token': 'fixture', 'remote_token': 'fixture'}), {'threads': 2})
 
 class Scope(unittest.IsolatedAsyncioTestCase):
+    async def test_tts_gateway_and_inference_error_contracts(self):
+        class Response:
+            status=200
+            headers={'X-Arandu-Ttfb-Ms':'12'}
+            class Content:
+                payload=b'RIFF_FIXTURE_TECNICA'
+                async def iter_chunked(self,size):
+                    yield self.payload[:4]
+                    yield self.payload[4:]
+            content=Content()
+            async def __aenter__(self): return self
+            async def __aexit__(self,*args): pass
+        class Session:
+            def __init__(self,**kwargs): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self,*args): pass
+            def post(self,*args,**kwargs):
+                self.arguments=(args,kwargs)
+                return Response()
+            def request(self,*args,**kwargs): return Response()
+        with tempfile.TemporaryDirectory() as directory, patch.object(control.LogStore,'configure_logging'):
+            app=control.create_app(Path(directory),local=True)
+            # This contract test must never start module processes.
+            app.on_startup.clear()
+            app.on_cleanup.clear()
+            client=TestClient(TestServer(app))
+            await client.start_server()
+            try:
+                headers={'Host':'127.0.0.1:8770','X-Arandu-Lab':'1'}
+                with patch.object(control,'ClientSession',Session):
+                    response=await client.post('/synthesize',json={'text':'FIXTURE_TECNICA','engine':'piper'},headers=headers)
+                    self.assertEqual(response.status,200)
+                    self.assertTrue((await response.read()).startswith(b'RIFF'))
+                    self.assertEqual(response.headers['X-Arandu-Ttfb-Ms'],'12')
+                    Response.status=422
+                    Response.content.payload=b'FIXTURE_PRIVATE_TOKEN'
+                    response=await client.post('/infer',json={'action':'llm'},headers=headers)
+                    self.assertEqual(response.status,502)
+                    body=await response.json()
+                    self.assertEqual(body['code'],'upstream_http_422')
+                    self.assertNotIn('FIXTURE_PRIVATE_TOKEN',str(body))
+                    blocked=await client.post('/synthesize',json={'text':'x','engine':'piper'},headers={'Host':'127.0.0.1:8770'})
+                    self.assertEqual(blocked.status,403)
+            finally:
+                await client.close()
+
     async def test_module_start_failure_does_not_take_down_log_page(self):
         with tempfile.TemporaryDirectory() as directory:
             manager = ModuleManager(Path(directory))
@@ -110,7 +157,7 @@ class Scope(unittest.IsolatedAsyncioTestCase):
                 process.returncode = 0
                 return 0
             process.wait = AsyncMock(side_effect=finished)
-            with patch.dict(os.environ, {'SUPERVISOR_TOKEN': 'FIXTURE_TECNICA_TOKEN', 'HA_TOKEN': 'FIXTURE_TECNICA_TOKEN'}), patch.object(manager, 'installed', return_value=True), patch('modules.asyncio.create_subprocess_exec', AsyncMock(return_value=process)) as spawn, patch('modules.os.killpg'):
+            with patch.dict(os.environ, {'SUPERVISOR_TOKEN': 'FIXTURE_TECNICA_TOKEN', 'HA_TOKEN': 'FIXTURE_TECNICA_TOKEN'}), patch.object(manager, 'installed', return_value=True), patch('modules.asyncio.create_subprocess_exec', AsyncMock(return_value=process)) as spawn, patch('modules.os.killpg', create=True):
                 await manager.start('llm')
                 self.assertNotIn('SUPERVISOR_TOKEN', spawn.call_args.kwargs['env'])
                 self.assertNotIn('HA_TOKEN', spawn.call_args.kwargs['env'])

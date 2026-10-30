@@ -33,7 +33,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         lambda: bool(entry.options.get(CONF_V2_ENABLED, False)),
         lambda: bool(entry.options.get(CONF_SHADOW_ENABLED, False)),
         lambda: bool(entry.options.get(CONF_CONTEXTUAL_ENABLED, True)),
-        lambda: {**dict(entry.options), **getattr(entry.runtime_data, '_stack_options', {})},
+        lambda: {"stack_endpoint": entry.data.get("stack_endpoint", ""), **dict(entry.options), **getattr(entry.runtime_data, '_stack_options', {})},
     )
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

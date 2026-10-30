@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import shutil
 import sys
+import time
 from .contracts import MODELS, candidates, digest
 from .adapter import Llama
 
@@ -71,13 +72,14 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
         except (ValueError, KeyError, TypeError, OSError) as exc:
             import logging
             logging.getLogger('arandu.llm').exception('Falha na solicitação de inferência/configuração')
-            return web.json_response({"error": str(exc)[:256]}, status=422)
+            return web.json_response({"error": "Falha no módulo; consulte os logs.", "error_type": type(exc).__name__,
+                "phase": getattr(adapter, "phase", "validation")}, status=422)
 
     app = web.Application(client_max_size=2_097_152, middlewares=[boundary])
     async def status(request):
         installed = (root / KEY / "arandu-model.json").is_file() and (root / KEY / MODELS[KEY]["file"]).is_file()
         available = installed and bool(executable and Path(executable).is_file())
-        return web.json_response({"package": "arandu-llm", "version": "0.1.0", "protocol": "arandu-inference-v1",
+        return web.json_response({"package": "arandu-llm", "version": "0.1.1", "protocol": "arandu-inference-v1",
             "models": [{"id": KEY, **MODELS[KEY], "installed": installed, "available": bool(available),
                 "reason": None if available else "Pesos ou runtime ausentes"}], "busy": lock.locked(), "threads": threads})
 
@@ -107,9 +109,13 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
                 text = body.get("text")
                 if not isinstance(text, str) or not 1 <= len(text) <= 512 or any(ord(c) < 32 for c in text):
                     raise ValueError("Texto deve ter 1–512 caracteres em uma linha")
-                retrieval = body.get("decision") or retrieve(text, catalog)
+                before = time.perf_counter()
+                external = body.get("decision") or {}
+                retrieval = external if external.get("ranking") else retrieve(text, catalog)
+                retrieval_ms = (time.perf_counter() - before) * 1000
                 result = await adapter.infer({**body, "llm_model": KEY, "decision": retrieval}, catalog)
                 result["retrieval"] = retrieval
+                result["retrieval_ms"] = retrieval_ms
                 result.update(catalog_fingerprint=digest(catalog), catalog_entities=len(catalog["entities"]), service="arandu-llm")
                 return result
         task = asyncio.create_task(work())

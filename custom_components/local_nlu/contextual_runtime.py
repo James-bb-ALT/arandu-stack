@@ -108,7 +108,7 @@ class ContextualRuntime:
         service = await self.client.async_diagnostics()
         return {**service, "integration_version": integration_version, "protocol": 4,
                 "contextual_enabled": True, "route": "/v4/interpret",
-                "compatible": service["service_version"] == integration_version and 4 in service["protocols"],
+                "compatible": 4 in service["protocols"],
                 "identity": self.identity_diagnostics(),
                 "last_outcome": getattr(self, "last_outcome", None)}
 
@@ -263,6 +263,31 @@ class ContextualRuntime:
                 await self._send(snapshot)
                 outcome = parse(await self.client.async_interpret_v4(payload))
             self.validate_options(options)
+            from .intelligence import eligible, fallback
+            if (options.get("decision_enabled") is True or options.get("llm_enabled") is True) and eligible(outcome, pending=pending is not None or bool(session.candidates)):
+                from .ai_lab import local_request
+                from homeassistant.helpers.aiohttp_client import async_get_clientsession
+                endpoint = options.get("stack_endpoint", "")
+                async def infer(body):
+                    if not endpoint:
+                        raise ValueError("Endpoint Arandu Stack ausente")
+                    return await local_request(async_get_clientsession(self.hass), endpoint, "/infer", payload=body, timeout=30)
+                proposed, trace = await fallback(user_input.text, snapshot, options, infer,
+                    {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets)})
+                self.validate_options(options)
+                self.last_intelligence = trace
+                if proposed:
+                    if origin_context(self.hass, user_input, options) != spatial_context:
+                        raise ExecutionError("stale", "origin_area_changed")
+                    current_user = await self.revalidate(identity, user_input, options)
+                    from .contextual_catalog import build
+                    if build(self.hass, current_user, options).payload["generation"] != generation:
+                        raise ExecutionError("stale", "semantic_catalog_changed")
+                    self.stage = "planning"
+                    result = await self.execute(proposed, snapshot, user_input, session, options, identity)
+                    timings = {**result.timings, **{name + "_ms": value["latency_ms"] for name, value in trace.items() if "latency_ms" in value},
+                               "integration_total_ms": (time.perf_counter() - started) * 1000}
+                    return replace(result, timings=timings)
             if outcome.status == "clarification":
                 # Interpretation awaits I/O; cached names are not permission authority.
                 from .contextual_catalog import build

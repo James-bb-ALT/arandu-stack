@@ -46,6 +46,7 @@ class AranduAILab extends HTMLElement {
       </section>
       <div class="layout"><aside>
       <section class="card"><h2>Componentes</h2>
+        <p id="layerReadiness" role="status">Verifique os modelos para consultar a pipeline real.</p>
         <label for="stt">STT · FastConformer existente</label><select id="stt"><option value="original">Original</option><option value="adapted">Adaptado (se instalado)</option></select>
         <label for="mode">Modo de interpretação</label><select id="mode"><option value="pipeline">Pipeline com fallbacks</option><option value="nlu">NLU Rust isolado</option><option value="decision">Decision isolado</option><option value="llm">LLM isolado + recuperação</option></select>
         <label for="decision">Decision Engine</label><select id="decision"><option value="e5-small">Arandu Decision · E5 Small · verificar serviço</option></select>
@@ -74,9 +75,12 @@ class AranduAILab extends HTMLElement {
         <label><input type="checkbox" id="real"> Habilitar execução real com revisão de cada proposta</label>
         <button id="execute" disabled>Executar ação revisada (30 s)</button>
       </section>
-      <section class="card"><h2>Resultado do pipeline</h2><div id="stages"></div><p id="answer" aria-live="polite"></p><div id="metrics" class="metrics"></div>
-        <div class="scroll"><table><thead><tr><th>Candidato</th><th>Ação</th><th>Score bruto</th></tr></thead><tbody id="ranking"></tbody></table></div>
-        <details><summary>Entradas, saídas, erros e JSON final</summary><pre id="output">Nenhum teste executado.</pre></details>
+      <section class="card"><h2>Resultado da interpretação</h2><p id="productionPolicy" class="muted">Modo de teste independente. A política de produção é definida nas opções da integração HACS.</p>
+        <h3>Ação final proposta</h3><p id="answer" aria-live="polite">Nenhum teste executado.</p><div id="finalAction"></div>
+        <div id="interpretations"></div><div id="stages"></div><div id="metrics" class="metrics"></div>
+        <details><summary>Modo avançado · ranking e diagnósticos completos</summary>
+        <div class="scroll"><table><thead><tr><th>Posição</th><th>Dispositivo</th><th>Cômodo</th><th>Ação</th><th>Similaridade bruta</th><th>Elegibilidade</th></tr></thead><tbody id="ranking"></tbody></table></div>
+        <pre id="output">Nenhum teste executado.</pre></details>
         <div class="row"><button id="speak">Testar resposta TTS</button><button id="json">Exportar JSON</button><button id="csv">Exportar CSV</button></div><audio id="player" controls></audio>
       </section>
       <section class="card"><h2>Suíte de comandos e benchmark</h2><p class="muted">Edite o JSON. Exemplos sem rótulo não entram na acurácia. Informe entidades reais; nunca use resultados do modelo como gabarito.</p>
@@ -116,7 +120,7 @@ class AranduAILab extends HTMLElement {
       if (!this.$('real').checked || !this.last?.execution_token) throw Error('Revise e habilite a execução real');
       const token = this.last.execution_token; delete this.last.execution_token;
       const before = performance.now(); const result = await this.call('execute', {token, confirm: true});
-      this.last.stages.ha = {status:'executed', latency_ms:performance.now()-before, output:result};
+      this.last.stages.ha = {status:['success','query_success'].includes(result.code)?'executed':'rejected', latency_ms:performance.now()-before, output:result};
       this.last.execution = result; this.last.dry_run = false; this.render(this.last); this.persist();
     });
     this.$('record').onclick = () => this.recorder ? this.stopRecording() : this.startRecording();
@@ -144,7 +148,8 @@ class AranduAILab extends HTMLElement {
       if (this.last) { this.last.stages.tts = {status:'executed', model:r.model, latency_ms:r.latency_ms, first_chunk_ms:r.first_chunk_ms}; this.render(this.last); this.persist(); }
       await this.$('player').play();
     } catch(e) {
-      if(this.last){this.last.stages.tts={status:'error',error:e.message||String(e)};this.render(this.last);this.persist();}throw e;
+      if(this.last){this.last.stages.tts={status:'error',error:e.message||String(e)};this.render(this.last);this.persist();}
+      throw new Error('TTS: '+(e.message||String(e))+'. O resultado da interpretação foi preservado.');
     }
   }
   executionState() { this.$('execute').disabled = this.busy || !this.$('real').checked || !this.last?.execution_token;this.$('demoStop').disabled=!this.demoRunning||this.demoStopRequested; }
@@ -165,12 +170,16 @@ class AranduAILab extends HTMLElement {
     let result;
     try{result=await this.call('status');}catch(error){result={models:[],error:error.message||String(error)};}
     this.modelStatus=result.models;
+    try {
+      const state=await this.call('readiness'),p=state.production_policy,d=state.decision;
+      this.$('layerReadiness').textContent='Pipeline real: NLU ativo; Decision '+(p.decision?'habilitado':'desabilitado')+'; LLM '+(p.llm?'habilitado':'desabilitado')+'. Decision: '+(d.calibration_valid===true?'calibração válida; aceitação depende da confiança e margem de cada hipótese':d.calibration_valid===false?'não calibrado; somente diagnóstico':'indisponível; calibração não verificada')+'. Os testes abaixo são independentes.';
+    } catch { this.$('layerReadiness').textContent='Não foi possível consultar a política da integração. Testes independentes.'; }
     const fill = (id, kind) => {
       const previous=this.$(id).value;
       this.$(id).replaceChildren();
       for (const model of result.models.filter(m=>m.kind===kind)) {
         const option = document.createElement('option'); option.value = model.id;
-        option.textContent = model.name + (model.available ? ' · disponível' : ' · indisponível: ' + model.reason);
+        option.textContent = model.name + (model.installed?' · instalado':' · instalação não confirmada') + (model.available ? ' · serviço respondendo' : ' · indisponível: ' + model.reason);
         option.disabled = !model.available; this.$(id).append(option);
       }
       if([...this.$(id).options].some(o=>o.value===previous&&!o.disabled))this.$(id).value=previous;
@@ -250,23 +259,61 @@ class AranduAILab extends HTMLElement {
     const input = previous || {text:this.$('text').value, model:this.$('decision').value || 'e5-small', llm_model:this.$('llm').value || 'tucano', mode:this.$('mode').value,
       threshold:Number(this.$('threshold').value), min_margin:Number(this.$('margin').value)};
     this.lastInput = structuredClone(input); this.last = await this.call('run', input);
+    this.last.input_origin = this.transcription?.text === input.text ? 'transcrito' : 'digitado';
     if (this.transcription && this.transcription.text === input.text) this.last.stages.stt = {status:'executed', ...this.transcription};
     this.render(this.last); this.persist();
     if(this.$('autoTts').checked)await this.speak();
   }
   render(result) {
+    const labels = {turn_on:'ligar',turn_off:'desligar',query:'consultar'};
+    const statuses = {executed:'executado',accepted:'aceito',rejected:'rejeitado',ambiguous:'aguardando esclarecimento',uncalibrated:'não calibrado',skipped:'não necessário',error:'erro'};
+    const stageNames={vad:'VAD',stt:'STT',nlu:'NLU',decision:'Decision',llm:'LLM',validation:'Validação HA',ha:'Home Assistant',response:'Resposta',tts:'TTS'};
+    const reasons = {joint_calibration_missing:'Sem calibração válida para este catálogo e modelo. A hipótese não autoriza uma ação.',insufficient_margin:'Candidatos próximos demais. É necessário esclarecer o alvo.',below_threshold:'Confiança calibrada abaixo do mínimo.',joint_calibrated:'Confiança calibrada e margem suficientes.',no_eligible_candidate:'Nenhum candidato elegível.'};
+    const entities = new Map((result.catalog?.entities || []).map(r=>[r.entity_id,r]));
+    const areas = new Map((result.catalog?.areas || []).map(a=>[a.area_id,a.names?.[0] || a.area_id]));
+    const policy = result.production_policy;
+    this.$('productionPolicy').textContent = 'Teste independente; não altera a pipeline real. ' + (policy ? 'Produção: NLU' + (policy.decision?' → Decision':'') + (policy.llm?' → LLM':'') + '. Toggles nas opções HACS; iniciar/parar modelos é um controle separado.' : 'Política de produção não consultada neste resultado.');
+    const interpretation = this.$('interpretations'); interpretation.replaceChildren();
+    const paragraph = (parent,title,value) => { const p=document.createElement('p'),strong=document.createElement('strong');strong.textContent=title+': ';p.append(strong,document.createTextNode(value));parent.append(p); };
+    paragraph(interpretation,'Comando recebido',`${result.text} (${result.input_origin || 'digitado'})`);
+    for (const name of ['nlu','decision','llm']) {
+      const stage=result.stages[name] || {}, output=stage.output || {}, p=output.proposal || output;
+      const top=name==='decision'?output.ranking?.[0]:null;
+      const targets=top?[top.entity_id]:(p.target_entities || output.operations?.flatMap(op=>op.targets) || []);
+      const action=top?.intent || p.intent || output.operations?.[0]?.action || output.command?.action;
+      const names=targets.map(id=>entities.get(id)?.name || result.catalog?.entities?.find(r=>r.id===id)?.name || id);
+      const state=name==='decision'?(statuses[output.decision_status] || 'sem decisão'):name==='llm'&&p.requires_clarification?'aguardando esclarecimento':statuses[stage.status] || 'não necessário';
+      paragraph(interpretation,'O que '+name.toUpperCase()+' entendeu',`${top?'Hipótese: ':''}${labels[action] || action || 'intenção não identificada'}${names.length?' · '+names.join(', '):''} · ${state}. ${reasons[output.reason] || output.reason || stage.reason || p.reason || ''}`);
+    }
     this.$('stages').replaceChildren();
     for (const [name, stage] of Object.entries(result.stages)) {
-      const node = document.createElement('div'); node.className = 'stage ' + stage.status;
-      node.textContent = name.toUpperCase() + ' · ' + ({executed:'executado', skipped:'ignorado', error:'erro'}[stage.status] || stage.status) + (stage.latency_ms != null ? ` · ${stage.latency_ms.toFixed(1)} ms` : ''); this.$('stages').append(node);
+      const node = document.createElement('details'); node.className = 'stage ' + stage.status;
+      const summary=document.createElement('summary');
+      let status=statuses[stage.status] || stage.status;
+      if(stage.status==='skipped')status=({vad:result.input_origin==='transcrito'?'não medido':'não necessário — entrada de texto',stt:'não necessário — texto digitado',ha:'simulação, ação não enviada',tts:'não solicitado'})[name] || 'não necessário neste modo';
+      if(name==='decision'&&stage.output)status=statuses[stage.output.decision_status] || 'respondeu, sem aceitação';
+      if(name==='llm'&&stage.output?.proposal?.requires_clarification)status='aguardando esclarecimento';
+      summary.textContent=(stageNames[name] || name)+' · '+status+(stage.latency_ms!=null?` · ${stage.latency_ms.toFixed(1)} ms`:'');
+      const detail=document.createElement('pre');detail.textContent=JSON.stringify(stage,null,2);node.append(summary,detail);this.$('stages').append(node);
     }
-    this.$('answer').textContent = result.execution?.response_text || result.clarification_question || (result.operations_validated ? 'Ação validada. Revise o JSON antes de executar.' : result.proposal?.reason || 'Nenhuma ação validada.');
+    this.$('answer').textContent = result.execution?.response_text || (result.operations_validated ? 'A proposta passou pela validação inicial do Home Assistant. '+(result.sensitive?'Exige confirmação de segurança; execução bloqueada no laboratório.':'Não será executada enquanto a simulação estiver ativa.') : result.clarification_question || 'Nenhuma ação autorizada. Tente reformular o comando.');
+    const final=this.$('finalAction');final.replaceChildren();
+    const proposal=result.proposal || {};
+    const ids=result.target_entities || proposal.target_entities || [];
+    const action=proposal.intent || proposal.operations?.[0]?.action;
+    paragraph(final,'Ação',labels[action] || action || 'nenhuma');
+    for(const id of ids){const row=entities.get(id);paragraph(final,'Dispositivo',`${row?.name || id} · ${id} · ${areas.get(row?.area_id) || 'cômodo não informado'}`);}
+    paragraph(final,'Camada responsável',result.source?.toUpperCase() || 'nenhuma');
+    paragraph(final,'Validação',result.operations_validated?'validada inicialmente; será verificada novamente antes de executar':result.validation_error || 'sem proposta validada');
+    const executionAccepted=!result.execution || ['success','query_success'].includes(result.execution.code);
+    paragraph(final,'Executaria a ação?',result.operations_validated&&!result.sensitive&&executionAccepted?(result.execution?'A execução foi concluída pelo Home Assistant.':'Sim, após revisão explícita; em simulação nenhuma ação é enviada.'):'Não. '+(result.execution?.response_text || ''));
+    for(const [name,stage] of Object.entries(result.stages).filter(([,s])=>s.status==='error'))paragraph(final,'Falha em '+name.toUpperCase(),`${stage.error_code || stage.error || 'erro'} · ${stage.phase || 'fase não informada'} · ${stage.reason || ''}. ${name==='tts'?'Falha de áudio; o resultado da interpretação permanece acima.':'Verifique disponibilidade do módulo e os diagnósticos avançados.'}`);
     this.$('output').textContent = JSON.stringify(result, (key, value) => key === 'execution_token' ? undefined : value, 2);
     const de = result.stages.decision.output || {};
     this.$('ranking').replaceChildren();
-    for (const item of de.ranking || []) { const row = document.createElement('tr'); for (const text of [item.entity_id,item.intent,item.raw_score.toFixed(4)]) { const cell = document.createElement('td'); cell.textContent = text; row.append(cell); } this.$('ranking').append(row); }
+    for (const [index,item] of (de.ranking || []).entries()) { const entity=entities.get(item.entity_id),row = document.createElement('tr'); for (const text of [index+1,entity?.name || item.entity_id,areas.get(entity?.area_id) || '—',labels[item.intent] || item.intent,item.raw_score.toFixed(4),(index===0?statuses[de.decision_status]:'hipótese ranqueada')+' · '+(reasons[de.reason] || de.reason || 'não autoriza execução')]) { const cell = document.createElement('td'); cell.textContent = text; row.append(cell); } this.$('ranking').append(row); }
     this.$('metrics').replaceChildren();
-    const values = [['Total do servidor', result.total_ms.toFixed(1)+' ms'],['Confiança calibrada', de.confidence == null ? 'Indisponível' : (de.confidence*100).toFixed(1)+'%'],['Margem', de.margin == null ? 'Indisponível' : de.margin.toFixed(4)],['Decisão',de.decision_status || 'Ignorada']];
+    const values = [['Total do servidor', result.total_ms.toFixed(1)+' ms'],['Confiança calibrada', de.confidence == null ? 'Não calibrado' : (de.confidence*100).toFixed(1)+'%'],['Margem', de.margin == null ? 'Indisponível' : de.margin.toFixed(4)],['Decisão',statuses[de.decision_status] || 'Não chamada']];
     for (const [label,value] of values) { const node = document.createElement('div'); node.className='metric'; const strong=document.createElement('strong'); strong.textContent=value; node.textContent=label; node.append(strong); this.$('metrics').append(node); }
     this.executionState();
   }

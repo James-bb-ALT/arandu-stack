@@ -14,6 +14,13 @@ from .ai_lab_core import MODELS, benchmark, digest, finite, pipeline, settings, 
 from .client import LocalNluClient
 
 
+class StageError(ValueError):
+    """Safe structured diagnostics; upstream bodies may contain secrets."""
+    def __init__(self, code, phase, message):
+        self.code, self.phase = code, phase
+        super().__init__(message)
+
+
 async def local_request(session, endpoint, path, *, payload=None, body=None, timeout=90, headers=None, binary=False):
     """Reuse production local-origin validation and DNS pinning; never follow redirects."""
     from aiohttp import ClientTimeout
@@ -34,7 +41,17 @@ async def local_request(session, endpoint, path, *, payload=None, body=None, tim
             if len(raw) > limit:
                 raise ValueError("Resposta excedeu limite")
         if response.status != 200:
-            raise ValueError(f"Serviço local retornou HTTP {response.status}: {bytes(raw)[:200].decode(errors='replace')}")
+            code, phase = f"http_{response.status}", "connection" if response.status in (502, 503, 504) else "inference"
+            try:
+                diagnostic = json.loads(raw)
+                upstream = diagnostic.get("code", "")
+                if type(upstream) is str and upstream.startswith("upstream_http_") and upstream.removeprefix("upstream_http_").isdigit():
+                    code = upstream
+                    phase = diagnostic.get("phase") if diagnostic.get("phase") in {"loading", "retrieval", "inference", "validation"} else "unknown"
+            except (ValueError, AttributeError):
+                pass
+            raise StageError(code, phase,
+                             f"Serviço local retornou HTTP {response.status}. Consulte os logs do módulo.")
         return (bytes(raw), dict(response.headers)) if binary else json.loads(raw)
 
 
@@ -78,7 +95,7 @@ class Lab:
             try:
                 return await local_request(session, worker, "/status", timeout=5)
             except Exception as exc:
-                return {"models": [{"id": key, **model, "available": False, "installed": False,
+                return {"models": [{"id": key, **model, "available": False, "installed": None,
                                      "reason": model.get("unavailable") or "Worker inacessível; instalação não verificada"} for key, model in MODELS.items()], "error": str(exc)[:256]}
         if command == "transcribe":
             audio = base64.b64decode(payload["audio"], validate=True)
@@ -100,7 +117,7 @@ class Lab:
             if engine not in ("piper", "pocket"):
                 raise ValueError("Motor TTS inválido")
             before = time.perf_counter()
-            audio, metadata = await local_request(session, payload.get("tts_endpoint", "http://127.0.0.1:8099"), "/api/synthesize",
+            audio, metadata = await local_request(session, stack_endpoint or payload.get("tts_endpoint", "http://127.0.0.1:8099"), "/synthesize" if stack_endpoint else "/api/synthesize",
                 payload={"text": text, "engine": engine}, headers={"X-Arandu-UI": "1", "X-Arandu-Token": payload.get("tts_token", "")}, binary=True)
             if not audio.startswith(b"RIFF"):
                 raise ValueError("TTS não retornou WAV")
@@ -135,6 +152,13 @@ class Lab:
             self.proposals = {k: v for k, v in self.proposals.items() if v["expires"] > now}
             if command == "catalog":
                 return {**catalog, "entities": [{**row, "state": (state.state[:255] if (state := self.hass.states.get(row["entity_id"])) else None)} for row in catalog["entities"]]}
+            if command == "readiness":
+                policy = {"nlu": True, "decision": options.get("decision_enabled", False), "llm": options.get("llm_enabled", False)}
+                try:
+                    readiness = await local_request(session, worker, "/infer", payload={"action": "readiness", "catalog": catalog, "model": "e5-small"}, timeout=5)
+                except Exception:
+                    readiness = {"calibration_valid": None, "can_accept": False, "reason": "Serviço Decision indisponível; calibração não verificada."}
+                return {"production_policy": policy, "decision": readiness}
             if command == "execute":
                 saved = self.proposals.pop(payload.get("token"), None)
                 if not saved or saved["user"] != user.id or saved["entry"] != entry.entry_id or saved["catalog"] != digest(catalog) or saved["options"] != digest(options):
@@ -176,14 +200,16 @@ class Lab:
                             raise ValueError("Proposta não corresponde ao ranking calibrado")
                     return response
                 async def llm(data):
-                    # Retrieval is an observable Decision stage, also in LLM-only mode.
-                    # A failed retrieval permits conversation/clarification only, never first-N devices.
+                    # LLM service performs its own retrieval when Decision was not called.
                     raw = await local_request(session, worker, "/infer", payload={**data, "action": "llm", "catalog": catalog, "llm_model": payload.get("llm_model", "tucano")})
-                    proposal = validate_proposal(raw["proposal"], catalog, {r["entity_id"] for r in (data.get("decision") or {}).get("ranking", [])})
+                    retrieval = raw.get("retrieval") or data.get("decision") or {}
+                    proposal = validate_proposal(raw["proposal"], catalog, {r["entity_id"] for r in retrieval.get("ranking", [])})
                     proposal["confidence"] = None
                     return {**raw, "proposal": proposal}
                 result = await pipeline(text, nlu, decision, llm, mode=mode, timeout=95)
-                result.update(dry_run=True, catalog_generation=catalog["generation"], model=model)
+                result.update(dry_run=True, catalog_generation=catalog["generation"], model=model,
+                              catalog=catalog, test_mode="independent",
+                              production_policy={"nlu": True, "decision": options.get("decision_enabled", False), "llm": options.get("llm_enabled", False)})
                 proposal = result["proposal"]
                 operations = ()
                 if proposal and result["source"] == "nlu":
@@ -194,6 +220,7 @@ class Lab:
                         by_entity = {row["entity_id"]: key for key, row in snapshot.by_id.items()}
                         operations = (Operation("lab." + proposal["intent"], proposal["intent"], tuple(sorted(by_entity[e] for e in proposal["target_entities"])), {}, evidence=("ai_lab_review",)),)
                 if operations:
+                    validation_started = time.perf_counter()
                     try:
                         prepared = tuple(runtime.prepare(op, snapshot, user, options) for op in operations)
                         runtime.validate_plan(prepared)
@@ -201,9 +228,16 @@ class Lab:
                         result["action_json"] = [op.as_dict() for op in operations]
                         result["target_entities"] = sorted({snapshot.by_id[t]["entity_id"] for op in operations for t in op.targets})
                         result["sensitive"] = any(p.needs_confirmation for p in prepared)
+                        result["stages"]["validation"] = {"status": "executed", "result": "confirmation_required" if result["sensitive"] else "accepted"}
                     except Exception as exc:
                         result.update(validation_error=str(exc), action_json=None, clarification_question="Não foi possível validar essa ação no Home Assistant.")
+                        result["stages"]["validation"] = {"status": "error", "error": type(exc).__name__, "phase": "validation", "reason": str(exc)[:256]}
                         operations = ()
+                    result["stages"]["validation"]["latency_ms"] = (time.perf_counter() - validation_started) * 1000
+                else:
+                    result["stages"]["validation"] = {"status": "skipped", "reason": "Nenhuma operação proposta"}
+                result["stages"]["response"] = {"status": "executed", "reason": result["clarification_question"] or "Diagnóstico concluído"}
+                result["stages"] = {name: result["stages"][name] for name in ("vad", "stt", "nlu", "decision", "llm", "validation", "ha", "response", "tts")}
                 result["operations_validated"] = bool(operations)
                 return result, operations
 

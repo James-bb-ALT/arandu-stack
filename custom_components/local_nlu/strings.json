@@ -30,6 +30,7 @@
         "description": "Set a default room only when it is known. Access devices require an explicit policy and confirmation.",
         "data": {
           "contextual_enabled": "Enable Arandu NLU 2.0",
+          "configure_intelligence": "Intelligence layers",
           "stack_endpoint": "Arandu Stack endpoint (optional, port 8099)",
           "session_ttl": "Context lifetime (seconds)",
           "default_area": "Default room ID",
@@ -52,6 +53,14 @@
         },
         "data_description": {
           "fallback_user_id": "User whose permissions are used when Home Assistant does not provide the voice pipeline identity. Select — to disable."
+        }
+      },
+      "intelligence": {
+        "title": "Intelligence layers",
+        "description": "NLU always runs first. Independent fallbacks apply to new requests without restarting. Start model processes separately in the app. Decision requires valid calibration, confidence strictly above 0.50 and margin at least 0.08. Check installation, availability and calibration in AI Lab. Enabled layers use the secure contextual runtime even when legacy mode was selected.",
+        "data": {
+          "decision_enabled": "Use Decision Engine",
+          "llm_enabled": "Use LLM as fallback"
         }
       },
       "identity_binding": {

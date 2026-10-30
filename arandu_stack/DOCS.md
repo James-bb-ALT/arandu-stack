@@ -1,5 +1,19 @@
 # Arandu Assistant — uso
 
+## Camadas de inteligência e AI Lab
+
+App **0.4.0** e HACS **0.7.0** permitem habilitar Decision e LLM independentemente
+nas opções da integração. Ambos começam desligados; NLU permanece primeiro.
+Marque **Camadas de inteligência** em Configurar, avance, ajuste os dois toggles
+e salve. O agente existente aplica as opções sem reiniciar o HA.
+
+Os botões iniciar/parar do app controlam processos; os toggles HACS controlam
+roteamento. O AI Lab executa testes independentes, sempre com simulação inicial,
+e exibe a política real apenas para consulta. O modo avançado reúne ranking,
+JSON, tempos e falhas. Uma hipótese ranqueada não é uma ação autorizada.
+
+Consulte [o guia completo e a matriz de verificação](INTELLIGENCE.md).
+
 ## Descoberta do Arandu Assistant
 
 Use **app 0.3.5 + integração HACS 0.6.6 ou posteriores**. Instale/atualize a

@@ -21,6 +21,8 @@ from .client import ClientError, LocalNluClient, normalize_endpoint
 from .endpoint_discovery import installed_endpoints, resolve_endpoints, from_addons
 from .const import (
     CONF_ENDPOINT,
+    CONF_DECISION_ENABLED,
+    CONF_LLM_ENABLED,
     CONF_SHADOW_ENABLED,
     CONF_V2_ENABLED,
     CONF_CONTEXTUAL_ENABLED,
@@ -121,6 +123,7 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
         users = await self._active_users()
         errors: dict[str, str] = {}
         if user_input is not None:
+            configure_intelligence = user_input.pop("configure_intelligence", False)
             # Preserve options not represented by this form, including existing bindings.
             options = {**self.config_entry.options, **user_input}
             try:
@@ -134,6 +137,9 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
                 if not options.get(CONF_FALLBACK_USER_ID):
                     options.pop(CONF_FALLBACK_USER_ID, None)
                 configure_bindings = options.pop("configure_identity_bindings", False)
+                if configure_intelligence:
+                    self._intelligence_options = options
+                    return await self.async_step_intelligence()
                 if configure_bindings:
                     self._identity_options = options
                     return await self.async_step_identity_binding()
@@ -147,6 +153,7 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional(CONF_ENDPOINT, default=options.get(CONF_ENDPOINT, self.config_entry.data.get(CONF_ENDPOINT, ''))): str,
                     vol.Optional('stack_endpoint', default=options.get('stack_endpoint', self.config_entry.data.get('stack_endpoint', ''))): str,
                     vol.Optional("configure_identity_bindings", default=False): bool,
+                    vol.Optional("configure_intelligence", default=False): bool,
                     vol.Optional(CONF_CONTEXTUAL_ENABLED, default=bool(options.get(CONF_CONTEXTUAL_ENABLED, True))): bool,
                     vol.Optional("session_ttl", default=options.get("session_ttl", 60)): vol.All(vol.Coerce(int), vol.Range(min=1, max=600)),
                     vol.Optional("default_area", **({"default": options["default_area"]} if options.get("default_area") else {})): selector.AreaSelector(),
@@ -173,6 +180,17 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
             ),
             errors=errors,
         )
+
+    async def async_step_intelligence(self, user_input=None):
+        """Routing is integration-owned and independent of process availability."""
+        if user_input is not None:
+            if set(user_input) - {CONF_DECISION_ENABLED, CONF_LLM_ENABLED} or any(type(value) is not bool for value in user_input.values()):
+                return self.async_abort(reason="invalid_intelligence_options")
+            return self.async_create_entry(data={**getattr(self, "_intelligence_options", self.config_entry.options), **user_input})
+        return self.async_show_form(step_id="intelligence", data_schema=vol.Schema({
+            vol.Optional(CONF_DECISION_ENABLED, default=self.config_entry.options.get(CONF_DECISION_ENABLED, False)): bool,
+            vol.Optional(CONF_LLM_ENABLED, default=self.config_entry.options.get(CONF_LLM_ENABLED, False)): bool,
+        }))
 
     async def _active_users(self) -> dict[str, Any]:
         return {user.id: user for user in await self.hass.auth.async_get_users()

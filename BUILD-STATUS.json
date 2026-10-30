@@ -1,13 +1,13 @@
 {
-  "source_commit": "397ffa37764231a62e7ad35a30eb1390bdc31660",
+  "source_commit": "eac7dd9",
   "app": "Arandu Assistant",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "integration_version": "0.6.2",
   "platform": "linux/amd64",
   "home_assistant_store_apps": 1,
   "docker_build": "passed",
-  "image": "arandu-assistant:0.3.2",
-  "image_id": "sha256:57254925734f55e21bd2268d74908b481b2cd638b164c160416616c0cfeeedab",
+  "image": "arandu-assistant:0.3.3",
+  "image_id": "sha256:2fa76b3bc120b5dd49f1355d1a83e45111df8f8165b680bd4ad5a0dfbdc67b2d",
   "configuration_ui": "typed fields, switches and selects for every module option except enabled, controlled by module buttons",
   "visible_settings_counts": {
     "wake": 4,
@@ -35,7 +35,7 @@
   },
   "observed_local_startup": {
     "ui_http_status": 200,
-    "version": "0.3.2",
+    "version": "0.3.3",
     "nlu": "started",
     "other_modules": "stopped"
   },
@@ -45,7 +45,7 @@
   "audio_synthesis_run": false,
   "benchmarks_run": false,
   "home_assistant_deployment_validated": false,
-  "note": "TTS dispatcher argument consumed before CLI parsing. STT adapted weights mirrored to public release with identical hashes; unauthenticated HEAD returned HTTP 200 for model and tokens. No tests, inference or HA deployment executed.",
+  "note": "STT lexical datasets included, original manifest and staged blob hashes verified. Image build checks all six required files. TTS discovery implemented in trusted controller after Wyoming Describe; STT and wake log manual endpoints because Supervisor has one app/service discovery slot. No tests, audio inference or HA deployment run.",
   "logs": {
     "sources": [
       "app",
@@ -69,12 +69,22 @@
     "startup_failure_isolation": "implemented; regression checks added for manual execution"
   },
   "regression_tests_added": [
-    "tests/test_module_startup.py"
+    "tests/test_module_startup.py",
+    "tests/test_wyoming_discovery.py"
   ],
   "stt_public_weights": {
     "release": "stt-model-v2.2.0",
     "sha256_verified": true,
     "anonymous_http_status": 200,
     "model_bytes": 456405387
+  },
+  "wyoming_discovery": {
+    "automatic": "tts",
+    "manual": [
+      "stt",
+      "wake"
+    ],
+    "readiness": "Wyoming Describe/Info",
+    "supervisor_validated": false
   }
 }

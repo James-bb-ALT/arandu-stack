@@ -331,7 +331,9 @@ class ContextualRuntime:
             return self.result(error.code, user_input, reason=error.reason)
         except QueryError as error:
             return self.result("unavailable", user_input, reason=str(error))
-        except ClientError:
+        except ClientError as error:
+            reason = str(error) if str(error) in {'endpoint', 'health', 'diagnostics', 'length', 'status', 'transport', 'json'} else 'unknown'
+            _LOGGER.warning('Falha na comunicação com o NLU local (motivo=%s). Confira o hostname do app, a porta 11555 e os logs do módulo NLU.', reason)
             return self.result("unavailable", user_input, reason="backend_unavailable")
         except (CatalogError, ProtocolError, CapabilityError):
             return self.result("unavailable", user_input, reason="invalid_request")

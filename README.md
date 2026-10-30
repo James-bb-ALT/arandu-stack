@@ -62,7 +62,8 @@ módulo, ou use **Salvar e reiniciar** quando ele estiver ativo.
 
 A palavra selecionada no Wake é aplicada a todas as conexões do serviço, inclusive
 quando um cliente solicita outro nome. Recarregue o motor Wake no Assist após mudar.
-Os ajustes NLU são aplicados pela integração HACS 0.6.2 ou posterior.
+Use a integração HACS **0.6.3 ou posterior**: ela aceita o hostname do app
+unificado `…-arandu-stack`, além do hostname legado `…-ptbr-nlu`.
 Tokens ficam ocultos; deixar um campo de senha vazio mantém o valor salvo.
 
 Cadastre até 200 atalhos, por exemplo:

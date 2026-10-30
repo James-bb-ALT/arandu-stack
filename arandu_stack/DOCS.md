@@ -54,8 +54,23 @@ encerra com erro aparece como Falha; não há ciclo de reinício automático.
 
 Instale a integração HACS Arandu Assistant para usar o agente e os atalhos de frases.
 Informe o endpoint do NLU e o endpoint do painel nas opções da integração.
-Atualize a integração HACS para 0.6.2 ou posterior para aplicar as políticas NLU
+Atualize a integração HACS para 0.6.3 ou posterior para aceitar o hostname do app
+unificado e aplicar as políticas NLU
 editadas no painel. No Wake, a palavra selecionada vale para todas as conexões.
+
+Se a pipeline disser que não conseguiu acessar o serviço local do NLU:
+
+1. Confira se o módulo NLU está ativo e sem erro nos logs do app.
+2. Atualize **Arandu Assistant no HACS para 0.6.3** e reinicie o Home Assistant.
+3. Nas opções da integração, use `http://<hostname-do-app>:11555` no endpoint NLU
+   e `http://<hostname-do-app>:8099` no endpoint do painel. Use o mesmo hostname
+   da conexão Wyoming; evite localhost e o hostname do app antigo que foi parado.
+
+A integração registra um código de falha em **Configurações → Sistema → Logs**:
+`transport` indica falha de transporte (inclui DNS, conexão e timeout), `status`
+indica resposta HTTP inesperada, `length` indica limite de tamanho e `endpoint`
+indica endereço recusado pela política local. O hostname do Stack é aceito, mas
+a resolução DNS continua limitada à rede local; redirecionamentos não são seguidos.
 Frases não executam serviços arbitrários: a expansão passa pelo mesmo NLU,
 com a identidade original e as permissões reais do usuário.
 

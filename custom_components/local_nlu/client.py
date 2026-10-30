@@ -73,11 +73,11 @@ def _hostname_is_local(host: str) -> bool:
 
 
 def _is_store_hostname(host: str) -> bool:
-    """Match <8-hex-repo-hash>-ptbr-nlu exactly, nothing else."""
+    """Accept the legacy NLU and unified Stack slugs; DNS must still be local."""
     prefix, separator, slug = host.partition("-")
     return (
         separator == "-"
-        and slug == "ptbr-nlu"
+        and slug in {"ptbr-nlu", "arandu-stack"}
         and len(prefix) == 8
         and all(character in "0123456789abcdef" for character in prefix)
     )

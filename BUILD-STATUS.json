@@ -2,7 +2,7 @@
   "source_commit": "7ebff7b",
   "app": "Arandu Assistant",
   "version": "0.3.4",
-  "integration_version": "0.6.2",
+  "integration_version": "0.6.3",
   "platform": "linux/amd64",
   "home_assistant_store_apps": 1,
   "docker_build": "passed",
@@ -92,5 +92,6 @@
     "startup_partial_info_rejected": true,
     "supervisor_validated": false
   },
-  "tts_streaming_duplicate_fix": "Ignore legacy full Synthesize only inside an active streaming session; later independent identical requests remain valid."
+  "tts_streaming_duplicate_fix": "Ignore legacy full Synthesize only inside an active streaming session; later independent identical requests remain valid.",
+  "integration_note": "Stack store hostname accepted alongside legacy slug; local DNS pinning unchanged. Syntax parsed; regression added, not run. Real HA failure still needs saved endpoint and NLU logs to confirm."
 }

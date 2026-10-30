@@ -2,7 +2,7 @@
 
 ## Descoberta do Arandu Assistant
 
-Use **app 0.3.5 + integração HACS 0.6.5 ou posteriores**. Instale/atualize a
+Use **app 0.3.5 + integração HACS 0.6.6 ou posteriores**. Instale/atualize a
 integração no HACS, reinicie o HA e mantenha o NLU ativo no app. Assim que a
 verificação de saúde responder, o app anuncia o domínio `local_nlu` ao Supervisor.
 O Arandu Assistant aparece em **Configurações → Dispositivos e serviços → Descobertos**.
@@ -12,6 +12,11 @@ O anúncio é separado de Wyoming e funciona sem nenhum módulo de áudio ativo.
 Entradas já configuradas são preservadas: não haverá outro cartão de descoberta,
 nem necessidade de remover e cadastrar de novo. Sem Supervisor, a adição continua manual.
 Instalar pelo HACS, isoladamente, não executa o app nem cria uma entrada no HA.
+
+Se Configurar retornar erro 500 com `unable to serialize schema: _endpoint_value`,
+atualize a integração HACS para 0.6.6 e reinicie o HA. O campo de endpoint usa
+texto simples no formulário, com validação local ao salvar. A integração usa
+`probatio` quando disponível e mantém compatibilidade com HA anterior via `voluptuous`.
 
 ## Onde ver os erros
 

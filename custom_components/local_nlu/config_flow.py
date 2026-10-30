@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import voluptuous as vol
+try:
+    import probatio as vol
+except ImportError:  # Home Assistant versions before the schema migration.
+    import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import callback
@@ -27,15 +30,6 @@ from .const import (
     DEFAULT_ENDPOINT,
     DOMAIN,
 )
-
-
-def _endpoint_value(value):
-    if isinstance(value, str) and not value.strip():
-        return ''
-    try:
-        return normalize_endpoint(value)
-    except ClientError as exc:
-        raise vol.Invalid('Endpoint local inválido') from exc
 
 
 class LocalNluConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -150,7 +144,7 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Optional(CONF_FALLBACK_USER_ID, default=options.get(CONF_FALLBACK_USER_ID, "")): self._user_selector(users),
-                    vol.Optional(CONF_ENDPOINT, default=options.get(CONF_ENDPOINT, self.config_entry.data.get(CONF_ENDPOINT, ''))): vol.All(str, _endpoint_value),
+                    vol.Optional(CONF_ENDPOINT, default=options.get(CONF_ENDPOINT, self.config_entry.data.get(CONF_ENDPOINT, ''))): str,
                     vol.Optional('stack_endpoint', default=options.get('stack_endpoint', self.config_entry.data.get('stack_endpoint', ''))): str,
                     vol.Optional("configure_identity_bindings", default=False): bool,
                     vol.Optional(CONF_CONTEXTUAL_ENABLED, default=bool(options.get(CONF_CONTEXTUAL_ENABLED, True))): bool,

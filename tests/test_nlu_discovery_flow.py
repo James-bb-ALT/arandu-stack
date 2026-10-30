@@ -71,6 +71,31 @@ class NluDiscoveryFlow(unittest.IsolatedAsyncioTestCase):
         result = await flow.async_step_hassio(types.SimpleNamespace(slug='abcd1234_unrelated', config={}))
         self.assertEqual(result['reason'], 'invalid_discovery')
 
+    async def test_options_form_serializes_with_the_real_ha_schema_engine(self):
+        try:
+            import probatio
+        except ImportError:
+            self.skipTest('Run with probatio installed (provided by HA 2026.10+).')
+        class FakeSelector:
+            def __init__(self, *args, **kwargs):
+                pass
+            def serialize(self):
+                return {'selector': {'text': {}}}
+        selectors = {'SelectSelector': FakeSelector, 'SelectSelectorConfig': dict,
+                     'SelectSelectorMode': types.SimpleNamespace(DROPDOWN='dropdown'),
+                     'AreaSelector': FakeSelector, 'ObjectSelector': FakeSelector,
+                     'EntitySelector': FakeSelector, 'EntitySelectorConfig': dict}
+        flow = self.module.LocalNluOptionsFlow()
+        flow.config_entry = types.SimpleNamespace(options={}, data={})
+        with patch.multiple(self.module.selector, create=True, **selectors), patch.object(flow, '_active_users', AsyncMock(return_value={})):
+            result = await flow.async_step_init()
+            fields = probatio.to_field_list(result['data_schema'], custom_serializer=lambda value: value.serialize() if isinstance(value, FakeSelector) else probatio.UNSUPPORTED)
+            self.assertTrue(any(field['name'] == 'endpoint' for field in fields))
+            # Removing the UI validator must not allow a public endpoint to save.
+            invalid = await flow.async_step_init({'endpoint': 'http://8.8.8.8:11555'})
+            self.assertEqual(invalid['type'], 'form')
+            self.assertEqual(invalid['errors']['base'], 'cannot_connect')
+
 
 if __name__ == '__main__':
     unittest.main()

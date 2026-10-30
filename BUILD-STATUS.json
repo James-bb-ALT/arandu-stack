@@ -2,7 +2,7 @@
   "source_commit": "c0b3110",
   "app": "Arandu Assistant",
   "version": "0.3.5",
-  "integration_version": "0.6.5",
+  "integration_version": "0.6.6",
   "platform": "linux/amd64",
   "home_assistant_store_apps": 1,
   "docker_build": "passed",
@@ -93,7 +93,7 @@
     "supervisor_validated": false
   },
   "tts_streaming_duplicate_fix": "Ignore legacy full Synthesize only inside an active streaming session; later independent identical requests remain valid.",
-  "integration_note": "Native Supervisor local_nlu discovery and confirmation flow added. Existing entries abort discovery as already configured; no duplication or endpoint overwrite. Python/JSON parsed; fake regressions added, not executed. Real Supervisor/HA deployment not available for validation.",
+  "integration_note": "Fix confirmed HA traceback: custom _endpoint_value callable could not be serialized by probatio when opening options. Endpoint UI now uses str; existing POST endpoint validation retained. Prefer native probatio with legacy voluptuous fallback. Real schema-serialization regression added for manual execution, not run.",
   "integration_regressions": [
     "tests/test_nlu_stack_endpoint.py",
     "tests/test_nlu_endpoint_discovery.py",

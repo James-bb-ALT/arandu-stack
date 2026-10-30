@@ -64,10 +64,12 @@ módulo, ou use **Salvar e reiniciar** quando ele estiver ativo.
 
 A palavra selecionada no Wake é aplicada a todas as conexões do serviço, inclusive
 quando um cliente solicita outro nome. Recarregue o motor Wake no Assist após mudar.
-Use **app 0.3.5 + integração HACS 0.6.5 ou posteriores** para a descoberta automática
+Use **app 0.3.5 + integração HACS 0.6.6 ou posteriores** para a descoberta automática
 do agente Arandu Assistant, independente da descoberta Wyoming de áudio. Instalar
 pelo HACS baixa os arquivos; reinicie o HA para carregar o fluxo de descoberta.
 Se já existe uma entrada configurada, ela é mantida e não aparece outro cartão.
+HACS 0.6.6 corrige o erro 500 ao abrir Configurar no HA com `probatio`; os
+endereços continuam sendo validados ao salvar, sem validadores privados no formulário.
 Endpoints vazios são preenchidos
 automaticamente pelo app instalado no Supervisor, após verificar a saúde do NLU.
 Entradas com nomes padrão antigos passam a se chamar Arandu Assistant; IDs,

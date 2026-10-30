@@ -113,10 +113,10 @@ def validate_proposal(value, catalog, allowed=None):
         row = rows.get(entity_id)
         if row is None or (allowed is not None and entity_id not in allowed) or row.get("attributes", {}).get("available") is not True:
             raise ValueError("Alvo inexistente, indisponível ou fora dos candidatos")
-        if value["intent"] not in row["actions"] or (area is not None and row.get("area_id") != area):
+        if (value["intent"] is not None and value["intent"] not in row["actions"]) or (area is not None and row.get("area_id") != area):
             raise ValueError("Ação incompatível")
     if not value["requires_clarification"] and value["intent"] not in (None, "conversation") and not ids:
         raise ValueError("Ação sem alvo")
-    if value["intent"] in (None, "conversation") and ids:
+    if (value["intent"] == "conversation" or (value["intent"] is None and not value["requires_clarification"])) and ids:
         raise ValueError("Conversa não pode conter ação")
     return value

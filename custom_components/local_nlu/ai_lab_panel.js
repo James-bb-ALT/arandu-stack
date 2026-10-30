@@ -269,6 +269,7 @@ class AranduAILab extends HTMLElement {
     const statuses = {executed:'executado',accepted:'aceito',rejected:'rejeitado',ambiguous:'aguardando esclarecimento',uncalibrated:'não calibrado',skipped:'não necessário',error:'erro'};
     const stageNames={vad:'VAD',stt:'STT',nlu:'NLU',decision:'Decision',llm:'LLM',validation:'Validação HA',ha:'Home Assistant',response:'Resposta',tts:'TTS'};
     const reasons = {joint_calibration_missing:'Sem calibração válida para este catálogo e modelo. A hipótese não autoriza uma ação.',insufficient_margin:'Candidatos próximos demais. É necessário esclarecer o alvo.',below_threshold:'Confiança calibrada abaixo do mínimo.',joint_calibrated:'Confiança calibrada e margem suficientes.',no_eligible_candidate:'Nenhum candidato elegível.'};
+    Object.assign(reasons,{semantic_proposal_rejected:'A proposta contém área, alvo ou ação que não pude validar. Nenhuma ação autorizada.',action_or_target_unresolved:'Dispositivo ou ação precisam de esclarecimento. Nenhuma ação autorizada.',target_context_unresolved:'Não consegui confirmar o dispositivo no cômodo solicitado ou de origem.'});
     const entities = new Map((result.catalog?.entities || []).map(r=>[r.entity_id,r]));
     const areas = new Map((result.catalog?.areas || []).map(a=>[a.area_id,a.names?.[0] || a.area_id]));
     const policy = result.production_policy;

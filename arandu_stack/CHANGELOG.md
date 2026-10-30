@@ -1,3 +1,11 @@
+# 0.4.3 / HACS 0.7.3
+
+- Dispositivo reconhecido sem ação clara gera pergunta com nome e cômodo reais, em vez de converter `leva` em `ligar` por palpite. Aplica-se à recusa final do NLU e às propostas Decision/LLM.
+- A resolução semântica usa área explícita antes da área registrada do satélite/dispositivo. Empates, áreas explícitas desconhecidas e dispositivos indisponíveis continuam sem execução.
+- LLM recebe schema com IDs reais de áreas e dos candidatos recuperados. Propostas semanticamente inválidas, como nome de cômodo no lugar de area_id, viram esclarecimento sem ação; JSON truncado/malformado continua sendo erro técnico.
+- Contrato de esclarecimento permite manter o dispositivo candidato sem intenção executável. A pergunta usa dados do catálogo autorizado, sem repetir nomes inventados pelo modelo. Contexto é revalidado antes de falar e preservado para o próximo comando.
+- AI Lab mostra a pergunta e mantém simulação/diagnóstico. Atualize app e HACS juntos: 0.4.3 / 0.7.3. Serviço LLM 0.1.3.
+
 # 0.4.2 / HACS 0.7.2
 
 - Corrige o campo Limite da resposta vazio ao reabrir Configurar no LLM: o filtro de credenciais removia `max_tokens` por conter a palavra token.

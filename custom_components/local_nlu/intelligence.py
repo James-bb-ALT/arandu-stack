@@ -7,7 +7,7 @@ import time
 
 from .ai_lab_core import digest, finite, validate_proposal
 from .contextual_protocol import Operation
-from .contextual_protocol import normalize
+from .semantic_context import resolve_device, understood_action
 
 _LOGGER = logging.getLogger(__name__)
 TIMEOUT = 30
@@ -61,24 +61,10 @@ def grounded_target(text, proposal, catalog, context=None):
         return True
     if len(proposal["target_entities"]) != 1:
         return False
-    words = set(normalize(text).split()) - {"o", "a", "os", "as", "de", "da", "do", "na", "no", "e", "um", "uma"}
-    if words & {"nao", "nunca", "exceto", "menos", "se", "quando"}:
-        return False
-    areas = {a["area_id"]: set(normalize(" ".join(a["names"])).split()) for a in catalog["areas"]}
-    scores = {}
-    for row in catalog["entities"]:
-        if proposal["intent"] not in row["actions"] or row.get("attributes", {}).get("available") is not True:
-            continue
-        names = set(normalize(" ".join([row["name"], *row.get("aliases", [])])).split())
-        room = areas.get(row.get("area_id"), set())
-        evidence = words & (names - room - {"lugar", "dispositivo"})
-        if evidence:
-            scores[row["entity_id"]] = len(evidence) * 2 + len(words & room) + int(bool(context and context.get("origin_area") == row.get("area_id")))
-    target = proposal["target_entities"][0]
-    if target not in scores:
-        return False
-    best = max(scores.values())
-    return scores[target] == best and sum(score == best for score in scores.values()) == 1
+    row = resolve_device(text, catalog, context)
+    return (row is not None and row["entity_id"] == proposal["target_entities"][0]
+            and understood_action(text) == proposal["intent"]
+            and proposal["intent"] in row["actions"])
 
 
 async def fallback(text, snapshot, options, request, context=None):
@@ -114,6 +100,12 @@ async def fallback(text, snapshot, options, request, context=None):
                     trace[source]["status"] = "ambiguous"
                     continue
             if proposal:
+                if proposal["requires_clarification"]:
+                    trace[source]["status"] = "clarification"
+                    continue
+                if not grounded_target(text, proposal, snapshot.payload, context):
+                    trace[source]["status"] = "clarification"
+                    continue
                 proposed = operations(proposal, snapshot, source)
                 if proposed:
                     trace[source]["status"] = "proposed"

@@ -82,6 +82,27 @@ por módulo; Wake, STT e TTS mantêm seus ciclos próprios.
 
 ## AI Lab
 
+Desde app 0.4.3 / HACS 0.7.3, a falta de compreensão produz uma pergunta em
+português, independentemente de a última camada ser NLU, Decision ou LLM.
+Se o dispositivo for inequívoco mas a ação não, a resposta é semelhante a:
+“Acredito que você esteja falando de Ventilador (Escritório de Jaime), mas não
+entendi o que fazer. Pode repetir?”. Os nomes vêm do catálogo autorizado.
+“Leva o ventilador” não autoriza ligar o aparelho apenas por semelhança com “liga”.
+
+Sem área explícita, a resolução usa a área registrada do satélite/dispositivo,
+conforme a resolução de origem do NLU (incluindo a área padrão já configurada
+quando não há origem registrada). Área explícita conhecida tem prioridade.
+Área explícita desconhecida, empate ou dispositivo indisponível pedem repetição;
+não se escolhe outro cômodo silenciosamente. O alvo reconhecido fica no contexto
+da conversa; uma resposta posterior como “liga” volta ao NLU e às validações HA.
+
+Uma área inventada pelo LLM não é corrigida para executar a proposta. O schema
+restringe as saídas aos IDs reais; se ainda assim a proposta for semanticamente
+inválida, o sistema se abstém e pergunta, sem executar. Esclarecimentos podem
+conter um ID candidato com intent=null e requires_clarification=true. Esses IDs
+nunca viram operações sem ação explícita e validação posterior. Instale app e
+HACS juntos para manter o novo contrato compatível.
+
 O painel indica **teste independente**: suas seleções não alteram produção.
 O resumo mostra comando digitado/transcrito, entendimento de cada camada,
 hipótese Decision mesmo quando rejeitada, ação final, nome amigável, ID, cômodo,

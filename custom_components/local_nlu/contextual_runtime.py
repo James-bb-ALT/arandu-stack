@@ -333,6 +333,22 @@ class ContextualRuntime:
                 return self.result("cancelled", user_input, speech="Nenhuma ação executada.")
             if outcome.status != "plan":
                 speech = None
+                if eligible(outcome, pending=pending is not None or bool(session.candidates)):
+                    # Clarification names are subject to the same post-I/O privacy
+                    # and origin checks as executable semantic proposals.
+                    current_user = await self.revalidate(identity, user_input, options)
+                    from .contextual_catalog import build
+                    if build(self.hass, current_user, options).payload["generation"] != generation or origin_context(self.hass, user_input, options) != spatial_context:
+                        raise ExecutionError("stale", "semantic_catalog_changed")
+                    from .semantic_context import clarification
+                    partial = clarification(user_input.text, snapshot.payload, {"origin_area": area})
+                    from .semantic_context import understood_action
+                    action_missing = bool(partial["target_entities"]) and understood_action(user_input.text) is None
+                    if action_missing:
+                        session.last_targets = tuple(key for key, row in snapshot.by_id.items() if row["entity_id"] in partial["target_entities"])
+                        session.last_area = partial["target_area"]
+                    return self.result("missing_slot" if action_missing else "no_match", user_input,
+                        speech=partial["clarification_question"], followup=True, reason="semantic_clarification")
                 if outcome.reason == "target_not_found" and outcome.command is not None:
                     from .contextual_errors import requested_target
                     label = requested_target(outcome.command, user_input.text)

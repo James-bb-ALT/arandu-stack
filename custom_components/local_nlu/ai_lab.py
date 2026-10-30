@@ -194,6 +194,7 @@ class Lab:
                 return raw
 
             async def run(text, model, mode):
+                semantic_context = {"origin_area": origin_area(self.hass, SimpleNamespace(device_id=None, satellite_id=None), options)}
                 async def decision(data):
                     threshold, margin = settings(payload)
                     response = await local_request(session, worker, "/infer", payload={**data, "action": "decision", "catalog": catalog,
@@ -209,7 +210,7 @@ class Lab:
                     return response
                 async def llm(data):
                     # LLM service performs its own retrieval when Decision was not called.
-                    raw = await local_request(session, worker, "/infer", payload={**data, "action": "llm", "catalog": catalog, "llm_model": payload.get("llm_model", "tucano")})
+                    raw = await local_request(session, worker, "/infer", payload={**data, "action": "llm", "catalog": catalog, "context": semantic_context, "llm_model": payload.get("llm_model", "tucano")})
                     retrieval = raw.get("retrieval") or data.get("decision") or {}
                     proposal = validate_proposal(raw["proposal"], catalog, {r["entity_id"] for r in retrieval.get("ranking", [])})
                     proposal["confidence"] = None
@@ -219,6 +220,12 @@ class Lab:
                               catalog=catalog, test_mode="independent",
                               production_policy={"nlu": True, "decision": options.get("decision_enabled", False), "llm": options.get("llm_enabled", False)})
                 proposal = result["proposal"]
+                if proposal and result["source"] != "nlu":
+                    from .intelligence import grounded_target
+                    from .semantic_context import clarification
+                    if proposal.get("requires_clarification") or not grounded_target(text, proposal, catalog, semantic_context):
+                        proposal = clarification(text, catalog, semantic_context, reason="action_or_target_unresolved")
+                        result.update(proposal=proposal, clarification_question=proposal["clarification_question"])
                 operations = ()
                 if proposal and result["source"] == "nlu":
                     operations = parse(proposal).operations

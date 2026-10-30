@@ -10,6 +10,7 @@ import sys
 import time
 from .contracts import MODELS, candidates, digest
 from .adapter import Llama, LlmOutputError
+from .semantic_context import resolve_device
 
 KEY = "tucano"
 PORT = 11558
@@ -42,7 +43,7 @@ def validate_catalog(catalog):
     candidates(catalog)
     return catalog
 
-def retrieve(text, catalog):
+def retrieve(text, catalog, context=None):
     """Standalone lexical retrieval visits every eligible pair; never first-N catalog."""
     import re
     import unicodedata
@@ -50,8 +51,9 @@ def retrieve(text, catalog):
         value = unicodedata.normalize("NFKD", value.casefold())
         return set(re.findall(r"[a-z0-9]+", "".join(c for c in value if not unicodedata.combining(c)))) - {"a", "o", "da", "do", "de", "na", "no", "e"}
     query = words(text)
+    resolved = resolve_device(text, catalog, context)
     ranking = [{**r, "raw_score": len(query & words(r["text"])) / max(1, len(query))} for r in candidates(catalog)]
-    ranking = sorted(ranking, key=lambda r: (-r["raw_score"], r["entity_id"], r["intent"]))
+    ranking = sorted(ranking, key=lambda r: (not bool(resolved and r["entity_id"] == resolved["entity_id"]), -r["raw_score"], r["entity_id"], r["intent"]))
     return {"ranking": [r for r in ranking if r["raw_score"] > 0][:8], "retrieval": "lexical-full-catalog", "eligible_pairs": len(ranking)}
 
 def create_app(root, executable=None, threads=2, runtime_settings=None):
@@ -83,7 +85,7 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
     async def status(request):
         installed = (root / KEY / "arandu-model.json").is_file() and (root / KEY / MODELS[KEY]["file"]).is_file()
         available = installed and bool(executable and Path(executable).is_file())
-        return web.json_response({"package": "arandu-llm", "version": "0.1.2", "protocol": "arandu-inference-v1",
+        return web.json_response({"package": "arandu-llm", "version": "0.1.3", "protocol": "arandu-inference-v1",
             "models": [{"id": KEY, **MODELS[KEY], "installed": installed, "available": bool(available),
                 "reason": None if available else "Pesos ou runtime ausentes"}], "busy": lock.locked(), "threads": threads})
 
@@ -115,7 +117,9 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
                     raise ValueError("Texto deve ter 1–512 caracteres em uma linha")
                 before = time.perf_counter()
                 external = body.get("decision") or {}
-                retrieval = external if external.get("ranking") else retrieve(text, catalog)
+                resolved = resolve_device(text, catalog, body.get("context"))
+                external_ids = {r["entity_id"] for r in external.get("ranking", [])}
+                retrieval = external if external_ids and (resolved is None or resolved["entity_id"] in external_ids) else retrieve(text, catalog, body.get("context"))
                 retrieval_ms = (time.perf_counter() - before) * 1000
                 result = await adapter.infer({**body, "llm_model": KEY, "decision": retrieval}, catalog)
                 result["retrieval"] = retrieval

@@ -51,6 +51,7 @@ class LlmHttp(unittest.IsolatedAsyncioTestCase):
         async def infer(body, catalog):
             self.assertTrue(body['decision']['ranking'])
             self.assertEqual(body['decision']['retrieval'],'lexical-full-catalog')
+            self.assertEqual(body['decision']['analysis']['action']['text'],'liga')
             return {'proposal':proposal()}
         with tempfile.TemporaryDirectory() as directory, patch('arandu_llm.service.Llama') as cls:
             cls.return_value.infer=AsyncMock(side_effect=infer)
@@ -166,7 +167,9 @@ class LlmLifecycle(unittest.IsolatedAsyncioTestCase):
             adapter=Llama(root,'FIXTURE_TECNICA',settings={'max_tokens':64})
             with patch('arandu_llm.adapter.asyncio.create_subprocess_exec',AsyncMock(return_value=process)) as spawn, patch('aiohttp.ClientSession',Session):
                 body={'text':'liga ventilador','decision':retrieve('liga ventilador',catalog())}
+                body['decision']['analysis']={'action':{'text':'liga'},'device':{'entity_id':'fan.fixture'},'area':{'area_id':'sala'}}
                 await adapter.infer(body,catalog())
+                self.assertEqual(json.loads(requests[0]['messages'][1]['content'])['decision_analysis'],body['decision']['analysis'])
                 second=await adapter.infer(body,catalog())
                 self.assertEqual(spawn.await_count,1)
                 self.assertEqual(second['load_ms'],0)
@@ -180,6 +183,10 @@ class LlmLifecycle(unittest.IsolatedAsyncioTestCase):
                 await adapter.infer(body,catalog())
                 self.assertEqual(spawn.await_count,1)
                 self.assertTrue(all(r['max_tokens']==64 for r in requests))
+                uncertain=await adapter.infer({**body,'text':'leva ventilador'},catalog())
+                self.assertTrue(uncertain['confirmation_required'])
+                self.assertTrue(uncertain['proposal']['requires_clarification'])
+                self.assertIn('É isso?',uncertain['proposal']['clarification_question'])
                 await adapter.unload()
                 process.kill.assert_called_once()
                 self.assertIsNone(adapter.process)

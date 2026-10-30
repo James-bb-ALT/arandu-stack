@@ -41,6 +41,7 @@ class Session:
     confirmation: tuple[Operation, ...] = ()
     confirmation_generation: str | None = None
     confirmation_origin: str | None = None
+    confirmation_origin_context: tuple[str | None, str] | None = None
     confirmation_options: str | None = None
     response: str | None = None
     signature: str | None = None
@@ -226,10 +227,13 @@ class ContextualRuntime:
                     return self.result("stale", user_input, speech="Não há uma confirmação válida pendente.")
                 operations = session.confirmation
                 session.confirmation = ()
-                snapshot = self.catalog.get(user_id, user, options)
+                from .contextual_catalog import build
+                snapshot = build(self.hass, user, options)
                 if snapshot.payload["generation"] != session.confirmation_generation:
                     raise ExecutionError("stale", "confirmation_catalog_changed")
                 if origin_area(self.hass, user_input, options) != session.confirmation_origin:
+                    raise ExecutionError("stale", "confirmation_origin_changed")
+                if session.confirmation_origin_context is not None and origin_context(self.hass, user_input, options) != session.confirmation_origin_context:
                     raise ExecutionError("stale", "confirmation_origin_changed")
                 if _options_hash(options) != session.confirmation_options:
                     raise ExecutionError("stale", "confirmation_options_changed")
@@ -284,6 +288,21 @@ class ContextualRuntime:
                     if build(self.hass, current_user, options).payload["generation"] != generation:
                         raise ExecutionError("stale", "semantic_catalog_changed")
                     self.stage = "planning"
+                    if any(item.get("status") == "confirmation_required" for item in trace.values()):
+                        prepared = tuple(self.prepare(op, snapshot, current_user, options) for op in proposed)
+                        self.validate_plan(prepared)
+                        self.validate_bulk_snapshot(proposed, snapshot, current_user, options)
+                        from .semantic_context import confirmation_question
+                        row = snapshot.by_id[proposed[0].targets[0]]
+                        question = confirmation_question(proposed[0].action, row, snapshot.payload)
+                        session.confirmation = proposed
+                        session.confirmation_generation = generation
+                        session.confirmation_origin = area
+                        session.confirmation_origin_context = spatial_context
+                        session.confirmation_options = _options_hash(options)
+                        session.expires = time.monotonic() + min(30, _ttl(options))
+                        session.response = question
+                        return self.result("confirmation_required", user_input, speech=question, followup=True, reason="semantic_confirmation")
                     result = await self.execute(proposed, snapshot, user_input, session, options, identity)
                     timings = {**result.timings, **{name + "_ms": value["latency_ms"] for name, value in trace.items() if "latency_ms" in value},
                                "integration_total_ms": (time.perf_counter() - started) * 1000}
@@ -642,6 +661,7 @@ class ContextualRuntime:
             session.confirmation = operations
             session.confirmation_generation = snapshot.payload["generation"]
             session.confirmation_origin = origin_area(self.hass, user_input, options)
+            session.confirmation_origin_context = spatial_context
             session.confirmation_options = _options_hash(options)
             session.expires = time.monotonic() + min(30, _ttl(options))
             return self.result("confirmation_required", user_input, speech="Esse comando altera um dispositivo de acesso ou proteção. Confirma?", followup=True)

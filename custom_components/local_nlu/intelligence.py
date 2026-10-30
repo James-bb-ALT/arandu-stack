@@ -7,7 +7,7 @@ import time
 
 from .ai_lab_core import digest, finite, validate_proposal
 from .contextual_protocol import Operation
-from .semantic_context import resolve_device, understood_action
+from .semantic_context import resolve_device, understood_action, hypothesis_allowed
 
 _LOGGER = logging.getLogger(__name__)
 TIMEOUT = 30
@@ -57,14 +57,24 @@ def grounded_target(text, proposal, catalog, context=None):
     Production semantic fallback supports one explicit device. Ties remain a
     clarification even if the model chooses a top candidate.
     """
-    if proposal["requires_clarification"] or proposal["intent"] in (None, "conversation"):
-        return True
+    if proposal["intent"] in (None, "conversation"):
+        return False
     if len(proposal["target_entities"]) != 1:
         return False
     row = resolve_device(text, catalog, context)
     return (row is not None and row["entity_id"] == proposal["target_entities"][0]
-            and understood_action(text) == proposal["intent"]
             and proposal["intent"] in row["actions"])
+
+
+def proposal_route(text, proposal, catalog, context=None, force_review=False):
+    if not grounded_target(text, proposal, catalog, context) or not hypothesis_allowed(text):
+        return "clarification"
+    known = understood_action(text)
+    if known is not None and known != proposal["intent"]:
+        return "clarification"
+    if known is None or proposal["requires_clarification"] or force_review:
+        return "confirmation_required"
+    return "proposed"
 
 
 async def fallback(text, snapshot, options, request, context=None):
@@ -96,19 +106,15 @@ async def fallback(text, snapshot, options, request, context=None):
                 proposal = validate_proposal(response.get("proposal"), snapshot.payload, allowed)
                 # A model's self-reported confidence is never an authorization signal.
                 proposal["confidence"] = None
-                if not grounded_target(text, proposal, snapshot.payload, context):
-                    trace[source]["status"] = "ambiguous"
-                    continue
             if proposal:
-                if proposal["requires_clarification"]:
-                    trace[source]["status"] = "clarification"
+                route = proposal_route(text, proposal, snapshot.payload, context, response.get("confirmation_required") is True)
+                trace[source]["status"] = route
+                if route == "clarification":
                     continue
-                if not grounded_target(text, proposal, snapshot.payload, context):
-                    trace[source]["status"] = "clarification"
-                    continue
+                if route == "confirmation_required":
+                    proposal = {**proposal, "requires_clarification": False, "clarification_question": None}
                 proposed = operations(proposal, snapshot, source)
                 if proposed:
-                    trace[source]["status"] = "proposed"
                     return proposed, trace
         except asyncio.CancelledError:
             raise

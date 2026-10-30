@@ -79,3 +79,44 @@ def clarification(text, catalog, context=None, allowed=None, reason="not_underst
     return {"intent": None, "target_entities": [row["entity_id"]] if row else [],
             "target_area": row.get("area_id") if row else None, "confidence": None,
             "requires_clarification": True, "clarification_question": question, "reason": reason}
+
+def hypothesis_allowed(text):
+    words = set(normalized(text).split())
+    return (not words & {"nao", "nunca", "exceto", "menos", "se", "quando"}
+            and sum(bool(words & verbs) for verbs in ACTIONS.values()) <= 1)
+
+
+def decomposition(text, catalog, context=None):
+    """Three diagnostic slots; spelling/embedding similarity never authorizes."""
+    from difflib import SequenceMatcher
+    row = resolve_device(text, catalog, context)
+    areas = {a["area_id"]: a for a in catalog["areas"]}
+    query = normalized(text)
+    explicit = [key for key, area in areas.items() if any(
+        normalized(name) and (" " + normalized(name) + " ") in (" " + query + " ")
+        for name in area["names"])]
+    origin = (context or {}).get("origin_area")
+    area_id = explicit[0] if len(explicit) == 1 else origin if not explicit and origin in areas else None
+    excluded = set(STOP)
+    if row:
+        excluded.update(normalized(" ".join([row["name"], *row.get("aliases", [])])).split())
+    if area_id:
+        excluded.update(normalized(" ".join(areas[area_id]["names"])).split())
+    action_words = [word for word in query.split() if word not in excluded]
+    ranking = [{"intent": action, "lexical_similarity": max(
+        (SequenceMatcher(None, word, verb).ratio() for word in action_words for verb in verbs),
+        default=0.0)} for action, verbs in ACTIONS.items()]
+    ranking.sort(key=lambda item: (-item["lexical_similarity"], item["intent"]))
+    return {"action": {"text": " ".join(action_words), "exact": understood_action(text), "ranking": ranking},
+            "device": {"entity_id": row["entity_id"] if row else None, "name": row["name"] if row else None, "unambiguous": row is not None},
+            "area": {"area_id": area_id, "source": "explicit" if explicit else "origin" if area_id else "unknown"},
+            "note": "Similaridades são hipóteses, não probabilidades nem autorização."}
+
+
+def confirmation_question(action, row, catalog):
+    label = row["name"]
+    area = next((a for a in catalog["areas"] if a["area_id"] == row.get("area_id")), None)
+    if area and area["names"] and normalized(area["names"][0]) not in normalized(label):
+        label += " (" + area["names"][0] + ")"
+    verb = {"turn_on": "ligar", "turn_off": "desligar", "query": "consultar o estado de"}[action]
+    return f"Acho que você gostaria de {verb} {label}. É isso?"

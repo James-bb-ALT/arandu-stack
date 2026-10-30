@@ -285,6 +285,12 @@ class AranduAILab extends HTMLElement {
       const names=targets.map(id=>entities.get(id)?.name || result.catalog?.entities?.find(r=>r.id===id)?.name || id);
       const state=name==='decision'?(statuses[output.decision_status] || 'sem decisão'):name==='llm'&&p.requires_clarification?'aguardando esclarecimento':statuses[stage.status] || 'não necessário';
       paragraph(interpretation,'O que '+name.toUpperCase()+' entendeu',`${top?'Hipótese: ':''}${labels[action] || action || 'intenção não identificada'}${names.length?' · '+names.join(', '):''} · ${state}. ${reasons[output.reason] || output.reason || stage.reason || p.reason || ''}`);
+      if(name==='decision'&&output.analysis){
+        const a=output.analysis,actionTop=a.action?.ranking?.[0];
+        paragraph(interpretation,'Ação analisada',`${a.action?.text || 'não identificada'} · hipótese: ${labels[actionTop?.intent] || actionTop?.intent || 'nenhuma'}${Number.isFinite(actionTop?.semantic_similarity)?' · similaridade '+actionTop.semantic_similarity.toFixed(4):''}`);
+        paragraph(interpretation,'Dispositivo analisado',a.device?.name || 'ainda ambíguo ou não identificado');
+        paragraph(interpretation,'Área analisada',`${areas.get(a.area?.area_id) || 'não identificada'} · ${{explicit:'dita no comando',origin:'origem da conversa',unknown:'sem contexto'}[a.area?.source] || 'sem contexto'}`);
+      }
     }
     this.$('stages').replaceChildren();
     for (const [name, stage] of Object.entries(result.stages)) {
@@ -294,10 +300,11 @@ class AranduAILab extends HTMLElement {
       if(stage.status==='skipped')status=({vad:result.input_origin==='transcrito'?'não medido':'não necessário — entrada de texto',stt:'não necessário — texto digitado',ha:'simulação, ação não enviada',tts:'não solicitado'})[name] || 'não necessário neste modo';
       if(name==='decision'&&stage.output)status=statuses[stage.output.decision_status] || 'respondeu, sem aceitação';
       if(name==='llm'&&stage.output?.proposal?.requires_clarification)status='aguardando esclarecimento';
+      if(result.confirmation_required&&name===result.source)status='aguardando confirmação';
       summary.textContent=(stageNames[name] || name)+' · '+status+(stage.latency_ms!=null?` · ${stage.latency_ms.toFixed(1)} ms`:'');
       const detail=document.createElement('pre');detail.textContent=JSON.stringify(stage,null,2);node.append(summary,detail);this.$('stages').append(node);
     }
-    this.$('answer').textContent = result.execution?.response_text || (result.operations_validated ? 'A proposta passou pela validação inicial do Home Assistant. '+(result.sensitive?'Exige confirmação de segurança; execução bloqueada no laboratório.':'Não será executada enquanto a simulação estiver ativa.') : result.clarification_question || 'Nenhuma ação autorizada. Tente reformular o comando.');
+    this.$('answer').textContent = result.execution?.response_text || (result.confirmation_required ? result.clarification_question+' Hipótese aguardando confirmação; nenhuma ação enviada.' : result.operations_validated ? 'A proposta passou pela validação inicial do Home Assistant. '+(result.sensitive?'Exige confirmação de segurança; execução bloqueada no laboratório.':'Não será executada enquanto a simulação estiver ativa.') : result.clarification_question || 'Nenhuma ação autorizada. Tente reformular o comando.');
     const final=this.$('finalAction');final.replaceChildren();
     const proposal=result.proposal || {};
     const ids=result.target_entities || proposal.target_entities || [];
@@ -305,9 +312,9 @@ class AranduAILab extends HTMLElement {
     paragraph(final,'Ação',labels[action] || action || 'nenhuma');
     for(const id of ids){const row=entities.get(id);paragraph(final,'Dispositivo',`${row?.name || id} · ${id} · ${areas.get(row?.area_id) || 'cômodo não informado'}`);}
     paragraph(final,'Camada responsável',result.source?.toUpperCase() || 'nenhuma');
-    paragraph(final,'Validação',result.operations_validated?'validada inicialmente; será verificada novamente antes de executar':result.validation_error || 'sem proposta validada');
+    paragraph(final,'Validação',result.confirmation_required?'hipótese válida, aguardando confirmação na conversa':result.operations_validated?'validada inicialmente; será verificada novamente antes de executar':result.validation_error || 'sem proposta validada');
     const executionAccepted=!result.execution || ['success','query_success'].includes(result.execution.code);
-    paragraph(final,'Executaria a ação?',result.operations_validated&&!result.sensitive&&executionAccepted?(result.execution?'A execução foi concluída pelo Home Assistant.':'Sim, após revisão explícita; em simulação nenhuma ação é enviada.'):'Não. '+(result.execution?.response_text || ''));
+    paragraph(final,'Executaria a ação?',result.operations_validated&&!result.sensitive&&!result.confirmation_required&&executionAccepted?(result.execution?'A execução foi concluída pelo Home Assistant.':'Sim, após revisão explícita; em simulação nenhuma ação é enviada.'):'Não. '+(result.confirmation_required?'Aguarda confirmação.':result.execution?.response_text || ''));
     for(const [name,stage] of Object.entries(result.stages).filter(([,s])=>s.status==='error'))paragraph(final,'Falha em '+name.toUpperCase(),`${stage.error_code || stage.error || 'erro'} · ${stage.phase || 'fase não informada'} · ${stage.reason || ''}. ${name==='tts'?'Falha de áudio; o resultado da interpretação permanece acima.':'Verifique disponibilidade do módulo e os diagnósticos avançados.'}`);
     this.$('output').textContent = JSON.stringify(result, (key, value) => key === 'execution_token' ? undefined : value, 2);
     const de = result.stages.decision.output || {};

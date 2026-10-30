@@ -13,9 +13,9 @@ sys.path.append(str(ROOT / 'arandu_stack/rootfs/modules/arandu_llm/rootfs/src/sr
 from test_contextual import Client, hass_, input_, add, plan, operation
 from custom_components.local_nlu.contextual_runtime import ContextualRuntime
 from custom_components.local_nlu.contextual_catalog import Snapshot
-from custom_components.local_nlu.intelligence import fallback
+from custom_components.local_nlu.intelligence import fallback, proposal_route
 from custom_components.local_nlu.ai_lab_core import digest, validate_proposal
-from custom_components.local_nlu.semantic_context import clarification, resolve_device
+from custom_components.local_nlu.semantic_context import clarification, resolve_device, decomposition
 from arandu_llm.adapter import parse_completion, completion_schema
 from arandu_llm.contracts import validate_proposal as llm_validate
 from arandu_llm.service import retrieve
@@ -66,11 +66,20 @@ class ClarificationTests(unittest.TestCase):
         self.assertEqual(result['target_area'],'office')
         self.assertIn('não entendi o que fazer',result['clarification_question'])
 
-    def test_model_cannot_turn_leva_into_ligar_even_with_valid_json(self):
+    def test_uncertain_action_can_be_proposed_but_requires_confirmation(self):
         result=parse_completion(output(proposed()),catalog(),{'fan.office','fan.living'},192,
                                 text='leva o ventilador',context={'origin_area':'office'})
-        self.assertTrue(result['requires_clarification'])
-        self.assertIsNone(result['intent'])
+        self.assertEqual(result['intent'],'turn_on')
+        self.assertEqual(proposal_route('leva o ventilador',result,catalog(),{'origin_area':'office'}),'confirmation_required')
+
+    def test_generic_action_proximity_keeps_original_fragment_and_three_slots(self):
+        for fragment in ['acnde','deslga','lga','leva']:
+            analysis=decomposition(fragment+' o ventilador',catalog(),{'origin_area':'office'})
+            self.assertEqual(analysis['action']['text'],fragment)
+            self.assertEqual(analysis['device']['entity_id'],'fan.office')
+            self.assertEqual(analysis['area'],{'area_id':'office','source':'origin'})
+            self.assertGreater(analysis['action']['ranking'][0]['lexical_similarity'],0)
+            self.assertIsNone(analysis['action']['exact'])
 
     def test_known_action_without_area_uses_origin_and_rejects_other_device(self):
         result=parse_completion(output(proposed()),catalog(),{'fan.office','fan.living'},192,
@@ -90,6 +99,8 @@ class ClarificationTests(unittest.TestCase):
     def test_shared_context_module_is_identical_in_both_distributions(self):
         self.assertEqual((ROOT/'custom_components/local_nlu/semantic_context.py').read_bytes(),
                          (ROOT/'arandu_stack/rootfs/modules/arandu_llm/rootfs/src/src/arandu_llm/semantic_context.py').read_bytes())
+        self.assertEqual((ROOT/'custom_components/local_nlu/semantic_context.py').read_bytes(),
+                         (ROOT/'arandu_stack/rootfs/modules/arandu_decision/rootfs/src/src/arandu_decision/semantic_context.py').read_bytes())
 
 
 class RuntimeClarificationTests(unittest.IsolatedAsyncioTestCase):
@@ -105,8 +116,9 @@ class RuntimeClarificationTests(unittest.IsolatedAsyncioTestCase):
         with patch.dict(sys.modules,{'homeassistant.core':core}), patch('custom_components.local_nlu.ai_lab.local_request',AsyncMock(return_value=raw)) as request:
             result=await Lab(hass)._handle(hass.auth.user,{'command':'run','mode':'llm','text':'leva o ventilador'},None,'http://127.0.0.1:8770')
         self.assertEqual(request.call_args.kwargs['payload']['context']['origin_area'],'area_quarto')
-        self.assertIn('não entendi o que fazer',result['clarification_question'])
-        self.assertFalse(result['operations_validated'])
+        self.assertIn('É isso?',result['clarification_question'])
+        self.assertTrue(result['operations_validated'])
+        self.assertTrue(result['confirmation_required'])
         self.assertNotIn('execution_token',result)
         self.assertEqual(hass.services.calls,[])
 
@@ -121,8 +133,12 @@ class RuntimeClarificationTests(unittest.IsolatedAsyncioTestCase):
                         'proposal':p,'ranking':[{'entity_id':'fan.office','intent':'turn_on','raw_score':.8}]}
             return {'proposal':p,'retrieval':{'ranking':[{'entity_id':'fan.office','intent':'turn_on'}]}}
         for decision,llm in [(False,False),(True,False),(False,True),(True,True)]:
-            operations,_=await fallback('leva o ventilador',snapshot,{'decision_enabled':decision,'llm_enabled':llm},infer,{'origin_area':'office'})
-            self.assertEqual(operations,())
+            operations,trace=await fallback('leva o ventilador',snapshot,{'decision_enabled':decision,'llm_enabled':llm},infer,{'origin_area':'office'})
+            if decision or llm:
+                self.assertEqual(len(operations),1)
+                self.assertIn('confirmation_required',[stage['status'] for stage in trace.values()])
+            else:
+                self.assertEqual(operations,())
 
     async def test_nlu_final_layer_names_satellite_device_and_asks_for_action(self):
         hass=hass_()

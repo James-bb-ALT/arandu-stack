@@ -197,7 +197,7 @@ class Lab:
                 semantic_context = {"origin_area": origin_area(self.hass, SimpleNamespace(device_id=None, satellite_id=None), options)}
                 async def decision(data):
                     threshold, margin = settings(payload)
-                    response = await local_request(session, worker, "/infer", payload={**data, "action": "decision", "catalog": catalog,
+                    response = await local_request(session, worker, "/infer", payload={**data, "action": "decision", "catalog": catalog, "context": semantic_context,
                         "model": model, "config": {"threshold": payload.get("threshold", .5), "min_margin": payload.get("min_margin", .08)}})
                     if response.get("decision_status") == "accepted":
                         confidence, gap = response.get("confidence"), response.get("margin")
@@ -221,9 +221,16 @@ class Lab:
                               production_policy={"nlu": True, "decision": options.get("decision_enabled", False), "llm": options.get("llm_enabled", False)})
                 proposal = result["proposal"]
                 if proposal and result["source"] != "nlu":
-                    from .intelligence import grounded_target
-                    from .semantic_context import clarification
-                    if proposal.get("requires_clarification") or not grounded_target(text, proposal, catalog, semantic_context):
+                    from .intelligence import proposal_route
+                    from .semantic_context import clarification, confirmation_question
+                    output = result["stages"][result["source"]].get("output") or {}
+                    route = proposal_route(text, proposal, catalog, semantic_context, output.get("confirmation_required") is True)
+                    if route == "confirmation_required":
+                        row = next(r for r in catalog["entities"] if r["entity_id"] == proposal["target_entities"][0])
+                        question = confirmation_question(proposal["intent"], row, catalog)
+                        proposal = {**proposal, "requires_clarification": False, "clarification_question": None}
+                        result.update(proposal=proposal, confirmation_required=True, clarification_question=question)
+                    elif route == "clarification":
                         proposal = clarification(text, catalog, semantic_context, reason="action_or_target_unresolved")
                         result.update(proposal=proposal, clarification_question=proposal["clarification_question"])
                 operations = ()
@@ -243,7 +250,7 @@ class Lab:
                         result["action_json"] = [op.as_dict() for op in operations]
                         result["target_entities"] = sorted({snapshot.by_id[t]["entity_id"] for op in operations for t in op.targets})
                         result["sensitive"] = any(p.needs_confirmation for p in prepared)
-                        result["stages"]["validation"] = {"status": "executed", "result": "confirmation_required" if result["sensitive"] else "accepted"}
+                        result["stages"]["validation"] = {"status": "executed", "result": "confirmation_required" if result["sensitive"] or result.get("confirmation_required") else "accepted"}
                     except Exception as exc:
                         result.update(validation_error=str(exc), action_json=None, clarification_question="Não foi possível validar essa ação no Home Assistant.")
                         result["stages"]["validation"] = {"status": "error", "error": type(exc).__name__, "phase": "validation", "reason": str(exc)[:256]}
@@ -283,7 +290,7 @@ class Lab:
                     output[model] = {"rows": rows, "metrics": benchmark(rows)}
                 return {"catalog_generation": catalog["generation"], "sequential": True, "dry_run": True, "models": output}
             result, operations = await run(payload.get("text"), payload.get("model", "e5-small"), payload.get("mode", "pipeline"))
-            if operations and not result.get("sensitive"):
+            if operations and not result.get("sensitive") and not result.get("confirmation_required"):
                 token = secrets.token_urlsafe(24)
                 if len(self.proposals) >= 32:
                     self.proposals.pop(next(iter(self.proposals)))

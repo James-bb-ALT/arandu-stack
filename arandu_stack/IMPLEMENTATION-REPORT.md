@@ -6,6 +6,16 @@ Nenhuma instalação no HA ou alteração de uma pipeline real foi feita nesta s
 
 ## Entrega
 
+Atualização app 0.5.0 / HACS 0.8.0: Decision agora publica diagnósticos separados
+de ação, dispositivo e área; o LLM recebe essa análise quando necessário.
+Hipóteses incertas são confirmadas na conversa, vinculadas à sessão e ao catálogo,
+antes de qualquer execução. A análise não muda o score calibrado do Decision.
+Clientes antigos recebem a hipótese marcada como esclarecimento, sem execução.
+
+Validação desta atualização: **188 testes Python, 3 testes JS e 27 subtestes
+passaram**. Outros 68 testes exigem o binário Rust real. As seções abaixo registram
+a entrega e a validação iniciais; o guia e o CHANGELOG descrevem o comportamento atual.
+
 - Integração HACS 0.7.0: opções booleanas independentes, desligadas por padrão, na etapa nativa **Camadas de inteligência**.
 - App 0.4.0 e serviços internos Decision/LLM 0.1.1.
 - NLU primeiro; fallback somente para falhas semânticas permitidas, com executor e confirmações HA preservados.

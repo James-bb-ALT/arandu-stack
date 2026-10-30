@@ -9,6 +9,9 @@ em **Configurações → Dispositivos e serviços → Arandu Assistant → Confi
 Camadas de inteligência**. Decision e LLM são independentes e começam desligados.
 Salvar aplica a política às novas requisições, sem reiniciar nem trocar o agente.
 Iniciar um processo na WebUI não habilita seu uso na pipeline.
+Desde **app 0.5.0 + HACS 0.8.0**, Decision analisa ação, dispositivo e área.
+Quando houver uma hipótese de ação incerta, o agente pergunta “É isso?” e só
+executa após confirmação, com nova validação do Home Assistant.
 Veja [uso, segurança, diagnóstico e testes das camadas](arandu_stack/INTELLIGENCE.md).
 
 [![Abrir Arandu Assistant no HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jaimevictor&repository=arandu-stack&category=integration)
@@ -148,7 +151,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **0.4.3**, para HA OS/Supervised amd64.
+Versão experimental **0.5.0**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

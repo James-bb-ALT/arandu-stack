@@ -78,7 +78,7 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
     async def status(request):
         installed = (root / KEY / "arandu-model.json").is_file() and (root / KEY / "model.safetensors").is_file()
         available = installed and True
-        return web.json_response({"package": "arandu-decision", "version": "0.1.1", "protocol": "arandu-inference-v1",
+        return web.json_response({"package": "arandu-decision", "version": "0.2.0", "protocol": "arandu-inference-v1",
             "models": [{"id": KEY, **MODELS[KEY], "installed": installed, "available": bool(available),
                 "reason": None if available else "Pesos ou runtime ausentes"}], "busy": lock.locked(), "threads": threads})
 
@@ -110,7 +110,7 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
                     raise ValueError("Texto deve ter 1–512 caracteres em uma linha")
                 config = dict(body.get('config') or {})
                 config.update({k: v for k, v in (runtime_settings or {}).items() if k in {'threshold', 'min_margin'}})
-                result = await asyncio.to_thread(adapter.infer, text, catalog, KEY, config)
+                result = await asyncio.to_thread(adapter.infer, text, catalog, KEY, config, context=body.get("context"))
                 result['applied_config'] = config
                 result.update(catalog_fingerprint=digest(catalog), catalog_entities=len(catalog["entities"]), service="arandu-decision")
                 return result

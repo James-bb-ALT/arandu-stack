@@ -143,7 +143,7 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30):
                 output = await fn(payload)
             stages[name].update(status="executed", input=payload, output=output)
             if type(output) is dict:
-                for metric in ("model", "load_ms", "retrieval_ms", "inference_ms", "cpu_ms", "memory_bytes"):
+                for metric in ("model", "load_ms", "retrieval_ms", "inference_ms", "analysis_ms", "cpu_ms", "memory_bytes"):
                     if metric in output:
                         stages[name][metric] = output[metric]
             return output

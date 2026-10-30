@@ -1,4 +1,4 @@
-# Camadas de inteligência — app 0.4.0 / HACS 0.7.0
+# Camadas de inteligência — app 0.5.0 / HACS 0.8.0
 
 ## Habilitar
 
@@ -82,12 +82,49 @@ por módulo; Wake, STT e TTS mantêm seus ciclos próprios.
 
 ## AI Lab
 
+### Hipóteses e confirmação (app 0.5.0 / HACS 0.8.0)
+
+Decision analisa separadamente ação, dispositivo e área. Remove nomes e áreas já
+identificados para analisar o fragmento de ação, compara embeddings dos candidatos
+de ação e calcula proximidade lexical genérica. Não existe regra particular de
+substituição de uma palavra por outra. O ranking do dispositivo usa um fragmento
+próprio; área explícita e área de origem continuam sendo contexto autorizado.
+Esses campos aparecem em `analysis`, com `analysis_ms`, e no resumo do Lab.
+
+O score conjunto e a calibração existentes continuam governando a aceitação do
+Decision. Similaridade dos fragmentos não é probabilidade nem autorização. Se
+Decision não aceitar, o LLM recebe os três campos, os rankings e o motivo da
+recusa. LLM-only faz a análise lexical/contextual independente de Decision.
+
+Uma hipótese plausível sobre uma ação suportada pode ser apresentada para
+confirmação, inclusive com uma palavra de ação mal transcrita. Por exemplo:
+“Acho que você gostaria de ligar Ventilador (Escritório de Jaime). É isso?”. A
+hipótese não executa nada. O sim volta ao executor HA, reconstruindo o catálogo
+e validando novamente identidade, permissões, exposição, origem e política.
+“Não” cancela a hipótese; um comando completo corrigido substitui a hipótese e
+volta ao NLU. A confirmação expira em até 30 segundos e não pode ser reutilizada.
+
+Dispositivos realmente ambíguos, negação/condições e propostas incompatíveis
+continuam sem hipótese executável. Sem evidência suficiente, pede reformulação.
+Sem calibração válida, Decision não ganha aceitação automática por esses novos
+scores; pode alimentar o LLM habilitado. Ações reconhecidas claramente pelo NLU
+continuam no caminho direto.
+
+No Lab, hipóteses confirmáveis têm `confirmation_required=true`, a pergunta e a
+ação exata proposta, mas não recebem token para execução. A conversa real é quem
+mantém a confirmação vinculada à sessão. No contrato dos serviços, a hipótese
+também permanece marcada como `requires_clarification=true` para que clientes
+anteriores não executem ao ignorar o metadado de confirmação.
+
+### Esclarecimento sem hipótese suficiente
+
 Desde app 0.4.3 / HACS 0.7.3, a falta de compreensão produz uma pergunta em
 português, independentemente de a última camada ser NLU, Decision ou LLM.
 Se o dispositivo for inequívoco mas a ação não, a resposta é semelhante a:
 “Acredito que você esteja falando de Ventilador (Escritório de Jaime), mas não
 entendi o que fazer. Pode repetir?”. Os nomes vêm do catálogo autorizado.
-“Leva o ventilador” não autoriza ligar o aparelho apenas por semelhança com “liga”.
+“Leva o ventilador” não autoriza ligar automaticamente. Desde 0.5.0, pode produzir
+uma hipótese que exige confirmação explícita; sem hipótese suficiente, pede repetição.
 
 Sem área explícita, a resolução usa a área registrada do satélite/dispositivo,
 conforme a resolução de origem do NLU (incluindo a área padrão já configurada

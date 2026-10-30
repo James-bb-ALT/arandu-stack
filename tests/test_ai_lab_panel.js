@@ -48,3 +48,17 @@ test('typed input explains VAD and STT and keeps TTS failure separate',()=>{
   assert.match(text(nodes.finalAction),/Falha de áudio; o resultado da interpretação permanece/);
   assert.match(text(nodes.finalAction),/Luz <fixture> · light.fixture · Sala/);
 });
+
+test('three-part analysis and hypothesis never imply permission to execute',()=>{
+  const result=fixture();
+  result.operations_validated=true;result.confirmation_required=true;result.source='llm';
+  result.proposal={intent:'turn_on',target_entities:['light.fixture']};
+  result.clarification_question='Acho que você gostaria de ligar Luz <fixture>. É isso?';
+  result.stages.decision={status:'executed',output:{decision_status:'uncalibrated',analysis:{action:{text:'lga',ranking:[{intent:'turn_on',semantic_similarity:.7}]},device:{name:'Luz <fixture>'},area:{area_id:'sala',source:'origin'}}}};
+  const nodes=render(result);
+  assert.match(text(nodes.interpretations),/Ação analisada.*lga.*similaridade 0.7000/);
+  assert.match(text(nodes.interpretations),/Dispositivo analisado.*Luz <fixture>/);
+  assert.match(text(nodes.interpretations),/Área analisada.*Sala.*origem da conversa/);
+  assert.match(text(nodes.answer),/É isso\?.*aguardando confirmação/);
+  assert.match(text(nodes.finalAction),/Executaria a ação\?.*Não.*Aguarda confirmação/);
+});

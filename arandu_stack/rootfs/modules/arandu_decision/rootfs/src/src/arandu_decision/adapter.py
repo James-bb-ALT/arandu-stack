@@ -9,6 +9,7 @@ from pathlib import Path
 import time
 
 from .contracts import ACTION_TEXT, VERSION, candidates, decision_policy, digest
+from .semantic_context import decomposition, understood_action, resolve_device, clarification, confirmation_question
 
 
 class Encoder:
@@ -63,7 +64,7 @@ class Encoder:
                 "note": "Cada hipótese ainda exige confiança calibrada > threshold e margem suficiente."}
 
 
-    def infer(self, text, catalog, key, config):
+    def infer(self, text, catalog, key, config, context=None):
         total_started = time.perf_counter()
         self.phase = "loading"
         cpu_start = time.process_time()
@@ -93,6 +94,35 @@ class Encoder:
                             "target_score": target_score, "intent_score": intent_score,
                             "reason": "minimum(intent cosine, device cosine); joint candidate"})
         result = self.finish(ranking, signature, catalog, key, config, inference_started, cpu_start)
+        analysis_started = time.perf_counter()
+        analysis = decomposition(text, catalog, context)
+        fragment = analysis["action"]["text"]
+        device_fragment = analysis["device"]["name"] or text
+        analysis["device"]["text"] = device_fragment
+        part_queries = encode([fragment or text, device_fragment], query=True)
+        if fragment:
+            action_query = part_queries[0]
+            for item in analysis["action"]["ranking"]:
+                item["semantic_similarity"] = float(np.dot(action_query, self.cache[ACTION_TEXT[item["intent"]]]))
+            analysis["action"]["ranking"].sort(key=lambda item: (-item["semantic_similarity"], -item["lexical_similarity"], item["intent"]))
+        devices = {}
+        for item in ranking:
+            device_score = float(np.dot(part_queries[1], self.cache[item["description"]]))
+            devices[item["entity_id"]] = max(devices.get(item["entity_id"], -1), device_score)
+        analysis["device"]["ranking"] = [{"entity_id": entity, "semantic_similarity": score}
+            for entity, score in sorted(devices.items(), key=lambda item: (-item[1], item[0]))[:5]]
+        result["analysis"] = analysis
+        result["analysis_ms"] = (time.perf_counter() - analysis_started) * 1000
+        proposal = result.get("proposal")
+        if proposal and understood_action(text) != proposal["intent"]:
+            row = resolve_device(text, catalog, context)
+            question = (confirmation_question(proposal["intent"], row, catalog)
+                        if row and row["entity_id"] in proposal["target_entities"]
+                        else clarification(text, catalog, context)["clarification_question"])
+            result["proposal"] = {**proposal, "requires_clarification": True, "clarification_question": question}
+            result["confirmation_required"] = True
+        # Diagnostics are separate from the calibrated joint score; do not change
+        # ranking, confidence or the calibration algorithm to authorize a guess.
         result.update(retrieval_ms=retrieval_ms, total_ms=(time.perf_counter() - total_started) * 1000)
         return result
 

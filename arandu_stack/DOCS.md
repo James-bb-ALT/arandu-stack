@@ -12,6 +12,13 @@ roteamento. O AI Lab executa testes independentes, sempre com simulação inicia
 e exibe a política real apenas para consulta. O modo avançado reúne ranking,
 JSON, tempos e falhas. Uma hipótese ranqueada não é uma ação autorizada.
 
+No app **0.5.0** com HACS **0.8.0**, a análise de ação, dispositivo e área do
+Decision é enviada ao LLM se Decision não aceitar. Uma ação incerta pode gerar
+“Acho que você gostaria de ligar Ventilador (...). É isso?”. Nada é enviado ao
+aparelho antes do “sim”. “Não” cancela; um comando corrigido substitui a hipótese.
+Sem hipótese suficiente, o agente pede repetição. O Lab mostra a hipótese e a
+confirmação pendente, mas não libera execução de uma ação incerta.
+
 Consulte [o guia completo e a matriz de verificação](INTELLIGENCE.md).
 
 ## Descoberta do Arandu Assistant

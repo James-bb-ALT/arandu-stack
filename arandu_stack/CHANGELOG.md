@@ -1,3 +1,12 @@
+# 0.5.0 / HACS 0.8.0
+
+- Decision apresenta análise em três partes: ação, dispositivo e área. A ação usa similaridade semântica do fragmento e proximidade lexical genérica; o dispositivo tem ranking próprio; a área mantém a precedência de origem/menção explícita. Sem mapas de substituição de palavras.
+- Essa análise e o motivo da recusa chegam ao LLM quando Decision não aceita. Os diagnósticos separados não modificam o score conjunto nem dispensam calibração para aceitação do Decision.
+- Hipóteses de ação plausíveis com dispositivo inequívoco geram “Acho que você gostaria de ligar Ventilador (...). É isso?”. Só o “sim” executa, após nova validação HA. “Não” cancela; um comando corrigido substitui a hipótese.
+- Confirmações são de uso único, expiram em até 30 segundos e ficam vinculadas ao usuário, origem, catálogo e política. O catálogo é reconstruído no sim; mudanças de permissões ou contexto impedem execução.
+- AI Lab mostra as três partes e a hipótese aguardando confirmação. Não emite token de execução para hipóteses incertas. Propostas incertas continuam marcadas como esclarecimento no contrato do serviço para impedir execução por clientes antigos.
+- Atualize app e HACS juntos: 0.5.0 / 0.8.0. Serviços Decision e LLM 0.2.0. Compreensão incompleta sem hipótese suficiente continua pedindo repetição; alvos ambíguos não são escolhidos por score.
+
 # 0.4.3 / HACS 0.7.3
 
 - Dispositivo reconhecido sem ação clara gera pergunta com nome e cômodo reais, em vez de converter `leva` em `ligar` por palpite. Aplica-se à recusa final do NLU e às propostas Decision/LLM.

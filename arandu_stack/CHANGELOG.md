@@ -1,3 +1,9 @@
+# 0.4.2 / HACS 0.7.2
+
+- Corrige o campo Limite da resposta vazio ao reabrir Configurar no LLM: o filtro de credenciais removia `max_tokens` por conter a palavra token.
+- A API do painel preserva `max_tokens` somente quando inteiro; credenciais e valores inesperados continuam ocultos. Não modifica valores salvos nem requer migração.
+- Regressões verificam salvar 256, recarregar a configuração e consultar o formulário repetidamente, mantendo as credenciais ocultas. A correção está no app; a integração HACS recebe apenas atualização de versão.
+
 # 0.4.1 / HACS 0.7.1
 
 - LLM verifica `finish_reason` antes de interpretar o JSON. Geração encerrada por limite de tokens é recusada mesmo se o fragmento formar JSON válido; nenhuma ação parcial é autorizada.

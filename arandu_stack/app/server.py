@@ -13,7 +13,7 @@ from wyoming_gateway import WyomingGateway
 from discovery import announce_stack
 from logs import LogStore, SOURCES, LOGGER
 
-APP_VERSION = '0.4.1'
+APP_VERSION = '0.4.2'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""
@@ -54,7 +54,9 @@ def validate_phrases(value):
     return result
 
 def redact(value):
-    return {k: v for k, v in value.items() if not any(term in k.lower() for term in ('token', 'secret', 'password'))}
+    return {k: v for k, v in value.items()
+            if (k == 'max_tokens' and type(v) is int)
+            or not any(term in k.lower() for term in ('token', 'secret', 'password'))}
 
 def create_app(data_dir, local=False):
     data_dir.mkdir(parents=True, exist_ok=True)

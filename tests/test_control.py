@@ -49,7 +49,34 @@ class Phrases(unittest.TestCase):
     def test_secret_options_not_returned(self):
         self.assertEqual(control.redact({'threads': 2, 'hf_token': 'fixture', 'remote_token': 'fixture'}), {'threads': 2})
 
+    def test_numeric_generation_limit_is_not_a_credential(self):
+        self.assertEqual(control.redact({'max_tokens':256,'access_token':'fixture','password':'fixture','secret':'fixture'}),{'max_tokens':256})
+        self.assertEqual(control.redact({'max_tokens':'fixture-secret'}),{})
+
 class Scope(unittest.IsolatedAsyncioTestCase):
+    async def test_llm_limit_returns_to_settings_after_save_and_reload(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(control.LogStore,'configure_logging'):
+            data=Path(directory)
+            manager=ModuleManager(data,local=True)
+            await manager.configure('llm',{'max_tokens':256})
+            restored=ModuleManager(data,local=True)
+            self.assertEqual(restored.config['llm']['max_tokens'],256)
+            app=control.create_app(data,local=True)
+            app.on_startup.clear()
+            app.on_cleanup.clear()
+            client=TestClient(TestServer(app))
+            await client.start_server()
+            try:
+                for _ in range(2):
+                    response=await client.get('/api/state',headers={'Host':'127.0.0.1:8770'})
+                    self.assertEqual(response.status,200)
+                    state=await response.json()
+                    llm=next(module for module in state['modules'] if module['id']=='llm')
+                    self.assertEqual(llm['options']['max_tokens'],256)
+                    self.assertEqual(next(f for f in llm['schema'] if f['id']=='max_tokens')['value_type'],'int')
+            finally:
+                await client.close()
+
     async def test_tts_gateway_and_inference_error_contracts(self):
         class Response:
             status=200

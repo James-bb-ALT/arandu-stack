@@ -1,13 +1,13 @@
 {
-  "source_commit": "eac7dd9",
+  "source_commit": "7ebff7b",
   "app": "Arandu Assistant",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "integration_version": "0.6.2",
   "platform": "linux/amd64",
   "home_assistant_store_apps": 1,
   "docker_build": "passed",
-  "image": "arandu-assistant:0.3.3",
-  "image_id": "sha256:2fa76b3bc120b5dd49f1355d1a83e45111df8f8165b680bd4ad5a0dfbdc67b2d",
+  "image": "arandu-assistant:0.3.4",
+  "image_id": "sha256:92a62a4a35ede2e14c0b313d8106afced12f50544ff27855c44d8c26eb94f21e",
   "configuration_ui": "typed fields, switches and selects for every module option except enabled, controlled by module buttons",
   "visible_settings_counts": {
     "wake": 4,
@@ -35,9 +35,10 @@
   },
   "observed_local_startup": {
     "ui_http_status": 200,
-    "version": "0.3.3",
+    "version": "0.3.4",
     "nlu": "started",
-    "other_modules": "stopped"
+    "other_modules": "stopped",
+    "combined_wyoming_listener": 10212
   },
   "ui_visual_review": "Unchanged since 0.3.1; not repeated.",
   "python_syntax": "parsed",
@@ -45,7 +46,7 @@
   "audio_synthesis_run": false,
   "benchmarks_run": false,
   "home_assistant_deployment_validated": false,
-  "note": "STT lexical datasets included, original manifest and staged blob hashes verified. Image build checks all six required files. TTS discovery implemented in trusted controller after Wyoming Describe; STT and wake log manual endpoints because Supervisor has one app/service discovery slot. No tests, audio inference or HA deployment run.",
+  "note": "Built and started combined Wyoming gateway on 10212. STT/TTS/wake Describe metadata combined only for running and ready engines; raw frames routed to fixed local backends, private TTS backend 10213. TTS ignores HA legacy full-message Synthesize during streaming. Syntax and build only; no tests, inference or real HA deployment executed.",
   "logs": {
     "sources": [
       "app",
@@ -70,7 +71,8 @@
   },
   "regression_tests_added": [
     "tests/test_module_startup.py",
-    "tests/test_wyoming_discovery.py"
+    "tests/test_wyoming_discovery.py",
+    "arandu_stack/rootfs/modules/arandu_tts/rootfs/src/tests/test_protocol_fake.py"
   ],
   "stt_public_weights": {
     "release": "stt-model-v2.2.0",
@@ -79,12 +81,16 @@
     "model_bytes": 456405387
   },
   "wyoming_discovery": {
-    "automatic": "tts",
-    "manual": [
+    "automatic": [
       "stt",
+      "tts",
       "wake"
     ],
-    "readiness": "Wyoming Describe/Info",
+    "endpoint_port": 10212,
+    "single_integration": true,
+    "existing_integration_reload_required": true,
+    "startup_partial_info_rejected": true,
     "supervisor_validated": false
-  }
+  },
+  "tts_streaming_duplicate_fix": "Ignore legacy full Synthesize only inside an active streaming session; later independent identical requests remain valid."
 }

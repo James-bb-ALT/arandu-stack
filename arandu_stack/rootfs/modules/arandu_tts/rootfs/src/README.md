@@ -1,4 +1,8 @@
-# Arandu TTS 0.2.0 — Piper + Pocket TTS + Laboratório Web
+# Arandu TTS 0.2.1 — Piper + Pocket TTS + Laboratório Web
+
+Home Assistant aguarda a fala completa antes de reproduzir para evitar pausas
+de geração durante respostas longas. Após atualizar, recarregue a integração
+Wyoming para renovar as capacidades. Pode aumentar a espera inicial.
 
 Servidor **Wyoming** para Home Assistant, preservando a versão 0.1.0 e adicionando:
 

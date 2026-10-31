@@ -53,7 +53,12 @@ def voice_info(cfg: Config):
     return Info(tts=[TtsProgram(name="arandu_tts", description="Arandu TTS (Piper e Pocket CPU / GPU opcional)",
                                 attribution=Attribution(name="Arandu", url="https://github.com/OHF-Voice/piper1-gpl"),
                                 installed=True, voices=voices, version=__version__,
-                                supports_synthesize_streaming=True)])
+                                # HA must finish synthesis before serving audio to satellites.
+                                # Sentence-by-sentence inference can starve the ESPHome decoder
+                                # midway through long replies on slower CPUs. Keep accepting the
+                                # streaming protocol for existing clients, but advertise buffered
+                                # synthesis so HA supplies a complete, uninterrupted recording.
+                                supports_synthesize_streaming=False)])
 
 
 class _State:

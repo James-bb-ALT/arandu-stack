@@ -4,7 +4,14 @@ Um único app para Home Assistant com **Wake, STT, NLU, Decision, LLM e TTS**.
 Todos os motores estão incluídos na mesma instalação. Você ativa, desativa e
 configura cada módulo pela WebUI, sem instalar seis apps separados.
 
-**Atual: app 2.0.0 / HACS 3.0.0 / NLU 0.6.0 / Decision 0.3.0 / LLM 0.2.3.**
+**Atual: app 2.0.1 / HACS 3.0.0 / NLU 0.6.0 / Decision 0.3.0 / LLM 0.2.3 / TTS 0.2.1.**
+
+TTS 0.2.1 aguarda a fala completa antes de reproduzir no Home Assistant. Recarregue
+a integração Wyoming após atualizar; pode aumentar a espera inicial. A validação
+de frases longas no ReSpeaker com essa alteração ainda está pendente.
+
+ReSpeaker com base antiga 2026.6.0: [migração do driver I2S externo para o oficial](arandu_stack/ESPHOME-AUDIO.md).
+O perfil 3.0.1 preserva o microfone 48→16 kHz; atualizar o app não instala firmware no satélite.
 
 **Fluxo de inteligência agora mostra requisições reais.** Na WebUI do app, consulte
 as últimas 50 requisições, estados e tempos de preparação, fila, NLU, Decision,
@@ -216,7 +223,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **2.0.0**, integração HACS **3.0.0**, para HA OS/Supervised amd64.
+Versão experimental **2.0.1**, integração HACS **3.0.0**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

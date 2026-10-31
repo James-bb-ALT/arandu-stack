@@ -1,7 +1,7 @@
 name: Arandu Assistant
 slug: arandu_stack
-version: "2.0.0"
-description: Seis motores locais e rastreamento de requisições — acompanhe etapas, tempos e falhas
+version: "2.0.1"
+description: Seis motores locais, rastreamento de requisições e TTS com áudio completo para satélites
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
 startup: application

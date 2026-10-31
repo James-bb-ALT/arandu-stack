@@ -1,6 +1,93 @@
 # ReSpeaker: memória, cortes de áudio e estado de resposta
 
-## Perfil atualizado para ESPHome 2026.10.1
+## Falas longas: entrega completa pelo TTS 0.2.1
+
+Após a OTA 3.0.1, a escuta real melhorou no começo da frase, mas ainda travou
+na contagem final. Portanto, a migração I2S não encerrou a investigação.
+Arquivos FLAC completos e HTTP fragmentado reproduziram até o fim nos testes;
+uma resposta recém-sintetizada não encerrou durante a captura de 45 s.
+
+O TTS 0.2.1 deixa de anunciar `supports_synthesize_streaming`. No Home Assistant,
+isso seleciona o caminho que acumula o áudio inteiro antes de servi-lo ao player.
+Assim, o satélite não depende da geração das próximas frases durante a reprodução.
+O protocolo incremental continua aceito para clientes existentes. O custo é maior
+espera inicial e armazenamento temporário do áudio no servidor, não no ESP32.
+
+Atualize o app e recarregue a integração Wyoming do Arandu TTS para renovar as
+capacidades descobertas. Apenas reinstalar o firmware não aplica essa mudança.
+Validação automatizada: 29 testes do TTS aprovados. A hipótese de esvaziamento
+do buffer ainda precisa ser confirmada com uma fala longa no aparelho atualizado.
+Referência do caminho de buffering: `homeassistant/components/tts/__init__.py`,
+ramo `not engine_instance.async_supports_streaming_input()`; integração
+`homeassistant/components/wyoming/tts.py`, `async_get_tts_audio`.
+
+## Base antiga: driver I2S e conversão do microfone (3.0.1)
+
+A base **2026.6.0** instalada no aparelho foi conferida diretamente. Ela importa
+`formatBCE/esphome@respeaker_microphone` para **todo** o componente `i2s_audio`,
+incluindo a saída de áudio. Portanto, compilar com ESPHome 2026.10.1 não garante
+que o speaker use o driver dessa versão. O fork consultado termina no commit
+`04a9f40154d2720bd90745f025f6a6deb50f5681`, de 02/10/2026.
+
+O [package para a base antiga](../examples/esphome/respeaker-legacy-i2s-fix.yaml)
+seleciona por último o I2S **oficial 2026.10.1** e adiciona um microfone decimator
+fixado por commit. O driver oficial contém recuperação de perda de eventos,
+escrita DMA parcial e dessincronização que difere do fork. Essa é uma correção
+concreta da mistura de versões, instalada por OTA e conferida no aparelho.
+Não significa que toda falha de áudio tenha essa única causa.
+
+O adaptador do microfone é necessário: o fork antigo anunciava 16 kHz apesar
+de ler o barramento XMOS a 48 kHz e descartar dois de cada três frames. Com
+I2S oficial, `i2s_mics` continua fisicamente a 48 kHz e `arandu_voice_mic` faz
+explicitamente a conversão para 16 kHz. Voice Assistant e Micro Wake Word usam
+esse adaptador, preservando seus canais e ganho. Pinos, slots de 32 bits,
+clock do XMOS, volume, stop word e firmware XMOS não são alterados.
+
+1. Preserve uma cópia do YAML e da base atuais. Copie também
+   `respeaker-legacy-i2s-fix.yaml` para `config/common/`, evitando que o package
+   apareça como um aparelho offline extra no ESPHome Builder.
+2. **Somente na base antiga com esse fork**, adicione após os outros packages:
+   `arandu_i2s: !include config/common/respeaker-legacy-i2s-fix.yaml`, como no exemplo.
+   Uma base moderna que já usa I2S oficial e decimator não deve receber esse
+   adaptador novamente. Não coloque o fork I2S novamente na raiz do YAML.
+3. Use o compilador **ESPHome 2026.10.1**, valide e compile antes de instalar.
+   O driver foi fixado nessa versão; uma atualização futura do ESPHome requer
+   rever o pin. Confira o log: a última origem de `i2s_audio` deve ser
+   `esphome/esphome@2026.10.1`. Instale o firmware e teste em volume baixo.
+
+### O que foi observado no aparelho
+
+Com o perfil de memória instalado, o heap interno em repouso chegou a
+aproximadamente 104 KB, com maior bloco de 86 KB; Wi-Fi em torno de −40 dBm.
+Isso supera a falha anterior de alocação com 4,8 KB, mas não comprova qualidade
+de áudio. Um trecho FLAC mono de 48 kHz, PCM de 16 bits e duração 9,09 s foi
+baixado e decodificado completamente no PC. Reprodução direta no satélite,
+inclusive com HTTP chunked, apresentou ciclos que terminaram em cerca de 9 s.
+Esses estados e tempos não substituem escuta ou gravação do alto-falante.
+
+Durante a investigação o usuário desconectou e reconectou o aparelho. Os
+timeouts de API coincidentes **não são prova de deadlock**. Também não reutilize
+uma URL do proxy como se fosse um arquivo permanente: o proxy pode encerrar a
+transcodificação anterior quando a mesma URL é requisitada novamente. Não faça
+download de uma URL enquanto o satélite estiver reproduzindo essa mesma URL.
+
+Fontes verificadas: [speaker do fork](https://github.com/formatBCE/esphome/blob/04a9f40154d2720bd90745f025f6a6deb50f5681/esphome/components/i2s_audio/speaker/i2s_audio_speaker_standard.cpp),
+[speaker oficial 2026.10.1](https://github.com/esphome/esphome/blob/2026.10.1/esphome/components/i2s_audio/speaker/i2s_audio_speaker_standard.cpp),
+[base moderna com decimator](https://github.com/formatBCE/Respeaker-Lite-ESPHome-integration/blob/c01d4c4e802e94d66346bc634d1f3478278647b3/packages/respeaker-lite/hardware.yaml)
+e [proxy ESPHome no HA](https://github.com/home-assistant/core/blob/dev/homeassistant/components/esphome/ffmpeg_proxy.py).
+
+### Validação da migração em 31/10/2026
+
+Configuração, compilação e link aprovados com ESPHome 2026.10.1. O arquivo C++
+do driver incluído no build teve hash idêntico ao da versão oficial. O binário
+ocupou aproximadamente 2,9 MB, cabendo na partição de 3,75 MiB. A atualização OTA
+foi concluída e a API do aparelho confirmou `arandu.respeaker_lite` **3.0.1**.
+O diagnóstico confirmou decimator em 16 kHz e cerca de 127 KB de heap interno
+livre em repouso. Três reproduções de FLAC (uma HTTP chunked) terminaram em IDLE
+em cerca de 9 s cada, para áudio de 9,09 s, com volume em 10%. Essa verificação
+comprova conclusão do fluxo; a ausência de cortes audíveis depende de escuta.
+
+## Perfil de memória anterior (histórico da entrega 2.0.0)
 
 O YAML informado inclui Bluetooth tracker com `active: false` e proxy Bluetooth
 com `active: false`. Isso **não desliga o Bluetooth**: o primeiro mantém varredura

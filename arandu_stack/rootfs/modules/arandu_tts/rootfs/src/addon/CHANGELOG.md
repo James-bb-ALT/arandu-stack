@@ -1,3 +1,8 @@
+## 0.2.1
+
+- Home Assistant recebe a fala completa antes da reprodução. Desativa o anúncio de entrada incremental para evitar que a geração das próximas frases esvazie o buffer do satélite. O protocolo incremental continua aceito por clientes existentes.
+- Pode aumentar a espera inicial; recarregue a integração Wyoming após atualizar para renovar as capacidades do motor. Testes de contrato aprovados; validação de falas longas no aparelho ainda necessária.
+
 ## 0.2.0
 - Pocket TTS 3.3.0 em CPU/português, perfis `.safetensors` com gravação.
 - Laboratório Web acessível por Home Assistant Ingress, métricas e players.

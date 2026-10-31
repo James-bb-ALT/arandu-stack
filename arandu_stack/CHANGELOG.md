@@ -1,3 +1,11 @@
+# 2.0.1 / HACS 3.0.0
+
+- TTS 0.2.1: Home Assistant passa a aguardar a síntese completa antes de entregar o áudio, evitando dependência da velocidade de geração durante a reprodução. Mantém compatibilidade com o protocolo incremental. Recarregar a integração Wyoming após atualizar renova a capacidade anunciada. Pode aumentar a espera inicial.
+- O teste físico posterior à migração ainda apresentou cortes no final de uma fala longa. O firmware sozinho não resolveu o problema; a alteração no TTS exige instalação e nova validação no aparelho.
+- Perfil ReSpeaker 3.0.1 para a base legada 2026.6.0: seleciona o driver I2S oficial do ESPHome 2026.10.1 no lugar do fork que também substituía o speaker. Preserva a conversão do microfone de 48 para 16 kHz usando decimator explícito fixado por commit; mantém canais, ganho, pinos, volume e XMOS 1.1.0.
+- Investigação com o aparelho real, separando memória, arquivo de áudio, HTTP e firmware. Após OTA confirmada, três ciclos de FLAC em volume 10% (incluindo HTTP chunked) terminaram em IDLE em cerca de 9 s para um arquivo de 9,09 s. Heap interno em repouso observado em cerca de 127 KB. Estados e tempos não comprovam escuta sem cortes.
+- Validação com ESPHome 2026.10.1: configuração aceita, compilação/link completos, imagem cabe na partição, código I2S gerado idêntico ao oficial e OTA concluída. App: 148 testes Python aprovados, um ignorado. TTS: 29 testes aprovados. Timeout durante desconexão manual não é tratado como prova de deadlock. Nenhuma mudança de roteamento dos motores NLU/Decision/LLM.
+
 # 2.0.0 / HACS 3.0.0
 
 - Nova feature: Fluxo de inteligência passa a mostrar requisições reais do agente Arandu no HA, com ID, resultado/motivo, preparação, identidade inicial, espera em fila, NLU, Decision, LLM, validação e execução/consulta. Durações medidas e escala automática ms/s. O diagrama explicativo continua recolhido na mesma seção.

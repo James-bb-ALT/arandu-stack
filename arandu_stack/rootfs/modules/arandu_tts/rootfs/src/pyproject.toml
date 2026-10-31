@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arandu-tts"
-version = "0.2.0"
+version = "0.2.1"
 description = "TTS PT-BR para Home Assistant: Piper + Pocket + comparação web e clonagem de voz"
 requires-python = ">=3.11"
 authors = [{name = "Arandu Community"}]

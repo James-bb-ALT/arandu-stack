@@ -1,7 +1,7 @@
 name: "Arandu TTS"
 slug: "arandu_tts"
-version: "0.2.0"
-description: "Wyoming + laboratório Web: Piper e Pocket TTS, gravação e clonagem de vozes"
+version: "0.2.1"
+description: "Wyoming com fala completa para satélites, Piper, Pocket e laboratório de vozes"
 url: "https://github.com/kyutai-labs/pocket-tts"
 startup: services
 init: false

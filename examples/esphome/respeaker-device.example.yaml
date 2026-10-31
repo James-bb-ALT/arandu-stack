@@ -1,10 +1,14 @@
 # User-level configuration for an EXISTING ReSpeaker Lite base installation.
-# Copy the three arandu YAML files beside your device YAML; keep config/common/.
+# Keep this device YAML at the root. Put the three audio packages in config/common/.
+# Packages at the root appear as extra offline devices in ESPHome Builder.
 # Keep your current name/friendly_name and existing encryption key in secrets.yaml.
 # This is not a portable full firmware: the included base defines your hardware.
 packages:
   respeaker-satellite: !include config/common/respeaker-satellite-base.yaml
-  arandu_audio: !include respeaker-audio-stability.yaml
+  arandu_audio: !include config/common/respeaker-audio-stability.yaml
+  # ONLY for the old 2026.6.0 base with the respeaker_microphone I2S fork.
+  # Omit this line if the base already uses stock I2S + a decimator microphone.
+  arandu_i2s: !include config/common/respeaker-legacy-i2s-fix.yaml
 
 esphome:
   name: arandu-satelite

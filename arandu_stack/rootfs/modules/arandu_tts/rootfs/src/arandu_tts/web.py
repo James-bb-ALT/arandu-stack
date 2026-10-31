@@ -48,7 +48,7 @@ def create_app(cfg: Config, engine: SpeechEngine) -> web.Application:
     async def status(request):
         voices = available()
         return web.json_response({
-            'version': '0.2.0',
+            'version': '0.2.1',
             'voices': [dict(id=v.name, label=v.description or v.name, engine=v.backend, language=v.language)
                        for v in voices.values()],
             'piper_available': any(v.backend == 'piper' for v in voices.values()),

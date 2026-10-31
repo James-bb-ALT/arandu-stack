@@ -1,5 +1,16 @@
 # Relatório de implementação — camadas Decision/LLM e AI Lab
 
+App 2.0.1 / HACS 3.0.0, perfil ReSpeaker 3.0.1: migração da base legada para
+I2S oficial 2026.10.1 com decimator 48→16 kHz. Compilação e link completos,
+comparação do driver gerado e OTA no aparelho confirmados. Três reproduções
+FLAC (uma HTTP chunked) concluídas em volume 10%, cerca de 9 s por trecho de
+9,09 s; heap interno em repouso em torno de 127 KB. A verificação por estados
+não substitui escuta do alto-falante. O teste do usuário ainda revelou cortes no
+final de uma fala longa. TTS 0.2.1 anuncia síntese completa para o HA aguardar
+todo o áudio antes de entregá-lo ao satélite; requer atualização e recarga Wyoming.
+App: 148 testes aprovados, um ignorado. TTS: 29 aprovados. Validação física da
+alteração do TTS ainda pendente. Detalhes e limites em `ESPHOME-AUDIO.md`.
+
 App 2.0.0 / HACS 3.0.0: visualizador real de requisições na WebUI, coleta observacional
 no contexto de cada conversa, envio assíncrono com fila limitada e armazenamento em
 RAM. Mantém decisão/execução existentes; não mede áudio do satélite. 148 testes Python

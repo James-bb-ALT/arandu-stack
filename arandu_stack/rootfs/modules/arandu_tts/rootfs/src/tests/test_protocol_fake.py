@@ -99,6 +99,9 @@ async def test_wyoming_one_shot_and_description(monkeypatch, tmp_path):
     assert [e.type for e in handler.sent] == ["info", "audio-start", "audio-chunk", "audio-stop"]
     info = handler.sent[0].data["tts"][0]
     assert info.values["voices"][0].values["name"] == "test"
+    # HA uses this capability to select its complete-audio path. Advertising
+    # streaming lets slow synthesis drain the satellite buffer mid-utterance.
+    assert info.values["supports_synthesize_streaming"] is False
 
 
 @pytest.mark.asyncio

@@ -1,0 +1,44 @@
+# Migration for the legacy 2026.6.0 ReSpeaker Lite base ONLY.
+# That base replaces all i2s_audio code with formatBCE/esphome:respeaker_microphone.
+# Use after respeaker-audio-stability.yaml. Keep ESPHome pinned to 2026.10.1.
+# Newer bases already using stock I2S + a decimator do not need this package.
+esphome:
+  min_version: 2026.10.1
+  project:
+    name: arandu.respeaker_lite
+    version: 3.0.1
+
+# Later component sources take precedence. Pin the official driver to the same
+# release as the compiler; do not replace unrelated external components.
+# Do not copy the old i2s_audio external source back into the root YAML (root wins).
+external_components:
+  - source:
+      type: git
+      url: https://github.com/esphome/esphome
+      ref: 2026.10.1
+    components: [i2s_audio]
+    refresh: never
+  - source:
+      type: git
+      url: https://github.com/formatBCE/Respeaker-Lite-ESPHome-integration
+      ref: c01d4c4e802e94d66346bc634d1f3478278647b3
+    components: [respeaker_lite, decimator]
+    refresh: never
+
+# The XMOS clocks BOTH buses at 48 kHz. Stock I2S reports that rate correctly.
+# Preserve the legacy fork's 3:1 microphone decimation explicitly, retaining
+# both channels and the existing VA/mWW channel and gain selections.
+microphone:
+  - platform: decimator
+    id: arandu_voice_mic
+    microphone:
+      microphone: i2s_mics
+      channels: [0, 1]
+
+voice_assistant:
+  microphone:
+    microphone: arandu_voice_mic
+
+micro_wake_word:
+  microphone:
+    microphone: arandu_voice_mic

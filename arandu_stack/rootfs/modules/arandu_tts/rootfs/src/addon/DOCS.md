@@ -1,4 +1,7 @@
-# Arandu TTS 0.2.0
+# Arandu TTS 0.2.1
+
+Síntese completa antes da reprodução no Home Assistant. Recarregue a integração
+Wyoming após atualizar. Maior espera inicial pode evitar pausas entre frases.
 
 Wyoming TCP `10212` e laboratório Web usando **Ingress** (Abrir interface web).
 

@@ -6,6 +6,15 @@ Nenhuma instalação no HA ou alteração de uma pipeline real foi feita nesta s
 
 ## Entrega
 
+HACS 1.1.0: menu nativo para as seções de configuração, listas de associações de
+áudio e identidade e cadastro de várias associações antes de concluir. Finalização
+desmarcada por padrão; envio vazio conclui e salva a sessão. Correspondência entre
+satélite/dispositivo usa o vínculo do registro, sem perder autorização ou adivinhar
+saídas conflitantes. Cadastro e execução distinguem exposição, disponibilidade,
+capacidade e permissões. Validação: 133 testes Python passaram, 1 ignorado.
+Sem reprodução do estado real ou validação visual no HA do usuário. App e modelos
+mantêm versões anteriores, pois a alteração está na integração HACS.
+
 HACS 1.0.0: controles locais de volume do satélite (escala 0–10 ou porcentagem),
 associação explícita de saída entre integrações e cancelamento autenticado que
 interrompe processamento/descarta a fila por usuário e origem. Parada de reprodução

@@ -1,4 +1,4 @@
-# Camadas de inteligência — app 0.5.2 / HACS 1.0.1
+# Camadas de inteligência — app 0.5.2 / HACS 1.1.0
 
 O AI Lab mostra durações em ms abaixo de 1.000 ms e em segundos a partir desse
 limite. Dados brutos e exportações mantêm os valores originais em milissegundos.
@@ -11,9 +11,23 @@ Números por extenso são aceitos; valores inválidos não geram ações.
 
 Esses comandos controlam o próprio satélite. Sem associação, a integração exige
 uma saída media_player única e compatível no dispositivo registrado de origem.
-Para saídas separadas (por exemplo, Fully Kiosk), use Configurar → Saída de áudio
-do satélite e selecione um satélite OU dispositivo e a saída.
-Repita para os outros satélites. Remover a associação restaura a detecção automática.
+Em Configurar, escolha Saídas de áudio — ver e editar associações. A lista mostra
+origem → saída por nome/ID e o estado da saída. Selecione um satélite OU dispositivo
+e a saída para adicionar ou substituir. Enviar mantém a tela aberta e atualiza a
+lista; repita para os demais aparelhos. “Salvar e concluir” começa desmarcado.
+Enviar sem preencher nada salva todas as alterações da sessão e fecha. Também é
+possível marcar “Salvar e concluir” junto do último cadastro. As alterações só
+entram em vigor ao concluir, evitando salvamentos parciais. Selecione apenas uma
+associação existente para removê-la; a remoção restaura a detecção automática.
+Identidade de voz aparece em uma seção própria e usa o mesmo fluxo em sequência.
+
+Associação feita pelo dispositivo também vale quando o Assist informa somente
+seu satélite registrado; associação feita pelo satélite também vale quando chega
+somente o dispositivo. A associação exata do satélite prevalece. Se satélites no
+mesmo dispositivo apontarem para saídas diferentes e não houver origem suficiente
+para distingui-los, a integração recusa o empate. Cadastro e lista sinalizam saída
+indisponível, não exposta ao Assist ou sem controle de volume; erros na execução
+também distinguem falta de permissão do usuário e falta de origem identificada.
 O media player deve estar exposto ao Assist e o usuário precisa de permissão;
 a associação não concede acesso nem escolhe outro aparelho se o alvo ficar indisponível.
 

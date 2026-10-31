@@ -2,9 +2,9 @@
 import asyncio
 from pathlib import Path
 import sys
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 import unittest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 sys.path.append(str(Path(__file__).parents[1]/'arandu_stack/rootfs/modules/arandu_nlu/rootfs/src/tests/mlp'))
 from test_contextual import Client, hass_, input_, add, plan, operation
@@ -73,11 +73,37 @@ class OutputControls(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.hass.services.calls[-1]['target'],{'entity_id':['media_player.tv']})
         self.assertEqual(self.hass.services.calls[-1]['data'],{'volume_level':.2})
 
+    async def test_device_binding_is_found_when_assist_sends_only_satellite(self):
+        self.runtime.options=lambda:{'voice_output_bindings':{'device:voice1':'media_player.tv'}}
+        result=await self.runtime.process(self.request('volume 3'))
+        self.assertEqual(result.code,'success')
+        self.assertEqual(self.hass.services.calls[-1]['target'],{'entity_id':['media_player.tv']})
+
+    async def test_satellite_binding_is_found_when_assist_sends_only_device(self):
+        self.runtime.options=lambda:{'voice_output_bindings':{'satellite:assist_satellite.fixture':'media_player.tv'}}
+        request=input_(text='volume 3')
+        request.device_id='voice1'
+        self.assertEqual((await self.runtime.process(request)).code,'success')
+        self.assertEqual(self.hass.services.calls[-1]['target'],{'entity_id':['media_player.tv']})
+
+    async def test_conflicting_satellites_on_one_device_are_not_guessed(self):
+        other=add(self.hass,'reg_sat2','assist_satellite.other','Outro',{})
+        other.device_id='voice1'
+        self.runtime.options=lambda:{'voice_output_bindings':{
+            'satellite:assist_satellite.fixture':'media_player.tv',
+            'satellite:assist_satellite.other':'media_player.speaker'}}
+        request=input_(text='volume 3')
+        request.device_id='voice1'
+        result=await self.runtime.process(request)
+        self.assertEqual(result.reason,'voice_output_ambiguous_binding')
+        self.assertEqual(self.hass.services.calls,[])
+
     async def test_configured_output_does_not_fall_back_when_unexposed(self):
         self.runtime.options=lambda:{'voice_output_bindings':{'satellite:assist_satellite.fixture':'media_player.tv'}}
         self.hass.exposed.remove('media_player.tv')
         result=await self.runtime.process(self.request('volume dois'))
         self.assertEqual(result.code,'unavailable')
+        self.assertEqual(result.reason,'voice_output_not_exposed')
         self.assertEqual(self.hass.services.calls,[])
 
     async def test_device_origin_without_satellite_entity(self):
@@ -188,19 +214,91 @@ class OutputControls(unittest.IsolatedAsyncioTestCase):
 
 
 class OutputConfiguration(unittest.IsolatedAsyncioTestCase):
-    async def test_bind_and_remove_output_preserves_other_options(self):
+    async def asyncSetUp(self):
         from test_nlu_discovery_flow import NluDiscoveryFlow
         NluDiscoveryFlow.setUpClass()
-        flow=NluDiscoveryFlow.module.LocalNluOptionsFlow()
+        self.module=NluDiscoveryFlow.module
+        from custom_components.local_nlu import voice_controls, identity
+        namespace=ModuleType('_arandu_flow_fixture')
+        namespace.__path__=[]
+        self.imports=patch.dict(sys.modules,{'_arandu_flow_fixture':namespace,
+            '_arandu_flow_fixture.voice_controls':voice_controls,'_arandu_flow_fixture.identity':identity})
+        self.imports.start()
+        self.addCleanup(self.imports.stop)
+        class Field:
+            def __init__(self,name,**kwargs):
+                self.name,self.default=name,kwargs.get('default')
+        self.schema=patch.object(self.module,'vol',SimpleNamespace(Optional=Field,Schema=lambda fields:fields))
+        self.selectors=patch.object(self.module,'selector',SimpleNamespace(
+            EntitySelector=lambda value:value,EntitySelectorConfig=dict,
+            DeviceSelector=lambda:{},SelectSelector=lambda value:value,
+            SelectSelectorConfig=dict,SelectSelectorMode=SimpleNamespace(DROPDOWN='dropdown')))
+        self.schema.start();self.selectors.start()
+        self.addCleanup(self.schema.stop);self.addCleanup(self.selectors.stop)
+
+    async def test_bind_and_remove_output_preserves_other_options(self):
+        flow=self.module.LocalNluOptionsFlow()
         flow.config_entry=SimpleNamespace(options={'decision_enabled':True})
         flow.hass=hass_()
         add(flow.hass,'reg_sat','assist_satellite.fixture','Satélite',{})
         add(flow.hass,'reg_output','media_player.speaker','Saída',{'supported_features':4})
-        result=await flow.async_step_voice_output({'satellite_id':'assist_satellite.fixture','output_player':'media_player.speaker'})
+        flow.hass.services.available.add(('media_player','volume_set'))
+        result=await flow.async_step_voice_output({'satellite_id':'assist_satellite.fixture','output_player':'media_player.speaker','save_and_finish':True})
         self.assertEqual(result['type'],'create_entry')
         self.assertTrue(result['data']['decision_enabled'])
         self.assertEqual(result['data']['voice_output_bindings'],{'satellite:assist_satellite.fixture':'media_player.speaker'})
         flow.config_entry.options=result['data']
-        result=await flow.async_step_voice_output({'satellite_id':'assist_satellite.fixture','remove_binding':True})
+        result=await flow.async_step_voice_output({'existing_binding':'satellite:assist_satellite.fixture','save_and_finish':True})
         self.assertEqual(result['data']['voice_output_bindings'],{})
         self.assertTrue(result['data']['decision_enabled'])
+
+    async def test_audio_batch_displays_associations_then_empty_submit_saves(self):
+        flow=self.module.LocalNluOptionsFlow()
+        flow.config_entry=SimpleNamespace(options={'decision_enabled':True})
+        flow.hass=hass_()
+        flow.hass.services.available.add(('media_player','volume_set'))
+        for i in range(2):
+            add(flow.hass,f'sat{i}',f'assist_satellite.fixture{i}',f'Satélite {i}',{})
+            add(flow.hass,f'output{i}',f'media_player.fixture{i}',f'Saída {i}',{'supported_features':4})
+            result=await flow.async_step_voice_output({'satellite_id':f'assist_satellite.fixture{i}','output_player':f'media_player.fixture{i}'})
+            self.assertEqual(result['type'],'form')
+            for j in range(i+1):
+                self.assertIn(f'assist\\_satellite.fixture{j}',result['description_placeholders']['bindings'])
+            self.assertFalse(next(k.default for k in result['data_schema'] if k.name=='save_and_finish'))
+        self.assertNotIn('voice_output_bindings',flow.config_entry.options)  # No partial save.
+        result=await flow.async_step_voice_output({})
+        self.assertEqual(result['type'],'create_entry')
+        self.assertEqual(len(result['data']['voice_output_bindings']),2)
+        self.assertTrue(result['data']['decision_enabled'])
+
+    async def test_setup_rejects_unexposed_output_and_lists_existing_problem(self):
+        flow=self.module.LocalNluOptionsFlow()
+        flow.config_entry=SimpleNamespace(options={'voice_output_bindings':{'satellite:assist_satellite.fixture':'media_player.speaker'}})
+        flow.hass=hass_()
+        add(flow.hass,'sat','assist_satellite.fixture','Satélite',{})
+        add(flow.hass,'out','media_player.speaker','Saída',{'supported_features':4})
+        flow.hass.exposed.remove('media_player.speaker')
+        result=await flow.async_step_voice_output({'satellite_id':'assist_satellite.fixture','output_player':'media_player.speaker'})
+        self.assertEqual(result['errors']['base'],'voice_output_not_exposed')
+        self.assertIn('não exposta',result['description_placeholders']['bindings'])
+
+    async def test_identity_batch_default_is_continue_and_blank_finishes(self):
+        flow=self.module.LocalNluOptionsFlow()
+        flow.config_entry=SimpleNamespace(options={'llm_enabled':True})
+        flow.hass=hass_()
+        flow._active_users=AsyncMock(return_value={'user':SimpleNamespace(name='Usuário fixture')})
+        for i in range(2):
+            add(flow.hass,f'sat{i}',f'assist_satellite.fixture{i}',f'Satélite {i}',{})
+            result=await flow.async_step_identity_binding({'satellite_id':f'assist_satellite.fixture{i}','identity_user_id':'user'})
+            self.assertEqual(result['type'],'form')
+            self.assertFalse(next(k.default for k in result['data_schema'] if k.name=='save_and_finish'))
+            self.assertIn('Usuário fixture',result['description_placeholders']['bindings'])
+        result=await flow.async_step_identity_binding({})
+        self.assertEqual(len(result['data']['voice_identity_bindings']),2)
+        self.assertTrue(result['data']['llm_enabled'])
+
+    async def test_menu_opens_audio_and_identity_directly_without_checkbox(self):
+        flow=self.module.LocalNluOptionsFlow()
+        result=await flow.async_step_init()
+        self.assertEqual(result['type'],'menu')
+        self.assertEqual(result['menu_options'],['voice_output','identity_binding','intelligence','settings'])

@@ -22,6 +22,8 @@ class FakeFlow:
         return {'type': 'abort', **kwargs}
     def async_show_form(self, **kwargs):
         return {'type': 'form', **kwargs}
+    def async_show_menu(self, **kwargs):
+        return {'type': 'menu', **kwargs}
     def async_create_entry(self, **kwargs):
         return {'type': 'create_entry', **kwargs}
 
@@ -102,7 +104,7 @@ class NluDiscoveryFlow(unittest.IsolatedAsyncioTestCase):
         flow = self.module.LocalNluOptionsFlow()
         flow.config_entry = types.SimpleNamespace(options={}, data={})
         with patch.multiple(self.module.selector, create=True, **selectors), patch.object(flow, '_active_users', AsyncMock(return_value={})):
-            result = await flow.async_step_init()
+            result = await flow.async_step_settings()
             fields = probatio.to_field_list(result['data_schema'], custom_serializer=lambda value: value.serialize() if isinstance(value, FakeSelector) else probatio.UNSUPPORTED)
             self.assertTrue(any(field['name'] == 'endpoint' for field in fields))
             # Removing the UI validator must not allow a public endpoint to save.

@@ -26,11 +26,50 @@
   "options": {
     "step": {
       "init": {
-        "title": "Context and device policies",
+        "title": "Configure Arandu Assistant",
+        "description": "Choose a section. Review and add several audio or identity bindings in one session.",
+        "menu_options": {
+          "voice_output": "Audio outputs — review and edit bindings",
+          "identity_binding": "Voice identity — users and bindings",
+          "intelligence": "Intelligence layers",
+          "settings": "Other settings"
+        }
+      },
+      "intelligence": {
+        "title": "Intelligence layers",
+        "description": "NLU always runs first. Independent fallbacks apply to new requests without restarting. Start model processes separately in the app. Decision requires valid calibration, confidence strictly above 0.50 and margin at least 0.08. Check installation, availability and calibration in AI Lab. Enabled layers use the secure contextual runtime even when legacy mode was selected.",
+        "data": {
+          "decision_enabled": "Use Decision Engine",
+          "llm_enabled": "Use LLM as fallback"
+        }
+      },
+      "voice_output": {
+        "title": "Satellite audio output",
+        "description": "**Current bindings (including changes in this session)**\n\n{bindings}\n\nChoose a satellite OR device and its output to add or replace a binding. The output must be exposed to Assist and support volume. Voice-user permissions are checked at runtime. To remove, select only an existing binding. Submit to update this list and keep adding. Submit an empty form to save all changes and close, or select Save and finish. Session changes take effect only when finished.",
+        "data": {
+          "satellite_id": "Assist satellite",
+          "device_id": "Source device",
+          "output_player": "Audio output",
+          "save_and_finish": "Save and finish",
+          "existing_binding": "Existing binding to remove"
+        }
+      },
+      "identity_binding": {
+        "title": "Voice identity bindings",
+        "description": "**Current bindings (including changes in this session)**\n\n{bindings}\n\nChoose a satellite OR device and a user to add or replace a binding. To remove, select only an existing binding. Submit to update the list and add the next one. Submit an empty form to save all changes and close, or select Save and finish. Changes take effect only when finished. Identity selects permissions, not audio output. Authenticated identity always takes precedence.",
+        "data": {
+          "satellite_id": "Assist satellite",
+          "device_id": "Origin device",
+          "identity_user_id": "Associated user",
+          "save_and_finish": "Save and finish",
+          "existing_binding": "Existing binding to remove"
+        }
+      },
+      "settings": {
+        "title": "Other settings",
         "description": "Set a default room only when it is known. Access devices require an explicit policy and confirmation.",
         "data": {
           "contextual_enabled": "Enable Arandu NLU 2.0",
-          "configure_intelligence": "Intelligence layers",
           "stack_endpoint": "Arandu Stack endpoint (optional, port 8099)",
           "session_ttl": "Context lifetime (seconds)",
           "default_area": "Default room ID",
@@ -48,43 +87,10 @@
           "excluded_from_bulk_actions": "Exclude from collective actions",
           "low_battery_threshold": "Low battery threshold (%)",
           "fallback_user_id": "User for pipelines without identity",
-          "configure_identity_bindings": "Configure device/satellite identity bindings",
-          "configure_voice_output": "Satellite audio output",
           "endpoint": "NLU endpoint (leave blank for automatic detection)"
         },
         "data_description": {
-          "configure_voice_output": "Bind the satellite to its voice playback output to control volume and stop speech. Identity bindings separately select the user and permissions.",
           "fallback_user_id": "User whose permissions are used when Home Assistant does not provide the voice pipeline identity. Select — to disable."
-        }
-      },
-      "intelligence": {
-        "title": "Intelligence layers",
-        "description": "NLU always runs first. Independent fallbacks apply to new requests without restarting. Start model processes separately in the app. Decision requires valid calibration, confidence strictly above 0.50 and margin at least 0.08. Check installation, availability and calibration in AI Lab. Enabled layers use the secure contextual runtime even when legacy mode was selected.",
-        "data": {
-          "decision_enabled": "Use Decision Engine",
-          "llm_enabled": "Use LLM as fallback"
-        }
-      },
-      "voice_output": {
-        "title": "Satellite audio output",
-        "description": "Choose a satellite OR source device and its media player. Supports any integration exposing a compatible media player. The output must be exposed and authorized. Without a binding, one capable output on the exact source device is used. Repeat configuration to add another origin. Voice interruption also requires listening during playback.",
-        "data": {
-          "satellite_id": "Assist satellite",
-          "device_id": "Source device",
-          "output_player": "Audio output",
-          "remove_binding": "Remove output binding"
-        }
-      },
-      "identity_binding": {
-        "title": "Voice identity bindings",
-        "description": "Choose one satellite OR device and a user. Uncheck Save and finish to add another binding. To remove, select an existing binding or check Remove binding. Authenticated context always wins; users are never chosen automatically.",
-        "data": {
-          "satellite_id": "Assist satellite",
-          "device_id": "Origin device",
-          "identity_user_id": "Associated user",
-          "remove_binding": "Remove binding",
-          "save_and_finish": "Save and finish",
-          "existing_binding": "Existing binding to remove"
         }
       }
     },
@@ -94,7 +100,10 @@
       "invalid_identity_origin": "The selected origin is unavailable.",
       "invalid_identity_configuration": "Identity bindings are invalid or exceed the limit.",
       "cannot_connect": "Could not discover the app or reach NLU. Check that the module is enabled.",
-      "invalid_voice_output": "Choose an available media player; up to 128 output bindings are allowed."
+      "invalid_voice_output": "Choose an available media player; up to 128 output bindings are allowed.",
+      "voice_output_unavailable": "The output is unavailable, removed or disabled.",
+      "voice_output_not_exposed": "Expose this output to Assist under voice assistant entity exposure, then try again.",
+      "voice_output_no_volume": "This media player does not support volume control in Home Assistant."
     }
   },
   "title": "Arandu Assistant"

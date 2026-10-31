@@ -1,3 +1,12 @@
+# HACS 1.1.0 / app 0.5.2 (sem alteração)
+
+- Configurar agora abre um menu direto: Saídas de áudio, Identidade de voz, Camadas de inteligência e Outras configurações. Remove as checkboxes de navegação.
+- Áudio e identidade mostram as associações existentes por nome e ID. O formulário permanece aberto após cada inclusão, substituição ou remoção; “Salvar e concluir” começa desmarcado. Enviar vazio salva todas as alterações da sessão e fecha. Nenhuma associação antiga é apagada ou salva parcialmente.
+- A lista de áudio informa saída indisponível, não exposta ao Assist ou sem controle de volume. O cadastro recusa novas associações sem esses requisitos e orienta a correção, em vez de salvar uma saída inutilizável. Permissões do usuário da voz continuam sendo verificadas na execução.
+- Corrige a correspondência entre associação por dispositivo e requisição que informa apenas o satélite registrado, e vice-versa. Associação exata do satélite prevalece; vínculos conflitantes no mesmo dispositivo não são adivinhados.
+- Erros de execução distinguem origem ausente, associação conflitante, saída não exposta, indisponível, sem volume e usuário sem permissão. Mantém autorização HA e não recorre a outra saída quando a associada falha.
+- HACS 1.1.0 pela mudança relevante no fluxo de configuração; app 0.5.2 e serviços Decision/LLM 0.2.2 preservados. Validação: 133 testes Python passaram, 1 ignorado; sem validação visual no HA do usuário.
+
 # HACS 1.0.1 / app 0.5.2 (sem alteração)
 
 - Rótulo da opção de áudio passa a “Saída de áudio do satélite”, com descrição que diferencia saída de som de identidade/permissões. Acrescenta tradução `pt` além de `pt-BR`, mantendo os mesmos campos e configurações.

@@ -293,16 +293,25 @@ class ContextualRuntime:
                 self.sessions[key] = Session(current_time + _ttl(options), identity_source=identity.source)
             session = self.sessions[key]
             text = normalize(user_input.text)
-            from .voice_controls import volume, origin_player
+            from .voice_controls import volume, select_origin_player
             is_volume, percent = volume(user_input.text)
             if is_volume:
                 if percent is None:
                     return self.result('missing_slot', user_input, speech='Diga um volume de zero a dez, ou de zero a cem por cento.')
                 from .contextual_catalog import build
                 snapshot = build(self.hass, user, options)
-                target = origin_player(self.hass, user_input, snapshot, 'volume', options)
+                target, problem = select_origin_player(self.hass, user_input, snapshot, 'volume', options, user)
                 if target is None:
-                    return self.result('unavailable', user_input, speech='Não encontrei uma saída de áudio única e autorizada neste satélite.')
+                    messages = {
+                        'voice_output_not_exposed': 'A saída associada não está exposta ao Assist. Exponha esse media player ao Assist nas configurações do Home Assistant.',
+                        'voice_output_no_volume': 'A saída associada não oferece controle de volume no Home Assistant.',
+                        'voice_output_unavailable': 'A saída de áudio associada está indisponível ou foi desativada.',
+                        'voice_output_permission': 'O usuário desta voz não tem permissão para controlar a saída associada.',
+                        'voice_output_missing_origin': 'Este pedido chegou sem identificar o satélite ou dispositivo de origem.',
+                        'voice_output_ambiguous_binding': 'Há associações de áudio diferentes para o mesmo dispositivo. Revise as associações de saída de áudio.',
+                    }
+                    return self.result('unavailable', user_input, reason=problem, speech=messages.get(problem,
+                        'Não encontrei uma saída de áudio única neste dispositivo. Confira a associação em Saída de áudio do satélite.'))
                 session.pending, session.selection, session.confirmation, session.candidates = None, None, (), ()
                 operation = Operation('satellite.volume_set', 'volume', (target,), {'value': percent}, evidence=('origin_device',))
                 return await self.execute((operation,), snapshot, user_input, session, options, identity)

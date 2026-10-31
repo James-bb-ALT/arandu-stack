@@ -49,34 +49,78 @@ def volume(text):
     return True, value if percent else value * 10
 
 
-def origin_player(hass, user_input, snapshot, action, options=None):
-    """Require one capable, authorized output on the origin's exact device."""
+def output_problem(hass, target, action='volume', user=None):
+    """Explain why a configured output cannot satisfy this request."""
+    from homeassistant.helpers import entity_registry
+    from .contextual_catalog import exposed
+    from .capabilities import capabilities
+    if not isinstance(target, str) or not target.startswith('media_player.'):
+        return 'voice_output_unavailable'
+    entry = entity_registry.async_get(hass).entities.get(target)
+    state = hass.states.get(target)
+    if state is None or state.state in ('unknown', 'unavailable') or entry is not None and getattr(entry, 'disabled_by', None) is not None:
+        return 'voice_output_unavailable'
+    if not exposed(hass, entry, target):
+        return 'voice_output_not_exposed'
+    if user is not None and not user.is_admin and any(user.permissions.check_entity(target, policy) is not True for policy in ('read', 'control')):
+        return 'voice_output_permission'
+    if action not in capabilities(hass, target, state):
+        return 'voice_output_no_volume' if action == 'volume' else 'voice_output_no_stop'
+    return None
+
+
+def select_origin_player(hass, user_input, snapshot, action, options=None, user=None):
+    """Resolve satellite/device equivalents, preserving explicit output precedence."""
     from homeassistant.helpers import entity_registry
     registry = entity_registry.async_get(hass)
     bindings = (options or {}).get('voice_output_bindings', {})
     if type(bindings) is not dict or len(bindings) > 128:
-        return None
+        return None, 'voice_output_invalid_bindings'
     satellite_id = getattr(user_input, 'satellite_id', None)
     satellite = registry.entities.get(satellite_id) if isinstance(satellite_id, str) else None
     if satellite_id is not None:
         if (satellite is None or not satellite_id.startswith('assist_satellite.')
                 or getattr(satellite, 'disabled_by', None) is not None):
-            return None
+            return None, 'voice_output_invalid_origin'
         device_id = getattr(satellite, 'device_id', None)
     else:
         device_id = getattr(user_input, 'device_id', None)
-    for kind, origin in (('satellite', satellite_id), ('device', getattr(user_input, 'device_id', None))):
+    configured = False
+    target = None
+    for kind, origin in (('satellite', satellite_id), ('device', device_id)):
         if origin is not None and kind + ':' + origin in bindings:
             target = bindings[kind + ':' + origin]
-            return next((key for key, row in snapshot.by_id.items()
+            configured = True
+            break
+    if not configured and device_id and satellite_id is None:
+        # Some Assist transports send only the device ID, others only the satellite.
+        targets = {target for key, target in bindings.items() if isinstance(key, str)
+                   and key.startswith('satellite:') and isinstance(target, str)
+                   and (entry := registry.entities.get(key.removeprefix('satellite:'))) is not None
+                   and getattr(entry, 'disabled_by', None) is None
+                   and getattr(entry, 'device_id', None) == device_id}
+        if len(targets) > 1:
+            return None, 'voice_output_ambiguous_binding'
+        if targets:
+            configured, target = True, targets.pop()
+    if configured:
+        problem = output_problem(hass, target, action, user)
+        if problem:
+            return None, problem
+        selected = next((key for key, row in snapshot.by_id.items()
                          if row['entity_id'] == target and row['domain'] == 'media_player'
                          and action in row['actions']), None)
+        return selected, None if selected else 'voice_output_permission'
     if not device_id:
-        return None
+        return None, 'voice_output_missing_origin'
     found = []
     for key, row in snapshot.by_id.items():
         entry = registry.entities.get(row['entity_id'])
         if (row['domain'] == 'media_player' and action in row['actions']
                 and entry is not None and getattr(entry, 'device_id', None) == device_id):
             found.append(key)
-    return found[0] if len(found) == 1 else None
+    return (found[0], None) if len(found) == 1 else (None, 'voice_output_ambiguous' if found else 'voice_output_not_found')
+
+
+def origin_player(hass, user_input, snapshot, action, options=None):
+    return select_origin_player(hass, user_input, snapshot, action, options)[0]

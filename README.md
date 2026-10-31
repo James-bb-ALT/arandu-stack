@@ -4,7 +4,7 @@ Um único app para Home Assistant com **Wake, STT, NLU, Decision, LLM e TTS**.
 Todos os motores estão incluídos na mesma instalação. Você ativa, desativa e
 configura cada módulo pela WebUI, sem instalar seis apps separados.
 
-**Atual: app 0.5.2 / HACS 1.0.1 / Decision e LLM 0.2.2.** AI Lab mostra durações
+**Atual: app 0.5.2 / HACS 1.1.0 / Decision e LLM 0.2.2.** AI Lab mostra durações
 em segundos a partir de 1.000 ms e em milissegundos abaixo disso. Otimização para CPU:
 duas threads por modelo por padrão, sem reserva de núcleos; Decision e LLM
 permanecem carregados após o primeiro uso e não calculam simultaneamente.
@@ -17,8 +17,13 @@ para 30%; “volume 5 por cento” ajusta para 5%. “Cancela”, “para”, �
 e “nada” encerram a interação, inclusive ao final de uma fala abandonada, e
 descartam comandos daquele usuário/origem em andamento ou na fila. O áudio é
 interrompido pela saída compatível do próprio satélite, sem nova resposta falada.
-Em Configurar → **Saída de áudio do satélite**, associe o media player
-quando ele pertencer a outra integração/dispositivo. A saída precisa estar exposta
+Em Configurar → **Saídas de áudio — ver e editar associações**, veja todas as
+ligações origem → saída e seu estado. Adicione vários aparelhos na mesma tela;
+“Salvar e concluir” começa desmarcado. Envie sem preencher nada para salvar todas
+as alterações e fechar. Identidade de voz tem uma seção separada, com o mesmo
+cadastro em sequência. As alterações da sessão só entram em vigor ao concluir.
+Associe o media player quando ele pertencer a outra integração/dispositivo.
+A saída precisa estar exposta
 ao Assist, autorizada e oferecer volume/parada ou pausa. Serve para ESPHome,
 Fully Kiosk, Wyoming e outras integrações com esse contrato. Ouvir a interrupção
 durante a fala depende do microfone/firmware; sem escuta simultânea, reative a
@@ -171,7 +176,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **0.5.2**, integração HACS **1.0.1**, para HA OS/Supervised amd64.
+Versão experimental **0.5.2**, integração HACS **1.1.0**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

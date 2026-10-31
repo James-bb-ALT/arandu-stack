@@ -117,7 +117,30 @@ class LocalNluConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class LocalNluOptionsFlow(config_entries.OptionsFlow):
     """Contextual defaults and explicit capability/policy configuration."""
 
-    async def async_step_init(
+    async def async_step_init(self, user_input=None):
+        if user_input is not None:
+            return await self.async_step_settings(user_input)
+        return self.async_show_menu(step_id='init', menu_options=[
+            'voice_output', 'identity_binding', 'intelligence', 'settings'])
+
+    @staticmethod
+    def _display(value):
+        # Names come from local registries; escape them in markdown descriptions.
+        text = ' '.join(str(value).split()).replace('`', "'")
+        for char in ('\\', '|', '[', ']', '*', '_', '<', '>'):
+            text = text.replace(char, '\\' + char)
+        return text
+
+    def _origin_name(self, kind, origin):
+        from homeassistant.helpers import device_registry, entity_registry
+        entry = entity_registry.async_get(self.hass).entities.get(origin) if kind == 'satellite' else device_registry.async_get(self.hass).async_get(origin)
+        name = getattr(entry, 'name_by_user', None) or getattr(entry, 'name', None) or getattr(entry, 'original_name', None) or origin
+        return f'{name} ({origin})'
+
+    def _overview(self, rows):
+        return '\n'.join('- ' + self._display(row) for row in rows) if rows else '—'
+
+    async def async_step_settings(
         self, user_input: dict[str, Any] | None = None
     ) -> config_entries.ConfigFlowResult:
         users = await self._active_users()
@@ -150,15 +173,12 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
                 return self.async_create_entry(data=options)
         options = self.config_entry.options if user_input is None else {**self.config_entry.options, **user_input}
         return self.async_show_form(
-            step_id="init",
+            step_id="settings",
             data_schema=vol.Schema(
                 {
-                    vol.Optional('configure_voice_output', default=False): bool,
                     vol.Optional(CONF_FALLBACK_USER_ID, default=options.get(CONF_FALLBACK_USER_ID, "")): self._user_selector(users),
                     vol.Optional(CONF_ENDPOINT, default=options.get(CONF_ENDPOINT, self.config_entry.data.get(CONF_ENDPOINT, ''))): str,
                     vol.Optional('stack_endpoint', default=options.get('stack_endpoint', self.config_entry.data.get('stack_endpoint', ''))): str,
-                    vol.Optional("configure_identity_bindings", default=False): bool,
-                    vol.Optional("configure_intelligence", default=False): bool,
                     vol.Optional(CONF_CONTEXTUAL_ENABLED, default=bool(options.get(CONF_CONTEXTUAL_ENABLED, True))): bool,
                     vol.Optional("session_ttl", default=options.get("session_ttl", 60)): vol.All(vol.Coerce(int), vol.Range(min=1, max=600)),
                     vol.Optional("default_area", **({"default": options["default_area"]} if options.get("default_area") else {})): selector.AreaSelector(),
@@ -187,43 +207,68 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def async_step_voice_output(self, user_input=None):
-        """Bind output independently of the satellite integration/provider."""
+        """Review and stage several bindings before one final save."""
         from homeassistant.helpers import device_registry, entity_registry
+        from .voice_controls import output_problem
         options = dict(getattr(self, '_output_options', self.config_entry.options))
+        bindings = dict(options.get('voice_output_bindings', {}))
         errors = {}
         if user_input is not None:
             satellite, device = user_input.get('satellite_id'), user_input.get('device_id')
             player = user_input.get('output_player')
             remove = user_input.get('remove_binding', False)
-            if bool(satellite) == bool(device):
+            existing = user_input.get('existing_binding')
+            if not any((satellite, device, player, existing, remove)):
+                return self.async_create_entry(data=options)
+            if existing:
+                if existing not in bindings or satellite or device or player:
+                    errors['base'] = 'invalid_voice_output'
+                else:
+                    bindings.pop(existing)
+            elif bool(satellite) == bool(device):
                 errors['base'] = 'choose_one_identity_origin'
             else:
                 registry = entity_registry.async_get(self.hass)
                 origin = registry.entities.get(satellite) if satellite else device_registry.async_get(self.hass).async_get(device)
-                target = registry.entities.get(player)
-                state = self.hass.states.get(player) if isinstance(player, str) else None
-                if origin is None or getattr(origin, 'disabled_by', None) is not None:
+                key = ('satellite:' + satellite) if satellite else ('device:' + device)
+                if remove:
+                    bindings.pop(key, None)
+                elif origin is None or getattr(origin, 'disabled_by', None) is not None:
                     errors['base'] = 'invalid_identity_origin'
-                elif not remove and (not isinstance(player, str) or not player.startswith('media_player.')
-                        or state is None or target is not None and getattr(target, 'disabled_by', None) is not None):
-                    errors['base'] = 'invalid_voice_output'
                 else:
-                    bindings = dict(options.get('voice_output_bindings', {}))
-                    key = ('satellite:' + satellite) if satellite else ('device:' + device)
-                    if remove:
-                        bindings.pop(key, None)
-                    else:
-                        bindings[key] = player
-                    if len(bindings) > 128:
+                    problem = output_problem(self.hass, player)
+                    if problem:
+                        errors['base'] = problem
+                    elif len(bindings) >= 128 and key not in bindings:
                         errors['base'] = 'invalid_voice_output'
                     else:
-                        return self.async_create_entry(data={**options, 'voice_output_bindings': bindings})
-        return self.async_show_form(step_id='voice_output', data_schema=vol.Schema({
+                        bindings[key] = player
+            if not errors:
+                options['voice_output_bindings'] = bindings
+                self._output_options = options
+                if user_input.get('save_and_finish', False):
+                    return self.async_create_entry(data=options)
+        registry = entity_registry.async_get(self.hass)
+        rows, choices = [], []
+        labels = {'voice_output_unavailable': 'indisponível', 'voice_output_not_exposed': 'não exposta ao Assist',
+                  'voice_output_no_volume': 'sem controle de volume', None: 'volume disponível; permissões verificadas na execução'}
+        for key, target in sorted(bindings.items()):
+            kind, _, origin = key.partition(':')
+            entry = registry.entities.get(target)
+            name = getattr(entry, 'name', None) or getattr(entry, 'original_name', None) or target
+            label = f'{self._origin_name(kind, origin)} → {name} ({target})'
+            rows.append(label + ' — ' + labels.get(output_problem(self.hass, target), 'verifique a saída'))
+            choices.append({'value': key, 'label': label})
+        fields = {
             vol.Optional('satellite_id'): selector.EntitySelector(selector.EntitySelectorConfig(domain='assist_satellite')),
             vol.Optional('device_id'): selector.DeviceSelector(),
             vol.Optional('output_player'): selector.EntitySelector(selector.EntitySelectorConfig(domain='media_player')),
-            vol.Optional('remove_binding', default=False): bool,
-        }), errors=errors)
+            vol.Optional('save_and_finish', default=False): bool,
+        }
+        if choices:
+            fields[vol.Optional('existing_binding')] = selector.SelectSelector(selector.SelectSelectorConfig(options=choices, mode=selector.SelectSelectorMode.DROPDOWN))
+        return self.async_show_form(step_id='voice_output', data_schema=vol.Schema(fields), errors=errors,
+            description_placeholders={'bindings': self._overview(rows)})
 
     async def async_step_intelligence(self, user_input=None):
         """Routing is integration-owned and independent of process availability."""
@@ -252,6 +297,8 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
         from homeassistant.helpers import device_registry, entity_registry
         from .identity import IdentityError, validate_identity_options
 
+        if not hasattr(self, '_identity_options'):
+            self._identity_options = dict(self.config_entry.options)
         users = await self._active_users()
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -266,10 +313,8 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
                     errors["base"] = "invalid_identity_origin"
                 else:
                     satellite, device, remove = (origin, None, True) if kind == "satellite" else (None, origin, True)
-            if user_input.get("save_and_finish"):
-                # An empty form also permits finishing without adding a binding.
-                if not satellite and not device and not errors:
-                    return self.async_create_entry(data=self._identity_options)
+            if not any((satellite, device, user_id, existing, remove)) and not errors:
+                return self.async_create_entry(data=self._identity_options)
             if errors:
                 pass
             elif bool(satellite) == bool(device):
@@ -298,7 +343,7 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
                         self._identity_options = options
                         if user_input.get("save_and_finish"):
                             return self.async_create_entry(data=options)
-        existing = []
+        existing, rows = [], []
         registry = entity_registry.async_get(self.hass)
         devices = device_registry.async_get(self.hass)
         for kind, key in (("satellite", CONF_VOICE_IDENTITY_BINDINGS), ("device", CONF_DEVICE_IDENTITY_BINDINGS)):
@@ -306,14 +351,16 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
                 entry = registry.entities.get(origin) if kind == "satellite" else devices.async_get(origin)
                 name = getattr(entry, "name_by_user", None) or getattr(entry, "name", None) or origin
                 user = users.get(user_id)
-                existing.append({"value": f"{kind}:{origin}", "label": f"{name} — {user.name if user else '—'}"})
+                label = f"{self._origin_name(kind, origin)} → {user.name if user else 'usuário indisponível'}"
+                existing.append({"value": f"{kind}:{origin}", "label": label})
+                rows.append(label)
         fields = {
             vol.Optional("satellite_id"): selector.EntitySelector(selector.EntitySelectorConfig(domain="assist_satellite")),
             vol.Optional("device_id"): selector.DeviceSelector(),
             vol.Optional("identity_user_id", default=""): self._user_selector(users),
-            vol.Optional("remove_binding", default=False): bool,
-            vol.Optional("save_and_finish", default=True): bool,
+            vol.Optional("save_and_finish", default=False): bool,
         }
         if existing:
             fields[vol.Optional("existing_binding")] = selector.SelectSelector(selector.SelectSelectorConfig(options=existing, mode=selector.SelectSelectorMode.DROPDOWN))
-        return self.async_show_form(step_id="identity_binding", errors=errors, data_schema=vol.Schema(fields))
+        return self.async_show_form(step_id="identity_binding", errors=errors, data_schema=vol.Schema(fields),
+            description_placeholders={'bindings': self._overview(rows)})

@@ -26,11 +26,50 @@
   "options": {
     "step": {
       "init": {
-        "title": "Contexto e políticas dos dispositivos",
+        "title": "Configurar Arandu Assistant",
+        "description": "Escolha o que deseja configurar. As associações de áudio e identidade podem ser revisadas e cadastradas em sequência.",
+        "menu_options": {
+          "voice_output": "Saídas de áudio — ver e editar associações",
+          "identity_binding": "Identidade de voz — usuários e associações",
+          "intelligence": "Camadas de inteligência",
+          "settings": "Outras configurações"
+        }
+      },
+      "intelligence": {
+        "title": "Camadas de inteligência",
+        "description": "O NLU é sempre o primeiro. Ative camadas independentes para falhas de compreensão. Alterações valem para novas requisições, sem reiniciar. Os processos dos modelos são iniciados separadamente no app. Decision exige calibração válida: confiança maior que 0,50 e margem mínima 0,08. Consulte instalação, disponibilidade e calibração no AI Lab. As camadas usam o runtime contextual seguro mesmo quando o modo legado estava selecionado.",
+        "data": {
+          "decision_enabled": "Usar Decision Engine",
+          "llm_enabled": "Usar LLM como fallback"
+        }
+      },
+      "voice_output": {
+        "title": "Saída de áudio do satélite",
+        "description": "**Associações atuais (inclui alterações deste cadastro)**\n\n{bindings}\n\nEscolha um satélite OU dispositivo e sua saída para adicionar ou substituir a associação. A saída deve estar exposta ao Assist e oferecer volume. As permissões do usuário da voz são verificadas na execução. Para remover, escolha apenas uma associação existente. Ao enviar, a lista é atualizada e o formulário continua aberto. Envie sem preencher nada para salvar todas as alterações e fechar, ou marque Salvar e concluir. As alterações desta sessão só entram em vigor ao concluir.",
+        "data": {
+          "satellite_id": "Satélite Assist",
+          "device_id": "Dispositivo de origem",
+          "output_player": "Saída de áudio",
+          "save_and_finish": "Salvar e concluir",
+          "existing_binding": "Associação existente a remover"
+        }
+      },
+      "identity_binding": {
+        "title": "Associações de identidade de voz",
+        "description": "**Associações atuais (inclui alterações deste cadastro)**\n\n{bindings}\n\nEscolha um satélite OU dispositivo e um usuário para adicionar ou substituir uma associação. Para remover, escolha apenas uma associação existente. Ao enviar, a lista é atualizada e você pode cadastrar o próximo. Envie sem preencher nada para salvar todas as alterações e fechar, ou marque Salvar e concluir. As alterações só entram em vigor ao concluir. A identidade define permissões; não define a saída de áudio. Contas autenticadas sempre prevalecem.",
+        "data": {
+          "satellite_id": "Satélite Assist",
+          "device_id": "Dispositivo de origem",
+          "identity_user_id": "Usuário associado",
+          "save_and_finish": "Salvar e concluir",
+          "existing_binding": "Associação existente a remover"
+        }
+      },
+      "settings": {
+        "title": "Outras configurações",
         "description": "Defina um cômodo padrão somente quando ele for conhecido. Dispositivos de acesso exigem política explícita e confirmação.",
         "data": {
           "contextual_enabled": "Ativar Arandu NLU 2.0",
-          "configure_intelligence": "Camadas de inteligência",
           "stack_endpoint": "Endpoint Arandu Stack (opcional, porta 8099)",
           "session_ttl": "Validade do contexto (segundos)",
           "default_area": "ID do cômodo padrão",
@@ -48,43 +87,10 @@
           "excluded_from_bulk_actions": "Excluir de ações coletivas",
           "low_battery_threshold": "Limite de bateria baixa (%)",
           "fallback_user_id": "Usuário para pipelines sem identidade",
-          "configure_identity_bindings": "Configurar associações por dispositivo/satélite",
-          "configure_voice_output": "Saída de áudio do satélite",
           "endpoint": "Endpoint NLU (vazio para detectar automaticamente)"
         },
         "data_description": {
-          "configure_voice_output": "Associe o satélite à saída que reproduz a voz para controlar volume e parar a fala. É diferente da associação de identidade, que define o usuário e suas permissões.",
           "fallback_user_id": "Usuário cujas permissões serão utilizadas quando o Home Assistant não informar a identidade da pipeline de voz. Selecione — para desativar."
-        }
-      },
-      "intelligence": {
-        "title": "Camadas de inteligência",
-        "description": "O NLU é sempre o primeiro. Ative camadas independentes para falhas de compreensão. Alterações valem para novas requisições, sem reiniciar. Os processos dos modelos são iniciados separadamente no app. Decision exige calibração válida: confiança maior que 0,50 e margem mínima 0,08. Consulte instalação, disponibilidade e calibração no AI Lab. As camadas usam o runtime contextual seguro mesmo quando o modo legado estava selecionado.",
-        "data": {
-          "decision_enabled": "Usar Decision Engine",
-          "llm_enabled": "Usar LLM como fallback"
-        }
-      },
-      "voice_output": {
-        "title": "Saída de áudio do satélite",
-        "description": "Escolha um satélite OU dispositivo de origem e seu media player. Funciona com qualquer integração que exponha uma saída compatível, incluindo ESPHome, Fully Kiosk e Wyoming. A saída deve estar exposta ao Assist e autorizada para o usuário. Sem associação, usa uma única saída compatível no dispositivo de origem. Repita a configuração para outro satélite. Remover restaura a detecção automática. Interromper por voz também exige que o satélite escute durante a reprodução.",
-        "data": {
-          "satellite_id": "Satélite Assist",
-          "device_id": "Dispositivo de origem",
-          "output_player": "Saída de áudio",
-          "remove_binding": "Remover associação de saída"
-        }
-      },
-      "identity_binding": {
-        "title": "Associações de identidade de voz",
-        "description": "Escolha um satélite OU dispositivo e um usuário. Para adicionar outra associação, desmarque Salvar e concluir. Para remover, selecione uma associação existente ou marque Remover associação. Contexto autenticado sempre prevalece; nenhum usuário é escolhido automaticamente.",
-        "data": {
-          "satellite_id": "Satélite Assist",
-          "device_id": "Dispositivo de origem",
-          "identity_user_id": "Usuário associado",
-          "remove_binding": "Remover associação",
-          "save_and_finish": "Salvar e concluir",
-          "existing_binding": "Associação existente a remover"
         }
       }
     },
@@ -94,7 +100,10 @@
       "invalid_identity_origin": "A origem selecionada não está disponível.",
       "invalid_identity_configuration": "As associações de identidade são inválidas ou excedem o limite.",
       "cannot_connect": "Não foi possível detectar o app ou acessar o NLU. Confirme se o módulo está ativo.",
-      "invalid_voice_output": "Escolha um media player disponível; são permitidas até 128 associações de saída."
+      "invalid_voice_output": "Escolha um media player disponível; são permitidas até 128 associações de saída.",
+      "voice_output_unavailable": "A saída está indisponível, foi removida ou está desativada.",
+      "voice_output_not_exposed": "Exponha a saída ao Assist em Configurações → Assistentes de voz → Expor entidades e tente novamente.",
+      "voice_output_no_volume": "Este media player não oferece controle de volume no Home Assistant."
     }
   },
   "title": "Arandu Assistant"

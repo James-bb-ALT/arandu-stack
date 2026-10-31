@@ -49,10 +49,11 @@
           "low_battery_threshold": "Low battery threshold (%)",
           "fallback_user_id": "User for pipelines without identity",
           "configure_identity_bindings": "Configure device/satellite identity bindings",
-          "configure_voice_output": "Configure satellite audio output",
+          "configure_voice_output": "Satellite audio output",
           "endpoint": "NLU endpoint (leave blank for automatic detection)"
         },
         "data_description": {
+          "configure_voice_output": "Bind the satellite to its voice playback output to control volume and stop speech. Identity bindings separately select the user and permissions.",
           "fallback_user_id": "User whose permissions are used when Home Assistant does not provide the voice pipeline identity. Select — to disable."
         }
       },

@@ -1,3 +1,8 @@
+# HACS 1.0.1 / app 0.5.2 (sem alteração)
+
+- Rótulo da opção de áudio passa a “Saída de áudio do satélite”, com descrição que diferencia saída de som de identidade/permissões. Acrescenta tradução `pt` além de `pt-BR`, mantendo os mesmos campos e configurações.
+- Se o frontend ainda exibir a chave `configure_voice_output`, reinicie o Home Assistant após atualizar e reabra a página para renovar as traduções em cache.
+
 # HACS 1.0.0 / app 0.5.2 (sem alteração)
 
 - Novo controle da saída do satélite por voz: volume sem unidade usa escala 0–10 (3 = 30%); porcentagens explícitas preservam 0–100%, inclusive 5%. Aceita números falados. Valores fora da escala pedem reformulação, sem alteração de volume.

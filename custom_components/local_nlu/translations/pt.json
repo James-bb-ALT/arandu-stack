@@ -1,0 +1,101 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "O Local NLU já está configurado.",
+      "single_instance_allowed": "Somente uma instância do Local NLU é permitida.",
+      "invalid_discovery": "O anúncio não corresponde a uma instalação válida do Arandu Stack."
+    },
+    "error": {
+      "cannot_connect": "Não foi possível conectar ao add-on local."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "endpoint": "Endpoint NLU (automático, porta 11555)",
+          "stack_endpoint": "Endpoint Arandu Stack (opcional, porta 8099)"
+        },
+        "description": "O endereço é preenchido a partir do app instalado no Supervisor. Deixe vazio para detectar automaticamente; fora do HA OS, informe o endereço manualmente.",
+        "title": "Conectar Arandu Assistant"
+      },
+      "hassio_confirm": {
+        "title": "Arandu Assistant",
+        "description": "O app Arandu Assistant foi encontrado em {endpoint}. Confirme para adicionar o agente de conversa. Os endereços NLU e painel serão preenchidos automaticamente."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Contexto e políticas dos dispositivos",
+        "description": "Defina um cômodo padrão somente quando ele for conhecido. Dispositivos de acesso exigem política explícita e confirmação.",
+        "data": {
+          "contextual_enabled": "Ativar Arandu NLU 2.0",
+          "configure_intelligence": "Camadas de inteligência",
+          "stack_endpoint": "Endpoint Arandu Stack (opcional, porta 8099)",
+          "session_ttl": "Validade do contexto (segundos)",
+          "default_area": "ID do cômodo padrão",
+          "wake_words": "Prefixos exatos de ativação (lista opcional)",
+          "increments": "Incrementos dos ajustes relativos",
+          "entity_preferences": "Sensores preferidos e categorias semânticas",
+          "sensitive_entities": "Dispositivos de acesso permitidos com confirmação",
+          "energy_sources": "Fontes de consumo verificadas, sem sobreposição",
+          "device_mappings": "Mapeamentos de TV e controle remoto",
+          "intent_bindings": "Adaptadores de scripts e botões registrados",
+          "v2_enabled": "Ativar v3 legado quando o modo contextual estiver desativado",
+          "shadow_enabled": "Ativar diagnóstico do resolvedor legado",
+          "person_device_bindings": "Aliases de pessoas e aparelhos vinculados",
+          "device_sensor_bindings": "Sensores vinculados a aparelhos",
+          "excluded_from_bulk_actions": "Excluir de ações coletivas",
+          "low_battery_threshold": "Limite de bateria baixa (%)",
+          "fallback_user_id": "Usuário para pipelines sem identidade",
+          "configure_identity_bindings": "Configurar associações por dispositivo/satélite",
+          "configure_voice_output": "Saída de áudio do satélite",
+          "endpoint": "Endpoint NLU (vazio para detectar automaticamente)"
+        },
+        "data_description": {
+          "configure_voice_output": "Associe o satélite à saída que reproduz a voz para controlar volume e parar a fala. É diferente da associação de identidade, que define o usuário e suas permissões.",
+          "fallback_user_id": "Usuário cujas permissões serão utilizadas quando o Home Assistant não informar a identidade da pipeline de voz. Selecione — para desativar."
+        }
+      },
+      "intelligence": {
+        "title": "Camadas de inteligência",
+        "description": "O NLU é sempre o primeiro. Ative camadas independentes para falhas de compreensão. Alterações valem para novas requisições, sem reiniciar. Os processos dos modelos são iniciados separadamente no app. Decision exige calibração válida: confiança maior que 0,50 e margem mínima 0,08. Consulte instalação, disponibilidade e calibração no AI Lab. As camadas usam o runtime contextual seguro mesmo quando o modo legado estava selecionado.",
+        "data": {
+          "decision_enabled": "Usar Decision Engine",
+          "llm_enabled": "Usar LLM como fallback"
+        }
+      },
+      "voice_output": {
+        "title": "Saída de áudio do satélite",
+        "description": "Escolha um satélite OU dispositivo de origem e seu media player. Funciona com qualquer integração que exponha uma saída compatível, incluindo ESPHome, Fully Kiosk e Wyoming. A saída deve estar exposta ao Assist e autorizada para o usuário. Sem associação, usa uma única saída compatível no dispositivo de origem. Repita a configuração para outro satélite. Remover restaura a detecção automática. Interromper por voz também exige que o satélite escute durante a reprodução.",
+        "data": {
+          "satellite_id": "Satélite Assist",
+          "device_id": "Dispositivo de origem",
+          "output_player": "Saída de áudio",
+          "remove_binding": "Remover associação de saída"
+        }
+      },
+      "identity_binding": {
+        "title": "Associações de identidade de voz",
+        "description": "Escolha um satélite OU dispositivo e um usuário. Para adicionar outra associação, desmarque Salvar e concluir. Para remover, selecione uma associação existente ou marque Remover associação. Contexto autenticado sempre prevalece; nenhum usuário é escolhido automaticamente.",
+        "data": {
+          "satellite_id": "Satélite Assist",
+          "device_id": "Dispositivo de origem",
+          "identity_user_id": "Usuário associado",
+          "remove_binding": "Remover associação",
+          "save_and_finish": "Salvar e concluir",
+          "existing_binding": "Associação existente a remover"
+        }
+      }
+    },
+    "error": {
+      "invalid_identity_user": "Escolha um usuário ativo.",
+      "choose_one_identity_origin": "Escolha apenas um satélite ou dispositivo.",
+      "invalid_identity_origin": "A origem selecionada não está disponível.",
+      "invalid_identity_configuration": "As associações de identidade são inválidas ou excedem o limite.",
+      "cannot_connect": "Não foi possível detectar o app ou acessar o NLU. Confirme se o módulo está ativo.",
+      "invalid_voice_output": "Escolha um media player disponível; são permitidas até 128 associações de saída."
+    }
+  },
+  "title": "Arandu Assistant"
+}

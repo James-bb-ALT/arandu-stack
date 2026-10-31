@@ -49,10 +49,11 @@
           "low_battery_threshold": "Limite de bateria baixa (%)",
           "fallback_user_id": "Usuário para pipelines sem identidade",
           "configure_identity_bindings": "Configurar associações por dispositivo/satélite",
-          "configure_voice_output": "Configurar saída de áudio do satélite",
+          "configure_voice_output": "Saída de áudio do satélite",
           "endpoint": "Endpoint NLU (vazio para detectar automaticamente)"
         },
         "data_description": {
+          "configure_voice_output": "Associe o satélite à saída que reproduz a voz para controlar volume e parar a fala. É diferente da associação de identidade, que define o usuário e suas permissões.",
           "fallback_user_id": "Usuário cujas permissões serão utilizadas quando o Home Assistant não informar a identidade da pipeline de voz. Selecione — para desativar."
         }
       },

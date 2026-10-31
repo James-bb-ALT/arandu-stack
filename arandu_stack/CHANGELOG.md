@@ -1,3 +1,12 @@
+# HACS 1.0.0 / app 0.5.2 (sem alteração)
+
+- Novo controle da saída do satélite por voz: volume sem unidade usa escala 0–10 (3 = 30%); porcentagens explícitas preservam 0–100%, inclusive 5%. Aceita números falados. Valores fora da escala pedem reformulação, sem alteração de volume.
+- Associação automática exige uma única saída compatível no dispositivo de origem. Nova configuração nativa permite associar satélite/dispositivo a um media player de outra integração, sem depender de ESPHome, Fully Kiosk ou Wyoming. Sem origem, capacidade, exposição ou permissão, não escolhe uma TV ou caixa do cômodo por aproximação.
+- “Cancela”, “para”, “pare”, “deixa pra lá”, “esquece” e “nada”, isolados ou ao final da fala abandonada, cancelam a interação. Cancelamento autenticado não espera a inferência: descarta processamento ativo e comandos na fila do mesmo usuário/origem, remove diálogos pendentes e evita execução tardia. Não desfaz ações já enviadas ao HA.
+- Interrompe áudio com media_stop da saída de origem, ou media_pause se só houver pausa. Não gera nova resposta falada. Se a saída não oferece controle compatível, o diálogo ainda é cancelado e o resultado informa a indisponibilidade da parada do áudio. Captar a voz durante reprodução depende do microfone/firmware do satélite; esta integração não habilita escuta simultânea em aparelhos que não a oferecem.
+- Cancelamento não consulta o NLU/Stack nem expande frases personalizadas. Volume e cancelamento locais não usam Decision/LLM. Associações de saída não substituem identidade, exposição ou permissões do HA.
+- Novas features recebem 1.0.0 conforme regra de versionamento do projeto. App 0.5.2 e Decision/LLM 0.2.2 preservados. Validação: 126 testes Python passaram, 1 ignorado; 6 testes JavaScript passaram. Sem validação física nos satélites do usuário.
+
 # HACS 0.8.3 / app 0.5.2 (sem alteração)
 
 - AI Lab converte automaticamente durações a partir de 1.000 ms para segundos, com duas casas decimais; abaixo desse limite mantém milissegundos. Formatação em português: 450,0 ms, 1,50 s.

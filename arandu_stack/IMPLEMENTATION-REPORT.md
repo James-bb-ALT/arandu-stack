@@ -6,6 +6,15 @@ Nenhuma instalação no HA ou alteração de uma pipeline real foi feita nesta s
 
 ## Entrega
 
+HACS 1.0.0: controles locais de volume do satélite (escala 0–10 ou porcentagem),
+associação explícita de saída entre integrações e cancelamento autenticado que
+interrompe processamento/descarta a fila por usuário e origem. Parada de reprodução
+via media_stop/media_pause, quando expostos pela saída; sem novo TTS após cancelar.
+Não altera firmware nem garante escuta durante reprodução em todos os dispositivos.
+App 0.5.2 e serviços 0.2.2 preservados. Validação: 126 testes Python passaram,
+1 ignorado; 6 testes JavaScript passaram. Sem teste físico em Fully Kiosk,
+Echo Muse ou ReSpeaker. Novas funcionalidades classificadas em X.0.0 conforme usuário.
+
 Atualização app 0.5.2 / HACS 0.8.2 / Decision e LLM 0.2.2: inferências serializadas
 entre processos, duas threads por modelo por padrão, espera passiva e modelos
 reutilizados em memória. Prompt do sistema reduzido de 983 para 671 caracteres;

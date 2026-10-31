@@ -242,11 +242,23 @@ class LocalNluRuntime:
 
     async def async_process(self, user_input: Any) -> RuntimeResult:
         routing = self._contextual_options()
-        if self._contextual_enabled() or routing.get("decision_enabled") is True or routing.get("llm_enabled") is True:
+        from .voice_controls import cancellation, volume
+        text = getattr(user_input, 'text', None)
+        if type(text) is str and routing.get('wake_words'):
+            from .voice_input import without_wake_word
+            try:
+                text = without_wake_word(user_input, routing, True).text
+            except ValueError:
+                return RuntimeResult(code='invalid_request')
+        control = type(text) is str and (cancellation(text) or volume(text)[0])
+        if control or self._contextual_enabled() or routing.get("decision_enabled") is True or routing.get("llm_enabled") is True:
             if self._contextual is None:
                 from .contextual_runtime import ContextualRuntime
                 self._contextual = ContextualRuntime(self._hass, self._client, self._contextual_options)
-            return await self._contextual.process(user_input)
+            result = await self._contextual.process(user_input)
+            if control and result.code in ('success', 'cancelled'):
+                self._pending.pop(getattr(user_input, 'conversation_id', None), None)
+            return result
         conversation_id = getattr(user_input, "conversation_id", None)
         if type(conversation_id) is str and conversation_id in self._pending:
             result = await self._async_continue_pending(conversation_id, user_input)

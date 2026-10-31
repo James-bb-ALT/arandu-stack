@@ -124,6 +124,7 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
         errors: dict[str, str] = {}
         if user_input is not None:
             configure_intelligence = user_input.pop("configure_intelligence", False)
+            configure_output = user_input.pop('configure_voice_output', False)
             # Preserve options not represented by this form, including existing bindings.
             options = {**self.config_entry.options, **user_input}
             try:
@@ -137,6 +138,9 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
                 if not options.get(CONF_FALLBACK_USER_ID):
                     options.pop(CONF_FALLBACK_USER_ID, None)
                 configure_bindings = options.pop("configure_identity_bindings", False)
+                if configure_output:
+                    self._output_options = options
+                    return await self.async_step_voice_output()
                 if configure_intelligence:
                     self._intelligence_options = options
                     return await self.async_step_intelligence()
@@ -149,6 +153,7 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
             step_id="init",
             data_schema=vol.Schema(
                 {
+                    vol.Optional('configure_voice_output', default=False): bool,
                     vol.Optional(CONF_FALLBACK_USER_ID, default=options.get(CONF_FALLBACK_USER_ID, "")): self._user_selector(users),
                     vol.Optional(CONF_ENDPOINT, default=options.get(CONF_ENDPOINT, self.config_entry.data.get(CONF_ENDPOINT, ''))): str,
                     vol.Optional('stack_endpoint', default=options.get('stack_endpoint', self.config_entry.data.get('stack_endpoint', ''))): str,
@@ -180,6 +185,45 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
             ),
             errors=errors,
         )
+
+    async def async_step_voice_output(self, user_input=None):
+        """Bind output independently of the satellite integration/provider."""
+        from homeassistant.helpers import device_registry, entity_registry
+        options = dict(getattr(self, '_output_options', self.config_entry.options))
+        errors = {}
+        if user_input is not None:
+            satellite, device = user_input.get('satellite_id'), user_input.get('device_id')
+            player = user_input.get('output_player')
+            remove = user_input.get('remove_binding', False)
+            if bool(satellite) == bool(device):
+                errors['base'] = 'choose_one_identity_origin'
+            else:
+                registry = entity_registry.async_get(self.hass)
+                origin = registry.entities.get(satellite) if satellite else device_registry.async_get(self.hass).async_get(device)
+                target = registry.entities.get(player)
+                state = self.hass.states.get(player) if isinstance(player, str) else None
+                if origin is None or getattr(origin, 'disabled_by', None) is not None:
+                    errors['base'] = 'invalid_identity_origin'
+                elif not remove and (not isinstance(player, str) or not player.startswith('media_player.')
+                        or state is None or target is not None and getattr(target, 'disabled_by', None) is not None):
+                    errors['base'] = 'invalid_voice_output'
+                else:
+                    bindings = dict(options.get('voice_output_bindings', {}))
+                    key = ('satellite:' + satellite) if satellite else ('device:' + device)
+                    if remove:
+                        bindings.pop(key, None)
+                    else:
+                        bindings[key] = player
+                    if len(bindings) > 128:
+                        errors['base'] = 'invalid_voice_output'
+                    else:
+                        return self.async_create_entry(data={**options, 'voice_output_bindings': bindings})
+        return self.async_show_form(step_id='voice_output', data_schema=vol.Schema({
+            vol.Optional('satellite_id'): selector.EntitySelector(selector.EntitySelectorConfig(domain='assist_satellite')),
+            vol.Optional('device_id'): selector.DeviceSelector(),
+            vol.Optional('output_player'): selector.EntitySelector(selector.EntitySelectorConfig(domain='media_player')),
+            vol.Optional('remove_binding', default=False): bool,
+        }), errors=errors)
 
     async def async_step_intelligence(self, user_input=None):
         """Routing is integration-owned and independent of process availability."""

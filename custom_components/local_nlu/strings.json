@@ -49,6 +49,7 @@
           "low_battery_threshold": "Low battery threshold (%)",
           "fallback_user_id": "User for pipelines without identity",
           "configure_identity_bindings": "Configure device/satellite identity bindings",
+          "configure_voice_output": "Configure satellite audio output",
           "endpoint": "NLU endpoint (leave blank for automatic detection)"
         },
         "data_description": {
@@ -61,6 +62,16 @@
         "data": {
           "decision_enabled": "Use Decision Engine",
           "llm_enabled": "Use LLM as fallback"
+        }
+      },
+      "voice_output": {
+        "title": "Satellite audio output",
+        "description": "Choose a satellite OR source device and its media player. Works across integrations (ESPHome, Fully Kiosk, Wyoming). Volume and playback controls require a supported, exposed output and user permission. Without a binding, one capable output on the exact source device is used. Repeat configuration to add another origin. Remove a binding to restore automatic detection. Voice interruption also requires the satellite to listen during playback.",
+        "data": {
+          "satellite_id": "Assist satellite",
+          "device_id": "Source device",
+          "output_player": "Audio output",
+          "remove_binding": "Remove output binding"
         }
       },
       "identity_binding": {
@@ -81,7 +92,8 @@
       "choose_one_identity_origin": "Choose exactly one satellite or device.",
       "invalid_identity_origin": "The selected origin is unavailable.",
       "invalid_identity_configuration": "Identity bindings are invalid or exceed the limit.",
-      "cannot_connect": "Could not discover the app or reach NLU. Check that the module is enabled."
+      "cannot_connect": "Could not discover the app or reach NLU. Check that the module is enabled.",
+      "invalid_voice_output": "Choose an available media player; up to 128 output bindings are allowed."
     }
   },
   "title": "Arandu Assistant"

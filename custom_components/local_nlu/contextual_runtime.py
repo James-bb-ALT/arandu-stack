@@ -73,6 +73,9 @@ class ContextualRuntime:
         self.identity_options: str | None = None
         self.options_revision = 0
         self.request_revision = 0
+        self.active_request = None
+        self.cancelled_tasks = set()
+        self.queued_requests = {}
 
     def close(self) -> None:
         self.catalog.close()
@@ -129,9 +132,105 @@ class ContextualRuntime:
         return user
 
     async def process(self, user_input: Any) -> Any:
+        from .voice_controls import cancellation
+        from .voice_input import without_wake_word
+        if type(getattr(user_input, 'text', None)) is not str or not 1 <= len(user_input.text) <= 512 or any(ord(ch) < 32 or ord(ch) == 127 for ch in user_input.text):
+            return self.result('invalid_request', user_input)
+        if getattr(user_input, 'language', 'pt-BR') not in ('pt-BR', 'pt', 'pt-br'):
+            return self.result('no_match', user_input)
+        conversation_id = getattr(user_input, 'conversation_id', None)
+        if conversation_id is not None and (type(conversation_id) is not str or not 1 <= len(conversation_id) <= 128):
+            return self.result('invalid_request', user_input)
+        try:
+            options = self.current_options()
+            cleaned = without_wake_word(user_input, options, origin_context(self.hass, user_input, options)[1] in ('satellite', 'device'))
+            identity = await resolve_request_identity(self.hass, cleaned, options)
+        except (ExecutionError, ValueError, TypeError):
+            return self.result('invalid_request', user_input)
+        except IdentityError:
+            return self.result('denied', user_input, reason='permission_denied')
+        if cancellation(cleaned.text):
+            return await self.cancel_request(cleaned, options)
+        owner = (identity.user_id, request_origin(effective_input(cleaned, identity)))
+        cancelled = asyncio.Event()
+        request_task = asyncio.current_task()
+        self.queued_requests[request_task] = (owner, cancelled)
         # Serializes this agent's live relative updates and retry/confirmation decisions.
-        async with self.lock:
-            return await self._process(user_input)
+        try:
+            async with self.lock:
+                if cancelled.is_set():
+                    from .runtime import RuntimeResult
+                    return RuntimeResult(code='cancelled', response_text='', conversation_id=getattr(user_input, 'conversation_id', None))
+                task = asyncio.create_task(self._process(user_input))
+                try:
+                    return await task
+                except asyncio.CancelledError:
+                    if task not in self.cancelled_tasks:
+                        raise
+                    from .runtime import RuntimeResult
+                    return RuntimeResult(code='cancelled', response_text='', conversation_id=getattr(user_input, 'conversation_id', None))
+                finally:
+                    self.cancelled_tasks.discard(task)
+                    if self.active_request and self.active_request[0] is task:
+                        self.active_request = None
+        finally:
+            self.queued_requests.pop(request_task, None)
+
+    async def cancel_request(self, user_input, options):
+        """Cancellation bypasses the inference queue, scoped to identity and origin."""
+        from .runtime import RuntimeResult
+        from .voice_controls import origin_player
+        try:
+            identity = await resolve_request_identity(self.hass, user_input, options)
+            user_input = effective_input(user_input, identity)
+            origin = request_origin(user_input)
+            if self.current_options() != options:
+                raise IdentityError('identity_changed')
+            for owner, cancelled in self.queued_requests.values():
+                if owner == (identity.user_id, origin):
+                    cancelled.set()
+            active = self.active_request
+            if active and active[1:] == (identity.user_id, origin):
+                self.cancelled_tasks.add(active[0])
+                active[0].cancel()
+            for key in list(self.sessions):
+                if key[:2] == (identity.user_id, origin):
+                    self.sessions.pop(key)
+            # Output stop must not wait behind inference on another satellite.
+            # Reuse the HA executor's permission/capability checks without its queue.
+            from .contextual_catalog import build
+            user = await revalidate_identity(self.hass, identity)
+            validate_binding_origin(self.hass, user_input, identity.source)
+            snapshot = build(self.hass, user, options)
+            target = origin_player(self.hass, user_input, snapshot, 'stop', options)
+            action = 'stop'
+            if target is None:
+                target = origin_player(self.hass, user_input, snapshot, 'pause', options)
+                action = 'pause'
+            playback_stopped = False
+            if target is not None:
+                operation = Operation('satellite.stop', action, (target,), {}, evidence=('origin_device',))
+                user = await revalidate_identity(self.hass, identity)
+                validate_binding_origin(self.hass, user_input, identity.source)
+                if self.current_options() != options:
+                    raise IdentityError('identity_changed')
+                fresh = build(self.hass, user, options)
+                if origin_player(self.hass, user_input, fresh, action, options) != target:
+                    raise ExecutionError('stale', 'origin_output_changed')
+                prepared = self.prepare(operation, fresh, user, options)
+                call = prepared.calls[0]
+                try:
+                    async with asyncio.timeout(10):
+                        await self.hass.services.async_call(call['domain'], call['service'], call['data'],
+                            blocking=True, context=user_input.context, target={'entity_id': [call['entity_id']]})
+                    playback_stopped = True
+                except Exception:
+                    _LOGGER.warning('ARANDU satellite output stop failed; dialogue cancelled')
+            # Do not start another spoken answer after stopping playback.
+            return RuntimeResult(code='cancelled', response_text='', conversation_id=getattr(user_input, 'conversation_id', None),
+                                 reason='satellite_playback_stopped' if playback_stopped else 'satellite_playback_stop_unavailable')
+        except (IdentityError, ExecutionError, CatalogError, CapabilityError) as exc:
+            return self.result('denied', user_input, reason=getattr(exc, 'reason', 'permission_denied'))
 
     def current_options(self) -> dict:
         encoded = json.dumps(dict(self.options()), sort_keys=True, allow_nan=False)
@@ -182,6 +281,7 @@ class ContextualRuntime:
                 raise ExecutionError("invalid_request", "wake_word_configuration") from None
             user_id, user = identity.user_id, identity.user
             origin = request_origin(user_input)
+            self.active_request = (asyncio.current_task(), user_id, origin)
             key = (user_id, origin, conversation_id)
             current_time = time.monotonic()
             expired = key in self.sessions and self.sessions[key].expires < current_time
@@ -193,6 +293,19 @@ class ContextualRuntime:
                 self.sessions[key] = Session(current_time + _ttl(options), identity_source=identity.source)
             session = self.sessions[key]
             text = normalize(user_input.text)
+            from .voice_controls import volume, origin_player
+            is_volume, percent = volume(user_input.text)
+            if is_volume:
+                if percent is None:
+                    return self.result('missing_slot', user_input, speech='Diga um volume de zero a dez, ou de zero a cem por cento.')
+                from .contextual_catalog import build
+                snapshot = build(self.hass, user, options)
+                target = origin_player(self.hass, user_input, snapshot, 'volume', options)
+                if target is None:
+                    return self.result('unavailable', user_input, speech='Não encontrei uma saída de áudio única e autorizada neste satélite.')
+                session.pending, session.selection, session.confirmation, session.candidates = None, None, (), ()
+                operation = Operation('satellite.volume_set', 'volume', (target,), {'value': percent}, evidence=('origin_device',))
+                return await self.execute((operation,), snapshot, user_input, session, options, identity)
             independent = _independent_command(text)
             if session.identity_source != identity.source:
                 self.sessions[key] = Session(current_time + _ttl(options), identity_source=identity.source)

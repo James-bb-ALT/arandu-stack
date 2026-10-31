@@ -49,6 +49,7 @@
           "low_battery_threshold": "Limite de bateria baixa (%)",
           "fallback_user_id": "Usuário para pipelines sem identidade",
           "configure_identity_bindings": "Configurar associações por dispositivo/satélite",
+          "configure_voice_output": "Configurar saída de áudio do satélite",
           "endpoint": "Endpoint NLU (vazio para detectar automaticamente)"
         },
         "data_description": {
@@ -61,6 +62,16 @@
         "data": {
           "decision_enabled": "Usar Decision Engine",
           "llm_enabled": "Usar LLM como fallback"
+        }
+      },
+      "voice_output": {
+        "title": "Saída de áudio do satélite",
+        "description": "Escolha um satélite OU dispositivo de origem e seu media player. Funciona com qualquer integração que exponha uma saída compatível, incluindo ESPHome, Fully Kiosk e Wyoming. A saída deve estar exposta ao Assist e autorizada para o usuário. Sem associação, usa uma única saída compatível no dispositivo de origem. Repita a configuração para outro satélite. Remover restaura a detecção automática. Interromper por voz também exige que o satélite escute durante a reprodução.",
+        "data": {
+          "satellite_id": "Satélite Assist",
+          "device_id": "Dispositivo de origem",
+          "output_player": "Saída de áudio",
+          "remove_binding": "Remover associação de saída"
         }
       },
       "identity_binding": {
@@ -81,7 +92,8 @@
       "choose_one_identity_origin": "Escolha apenas um satélite ou dispositivo.",
       "invalid_identity_origin": "A origem selecionada não está disponível.",
       "invalid_identity_configuration": "As associações de identidade são inválidas ou excedem o limite.",
-      "cannot_connect": "Não foi possível detectar o app ou acessar o NLU. Confirme se o módulo está ativo."
+      "cannot_connect": "Não foi possível detectar o app ou acessar o NLU. Confirme se o módulo está ativo.",
+      "invalid_voice_output": "Escolha um media player disponível; são permitidas até 128 associações de saída."
     }
   },
   "title": "Arandu Assistant"

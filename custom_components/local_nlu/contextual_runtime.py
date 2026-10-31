@@ -389,7 +389,7 @@ class ContextualRuntime:
                 await self._send(snapshot)
                 outcome = parse(await self.client.async_interpret_v4(payload))
             self.validate_options(options)
-            from .intelligence import eligible, fallback
+            from .intelligence import eligible, fallback, nlu_summary
             if (options.get("decision_enabled") is True or options.get("llm_enabled") is True) and eligible(outcome, pending=pending is not None or bool(session.candidates)):
                 from .ai_lab import local_request
                 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -399,7 +399,8 @@ class ContextualRuntime:
                         raise ValueError("Endpoint Arandu Stack ausente")
                     return await local_request(async_get_clientsession(self.hass), endpoint, "/infer", payload=body, timeout=30)
                 proposed, trace = await fallback(user_input.text, snapshot, options, infer,
-                    {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets)})
+                    {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets)},
+                    nlu=nlu_summary(outcome))
                 self.validate_options(options)
                 self.last_intelligence = trace
                 if proposed:

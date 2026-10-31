@@ -1,3 +1,9 @@
+# 0.7.1 / HACS 1.3.1
+
+- LLM 0.2.3 recebe resumo limitado do NLU no último fallback: status, motivo, ação, menção e área disponíveis. Preserva fala original e permite discordar das hipóteses anteriores.
+- Contexto do Decision inclui status, motivo e confiança disponível; rankings auxiliares limitados a duas hipóteses. Diagnósticos e operações do NLU não entram no prompt. Ordem NLU → Decision → LLM preservada.
+- Validação: 137 testes Python passaram, 1 ignorado. Ganho de acurácia/latência não medido no modelo real. Decision 0.3.0 e NLU 0.6.0 preservados.
+
 # 0.7.0 / HACS 1.3.0
 
 - Decision 0.3.0 passa a executar automaticamente a ação inferida quando a confiança conjunta calibrada de intenção e alvo é pelo menos 80%, a margem é suficiente e o alvo é inequívoco. Verbo transcrito desconhecido deixa de obrigar confirmação após a aceitação do Decision. A intenção vira operação tipada; o texto original não é adulterado.

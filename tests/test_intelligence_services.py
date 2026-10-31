@@ -237,7 +237,7 @@ class CompactPrompt(unittest.TestCase):
         body = {'text': 'liga ventilador', 'nlu': {'debug': 'FIXTURE_DEBUG' * 100},
                 'context': {'origin_area': 'sala', 'debug': 'FIXTURE_DEBUG'},
                 'decision': {'ranking': [{'entity_id': 'fan.fixture', 'intent': 'turn_on', 'raw_score': .987654321}],
-                             'analysis': analysis, 'reason': 'FIXTURE_DEBUG', 'decision_status': 'uncalibrated'}}
+                             'analysis': analysis, 'reason': 'missing_calibration', 'decision_status': 'uncalibrated'}}
         compact, ids = prompt_context(body, value)
         self.assertEqual(ids, {'fan.fixture'})
         self.assertEqual([r['entity_id'] for r in compact['devices']], ['fan.fixture'])
@@ -249,6 +249,23 @@ class CompactPrompt(unittest.TestCase):
         self.assertNotIn('candidates', compact['decision_analysis']['device'])
         self.assertEqual(body['decision']['analysis'], analysis)  # No mutation of diagnostics.
         self.assertLess(len(SYSTEM_PROMPT), 850)
+
+    def test_bounded_previous_hints_preserve_original_command(self):
+        value = catalog()
+        body = {'text': 'linha ventilador',
+                'nlu': {'status': 'no_match', 'reason': 'unknown_intent', 'action': 'query',
+                        'mention': 'x' * 500, 'debug': 'SECRET'},
+                'decision': {'decision_status': 'rejected', 'reason': 'below_threshold', 'confidence': .79,
+                             'ranking': [{'entity_id': 'fan.fixture', 'intent': 'turn_on'}],
+                             'analysis': {'action': {'ranking': [{'intent': 'turn_on'}] * 8}}}}
+        compact, _ = prompt_context(body, value)
+        self.assertEqual(compact['comando'], body['text'])
+        self.assertEqual(compact['nlu']['action'], 'query')
+        self.assertEqual(len(compact['nlu']['mention']), 128)
+        self.assertNotIn('SECRET', json.dumps(compact))
+        self.assertEqual(compact['decision']['confidence'], .79)
+        self.assertEqual(len(compact['decision_analysis']['action']['ranking']), 2)
+        self.assertIn('pode discordar', SYSTEM_PROMPT)
 
 
 class InferenceSerialization(unittest.IsolatedAsyncioTestCase):

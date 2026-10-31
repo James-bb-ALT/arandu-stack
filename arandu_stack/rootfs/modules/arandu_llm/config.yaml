@@ -1,7 +1,7 @@
 name: Arandu LLM
 slug: arandu_llm
-version: "0.2.2"
-description: Tucano 0.5B residente — prompt compacto, fallback sequencial
+version: "0.2.3"
+description: Tucano 0.5B residente — pistas compactas do NLU e Decision no último fallback
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
 startup: application

@@ -79,7 +79,20 @@ def proposal_route(text, proposal, catalog, context=None, force_review=False, au
     return "proposed"
 
 
-async def fallback(text, snapshot, options, request, context=None):
+def nlu_summary(outcome):
+    """Only bounded semantic hints; never forward diagnostics or operations."""
+    summary = {'status': outcome.status}
+    if outcome.reason:
+        summary['reason'] = outcome.reason[:128]
+    command = outcome.command or {}
+    for key in ('action', 'mention', 'area'):
+        value = command.get(key)
+        if isinstance(value, str) and value:
+            summary[key] = value[:128]
+    return summary
+
+
+async def fallback(text, snapshot, options, request, context=None, nlu=None):
     """Snapshot policy per request; bounded calls; no effects or late callbacks."""
     trace = {}
     decision = None
@@ -94,7 +107,7 @@ async def fallback(text, snapshot, options, request, context=None):
             if source == "decision":
                 body.update(model="e5-small", config={"threshold": .8, "min_margin": .08})
             else:
-                body.update(llm_model="tucano", decision=decision)
+                body.update(llm_model="tucano", decision=decision, nlu=nlu or {})
             async with asyncio.timeout(TIMEOUT):
                 response = await request(body)
             trace[source] = {"status": "responded"}

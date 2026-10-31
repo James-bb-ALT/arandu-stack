@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arandu-llm"
-version = "0.2.2"
-description = "Resident Arandu LLM fallback with compact prompts and serialized CPU inference"
+version = "0.2.3"
+description = "Resident LLM last fallback with compact NLU and Decision hints"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"

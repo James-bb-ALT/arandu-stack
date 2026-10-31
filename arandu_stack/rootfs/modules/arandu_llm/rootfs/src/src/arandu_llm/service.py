@@ -88,7 +88,7 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
     async def status(request):
         installed = (root / KEY / "arandu-model.json").is_file() and (root / KEY / MODELS[KEY]["file"]).is_file()
         available = installed and bool(executable and Path(executable).is_file())
-        return web.json_response({"package": "arandu-llm", "version": "0.2.2", "protocol": "arandu-inference-v1",
+        return web.json_response({"package": "arandu-llm", "version": "0.2.3", "protocol": "arandu-inference-v1",
             "models": [{"id": KEY, **MODELS[KEY], "installed": installed, "available": bool(available),
                 "reason": None if available else "Pesos ou runtime ausentes"}], "busy": lock.locked(), "threads": threads})
 
@@ -124,7 +124,8 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
                 external_ids = {r["entity_id"] for r in external.get("ranking", [])}
                 retrieval = external if external_ids and (resolved is None or resolved["entity_id"] in external_ids) else retrieve(text, catalog, body.get("context"))
                 retrieval = {**retrieval, "analysis": external.get("analysis") or decomposition(text, catalog, body.get("context")),
-                             "decision_status": external.get("decision_status"), "reason": external.get("reason")}
+                             "decision_status": external.get("decision_status"), "reason": external.get("reason"),
+                             "confidence": external.get("confidence")}
                 retrieval_ms = (time.perf_counter() - before) * 1000
                 result = await adapter.infer({**body, "llm_model": KEY, "decision": retrieval}, catalog)
                 result["retrieval"] = retrieval

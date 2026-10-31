@@ -1,4 +1,6 @@
-# Camadas de inteligência — app 0.7.0 / HACS 1.3.0
+# Camadas de inteligência — app 0.7.1 / HACS 1.3.1
+
+O último fallback inclui resumo NLU com status, motivo, ação, menção e área disponíveis (campos até 128 caracteres); nunca inclui operações ou diagnóstico completo. O Decision fornece status, motivo, confiança disponível e até duas hipóteses por ranking auxiliar. A fala original prevalece e o LLM pode discordar das pistas. NLU/Decision aceitos continuam evitando LLM. O efeito na acurácia e na latência precisa ser medido no hardware real.
 
 ## Nomes de aparelho e entidades de controle
 

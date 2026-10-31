@@ -44,6 +44,7 @@ class Routing(unittest.IsolatedAsyncioTestCase):
 
     async def infer(self, session, endpoint, path, *, payload, **kwargs):
         self.calls.append(payload['action'])
+        self.last_payload = payload
         if self.after:
             self.after()
         p = proposal(self.entity, self.action)
@@ -91,6 +92,15 @@ class Routing(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual(result.code,'success')
         self.assertEqual(self.calls,[])
         self.assertEqual(self.hass.services.calls,[])
+
+    async def test_nlu_summary_reaches_last_fallback(self):
+        self.policy(True, True)
+        self.decision_status = 'uncalibrated'
+        self.client.response = {'version': 4, 'status': 'no_match', 'reason': 'unknown_intent'}
+        await self.runtime.process(input_())
+        self.assertEqual(self.calls, ['decision', 'llm'])
+        self.assertEqual(self.last_payload['nlu'], {'status': 'no_match', 'reason': 'unknown_intent'})
+        self.assertEqual(self.last_payload['decision']['decision_status'], 'uncalibrated')
 
     async def test_clarification_never_calls_models(self):
         self.policy(True,True)

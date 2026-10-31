@@ -1,6 +1,8 @@
 # Arandu LLM
 
-Pacote Python independente, versão 0.1.0. Não importa o NLU nem o outro pacote. Serviço passivo: recebe catálogo autorizado completo do Home Assistant e devolve proposta; credenciais, autorização e execução ficam na integração HA.
+Versão atual 0.2.3: último fallback com pistas compactas do NLU/Decision e fala original preservada. O modelo pode discordar das pistas; elas não concedem autorização. Rankings auxiliares limitados a duas hipóteses, sem diagnósticos do NLU. Ganho de acurácia/latência ainda não medido no hardware real.
+
+Pacote Python independente. Não importa o NLU nem o outro pacote. Serviço passivo: recebe catálogo autorizado completo do Home Assistant e devolve proposta; credenciais, autorização e execução ficam na integração HA.
 
 Modelo padrão: Polygl0t/Tucano2-qwen-0.5B-Instruct (Apache-2.0), quantização comunitária 2DTi Q4_K_M, llama.cpp CPU. Downloads somente com comando explícito, revisão fixada no código. Pesos não acompanham o pacote.
 

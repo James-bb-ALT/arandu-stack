@@ -328,7 +328,10 @@ async def async_register(hass):
         except Exception as exc:
             connection.send_error(msg["id"], "ai_lab_error", str(exc)[:256])
     websocket_api.async_register_command(hass, handle)
-    await hass.http.async_register_static_paths([StaticPathConfig("/local_nlu_ai_lab/panel.js", str(Path(__file__).with_name("ai_lab_panel.js")), False)])
+    await hass.http.async_register_static_paths([
+        StaticPathConfig("/local_nlu_ai_lab/panel.js", str(Path(__file__).with_name("ai_lab_panel.js")), False),
+        StaticPathConfig("/local_nlu_ai_lab/brand", str(Path(__file__).with_name("brand")), False),
+    ])
     await panel_custom.async_register_panel(hass, webcomponent_name="arandu-ai-lab", frontend_url_path="arandu-ai-lab",
         module_url="/local_nlu_ai_lab/panel.js", sidebar_title="Arandu AI Lab", sidebar_icon="mdi:flask-outline", require_admin=True)
     hass.data["local_nlu_ai_lab"] = lab

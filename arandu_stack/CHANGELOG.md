@@ -1,3 +1,13 @@
+# 1.0.0 / HACS 2.0.0
+
+- Nova etapa de release por redesign, conforme a classificação do usuário. Identidade Arandu com PNG original, vetor simplificado, aplicações horizontal/compacta/monocromática e seis SVGs próprios. Sem CDN ou framework novo.
+- WebUI com visão geral, navegação, temas claro/escuro/sistema, módulos, fluxo condicional explicitamente explicativo, frases, logs e ajuda. Estado vem da API; processo ligado não é confundido com política Assist ou prontidão.
+- AI Lab com Testar, Comparar e Avançado, variáveis nativas HA, controles preservados e badge persistente de simulação/revisão. Sem inferência/download automático ao trocar abas. Texto novo invalida token; token não é persistido no histórico.
+- ReSpeaker: perfil ESPHome 2026.10.1 remove componentes BLE de fato (`active: false` era varredura/proxy passivos), mantém tarefas em PSRAM, adiciona fonte Sendspin em PSRAM, buffers HTTP persistentes de 32 KiB e sensores de RAM interna. Script de stop word reinicia em vez de rejeitar nova execução. Não usa a opção de timeout da futura versão 2026.11 nem esconde falha de áudio desligando LEDs.
+- Configuração e C++ do perfil validados em ESPHome 2026.10.1 com base pública fixada no relatório. Sem firmware binário, upload, reset XMOS ou teste de áudio físico. A captura disponível ainda mostra a falha antiga de reader; cortes posteriores exigem validação no aparelho.
+- Brief e arte consolidados em docs/ativos, aplicações HACS geradas por ferramenta única e workspace com uma raiz. Projetos independentes, venvs e dados de treinamento preservados.
+- Validação: 137 testes Python aprovados, 1 ignorado; 6 testes JavaScript aprovados. Playwright: ambas as interfaces, três larguras, temas, controles/segredos, simulação, token inválido após edição e ausência de inferência implícita. Capturas marcadas FIXTURE_TECNICA; sem HAOS real. NLU 0.6.0, Decision 0.3.0 e LLM 0.2.3 preservados.
+
 # 0.7.1 / HACS 1.3.1
 
 - LLM 0.2.3 recebe resumo limitado do NLU no último fallback: status, motivo, ação, menção e área disponíveis. Preserva fala original e permite discordar das hipóteses anteriores.

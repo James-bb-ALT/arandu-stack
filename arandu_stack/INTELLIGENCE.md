@@ -1,4 +1,10 @@
-# Camadas de inteligência — app 0.7.1 / HACS 1.3.1
+# Camadas de inteligência — app 1.0.0 / HACS 2.0.0
+
+A nova apresentação mantém as APIs e a ordem condicional. A WebUI mostra estado
+dos processos e diagrama explicitamente estático. O AI Lab separa Testar, Comparar
+e Avançado com dados reais do HA; simulação e revisão explícita continuam valendo.
+Prontidão/calibração e política de produção não são inferidas a partir de processo
+ligado. Nenhuma inferência ou instalação é iniciada para decorar o painel.
 
 O último fallback inclui resumo NLU com status, motivo, ação, menção e área disponíveis (campos até 128 caracteres); nunca inclui operações ou diagnóstico completo. O Decision fornece status, motivo, confiança disponível e até duas hipóteses por ranking auxiliar. A fala original prevalece e o LLM pode discordar das pistas. NLU/Decision aceitos continuam evitando LLM. O efeito na acurácia e na latência precisa ser medido no hardware real.
 

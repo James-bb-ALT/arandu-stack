@@ -1,0 +1,31 @@
+# User-level configuration for an EXISTING ReSpeaker Lite base installation.
+# Copy the three arandu YAML files beside your device YAML; keep config/common/.
+# Keep your current name/friendly_name and existing encryption key in secrets.yaml.
+# This is not a portable full firmware: the included base defines your hardware.
+packages:
+  respeaker-satellite: !include config/common/respeaker-satellite-base.yaml
+  arandu_audio: !include respeaker-audio-stability.yaml
+
+esphome:
+  name: arandu-satelite
+  friendly_name: Arandu
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+micro_wake_word:
+  models:
+    - model: alexa
+      id: alexa
+
+media_player:
+  - id: !extend external_media_player
+    volume_max: 0.68
+
+# No esp32_ble_tracker / bluetooth_proxy blocks here: even active:false uses RAM.
+# No tts_playback_start_timeout here: not supported by ESPHome 2026.10.1.

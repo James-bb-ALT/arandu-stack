@@ -37,7 +37,8 @@ class AranduAILab extends HTMLElement {
       #stages{display:flex;gap:6px;flex-wrap:wrap;margin:15px 0}.stage{border:1px solid var(--divider-color,#dae1da);padding:8px;border-radius:8px;flex:1;font-size:12px;min-width:78px}.executed{border-color:#508567;background:#50856718}.error{border-color:#bb6654}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 ui-monospace,monospace;max-height:480px;overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:8px;border-bottom:1px solid var(--divider-color,#ddd)}.scroll{overflow:auto}summary{cursor:pointer}#status{min-height:28px;margin:12px 0}audio{width:100%;margin-top:12px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.metric{padding:12px;background:#5085670e;border-radius:8px}.metric strong{display:block;font-size:20px}#history button{display:block;width:100%;text-align:left;margin-top:8px}small{font-size:12px}a{color:inherit}
       @media(max-width:850px){.layout{grid-template-columns:1fr}main{padding:20px 12px}header{align-items:start}h1{font-size:25px}}
       </style>
-      <main><header><div><p class="muted">ARANDU / INTELIGÊNCIA LOCAL</p><h1>AI Decision Lab</h1><p class="muted">Interprete, compare e revise antes de agir.</p></div><span class="badge" id="safety">Dry-run ativo</span></header>
+      <main><header><div class="lab-brand"><img src="/local_nlu_ai_lab/brand/arandu-icon-original-512.png" width="52" height="52" alt="Símbolo Arandu"><div><p class="muted eyebrow">ARANDU / CONHECIMENTO EM MOVIMENTO</p><h1>AI Decision Lab</h1><p class="muted">Interprete, compare e revise antes de agir.</p></div></div><span class="badge" id="safety" role="status" aria-live="polite">Dry-run ativo</span></header>
+      <nav class="lab-tabs" aria-label="Seções do laboratório"><button data-lab-tab="test" aria-current="page">Testar</button><button data-lab-tab="compare">Comparar</button><button data-lab-tab="advanced">Avançado</button></nav>
       <section class="card" id="demoCard"><h2>Testes prontos · casa fictícia</h2>
         <p class="muted">Dataset sintético com dispositivos, aliases, áreas e gabaritos prontos. Os modelos rodam de verdade, somente após seu clique. Nenhuma ação real é permitida nesta suíte.</p>
         <label for="demoSize">Quantidade de casos por modelo</label><select id="demoSize"><option value="quick">Rápida · 8 comandos</option><option value="full">Completa · 16 comandos</option></select>
@@ -100,6 +101,7 @@ class AranduAILab extends HTMLElement {
       <details class="card"><summary>Calibrar com rótulos revisados</summary><p>Forneça {"train": [...], "validation": [...]}, com pelo menos 50 e 30 textos distintos. Campos: text, expected_intent, expected_entities, requires_clarification. Somente calibração validada no mesmo catálogo/modelo pode autorizar Decision.</p>
         <label for="calibration">Dados de calibração</label><textarea id="calibration" spellcheck="false"></textarea><button id="calibrate">Ajustar e validar calibração</button>
       </details></div></div></main>`;
+    this.organize();
     const defaults = ['Liga a luz da sala', 'Liga a sala', 'Liga todos os dispositivos da sala', 'Liga o ventilador do Jaime', 'Acende a luz perto da TV', 'Apaga a iluminação principal', 'Desliga tudo', 'Acende a lua', 'Qual a temperatura da sala?', 'Está muito quente aqui'];
     this.$('examples').value = JSON.stringify(this.saved('examples', defaults.map(text => ({text, expected: null, expected_area: null, correct_result: null, notes: 'Rotular com entidades reais antes de medir acurácia.'}))), null, 2);
     const config = this.saved('config', {});
@@ -110,7 +112,7 @@ class AranduAILab extends HTMLElement {
       this.store('config', Object.fromEntries(['worker','sttEndpoint','ttsEndpoint','entry','threshold','margin'].map(k => [k, this.$(k).value])));
       const policies=this.saved('policies',{});policies[this.$('decision').value||'e5-small']={threshold:this.$('threshold').value,margin:this.$('margin').value};this.store('policies',policies);
     };
-    this.$('decision').onchange=()=>{this.invalidate();const policy=this.saved('policies',{})[this.$('decision').value]||{threshold:.5,margin:.08};this.$('threshold').value=policy.threshold;this.$('margin').value=policy.margin;};
+    this.$('decision').onchange=()=>{this.invalidate();const policy=this.saved('policies',{})[this.$('decision').value]||{threshold:.8,margin:.08};this.$('threshold').value=Math.max(.8,Number(policy.threshold)||.8);this.$('margin').value=policy.margin;};
     this.$('text').oninput=()=>this.invalidate();this.$('mode').onchange=()=>this.invalidate();this.$('llm').onchange=()=>this.invalidate();
     this.$('testArea').onchange=()=>this.invalidate();
     this.$('run').onclick = () => this.task(() => this.run());
@@ -123,7 +125,7 @@ class AranduAILab extends HTMLElement {
     this.$('refresh').onclick = () => this.task(() => this.refresh());
     for (const command of ['load','unload','install']) this.$(command).onclick = () => this.task(async () => {
       const r = await this.call(command, command === 'install' ? {model:this.$('installModel').value} : {});
-      this.$('batchOutput').textContent = JSON.stringify(r, null, 2); if(command==='install') await this.refresh();
+      this.$('advancedOutput').textContent = JSON.stringify(r, null, 2); if(command==='install') await this.refresh();
     });
     this.$('real').onchange = () => { this.$('safety').textContent = this.$('real').checked ? 'Revisão obrigatória' : 'Dry-run ativo'; this.executionState(); };
     this.$('execute').onclick = () => this.task(async () => {
@@ -144,9 +146,48 @@ class AranduAILab extends HTMLElement {
       this.$('batchOutput').textContent = JSON.stringify(this.batch, null, 2);
     });
     this.$('catalog').onclick = () => this.task(async () => { this.$('batchOutput').textContent = JSON.stringify(await this.call('catalog'), null, 2); });
-    this.$('calibrate').onclick = () => this.task(async () => { const data = JSON.parse(this.$('calibration').value); this.$('batchOutput').textContent = JSON.stringify(await this.call('calibrate', data), null, 2); });
+    this.$('calibrate').onclick = () => this.task(async () => { const data = JSON.parse(this.$('calibration').value); this.$('advancedOutput').textContent = JSON.stringify(await this.call('calibrate', data), null, 2); });
     this.$('json').onclick = () => this.download('json'); this.$('csv').onclick = () => this.download('csv');
     this.history(); this.task(() => this.refresh());
+  }
+  organize() {
+    // Move existing controls; preserve IDs, handlers, authenticated calls and tokens.
+    const main=this.shadowRoot.querySelector('main'), layout=main.querySelector('.layout');
+    layout.dataset.labPane='test';
+    this.$('demoCard').dataset.labPane='compare';
+    const suite=this.$('examples').closest('section');suite.dataset.labPane='compare';main.append(suite);
+    const advanced=document.createElement('section');advanced.className='advanced-layout';advanced.dataset.labPane='advanced';
+    advanced.append(this.$('worker').closest('details'),this.$('calibration').closest('details'),this.$('history').closest('section'));
+    const parameters=document.createElement('section');parameters.className='card';
+    const heading=document.createElement('h2');heading.textContent='Parâmetros e modelos';parameters.append(heading);
+    for(const id of ['threshold','margin','load','unload','installModel','install']){
+      const field=this.$(id),label=this.shadowRoot.querySelector('label[for="'+id+'"]');
+      const note=id==='margin'&&field.nextElementSibling?.tagName==='P'?field.nextElementSibling:null;
+      if(label)parameters.append(label);parameters.append(field);if(note)parameters.append(note);
+    }
+    const output=document.createElement('pre');output.id='advancedOutput';output.setAttribute('aria-live','polite');parameters.append(output);
+    advanced.prepend(parameters);
+    advanced.append(this.$('ranking').closest('details'));
+    main.append(advanced);
+    const styles=document.createElement('style');styles.textContent=`
+      :host{--arandu-teal:#07575a;--arandu-gold:#d5aa73;--arandu-sand:#f0ddbd;background:var(--primary-background-color,#082c32);color:var(--primary-text-color,#f5f1e8);font-family:Inter,system-ui,sans-serif}
+      main{max-width:1440px;padding:32px 32px 64px}.lab-brand{display:flex;align-items:center;gap:16px}.lab-brand img{border-radius:13px;flex:none}.eyebrow{font-size:9px;letter-spacing:1.6px}h1{font-size:30px;font-weight:500;letter-spacing:-1px}h2{font-weight:550;letter-spacing:-.4px}.muted{color:var(--secondary-text-color,#b1c7c6)}
+      .card{background:var(--card-background-color,#122d31);border-color:var(--divider-color,#345459);box-shadow:none;border-radius:14px}.layout{grid-template-columns:310px minmax(0,1fr);gap:24px}.layout>*,.advanced-layout>*{min-width:0}
+      .lab-tabs{display:flex;gap:8px;position:sticky;top:0;z-index:2;padding:12px 0 20px;background:var(--primary-background-color,#082c32)}.lab-tabs button{border-radius:24px;padding:10px 24px}.lab-tabs [aria-current=page]{background:var(--arandu-teal);color:#f7f4ed;border-color:var(--arandu-teal)}
+      button{min-height:44px;transition:border-color .15s,background .15s}button.primary{background:var(--arandu-teal);color:#fff;border-color:var(--arandu-teal)}input,select,textarea,button{background:var(--card-background-color,#122d31);border-color:var(--divider-color,#345459)}.badge{border-color:var(--divider-color,#345459);background:var(--card-background-color,#122d31);color:var(--primary-text-color,#f5f1e8);font-weight:600;white-space:nowrap}
+      #safety{position:fixed;right:24px;bottom:20px;z-index:4;box-shadow:0 2px 12px #0002;padding:10px 18px}#execute{border-width:2px}#finalAction{padding:16px 20px;border-left:3px solid var(--arandu-gold);background:var(--secondary-background-color,#17383d);border-radius:0 12px 12px 0;margin:16px 0}#finalAction:empty{display:none}#interpretations{font-size:13px}#interpretations p{padding:6px 0}.stage{border-radius:12px;padding:12px}.stage.executed{background:#50856718}.metric{background:var(--secondary-background-color,#17383d)}pre{padding:16px;background:var(--secondary-background-color,#17383d);border-radius:10px}details summary{min-height:44px;padding:8px 0;font-weight:550}details[open]>summary{margin-bottom:12px}
+      .advanced-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}[hidden]{display:none!important}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--primary-color,#d5aa73);outline-offset:3px}input::placeholder,textarea::placeholder{color:var(--secondary-text-color,#b1c7c6);opacity:1}audio{min-height:44px}
+      @media(max-width:1100px){.layout{grid-template-columns:270px minmax(0,1fr)}}@media(max-width:850px){main{padding:20px 16px 84px}.layout,.advanced-layout{grid-template-columns:1fr}.layout>aside{order:2}.layout>div{order:1}.lab-brand{gap:12px}.lab-brand img{width:40px;height:40px}.lab-brand .eyebrow{font-size:8px}h1{font-size:25px}header{align-items:start}.lab-tabs button{flex:1;padding:10px 12px}#safety{right:12px;bottom:12px;font-size:11px}.card{padding:18px}.row{gap:8px}.row button{flex:1;min-width:120px}.scroll{max-width:100%}header>.badge{max-width:40%;white-space:normal}}
+      @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+    `;this.shadowRoot.append(styles);
+    for(const button of this.shadowRoot.querySelectorAll('[data-lab-tab]'))button.onclick=()=>this.selectPane(button.dataset.labTab);
+    this.selectPane('test');
+  }
+  selectPane(name) {
+    for(const pane of this.shadowRoot.querySelectorAll('[data-lab-pane]'))pane.hidden=pane.dataset.labPane!==name;
+    for(const button of this.shadowRoot.querySelectorAll('[data-lab-tab]')){
+      if(button.dataset.labTab===name)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+    }
   }
   async speak() {
     try {
@@ -350,7 +391,7 @@ class AranduAILab extends HTMLElement {
     const safe = JSON.parse(JSON.stringify(this.last, (key,value) => key==='execution_token' ? undefined : value));
     const items = this.saved('history', []); items.unshift(safe); this.store('history', items.slice(0,30)); this.history();
   }
-  history() { this.$('history').replaceChildren(); for (const item of this.saved('history', [])) { const button=document.createElement('button'); button.textContent=item.text; button.onclick=()=>{this.$('text').value=item.text;this.last=item;this.render(item);};this.$('history').append(button); } }
+  history() { this.$('history').replaceChildren(); for (const item of this.saved('history', [])) { const button=document.createElement('button'); button.textContent=item.text; button.onclick=()=>{this.$('text').value=item.text;this.last=item;this.render(item);this.selectPane('test');};this.$('history').append(button); } }
   async startRecording() {
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw Error('Microfone exige HTTPS ou localhost');

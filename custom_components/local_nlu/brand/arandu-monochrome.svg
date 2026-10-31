@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Arandu: conhecimento em movimento">
+<defs><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f0ddbd"/><stop offset=".5" stop-color="#f5d39f"/><stop offset="1" stop-color="#d5aa73"/></linearGradient></defs>
+<rect width="512" height="512" rx="100" fill="none"/>
+<g fill="none" stroke="#07575a" stroke-linecap="round">
+<path d="M57 316C10 130 147 34 256 34s246 96 199 282C425 423 343 474 256 474S87 423 57 316Z" stroke-width="6"/>
+<path d="M91 245Q160 179 244 179M268 179Q352 179 421 245M165 218Q202 207 244 207M268 207Q309 207 347 218" stroke-width="2"/>
+</g><g fill="#07575a">
+<path d="M49 307C77 191 161 125 256 125s179 66 207 182C406 202 337 143 256 143S106 202 49 307Z"/>
+<path d="M57 316C81 238 163 220 246 237C155 229 72 276 68 340Z"/>
+<path d="M289 236C200 249 237 256 267 270C337 302 275 323 222 338C155 357 114 377 119 409C154 449 211 473 256 474C191 474 139 457 106 427C65 374 139 339 218 318C289 299 290 289 260 277C207 255 204 249 289 236Z"/>
+<path d="M289 236C366 211 421 220 462 303C424 252 349 234 289 236Z"/>
+<circle cx="256" cy="102" r="38"/><circle cx="256" cy="161" r="3"/><circle cx="256" cy="178" r="5"/><circle cx="256" cy="194" r="3"/><circle cx="256" cy="210" r="5"/><circle cx="256" cy="232" r="4"/><circle cx="256" cy="283" r="4"/><circle cx="256" cy="329" r="4"/><circle cx="256" cy="356" r="8"/><circle cx="256" cy="399" r="18"/>
+</g></svg>

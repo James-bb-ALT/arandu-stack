@@ -1,7 +1,7 @@
 name: Arandu Assistant
 slug: arandu_stack
-version: "0.7.1"
-description: Assistente local — fallback LLM com pistas compactas do NLU e Decision
+version: "1.0.0"
+description: Conhecimento em movimento — seis motores locais, nova interface Arandu e diagnóstico de áudio
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
 startup: application

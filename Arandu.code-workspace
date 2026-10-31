@@ -1,0 +1,7 @@
+{
+  "folders": [{"name": "Arandu", "path": "."}],
+  "settings": {
+    "files.exclude": {"**/__pycache__": true, "**/.pytest_cache": true, "**/.ruff_cache": true},
+    "search.exclude": {"**/vendor": true, "**/target": true, "**/.venv*": true, "**/dist": true}
+  }
+}

@@ -1,5 +1,13 @@
 # Relatório de implementação — camadas Decision/LLM e AI Lab
 
+Entrega app 1.0.0 / HACS 2.0.0: redesign dos dois painéis, identidade e ícones SVG,
+temas, fluxo condicional e organização do workspace. Perfil ReSpeaker sem BLE,
+buffers HTTP persistentes e diagnóstico de RAM; configuração validada/C++ gerado
+com ESPHome 2026.10.1, sem linkedição/upload ou teste no hardware. Frontend verificado
+em Chromium com fixtures identificadas e chamadas controladas, sem HA real.
+137 testes Python aprovados, 1 ignorado; 6 testes JavaScript aprovados.
+Relatório, capturas e limitações em `docs/design/README.md` na raiz do repositório.
+
 Entrega app 0.7.1 / HACS 1.3.1 / LLM 0.2.3: resumo NLU limitado no último fallback, pistas Decision compactas e orientação para discordar preservando a fala original. 137 testes Python aprovados, 1 ignorado. Sem medição de inferência real nesta alteração.
 
 Implementado no repositório `arandu-stack`, branch `main`, inicialmente limpa.

@@ -1,6 +1,6 @@
 'use strict';
 let state=null, editing=null, dirty=false;
-let activeTab='modules',logTimer=null,logsBusy=false,logsPending=false,latestLogs=null,logsSignature='';
+let activeTab='overview',logTimer=null,logsBusy=false,logsPending=false,latestLogs=null,logsSignature='';
 const $=id=>document.getElementById(id);
 function el(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;}
 function notice(text,error=false){$('notice').textContent=text;$('notice').classList.toggle('error',error);}
@@ -15,16 +15,17 @@ async function task(fn){
   finally{document.querySelectorAll('button').forEach(b=>b.disabled=false);document.querySelectorAll('[data-unavailable]').forEach(b=>b.disabled=true);}
 }
 async function refresh(){
-  state=await api('state');renderModules();if(!dirty)renderPhrases();
+  state=await api('state');renderModules();renderOverview();if(!dirty)renderPhrases();
+  $('appVersion').textContent='Arandu Assistant · '+state.version;
   notice(state.local?'Prévia local · os motores Linux estão incluídos no app Arandu Assistant.':'Estado atualizado. Todos os módulos pertencem ao mesmo app.');
 }
 function renderModules(){
   $('cards').replaceChildren();
   state.modules.forEach((module,index)=>{
     const card=el('article',undefined,'card'),top=el('div',undefined,'card-top');
-    top.append(el('span',String(index+1).padStart(2,'0'),'card-num'));
+    const icon=el('img',undefined,'engine-icon');icon.src='static/assets/brand/'+module.id+'.svg';icon.alt='';icon.width=38;icon.height=38;top.append(icon);
     const on=module.state==='started';
-    top.append(el('span',module.state==='error'?'Falha':on?'Ativo':module.installed?'Desativado':'Runtime indisponível','status'+(on?' on':'')));
+    top.append(el('span',module.state==='error'?'Falha':on?'Ativo':module.installed?'Desativado':'Runtime indisponível','status'+(on?' on':module.state==='error'?' error':'')));
     card.append(top,el('h3',module.name),el('p',module.description));
     const actions=el('div',undefined,'card-actions');
     const toggle=el('button',on?'Desativar':'Ativar',on?'secondary':'');
@@ -37,7 +38,18 @@ function renderModules(){
     logs.onclick=()=>{ $('logsSource').value=module.id; selectTab('logs'); };
     actions.append(logs);
     card.append(actions,el('div',module.slug||'Módulo incluído no Arandu Assistant.','slug'));$('cards').append(card);
+    if(module.last_error)card.append(el('p',module.last_error,'log-error'));
   });
+}
+function renderOverview(){
+  $('overviewCards').replaceChildren();
+  const running=state.modules.filter(m=>m.state==='started').length,failed=state.modules.filter(m=>m.state==='error').length;
+  $('processSummary').textContent=running+' de '+state.modules.length+' processos ativos'+(failed?' · '+failed+' com falha':'')+'. Prontidão dos modelos não verificada aqui.';
+  for(const [index,source] of [...$('cards').children].entries()){
+    const card=source.cloneNode(true);card.querySelector('.slug')?.remove();card.querySelector('.log-error')?.remove();
+    const action=el('button','Gerenciar módulo','secondary');action.onclick=()=>{selectTab('modules');$('cards').children[index]?.scrollIntoView({block:'nearest'});};
+    card.querySelector('.card-actions').replaceChildren(action);$('overviewCards').append(card);
+  }
 }
 function openSettings(module){
   editing=module;$('configTitle').textContent=module.name;$('configError').textContent='';$('configFields').replaceChildren();
@@ -129,8 +141,8 @@ function phraseRow(row){
 function renderPhrases(){$('phraseRows').replaceChildren(...state.phrases.map(phraseRow));if(!state.phrases.length)$('phraseRows').append(phraseRow({phrase:'',command:'',enabled:true}));}
 function selectTab(id){
   activeTab=id;clearTimeout(logTimer);
-  document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
-  ['modules','phrases','logs','help'].forEach(section=>$(section).hidden=section!==id);
+  document.querySelectorAll('nav [data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab===id);if(b.dataset.tab===id)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+  ['overview','modules','flow','lab','phrases','logs','help'].forEach(section=>$(section).hidden=section!==id);
   if(id==='logs')refreshLogs();
 }
 document.querySelectorAll('[data-tab]').forEach(button=>button.onclick=()=>selectTab(button.dataset.tab));
@@ -200,4 +212,9 @@ $('savePhrases').onclick=()=>task(async()=>{
 $('closeConfig').onclick=()=>$('configDialog').close();
 $('configForm').onsubmit=event=>{event.preventDefault();task(()=>saveSettings(false));};
 $('saveRestart').onclick=()=>task(()=>saveSettings(true));
+function applyTheme(value){if(value==='light'||value==='dark')document.documentElement.dataset.theme=value;else delete document.documentElement.dataset.theme;}
+try{$('theme').value=localStorage.getItem('arandu-theme')||'system';}catch{}
+applyTheme($('theme').value);
+$('theme').onchange=()=>{applyTheme($('theme').value);try{localStorage.setItem('arandu-theme',$('theme').value);}catch{}};
+window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
 task(refresh);

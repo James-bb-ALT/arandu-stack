@@ -1,0 +1,44 @@
+# Package for the user's speaker_source/audio_http ReSpeaker Lite base.
+# ESPHome 2026.10.1. Include AFTER the base; remove root BLE blocks as well.
+# Does not replace board pins, PSRAM mode, XMOS firmware or audio pipelines.
+packages:
+  arandu_memory: !include respeaker-audio-memory.yaml
+
+# active:false means passive scanning, NOT a disabled Bluetooth stack.
+# Dedicated voice profile: Bluetooth proxy/provisioning are intentionally absent.
+bluetooth_proxy: !remove
+esp32_ble_tracker: !remove
+improv_ble: !remove
+esp32_ble: !remove
+
+wifi:
+  power_save_mode: none
+
+# ESP32 debug uses MALLOC_CAP_INTERNAL: total PSRAM is not a substitute.
+debug:
+  update_interval: 5s
+
+sensor:
+  - platform: debug
+    free:
+      name: RAM interna livre
+      entity_category: diagnostic
+    block:
+      name: Maior bloco de RAM interna
+      entity_category: diagnostic
+
+media_source:
+  - id: !extend http_announcement_source
+    buffer_size: 32768
+    persistent_ring_buffer: true
+  - id: !extend http_media_source
+    buffer_size: 32768
+    persistent_ring_buffer: true
+  - id: !extend sendspin_media_source
+    task_stack_in_psram: true
+
+# Do not mask playback failure by merely extinguishing the LED.
+# Restarting this existing script prevents an earlier wait from rejecting a new run.
+script:
+  - id: !extend activate_stop_word_once
+    mode: restart

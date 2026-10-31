@@ -4,7 +4,15 @@ Um único app para Home Assistant com **Wake, STT, NLU, Decision, LLM e TTS**.
 Todos os motores estão incluídos na mesma instalação. Você ativa, desativa e
 configura cada módulo pela WebUI, sem instalar seis apps separados.
 
-**Atual: app 0.7.1 / HACS 1.3.1 / NLU 0.6.0 / Decision 0.3.0 / LLM 0.2.3.**
+**Atual: app 1.0.0 / HACS 2.0.0 / NLU 0.6.0 / Decision 0.3.0 / LLM 0.2.3.**
+
+**Conhecimento em movimento.** Nova identidade verde-petróleo e dourada, símbolo
+Arandu original e variantes SVG. WebUI com visão geral, módulos, fluxo explicativo,
+frases, logs e ajuda; temas claro/escuro/sistema. AI Lab reorganizado em Testar,
+Comparar e Avançado, respeitando o tema HA e a simulação por padrão. Processo,
+política do Assist e prontidão dos modelos continuam separados.
+Veja [design e capturas](docs/design/README.md) e o [mapa do workspace](docs/WORKSPACE.md).
+Abra `Arandu.code-workspace` para uma única raiz de desenvolvimento.
 
 No último fallback, o LLM recebe a fala original e pistas compactas do NLU e do Decision. Pode discordar dessas pistas; elas não autorizam execução. NLU ou Decision aceitos continuam encerrando o fluxo antes do LLM.
 Decision executa a ação inferida sem confirmação verbal quando a confiança
@@ -20,9 +28,11 @@ de iluminação, ventiladores, cortinas/persianas e demais categorias conhecidas
 Sem cômodo explícito, os tipos genéricos usam o cômodo de origem; sem alvo capaz
 nesse cômodo, a integração não desliga um aparelho de outro cômodo por aproximação.
 
-Para ReSpeaker que recebe a URL do TTS mas registra falha ao criar `md_reader`,
-há um [ajuste de memória ESPHome](arandu_stack/ESPHOME-AUDIO.md). Ele precisa ser
-aplicado ao firmware do satélite; atualizar o app não instala esse ajuste no aparelho.
+Para o ReSpeaker com falha `md_reader`/12 e cortes de áudio, há um
+[perfil ESPHome 2026.10.1](arandu_stack/ESPHOME-AUDIO.md) sem Bluetooth, com buffers
+HTTP persistentes e tarefas compatíveis em PSRAM. `active: false` não desliga BLE.
+O perfil teve configuração validada e C++ gerado; reprodução física ainda não foi
+validada. Aplicar ao firmware do satélite; atualizar o app não instala esse ajuste.
 
 AI Lab mostra durações
 em segundos a partir de 1.000 ms e em milissegundos abaixo disso. Otimização para CPU:
@@ -196,7 +206,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **0.7.1**, integração HACS **1.3.1**, para HA OS/Supervised amd64.
+Versão experimental **1.0.0**, integração HACS **2.0.0**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

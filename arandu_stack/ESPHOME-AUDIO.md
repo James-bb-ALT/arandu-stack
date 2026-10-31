@@ -26,6 +26,23 @@ Referência do caminho de buffering: `homeassistant/components/tts/__init__.py`,
 ramo `not engine_instance.async_supports_streaming_input()`; integração
 `homeassistant/components/wyoming/tts.py`, `async_get_tts_audio`.
 
+### Instalação e teste da pipeline em 31/10/2026
+
+O HA confirmou app **2.0.1 em execução** após atualização, e a integração Wyoming
+Arandu confirmou a recarga. Uma fala inédita de várias frases, contagem de um a dez
+e encerramento foi enviada por `tts.speak` usando `tts.arandu_tts` para o Media Player
+físico do ReSpeaker, a 10% de volume. HTTP 200 em 13,632 s da captura;
+ANNOUNCING em 13,685 s; leitura HTTP concluída em 40,629 s; decoder concluído
+e IDLE em 40,758 s. Não houve erro no trecho capturado. Aproximadamente 27 s
+até concluir, sem o bloqueio observado na captura anterior de 45 s.
+Esta medição comprova término do fluxo; a confirmação de escuta do usuário
+se refere ao teste anterior com arquivo completo de 35 s.
+
+O package foi persistido em `config/common/respeaker-legacy-i2s-fix.yaml`,
+o include do YAML do aparelho foi conferido e a cópia da raiz preservada como
+`.yaml.bak`, evitando um dispositivo extra. Configuração com o novo caminho
+validada pelo ESPHome 2026.10.1. Nenhuma nova OTA foi necessária para esse ajuste.
+
 ## Base antiga: driver I2S e conversão do microfone (3.0.1)
 
 A base **2026.6.0** instalada no aparelho foi conferida diretamente. Ela importa

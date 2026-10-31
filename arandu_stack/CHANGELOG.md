@@ -1,3 +1,9 @@
+# 1.0.1 / HACS 2.0.1
+
+- Remove a moldura branca da marca exibida: cabeçalhos WebUI/AI Lab usam SVG; ícone PNG do app é renderizado do vetor em canvas transparente, com canal alfa. Mantém o bloco verde-petróleo, preservando o PNG original apenas como referência.
+- Ferramenta de ativos reproduz o PNG com `--render-png`; não copia mais o PNG original opaco sobre o ícone do app. Sem mudanças nos motores ou no perfil ESPHome.
+- Validação: PNG RGBA 512×512, cantos com alfa zero e centro opaco; browser check nos dois temas; 137 testes Python e 6 JavaScript aprovados, 1 Python ignorado.
+
 # 1.0.0 / HACS 2.0.0
 
 - Nova etapa de release por redesign, conforme a classificação do usuário. Identidade Arandu com PNG original, vetor simplificado, aplicações horizontal/compacta/monocromática e seis SVGs próprios. Sem CDN ou framework novo.

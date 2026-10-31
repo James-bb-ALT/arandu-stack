@@ -11,8 +11,10 @@ tipografia local e seis SVGs próprios. Nenhuma dependência de frontend ou CDN.
 
 O símbolo vetorial é uma interpretação simplificada do PNG fornecido: mantém
 sol, arcos, pontos e caminho sinuoso. Não é um traçado automático pixel a pixel.
-O PNG original é usado nos cabeçalhos. Há aplicações horizontal, compacta e
-monocromática, além dos tamanhos PNG 32/64/192/512. O original 1254 px é preservado.
+Os cabeçalhos usam SVG, sem a margem branca embutida no PNG original. O ícone PNG
+do app é renderizado do mesmo vetor com canal alfa, mantendo o bloco arredondado
+verde-petróleo e transparência ao redor. Há aplicações horizontal, compacta e
+monocromática. O original 1254 px e seus derivados são preservados como referência.
 
 O AI Lab usa as variáveis de tema do Home Assistant, Shadow DOM e os controles
 existentes, reorganizados em Testar, Comparar e Avançado. Simulação permanece
@@ -26,6 +28,8 @@ conexões, ranking e histórico ficam em Avançado.
   contratos e comportamento efetivos do código prevalecem.
 - Marca: `arandu_stack/app/static/assets/brand/`. Execute
   `python tools/sync_brand_assets.py` para gerar variantes e sincronizar HACS.
+  Para renderizar novamente o PNG transparente a partir do SVG, use
+  `python tools/sync_brand_assets.py --render-png` no ambiente com Playwright.
 - Tokens WebUI: `arandu_stack/app/static/style.css`.
 - Tokens HA e apresentação: `custom_components/local_nlu/ai_lab_panel.js`,
   limitados ao Shadow DOM; não modificam o tema global do HA.

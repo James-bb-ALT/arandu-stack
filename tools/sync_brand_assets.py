@@ -2,6 +2,7 @@
 
 Optional --source imports/resizes the user's PNG (requires Pillow, dev only).
 Default only regenerates SVG applications and copies delivery assets.
+--render-png renders the vector on a transparent canvas (dev Playwright required).
 """
 import argparse
 from pathlib import Path
@@ -15,6 +16,7 @@ HA = ROOT / 'custom_components/local_nlu/brand'
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', type=Path)
+    parser.add_argument('--render-png', action='store_true')
     args = parser.parse_args()
     if args.source:
         from PIL import Image
@@ -24,6 +26,15 @@ def main():
             image.resize((size, size), Image.Resampling.LANCZOS).save(
                 BRAND / f'arandu-icon-original-{size}.png', optimize=True)
     icon = (BRAND / 'arandu-icon.svg').read_text(encoding='utf-8')
+    if args.render_png:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            page = browser.new_page(viewport={'width': 512, 'height': 512})
+            page.set_content('<style>html,body{margin:0;background:transparent}'
+                             'svg{display:block;width:512px;height:512px}</style>' + icon)
+            page.screenshot(path=str(BRAND / 'arandu-icon.png'), omit_background=True)
+            browser.close()
     mono = icon.replace('fill="#07575a"', 'fill="none"').replace('url(#gold)', '#07575a')
     (BRAND / 'arandu-monochrome.svg').write_text(mono, encoding='utf-8')
     inner = icon.replace('viewBox="0 0 512 512"', 'viewBox="0 0 512 512" width="96" height="96"')
@@ -36,7 +47,7 @@ def main():
     HA.mkdir(exist_ok=True)
     for file in [*BRAND.glob('*.svg'), BRAND / 'arandu-icon-original-512.png']:
         shutil.copyfile(file, HA / file.name)
-    shutil.copyfile(BRAND / 'arandu-icon-original-512.png', ROOT / 'arandu_stack/icon.png')
+    shutil.copyfile(BRAND / 'arandu-icon.png', ROOT / 'arandu_stack/icon.png')
 
 
 if __name__ == '__main__':

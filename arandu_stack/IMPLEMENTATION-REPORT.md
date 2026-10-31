@@ -1,5 +1,8 @@
 # Relatório de implementação — camadas Decision/LLM e AI Lab
 
+App 1.0.1 / HACS 2.0.1: cabeçalhos usam o SVG sem margem branca; ícone do app
+renderizado do vetor com canal alfa. PNG original preservado como referência.
+
 Entrega app 1.0.0 / HACS 2.0.0: redesign dos dois painéis, identidade e ícones SVG,
 temas, fluxo condicional e organização do workspace. Perfil ReSpeaker sem BLE,
 buffers HTTP persistentes e diagnóstico de RAM; configuração validada/C++ gerado

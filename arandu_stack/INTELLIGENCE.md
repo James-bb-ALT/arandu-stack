@@ -1,4 +1,4 @@
-# Camadas de inteligência — app 1.0.0 / HACS 2.0.0
+# Camadas de inteligência — app 1.0.1 / HACS 2.0.1
 
 A nova apresentação mantém as APIs e a ordem condicional. A WebUI mostra estado
 dos processos e diagrama explicitamente estático. O AI Lab separa Testar, Comparar

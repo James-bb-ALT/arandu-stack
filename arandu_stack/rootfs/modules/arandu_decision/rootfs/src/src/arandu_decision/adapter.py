@@ -20,6 +20,7 @@ class Encoder:
         self.cache = {}
         self.load_ms = 0
         self.phase = "loading"
+        self._threads_configured = False
 
     def unload(self):
         self.model = None
@@ -40,6 +41,9 @@ class Encoder:
             started = time.perf_counter()
             import torch
             torch.set_num_threads(self.threads)
+            if not self._threads_configured:
+                torch.set_num_interop_threads(1)
+                self._threads_configured = True
             from sentence_transformers import SentenceTransformer
             self.model = SentenceTransformer(str(directory), device="cpu", local_files_only=True, trust_remote_code=False)
             self.model.max_seq_length = 256

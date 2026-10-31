@@ -150,6 +150,12 @@ class ModuleManager:
         (directory / 'options.json').write_text(json.dumps(self.config[key]), encoding='utf-8')
         environment = {k: v for k, v in os.environ.items() if k not in {'SUPERVISOR_TOKEN','HASSIO_TOKEN','HA_TOKEN','HASS_TOKEN','HF_TOKEN'}}
         environment.update(ARANDU_MODULE_DATA=str(directory), OMP_NUM_THREADS='2', OPENBLAS_NUM_THREADS='2')
+        if key in {'decision', 'llm'}:
+            environment.update(ARANDU_INFERENCE_LOCK=str(self.data / 'intelligence.lock'),
+                               OMP_NUM_THREADS=str(self.config[key]['threads']),
+                               OPENBLAS_NUM_THREADS=str(self.config[key]['threads']),
+                               MKL_NUM_THREADS=str(self.config[key]['threads']),
+                               OMP_WAIT_POLICY='PASSIVE', KMP_BLOCKTIME='0')
         if key == 'stt' and self.config[key].get('refresh_inventory') and os.environ.get('SUPERVISOR_TOKEN'):
             environment['SUPERVISOR_TOKEN'] = os.environ['SUPERVISOR_TOKEN']
         command = ['/usr/bin/local-nlu', 'serve', '--listen', '0.0.0.0:11555'] if key == 'nlu' else [f'/opt/venvs/{key}/bin/python', '/opt/assistant/module_worker.py', key]

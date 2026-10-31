@@ -1,5 +1,7 @@
 """FIXTURE_TECNICA: internal HTTP and model lifecycle without loading weights."""
+import asyncio
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -9,9 +11,11 @@ from unittest.mock import AsyncMock, Mock, patch
 
 ROOT = Path(__file__).parents[1]
 for key in ('decision','llm'):
-    sys.path.append(str(ROOT / f'arandu_stack/rootfs/modules/arandu_{key}/rootfs/src/src'))
+    sys.path.insert(0, str(ROOT / f'arandu_stack/rootfs/modules/arandu_{key}/rootfs/src/src'))
 from arandu_llm.service import create_app, retrieve
-from arandu_llm.adapter import Llama, LlmOutputError, parse_completion
+from arandu_llm.adapter import Llama, LlmOutputError, parse_completion, prompt_context, SYSTEM_PROMPT
+from arandu_llm.inference_slot import inference_slot as llm_slot
+from arandu_decision.inference_slot import inference_slot as decision_slot
 from arandu_llm.contracts import MODELS
 from arandu_decision.adapter import Encoder
 from arandu_decision.contracts import VERSION, digest
@@ -70,6 +74,31 @@ class LlmHttp(unittest.IsolatedAsyncioTestCase):
 
 
 class Readiness(unittest.TestCase):
+    def test_decision_reuses_model_and_configures_threads_once(self):
+        from types import ModuleType
+        torch = ModuleType('torch')
+        torch.set_num_threads = Mock()
+        torch.set_num_interop_threads = Mock()
+        transformers = ModuleType('sentence_transformers')
+        transformers.SentenceTransformer = Mock(return_value=SimpleNamespace(max_seq_length=None))
+        with tempfile.TemporaryDirectory() as directory, patch.dict(sys.modules, {
+                'torch': torch, 'sentence_transformers': transformers}):
+            root = Path(directory)
+            (root/'e5-small').mkdir()
+            (root/'e5-small/arandu-model.json').write_text('{"revision":"fixture"}')
+            adapter = Encoder(root)
+            adapter.load('e5-small')
+            model = adapter.model
+            adapter.load('e5-small')
+            self.assertIs(adapter.model, model)
+            self.assertEqual(adapter.load_ms, 0)
+            transformers.SentenceTransformer.assert_called_once()
+            torch.set_num_threads.assert_called_once_with(2)
+            torch.set_num_interop_threads.assert_called_once_with(1)
+            adapter.unload()
+            adapter.load('e5-small')
+            torch.set_num_interop_threads.assert_called_once_with(1)
+
     def test_catalog_and_model_changes_invalidate_calibration_without_loading(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
@@ -165,13 +194,17 @@ class LlmLifecycle(unittest.IsolatedAsyncioTestCase):
             (root/'tucano').mkdir()
             (root/'tucano'/MODELS['tucano']['file']).touch()
             adapter=Llama(root,'FIXTURE_TECNICA',settings={'max_tokens':64})
-            with patch('arandu_llm.adapter.asyncio.create_subprocess_exec',AsyncMock(return_value=process)) as spawn, patch('aiohttp.ClientSession',Session):
+            with patch('arandu_llm.adapter.asyncio.create_subprocess_exec',AsyncMock(return_value=process)) as spawn, patch('aiohttp.ClientSession',Session), patch('psutil.Process', side_effect=OSError):
                 body={'text':'liga ventilador','decision':retrieve('liga ventilador',catalog())}
                 body['decision']['analysis']={'action':{'text':'liga'},'device':{'entity_id':'fan.fixture'},'area':{'area_id':'sala'}}
                 await adapter.infer(body,catalog())
                 self.assertEqual(json.loads(requests[0]['messages'][1]['content'])['decision_analysis'],body['decision']['analysis'])
                 second=await adapter.infer(body,catalog())
                 self.assertEqual(spawn.await_count,1)
+                args = spawn.call_args.args
+                for flag, value in [('-t', '2'), ('-tb', '2'), ('--poll', '0'), ('--poll-batch', '0')]:
+                    self.assertEqual(args[args.index(flag) + 1], value)
+                self.assertNotIn('--cpu-mask', args)
                 self.assertEqual(second['load_ms'],0)
                 self.assertFalse(process.kill.called)
                 Response.content.finish='length'
@@ -190,3 +223,94 @@ class LlmLifecycle(unittest.IsolatedAsyncioTestCase):
                 await adapter.unload()
                 process.kill.assert_called_once()
                 self.assertIsNone(adapter.process)
+
+
+class CompactPrompt(unittest.TestCase):
+    def test_only_candidate_evidence_reaches_model(self):
+        value = catalog()
+        value['entities'].append({**value['entities'][0], 'entity_id': 'fan.other', 'name': 'Outro'})
+        analysis = {'action': {'text': 'liga', 'exact': 'turn_on', 'ranking': [
+            {'intent': 'turn_on', 'semantic_similarity': .987654321}]},
+            'device': {'entity_id': 'fan.fixture', 'name': 'Ventilador', 'unambiguous': True,
+                       'candidates': [{'entity_id': 'fan.fixture', 'name': 'Ventilador'}]},
+            'area': {'area_id': 'sala', 'source': 'origin'}, 'note': 'FIXTURE_DEBUG' * 100}
+        body = {'text': 'liga ventilador', 'nlu': {'debug': 'FIXTURE_DEBUG' * 100},
+                'context': {'origin_area': 'sala', 'debug': 'FIXTURE_DEBUG'},
+                'decision': {'ranking': [{'entity_id': 'fan.fixture', 'intent': 'turn_on', 'raw_score': .987654321}],
+                             'analysis': analysis, 'reason': 'FIXTURE_DEBUG', 'decision_status': 'uncalibrated'}}
+        compact, ids = prompt_context(body, value)
+        self.assertEqual(ids, {'fan.fixture'})
+        self.assertEqual([r['entity_id'] for r in compact['devices']], ['fan.fixture'])
+        self.assertEqual(compact['devices'][0]['actions'], ['turn_on', 'turn_off'])
+        self.assertEqual(compact['areas'], value['areas'])
+        self.assertEqual(compact['context'], {'origin_area': 'sala'})
+        self.assertEqual(compact['decision_analysis']['action']['ranking'][0]['semantic_similarity'], .988)
+        self.assertNotIn('FIXTURE_DEBUG', json.dumps(compact))
+        self.assertNotIn('candidates', compact['decision_analysis']['device'])
+        self.assertEqual(body['decision']['analysis'], analysis)  # No mutation of diagnostics.
+        self.assertLess(len(SYSTEM_PROMPT), 850)
+
+
+class InferenceSerialization(unittest.IsolatedAsyncioTestCase):
+    async def test_services_serialize_even_for_independent_http_requests(self):
+        from arandu_decision.service import create_app as decision_app
+        entered, release = asyncio.Event(), asyncio.Event()
+        async def llm_infer(*args, **kwargs):
+            entered.set()
+            await release.wait()
+            return {'proposal': proposal()}
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'ARANDU_INFERENCE_LOCK': str(Path(directory)/'slot')}), \
+                patch('arandu_llm.service.Llama') as llama, patch('arandu_decision.service.Encoder') as encoder:
+            llama.return_value.infer = AsyncMock(side_effect=llm_infer)
+            llama.return_value.unload = AsyncMock()
+            encoder.return_value.infer.return_value = {'decision_status': 'uncalibrated'}
+            clients = [TestClient(TestServer(create_app(Path(directory)))),
+                       TestClient(TestServer(decision_app(Path(directory))))]
+            for client in clients:
+                await client.start_server()
+            try:
+                first = asyncio.create_task(clients[0].post('/infer', json={'text': 'liga ventilador', 'catalog': catalog()},
+                    headers={'Host': '127.0.0.1:11558', 'X-Arandu-Lab': '1'}))
+                await asyncio.wait_for(entered.wait(), 2)
+                second = asyncio.create_task(clients[1].post('/infer', json={'text': 'liga ventilador', 'catalog': catalog()},
+                    headers={'Host': '127.0.0.1:11557', 'X-Arandu-Lab': '1'}))
+                await asyncio.sleep(.1)
+                encoder.return_value.infer.assert_not_called()
+                release.set()
+                responses = await asyncio.wait_for(asyncio.gather(first, second), 2)
+                self.assertEqual([r.status for r in responses], [200, 200])
+                encoder.return_value.infer.assert_called_once()
+            finally:
+                release.set()
+                for client in clients:
+                    await client.close()
+
+    async def test_lock_crosses_process_boundary_and_cancelled_waiter_does_not_release_owner(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'ARANDU_INFERENCE_LOCK': str(Path(directory)/'slot')}):
+            code = ('import asyncio,sys; sys.path.insert(0,sys.argv[1]); '
+                    'from arandu_llm.inference_slot import inference_slot\n'
+                    'async def main():\n'
+                    ' async with inference_slot():\n'
+                    '  print("acquired",flush=True)\n'
+                    'asyncio.run(main())\n')
+            async def wait_for_slot():
+                async with llm_slot():
+                    self.fail('Waiter entered while Decision owns slot')
+            async with decision_slot():
+                waiter = asyncio.create_task(wait_for_slot())
+                await asyncio.sleep(.06)
+                waiter.cancel()
+                with self.assertRaises(asyncio.CancelledError):
+                    await waiter
+                process = await asyncio.create_subprocess_exec(sys.executable, '-c', code,
+                    str(ROOT/'arandu_stack/rootfs/modules/arandu_llm/rootfs/src/src'), stdout=asyncio.subprocess.PIPE)
+                line = asyncio.create_task(process.stdout.readline())
+                await asyncio.sleep(.15)
+                self.assertFalse(line.done())
+            try:
+                self.assertEqual(await asyncio.wait_for(line, 5), b'acquired\n' if os.name != 'nt' else b'acquired\r\n')
+                self.assertEqual(await asyncio.wait_for(process.wait(), 5), 0)
+            finally:
+                if process.returncode is None:
+                    process.kill()
+                    await process.wait()

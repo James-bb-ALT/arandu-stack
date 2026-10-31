@@ -9,6 +9,7 @@ import shutil
 import sys
 from .contracts import MODELS, candidates, digest
 from .adapter import Encoder
+from .inference_slot import inference_slot
 
 KEY = "e5-small"
 PORT = 11557
@@ -56,6 +57,8 @@ def retrieve(text, catalog):
 def create_app(root, executable=None, threads=2, runtime_settings=None):
     from aiohttp import web
     os.environ.update(HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1", TOKENIZERS_PARALLELISM="false")
+    os.environ.update(OMP_NUM_THREADS=str(threads), OPENBLAS_NUM_THREADS=str(threads),
+                      MKL_NUM_THREADS=str(threads), OMP_WAIT_POLICY='PASSIVE', KMP_BLOCKTIME='0')
     adapter = Encoder(root, threads)
     lock, tasks = asyncio.Lock(), set()
 
@@ -92,7 +95,7 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
         if lock.locked():
             return web.json_response({"error": "Serviço ocupado"}, status=429)
         async def work():
-            async with lock:
+            async with lock, inference_slot():
                 if action == "unload":
                     adapter.unload()
                     return {"unloaded": True}

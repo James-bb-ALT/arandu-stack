@@ -30,6 +30,22 @@ Desabilitar o roteamento não descarrega pesos. Para liberar memória, pare o m�
 ou use o descarregamento do Lab. O LLM mantém um único `llama-server`, em loopback,
 reutilizado até unload/stop ou falha; a primeira chamada pode carregar pesos.
 
+Para o i5-6500T, ambos usam duas threads por padrão, sem afinidade ou reserva de
+núcleos. O LLM usa o mesmo limite na geração e no processamento do prompt, com
+polling desativado; Decision usa espera passiva nas bibliotecas de CPU. Modelos
+carregados permanecem disponíveis em RAM, mas não ficam calculando ociosos.
+Um lock de arquivo do sistema operacional, compartilhado pelos dois processos,
+serializa carga, inferência e calibração, inclusive entre pedidos independentes
+ou quando um cliente expira antes do cálculo terminar. O lock é liberado ao
+encerrar o processo. A consulta `/status` continua disponível durante o cálculo.
+
+Na produção, NLU resolve primeiro; um plano NLU dispensa os modelos. Uma proposta
+Decision aceita e validada dispensa o LLM. O LLM só participa do fallback elegível
+restante, se habilitado. Os modos isolados do Lab continuam disponíveis apenas
+para diagnóstico. Seu prompt leva comando, contexto espacial e evidências dos
+candidatos; exclui dumps NLU, diagnósticos e descrições repetidas. Scores no prompt
+são arredondados, sem alterar scores originais, calibração ou validação HA.
+
 Configure o endpoint Arandu Stack nas opções HACS quando não tiver sido descoberto
 automaticamente. O gateway usa `/infer`; internamente Decision atende em 11557 e
 LLM em 11558. Os modelos nunca recebem credenciais HA nem chamam serviços HA.

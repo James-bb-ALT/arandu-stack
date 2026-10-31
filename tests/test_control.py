@@ -193,5 +193,12 @@ class Scope(unittest.IsolatedAsyncioTestCase):
                 await manager.start('llm')
                 self.assertNotIn('SUPERVISOR_TOKEN', spawn.call_args.kwargs['env'])
                 self.assertNotIn('HA_TOKEN', spawn.call_args.kwargs['env'])
+                environment = spawn.call_args.kwargs['env']
+                self.assertEqual(environment['ARANDU_INFERENCE_LOCK'], str(Path(directory)/'intelligence.lock'))
+                self.assertEqual(environment['OMP_NUM_THREADS'], '2')
+                self.assertEqual(environment['OPENBLAS_NUM_THREADS'], '2')
+                self.assertEqual(environment['MKL_NUM_THREADS'], '2')
+                self.assertEqual(environment['OMP_WAIT_POLICY'], 'PASSIVE')
+                self.assertEqual(environment['KMP_BLOCKTIME'], '0')
                 self.assertTrue(spawn.call_args.kwargs['start_new_session'])
                 await manager.close()

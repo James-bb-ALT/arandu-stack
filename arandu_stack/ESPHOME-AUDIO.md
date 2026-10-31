@@ -7,6 +7,11 @@ na contagem final. Portanto, a migração I2S não encerrou a investigação.
 Arquivos FLAC completos e HTTP fragmentado reproduziram até o fim nos testes;
 uma resposta recém-sintetizada não encerrou durante a captura de 45 s.
 
+Teste adicional: arquivo FLAC completo de **35 s** reproduzido a 10% de volume;
+ANNOUNCING em 2,915 s, decoder concluído/IDLE em 37,754 s. O usuário confirmou
+que esse áudio tocou bem. Isso comprova reprodução longa com arquivo completo,
+mas não substitui testar a pipeline depois de atualizar o servidor TTS.
+
 O TTS 0.2.1 deixa de anunciar `supports_synthesize_streaming`. No Home Assistant,
 isso seleciona o caminho que acumula o áudio inteiro antes de servi-lo ao player.
 Assim, o satélite não depende da geração das próximas frases durante a reprodução.

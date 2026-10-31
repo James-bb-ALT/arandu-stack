@@ -52,6 +52,42 @@ class OutputControls(unittest.IsolatedAsyncioTestCase):
     def request(self,text,**kwargs):
         return input_(text=text,satellite_id='assist_satellite.fixture',**kwargs)
 
+    async def test_respeaker_misunderstanding_is_short_and_discards_only_own_dialogue(self):
+        device = self.hass.device_registry.async_get('voice1')
+        device.model = 'ReSpeaker Lite'
+        request = self.request('linha TV do quarto')
+        owner = ('user', 'assist_satellite.fixture', 'fixture')
+        other = ('user', 'assist_satellite.other', 'fixture')
+        for code in ('missing_slot', 'no_match', 'unsupported_intent', 'ambiguous', 'unresolved_target'):
+            self.runtime.sessions[owner] = Session(9999999999, pending={'action': 'turn_on'})
+            self.runtime.sessions[other] = Session(9999999999)
+            result = self.runtime.result(code, request, speech='Explicação longa. Pode repetir?', followup=True)
+            self.assertEqual((result.code, result.response_text, result.continue_conversation),
+                             ('no_match', 'Não entendi.', False))
+            self.assertNotIn(owner, self.runtime.sessions)
+            self.assertIn(other, self.runtime.sessions)
+        self.assertEqual(self.hass.services.calls, [])
+
+    async def test_short_profile_uses_registered_hostname_and_preserves_other_results(self):
+        device = self.hass.device_registry.async_get('voice1')
+        device.configuration_url = 'http://respeaker-jaime.local'
+        request = self.request('teste')
+        self.assertEqual(self.runtime.result('no_match', request).response_text, 'Não entendi.')
+        for code in ('success', 'query_success', 'confirmation_required', 'denied', 'cancelled', 'unavailable'):
+            result = self.runtime.result(code, request, speech='FIXTURE', followup=True)
+            self.assertEqual(result.response_text, 'FIXTURE')
+            self.assertTrue(result.continue_conversation)
+        request.satellite_id = None
+        request.device_id = 'voice1'
+        self.assertEqual(self.runtime.result('no_match', request).response_text, 'Não entendi.')
+
+    async def test_other_devices_and_absent_origin_keep_clarifications(self):
+        for satellite in ('assist_satellite.fixture', None, 'assist_satellite.unknown'):
+            request = input_(satellite_id=satellite)
+            result = self.runtime.result('missing_slot', request, speech='Qual alvo?', followup=True)
+            self.assertEqual(result.response_text, 'Qual alvo?')
+            self.assertTrue(result.continue_conversation)
+
     async def test_volume_controls_only_origin_without_calling_nlu(self):
         result=await self.runtime.process(self.request('volume 3'))
         self.assertEqual(result.code,'success')

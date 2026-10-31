@@ -90,6 +90,14 @@ class ContextualRuntime:
     def result(self, code: str, user_input: Any, *, speech: str | None = None, count: int = 0, followup: bool = False, reason: str | None = None, timings: dict | None = None) -> Any:
         from .runtime import RuntimeResult
         from .contextual_errors import speech as failure_speech
+        from .response_profile import FAILURES, short_failure_origin
+        if code in FAILURES and not count and short_failure_origin(self.hass, user_input):
+            # End this dialogue, including any clarification/selection retained
+            # by NLU or semantic fallback. A later "sim" must not revive it.
+            owner = (getattr(user_input.context, 'user_id', None), request_origin(user_input),
+                     user_input.conversation_id)
+            self.sessions.pop(owner, None)
+            code, speech, followup = 'no_match', 'Não entendi.', False
         reason = reason or {"denied": "permission_denied", "stale": "stale", "invalid_request": "invalid_request", "no_match": "no_match", "unsupported_intent": "unsupported_intent", "partial_failure": "partial_failure"}.get(code)
         stage = getattr(self, "stage", "normalization")
         if reason in ("missing_origin_area", "unknown_area", "ambiguous_area", "ambiguous_group", "origin_area_changed"):

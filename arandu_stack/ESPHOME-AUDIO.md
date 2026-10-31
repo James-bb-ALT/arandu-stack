@@ -1,5 +1,17 @@
 # ReSpeaker: memória, cortes de áudio e estado de resposta
 
+## Mitigação específica: HACS 3.0.1
+
+O usuário confirmou que os cortes persistiram apesar do firmware e buffering.
+Para esse caso, pedidos não compreendidos no ReSpeaker passam a responder apenas
+**“Não entendi.”** e encerrar. O contexto pendente desse diálogo é removido;
+um “sim” posterior não retoma a hipótese abandonada. Sucesso, consultas e
+confirmações de ações permanecem iguais; outros dispositivos não são afetados.
+O perfil usa o cadastro do dispositivo de origem (modelo/nome/hostname ReSpeaker),
+sem classificar todo ESPHome/Raspberry como limitado. Atualize a integração HACS
+para 3.0.1 e reinicie o HA. Não requer outra OTA ou atualização do app.
+Essa é uma mitigação da resposta de incompreensão, não um conserto geral do áudio.
+
 ## Falas longas: entrega completa pelo TTS 0.2.1
 
 Após a OTA 3.0.1, a escuta real melhorou no começo da frase, mas ainda travou

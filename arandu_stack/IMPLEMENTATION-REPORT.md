@@ -1,5 +1,10 @@
 # Relatório de implementação — camadas Decision/LLM e AI Lab
 
+HACS 3.0.1: resposta de incompreensão específica para origens ReSpeaker,
+“Não entendi.”, com encerramento e remoção do contexto do pedido. Demais
+dispositivos e respostas de sucesso/confirmação preservados. 151 testes
+aprovados, um ignorado. Requer atualização HACS e reinício do HA; app preservado.
+
 App 2.0.1 / HACS 3.0.0, perfil ReSpeaker 3.0.1: migração da base legada para
 I2S oficial 2026.10.1 com decimator 48→16 kHz. Compilação e link completos,
 comparação do driver gerado e OTA no aparelho confirmados. Três reproduções

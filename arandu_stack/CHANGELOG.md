@@ -1,3 +1,10 @@
+# App 2.0.1 / HACS 3.0.1 — resposta curta no ReSpeaker
+
+- Pedidos não compreendidos, ambíguos ou sem alvo/ação em origens ReSpeaker recebem somente “Não entendi.”, sem continuar a conversa. Descarta o contexto desse pedido para impedir reaproveitamento de seleção/confirmação pendente.
+- Identifica a origem pelo cadastro do satélite/dispositivo no HA: modelo, nome ou hostname ReSpeaker. Preserva outros dispositivos, respostas de sucesso/consulta, controles de volume/parada e confirmações de ações. Não deduz memória pela integração ESPHome.
+- Atualize HACS e reinicie o Home Assistant. App, firmware e TTS preservados. A mitigação reduz a resposta de incompreensão; não afirma corrigir reprodução de qualquer áudio longo. O usuário relatou persistência dos cortes após o buffering anterior.
+- Validação: 151 testes aprovados, um ignorado; inclui limpeza isolada do diálogo, origem por satélite/dispositivo/hostname e preservação de outras respostas.
+
 # 2.0.1 / HACS 3.0.0
 
 - TTS 0.2.1: Home Assistant passa a aguardar a síntese completa antes de entregar o áudio, evitando dependência da velocidade de geração durante a reprodução. Mantém compatibilidade com o protocolo incremental. Recarregar a integração Wyoming após atualizar renova a capacidade anunciada. Pode aumentar a espera inicial.

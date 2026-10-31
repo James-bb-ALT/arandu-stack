@@ -1,4 +1,4 @@
-# Camadas de inteligência — app 2.0.1 / HACS 3.0.0
+# Camadas de inteligência — app 2.0.1 / HACS 3.0.1
 
 A aba Fluxo de inteligência agora recebe rastreamento real da integração HACS,
 separado do diagrama estático recolhido. Histórico limitado a 50 requisições em RAM,

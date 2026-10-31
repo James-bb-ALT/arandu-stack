@@ -1,7 +1,7 @@
 name: Arandu Decision
 slug: arandu_decision
-version: "0.2.2"
-description: E5 Small residente — duas threads por padrão, sequencial com LLM
+version: "0.3.0"
+description: E5 Small — execução automática com confiança conjunta calibrada de pelo menos 80%
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
 startup: application

@@ -59,7 +59,7 @@ class AranduAILab extends HTMLElement {
         <p class="muted"><small>Texto digitado não traz um satélite. Escolha um cômodo para testar essa origem. Esta seleção não altera a pipeline real.</small></p>
         <label for="decision">Decision Engine</label><select id="decision"><option value="e5-small">Arandu Decision · E5 Small · verificar serviço</option></select>
         <label for="llm">LLM local</label><select id="llm"><option value="tucano">Arandu LLM · Tucano 2 Qwen 0.5B · verificar serviço</option></select>
-        <label for="threshold">Confiança calibrada mínima (exclusiva)</label><input id="threshold" type="number" min="0.5" max="1" step="0.01" value="0.5">
+        <label for="threshold">Confiança calibrada mínima (80% ou mais)</label><input id="threshold" type="number" min="0.8" max="1" step="0.01" value="0.8">
         <label for="margin">Margem mínima</label><input id="margin" type="number" min="0.001" max="1" step="0.001" value="0.08">
         <p class="muted"><small>Cosine similarity não é probabilidade. Sem calibração válida, o motor encaminha ao próximo nível.</small></p>
         <label for="tts">TTS existente</label><select id="tts"><option value="piper">Piper PT-BR</option><option value="pocket">Pocket TTS</option></select>
@@ -104,6 +104,7 @@ class AranduAILab extends HTMLElement {
     this.$('examples').value = JSON.stringify(this.saved('examples', defaults.map(text => ({text, expected: null, expected_area: null, correct_result: null, notes: 'Rotular com entidades reais antes de medir acurácia.'}))), null, 2);
     const config = this.saved('config', {});
     for (const id of ['worker','sttEndpoint','ttsEndpoint','entry','threshold','margin']) if (config[id] != null) this.$(id).value = config[id];
+    this.$('threshold').value = Math.max(.8, Number(this.$('threshold').value) || .8);
     for (const id of ['worker','sttEndpoint','ttsEndpoint','entry','threshold','margin']) this.$(id).onchange = () => {
       this.invalidate();
       this.store('config', Object.fromEntries(['worker','sttEndpoint','ttsEndpoint','entry','threshold','margin'].map(k => [k, this.$(k).value])));

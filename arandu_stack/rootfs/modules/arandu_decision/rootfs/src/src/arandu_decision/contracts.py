@@ -24,10 +24,10 @@ def finite(value):
 
 
 def settings(value):
-    threshold, margin = value.get("threshold", .5), value.get("min_margin", .08)
+    threshold, margin = value.get("threshold", .8), value.get("min_margin", .08)
     if not finite(threshold) or not .5 <= threshold <= 1 or not finite(margin) or not .001 <= margin <= 1:
         raise ValueError("Threshold: 0,50–1; margem: 0,001–1.")
-    return threshold, margin
+    return max(.8, threshold), margin
 
 
 def candidates(catalog):
@@ -70,7 +70,7 @@ def decision_policy(ranking, model, catalog, config, calibration=None):
     if margin < min_margin:
         status, reason = "ambiguous", "insufficient_margin"
     elif confidence is not None:
-        status = "accepted" if confidence > threshold else "rejected"
+        status = "accepted" if confidence >= threshold else "rejected"
         reason = "joint_calibrated" if status == "accepted" else "below_threshold"
     return {"ranking": ranking[:8], "raw_score": top["raw_score"], "confidence": confidence,
             "margin": margin, "decision_status": status, "reason": reason,

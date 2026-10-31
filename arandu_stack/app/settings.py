@@ -21,7 +21,7 @@ FIELDS = {
          field('session_ttl', 'Duração do contexto da conversa (segundos)', 'number', min=1, max=600, step=1),
          field('low_battery_threshold', 'Aviso de bateria baixa (%)', 'number', min=0, max=100, step=1)],
  'decision': [DOWNLOAD, THREADS,
-              field('threshold', 'Confiança mínima calibrada', 'number', 'Decisão', min=.5, max=1, step=.01, help='Similaridade não é confiança. Sem calibração válida o modelo continua se abstendo.'),
+              field('threshold', 'Confiança mínima calibrada', 'number', 'Decisão', min=.5, max=1, step=.01, help='Execução automática a partir de 80% de confiança conjunta calibrada. Valores antigos abaixo de 0,80 usam 0,80. Similaridade bruta não é certeza; sem calibração válida não executa.'),
               field('min_margin', 'Margem mínima entre candidatos', 'number', 'Decisão', min=.001, max=1, step=.001)],
  'llm': [DOWNLOAD, THREADS,
          field('context_size', 'Janela de contexto (tokens)', 'select', 'Geração', choices=[(2048,'2.048'),(4096,'4.096'),(8192,'8.192')]),

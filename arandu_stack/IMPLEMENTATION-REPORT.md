@@ -6,6 +6,16 @@ Nenhuma instalação no HA ou alteração de uma pipeline real foi feita nesta s
 
 ## Entrega
 
+App 0.7.0 / HACS 1.3.0 / Decision 0.3.0: ação inferida pelo Decision aceito é
+executável sem confirmação verbal, com confiança conjunta calibrada >= 80%, margem
+suficiente e alvo inequívoco. A integração revalida aceitação, alvo e permissões;
+negação, condição e ação literal conflitante não são sobrepostas. Texto original
+preservado; diagnóstico registra confiança e inferência do verbo. LLM permanece
+com confirmação para hipóteses incertas. Sem calibração válida não existe uma
+porcentagem de confiança utilizável; nenhuma calibração real foi fabricada.
+Validação: 135 testes Python passaram, 1 ignorado; 6 testes JavaScript passaram.
+Não houve teste/calibração no HA do usuário. NLU e LLM mantêm versões anteriores.
+
 App 0.6.0 / HACS 1.2.0 / NLU 0.6.0: famílias de tipos físicos reutilizadas na
 gramática e no índice e escolha de backend de energia por capacidade real.
 Cobertura inclui switch IR reconhecido por ID, media_player homônimo somente

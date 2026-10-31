@@ -19,7 +19,7 @@ DEFAULTS = {
             'padding_ms': 0, 'profile': 'full', 'debug_text': False, 'refresh_inventory': False,
             'lexical_enabled': True, 'closed_vocabulary': True, 'generic_weight': 7,
             'home_assistant_weight': 10, 'inventory_refresh_seconds': 0},
-    'decision': {'enabled': False, 'auto_download': False, 'threads': 2, 'threshold': .5, 'min_margin': .08},
+    'decision': {'enabled': False, 'auto_download': False, 'threads': 2, 'threshold': .8, 'min_margin': .08},
     'llm': {'enabled': False, 'auto_download': False, 'threads': 2, 'context_size': 4096, 'max_tokens': 192, 'temperature': 0.0},
     'tts': {'enabled': False, 'voice': 'pt_BR-arandu-medium', 'auto_download': False, 'max_chars': 3000,
             'preload': True, 'cpu_threads': 2, 'pocket_enabled': False, 'pocket_preload': False,

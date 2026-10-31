@@ -1,4 +1,4 @@
-"""FIXTURE_TECNICA: model hypotheses require a request-bound human confirmation."""
+"""FIXTURE_TECNICA: calibrated Decision automation and LLM confirmation boundaries."""
 import sys
 import time
 import unittest
@@ -108,7 +108,7 @@ class Confirmation(unittest.IsolatedAsyncioTestCase):
         self.assertNotEqual((await self.say('sim')).code,'success')
         self.assertEqual(self.hass.services.calls,[])
 
-    async def test_calibrated_decision_hypothesis_still_waits_for_yes(self):
+    async def test_calibrated_decision_executes_inferred_action_without_yes(self):
         self.options.update(decision_enabled=True,llm_enabled=False)
         async def calibrated(session,endpoint,path,*,payload,**kwargs):
             self.requests.append(payload)
@@ -117,10 +117,10 @@ class Confirmation(unittest.IsolatedAsyncioTestCase):
                                 'requires_clarification':False,'clarification_question':None,'reason':'joint_calibrated'},
                     'ranking':[{'entity_id':'fan.ventilador','intent':'turn_on','raw_score':.8}]}
         with patch('custom_components.local_nlu.ai_lab.local_request',calibrated):
-            self.assertEqual((await self.say()).code,'confirmation_required')
-            self.assertEqual(self.hass.services.calls,[])
+            self.assertEqual((await self.say()).code,'success')
+            self.assertEqual(len(self.hass.services.calls),1)
             self.assertEqual([r['action'] for r in self.requests],['decision'])
-            self.assertEqual((await self.say('sim')).code,'success')
+            self.assertNotEqual((await self.say('sim')).code,'success')
         self.assertEqual(len(self.hass.services.calls),1)
 
     async def test_stale_confirmation_never_executes(self):
@@ -143,8 +143,53 @@ class Confirmation(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(self.hass.services.calls,[])
 
 
+    async def test_automatic_decision_boundary_and_rejections(self):
+        self.options.update(decision_enabled=True,llm_enabled=False)
+        for confidence, margin, text, execute in [
+                (.8,.2,'leva o ventilador',True),
+                (.799,.2,'leva o ventilador',False),
+                (.9,.01,'leva o ventilador',False),
+                (.9,.2,'não leva o ventilador',False),
+                (.9,.2,'desliga o ventilador',False)]:
+            self.runtime.sessions.clear()
+            self.hass.services.calls.clear()
+            self.requests.clear()
+            async def calibrated(session,endpoint,path,*,payload,**kwargs):
+                self.requests.append(payload)
+                self.assertEqual(payload['config']['threshold'],.8)
+                return {'decision_status':'accepted','confidence':confidence,'margin':margin,
+                    'catalog_fingerprint':digest(payload['catalog']),
+                    'proposal':{'intent':'turn_on','target_entities':['fan.ventilador'],'target_area':None,
+                        'confidence':confidence,'requires_clarification':False,'clarification_question':None,'reason':'joint_calibrated'},
+                    'ranking':[{'entity_id':'fan.ventilador','intent':'turn_on','raw_score':.99}]}
+            with self.subTest(confidence=confidence,margin=margin,text=text), patch('custom_components.local_nlu.ai_lab.local_request',calibrated):
+                result=await self.say(text)
+                self.assertEqual(result.code=='success',execute)
+                self.assertEqual(len(self.hass.services.calls),int(execute))
+                self.assertEqual([r['action'] for r in self.requests],['decision'])
+                if execute:
+                    self.assertEqual(self.hass.services.calls[0]['service'],'turn_on')
+                    self.assertTrue(self.runtime.last_intelligence['decision']['auto_corrected'])
+
+
 class DecisionParts(unittest.TestCase):
-    def test_calibrated_hypothesis_is_non_executable_on_the_wire(self):
+    def test_calibrated_eighty_percent_is_inclusive_but_cosine_is_not_confidence(self):
+        from arandu_decision.contracts import decision_policy, VERSION
+        from test_intelligence_services import catalog
+        value=catalog()
+        ranking=[{'entity_id':'fan.fixture','intent':'turn_on','raw_score':.99}]
+        cell={'n':10,'correct':8}
+        calibration={'version':VERSION,'model':'fixture','catalog':digest(value),'validated':True,
+            'bins':[dict(cell) for _ in range(5)],'validation_bins':[dict(cell) for _ in range(5)]}
+        result=decision_policy(ranking,'fixture',value,{},calibration)
+        self.assertEqual(result['decision_status'],'accepted')
+        self.assertEqual(result['confidence'],.8)
+        result=decision_policy(ranking,'fixture',value,{},None)
+        self.assertEqual(result['decision_status'],'uncalibrated')
+        self.assertIsNone(result['confidence'])
+        self.assertIsNone(result['proposal'])
+
+    def test_high_confidence_decision_does_not_add_verbal_confirmation(self):
         from test_semantic_clarification import catalog, proposed
         import tempfile
         with tempfile.TemporaryDirectory() as directory:
@@ -155,9 +200,9 @@ class DecisionParts(unittest.TestCase):
             encoder.finish=Mock(return_value={'decision_status':'accepted','proposal':proposal,'confidence':.9})
             with patch.dict(sys.modules,{'numpy':SimpleNamespace(dot=lambda a,b:sum(x*y for x,y in zip(a,b)))}):
                 result=encoder.infer('leva o ventilador',catalog(),'e5-small',{},context={'origin_area':'office'})
-            self.assertTrue(result['confirmation_required'])
-            self.assertTrue(result['proposal']['requires_clarification'])
-            self.assertIn('É isso?',result['proposal']['clarification_question'])
+            self.assertFalse(result.get('confirmation_required',False))
+            self.assertFalse(result['proposal']['requires_clarification'])
+            self.assertIsNone(result['proposal']['clarification_question'])
 
     def test_encoder_adds_diagnostics_without_altering_calibrated_joint_policy(self):
         from test_semantic_clarification import catalog

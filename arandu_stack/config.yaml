@@ -1,7 +1,7 @@
 name: Arandu Assistant
 slug: arandu_stack
-version: "0.6.0"
-description: Assistente local — aliases por aparelho, cômodo de origem e fallback sequencial
+version: "0.7.0"
+description: Assistente local — Decision automático com confiança calibrada de 80% ou mais
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
 startup: application

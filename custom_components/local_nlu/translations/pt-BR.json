@@ -37,7 +37,7 @@
       },
       "intelligence": {
         "title": "Camadas de inteligência",
-        "description": "O NLU é sempre o primeiro. Ative camadas independentes para falhas de compreensão. Alterações valem para novas requisições, sem reiniciar. Os processos dos modelos são iniciados separadamente no app. Decision exige calibração válida: confiança maior que 0,50 e margem mínima 0,08. Consulte instalação, disponibilidade e calibração no AI Lab. As camadas usam o runtime contextual seguro mesmo quando o modo legado estava selecionado.",
+        "description": "NLU primeiro. Decision executa a ação inferida com confiança conjunta calibrada de pelo menos 80%, margem mínima 0,08 e alvo inequívoco, mesmo se o verbo foi mal transcrito. Sem calibração válida, similaridade não é certeza. Negação, conflito explícito e permissões continuam protegidos. O LLM só entra se necessário e mantém confirmação para hipóteses incertas. Processos são iniciados separadamente no app; alterações valem para novas requisições.",
         "data": {
           "decision_enabled": "Usar Decision Engine",
           "llm_enabled": "Usar LLM como fallback"

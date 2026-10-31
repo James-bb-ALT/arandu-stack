@@ -37,7 +37,7 @@
       },
       "intelligence": {
         "title": "Intelligence layers",
-        "description": "NLU always runs first. Independent fallbacks apply to new requests without restarting. Start model processes separately in the app. Decision requires valid calibration, confidence strictly above 0.50 and margin at least 0.08. Check installation, availability and calibration in AI Lab. Enabled layers use the secure contextual runtime even when legacy mode was selected.",
+        "description": "NLU first. Decision executes an inferred action with calibrated joint confidence of at least 80%, margin at least 0.08 and an unambiguous target, including mistranscribed verbs. Without valid calibration, similarity is not certainty. Negation, explicit conflicts and permissions remain enforced. LLM only runs when needed and retains confirmation for uncertain hypotheses. Start model processes separately in the app; changes apply to new requests.",
         "data": {
           "decision_enabled": "Use Decision Engine",
           "llm_enabled": "Use LLM as fallback"

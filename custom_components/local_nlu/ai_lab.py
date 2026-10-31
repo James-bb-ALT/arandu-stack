@@ -202,11 +202,12 @@ class Lab:
                 semantic_context = {"origin_area": selected_area}
                 async def decision(data):
                     threshold, margin = settings(payload)
+                    threshold = max(.8, threshold)
                     response = await local_request(session, worker, "/infer", payload={**data, "action": "decision", "catalog": catalog, "context": semantic_context,
-                        "model": model, "config": {"threshold": payload.get("threshold", .5), "min_margin": payload.get("min_margin", .08)}})
+                        "model": model, "config": {"threshold": threshold, "min_margin": margin}})
                     if response.get("decision_status") == "accepted":
                         confidence, gap = response.get("confidence"), response.get("margin")
-                        if not finite(confidence) or confidence <= threshold or not finite(gap) or gap < margin:
+                        if not finite(confidence) or confidence < threshold or not finite(gap) or gap < margin:
                             raise ValueError("Worker retornou aceitação sem confiança/margem válidas")
                         proposed = validate_proposal(response.get("proposal"), catalog)
                         top = response["ranking"][0]
@@ -229,7 +230,8 @@ class Lab:
                     from .intelligence import proposal_route
                     from .semantic_context import clarification, confirmation_question
                     output = result["stages"][result["source"]].get("output") or {}
-                    route = proposal_route(text, proposal, catalog, semantic_context, output.get("confirmation_required") is True)
+                    route = proposal_route(text, proposal, catalog, semantic_context, output.get("confirmation_required") is True,
+                        auto_decision=result['source'] == 'decision' and output.get('decision_status') == 'accepted')
                     if route == "confirmation_required":
                         row = next(r for r in catalog["entities"] if r["entity_id"] == proposal["target_entities"][0])
                         question = confirmation_question(proposal["intent"], row, catalog)

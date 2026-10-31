@@ -194,7 +194,7 @@ class RuntimeClarificationTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn('execution_token',result)
         self.assertEqual(hass.services.calls,[])
 
-    async def test_unknown_action_never_executes_in_any_toggle_combination(self):
+    async def test_only_calibrated_decision_auto_resolves_unknown_action(self):
         cat=catalog()
         snapshot=Snapshot(cat,{r['entity_id']:r for r in cat['entities']})
         async def infer(body):
@@ -208,7 +208,7 @@ class RuntimeClarificationTests(unittest.IsolatedAsyncioTestCase):
             operations,trace=await fallback('leva o ventilador',snapshot,{'decision_enabled':decision,'llm_enabled':llm},infer,{'origin_area':'office'})
             if decision or llm:
                 self.assertEqual(len(operations),1)
-                self.assertIn('confirmation_required',[stage['status'] for stage in trace.values()])
+                self.assertIn('proposed' if decision else 'confirmation_required',[stage['status'] for stage in trace.values()])
             else:
                 self.assertEqual(operations,())
 

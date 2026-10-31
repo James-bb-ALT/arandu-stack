@@ -37,10 +37,10 @@ def accepted_decision(response, catalog):
         return None
     confidence, margin = response.get("confidence"), response.get("margin")
     config = response.get("applied_config") or {}
-    threshold = max(.5, config.get("threshold", .5))
+    threshold = max(.8, config.get("threshold", .8))
     minimum = max(.08, config.get("min_margin", .08))
     if (response.get("catalog_fingerprint") != digest(catalog)
-            or not finite(confidence) or not threshold < confidence <= 1
+            or not finite(confidence) or not threshold <= confidence <= 1
             or not finite(margin) or not minimum <= margin <= 2):
         raise ValueError("Aceitação sem calibração, catálogo ou margem válidos")
     proposal = validate_proposal(response.get("proposal"), catalog)
@@ -66,12 +66,14 @@ def grounded_target(text, proposal, catalog, context=None):
             and proposal["intent"] in row["actions"])
 
 
-def proposal_route(text, proposal, catalog, context=None, force_review=False):
+def proposal_route(text, proposal, catalog, context=None, force_review=False, auto_decision=False):
     if not grounded_target(text, proposal, catalog, context) or not hypothesis_allowed(text):
         return "clarification"
     known = understood_action(text)
     if known is not None and known != proposal["intent"]:
         return "clarification"
+    if auto_decision:
+        return "proposed"
     if known is None or proposal["requires_clarification"] or force_review:
         return "confirmation_required"
     return "proposed"
@@ -90,7 +92,7 @@ async def fallback(text, snapshot, options, request, context=None):
         try:
             body = {"action": source, "text": text, "catalog": snapshot.payload, "context": context or {}}
             if source == "decision":
-                body.update(model="e5-small", config={"threshold": .5, "min_margin": .08})
+                body.update(model="e5-small", config={"threshold": .8, "min_margin": .08})
             else:
                 body.update(llm_model="tucano", decision=decision)
             async with asyncio.timeout(TIMEOUT):
@@ -107,11 +109,14 @@ async def fallback(text, snapshot, options, request, context=None):
                 # A model's self-reported confidence is never an authorization signal.
                 proposal["confidence"] = None
             if proposal:
-                route = proposal_route(text, proposal, snapshot.payload, context, response.get("confirmation_required") is True)
+                route = proposal_route(text, proposal, snapshot.payload, context, response.get("confirmation_required") is True,
+                                       auto_decision=source == 'decision')
                 trace[source]["status"] = route
+                if source == 'decision':
+                    trace[source].update(confidence=response['confidence'], auto_corrected=understood_action(text) is None)
                 if route == "clarification":
                     continue
-                if route == "confirmation_required":
+                if route == "confirmation_required" or source == 'decision':
                     proposal = {**proposal, "requires_clarification": False, "clarification_question": None}
                 proposed = operations(proposal, snapshot, source)
                 if proposed:

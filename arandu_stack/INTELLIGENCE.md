@@ -1,4 +1,4 @@
-# Camadas de inteligência — app 0.6.0 / HACS 1.2.0
+# Camadas de inteligência — app 0.7.0 / HACS 1.3.0
 
 ## Nomes de aparelho e entidades de controle
 
@@ -141,9 +141,22 @@ Clarificações reais do NLU continuam usando seu diálogo existente.
 O catálogo autorizado, texto e contexto espacial limitado são enviados à camada
 habilitada. Decision só propõe automaticamente com calibração válida para a
 impressão digital do modelo e catálogo. A política padrão exige confiança calibrada
-**maior que 0,50**, e margem **pelo menos 0,08**. Similaridade bruta nunca é
+**pelo menos 0,80**, e margem **pelo menos 0,08**. Similaridade bruta nunca é
 probabilidade. Os ajustes do módulo podem endurecer essa política; a integração
 nunca usa limites inferiores a esses mínimos para execução real.
+
+Decision aceito nessas condições pode inferir uma ação a partir de verbo mal
+transcrito e executá-la sem pedir “sim”, encerrando o fluxo antes do LLM. Continua
+exigindo evidência independente e inequívoca do alvo; negação, condição e intenção
+literal explicitamente conflitante não são sobrepostas pelo modelo. A decisão
+vira uma operação tipada validada pelo HA, preservando o texto original para
+diagnóstico. Trace informa confiança e se houve inferência do verbo. A exigência
+de confirmação verbal para hipótese do LLM não é relaxada. O AI Lab usa o mesmo
+limite inclusivo de 80%, mantendo sua simulação até a execução explicitamente pedida.
+
+Valores antigos do threshold abaixo de 0,80 são aceitos na configuração para
+compatibilidade, mas usam 0,80 como limite efetivo do serviço; opções acima disso
+continuam mais restritivas. Novas instalações usam 0,80 por padrão.
 
 Sem calibração, Decision pode ranquear para diagnóstico. A calibração existente
 continua exigindo conjuntos distintos de treino e validação (mínimos 50 e 30).

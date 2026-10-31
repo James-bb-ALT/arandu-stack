@@ -65,7 +65,7 @@ class Encoder:
             reason = "joint_calibrated" if valid else "calibration_model_or_catalog_changed"
         return {"calibration_valid": valid, "can_accept": valid, "diagnostic_only": not valid,
                 "reason": reason, "loaded": self.model is not None,
-                "note": "Cada hipótese ainda exige confiança calibrada > threshold e margem suficiente."}
+                "note": "Execução automática exige confiança conjunta calibrada >= 80% e margem suficiente."}
 
 
     def infer(self, text, catalog, key, config, context=None):
@@ -118,7 +118,10 @@ class Encoder:
         result["analysis"] = analysis
         result["analysis_ms"] = (time.perf_counter() - analysis_started) * 1000
         proposal = result.get("proposal")
-        if proposal and understood_action(text) != proposal["intent"]:
+        known = understood_action(text)
+        automatic = (result.get('decision_status') == 'accepted'
+                     and isinstance(result.get('confidence'), (int, float)) and result['confidence'] >= .8)
+        if proposal and known != proposal["intent"] and not (automatic and known is None):
             row = resolve_device(text, catalog, context)
             question = (confirmation_question(proposal["intent"], row, catalog)
                         if row and row["entity_id"] in proposal["target_entities"]

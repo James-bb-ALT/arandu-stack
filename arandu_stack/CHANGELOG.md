@@ -1,3 +1,11 @@
+# 0.7.0 / HACS 1.3.0
+
+- Decision 0.3.0 passa a executar automaticamente a ação inferida quando a confiança conjunta calibrada de intenção e alvo é pelo menos 80%, a margem é suficiente e o alvo é inequívoco. Verbo transcrito desconhecido deixa de obrigar confirmação após a aceitação do Decision. A intenção vira operação tipada; o texto original não é adulterado.
+- Limite de 80% é inclusivo e validado também na integração. Similaridade bruta alta sem calibração continua sem aceitação. Configurações antigas abaixo de 0,80 usam esse mínimo efetivo; padrão novo 0,80. Políticas mais restritivas continuam respeitadas.
+- Negação, condição, alvo ambíguo, falta de permissão e intenção literal conflitante continuam sem execução automática. LLM não herda a autorização do Decision; hipóteses incertas do LLM mantêm confirmação.
+- AI Lab reflete a mesma política de aceitação e corrige o rótulo de threshold. Interface, descrições, opções padrão e versões atualizadas. NLU 0.6.0 e LLM 0.2.2 preservados.
+- Validação: 135 testes Python passaram, 1 ignorado; 6 testes JavaScript passaram. Inclui limite exato de 80%, rejeição abaixo do limite, margem insuficiente, negação, conflito de ação e distinção entre confiança calibrada e similaridade. Sem inferência/calibração com os dados reais do usuário nesta atualização.
+
 # 0.6.0 / HACS 1.2.0
 
 - NLU 0.6.0 separa tipo físico de aparelho do domínio que o controla. TV/televisão/televisor e ar/ar-condicionado/split podem usar switches IR ou outros backends de energia quando o catálogo oferece turn_on/turn_off e identifica o tipo por nome, alias, classe ou prefixo de ID registrado.

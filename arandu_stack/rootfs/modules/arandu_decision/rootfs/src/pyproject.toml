@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arandu-decision"
-version = "0.2.1"
-description = "Optional passive Arandu Decision service for the Arandu stack"
+version = "0.2.2"
+description = "Resident CPU Decision service with serialized inference for Arandu"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"

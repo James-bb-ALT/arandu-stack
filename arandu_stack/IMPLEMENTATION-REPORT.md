@@ -6,6 +6,14 @@ Nenhuma instalação no HA ou alteração de uma pipeline real foi feita nesta s
 
 ## Entrega
 
+Atualização app 0.5.2 / HACS 0.8.2 / Decision e LLM 0.2.2: inferências serializadas
+entre processos, duas threads por modelo por padrão, espera passiva e modelos
+reutilizados em memória. Prompt do sistema reduzido de 983 para 671 caracteres;
+contexto sem dumps e diagnósticos redundantes. Roteamento de produção preservado.
+Validação: 108 testes Python passaram, 1 ignorado; 4 testes JavaScript passaram.
+Sem benchmark no i5-6500T ou build de imagem. Verificação Linux pendente por falha
+do disco WSL; exclusão entre processos verificada no Windows.
+
 Atualização app 0.5.1 / HACS 0.8.1: resolução diferencia a referência principal
 ao aparelho de menções em sensores associados e verifica a ação compatível.
 Ambiguidades reais listam os candidatos. O Lab ganhou seleção explícita da área

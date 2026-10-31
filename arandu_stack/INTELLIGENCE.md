@@ -1,4 +1,4 @@
-# Camadas de inteligência — app 0.5.0 / HACS 0.8.0
+# Camadas de inteligência — app 0.5.2 / HACS 0.8.2
 
 ## Habilitar
 

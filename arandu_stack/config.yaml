@@ -1,7 +1,7 @@
 name: Arandu Assistant
 slug: arandu_stack
-version: "0.5.1"
-description: Assistente completo local — Wake, STT, NLU, Decision, LLM e TTS em um app
+version: "0.5.2"
+description: Assistente local — NLU primeiro, Decision/LLM residentes e sequenciais
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
 startup: application

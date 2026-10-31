@@ -1,3 +1,12 @@
+# 0.5.2 / HACS 0.8.2
+
+- Decision/LLM 0.2.2: modelos reutilizados em memória após o primeiro uso, com duas threads por modelo por padrão e sem reserva de núcleos. O LLM limita também threads de processamento do prompt e desativa polling; Decision limita paralelismo auxiliar e usa espera passiva.
+- Lock compartilhado entre processos impede inferências simultâneas de Decision e LLM, inclusive entre pedidos independentes e se o cliente expirar antes de o cálculo terminar.
+- Prompt de sistema do LLM passa de 983 para 671 caracteres (32% menor; não é contagem de tokens). Remove dumps NLU, diagnósticos redundantes e descrições repetidas do contexto; mantém candidatos, ações, evidência semântica, validação e confirmação humana.
+- Preserva a saída antecipada da produção: NLU resolveu, encerra; Decision aceito e validado, encerra; LLM recebe apenas o fallback elegível restante, quando habilitado.
+- Sincroniza versões, descrições e regra permanente de versionamento. Atualize o app para 0.5.2 e HACS para 0.8.2; serviços internos Decision/LLM 0.2.2.
+- Validação: 108 testes Python passaram, 1 ignorado; 4 testes JavaScript passaram. Bloqueio entre processos verificado no Windows; verificação Linux pendente por falha do WSL. Sem benchmark no i5-6500T, build de imagem ou instalação no HA nesta atualização.
+
 # 0.5.1 / HACS 0.8.1
 
 - Corrige empates entre a referência ao aparelho e uma menção incidental em sensores relacionados, como “Ventilador” e “Velocidade do ventilador”. A resolução também verifica compatibilidade com a ação proposta; dois aparelhos realmente equivalentes continuam ambíguos.

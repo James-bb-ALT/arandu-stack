@@ -1,0 +1,33 @@
+# Ajuste incremental para o YAML ESPHome fornecido (speaker_source + audio_http).
+# NÃO é um firmware completo. Não substitua o YAML do aparelho por este arquivo.
+# Mescle estas propriedades nos componentes de mesmo ID já existentes.
+# Preserve todos os demais campos: modelos, pinos, rede, IDs e pipelines.
+# Requer PSRAM detectada e versão ESPHome com task_stack_in_psram nestes componentes.
+
+# Adicione a propriedade no bloco existente, mantendo seus modelos e ações.
+micro_wake_word:
+  task_stack_in_psram: true
+
+# Adicione a propriedade no hub Sendspin existente, mantendo seu ID/configuração.
+sendspin:
+  task_stack_in_psram: true
+
+# Acrescente a propriedade às fontes existentes; mantenha seus buffer_size atuais.
+media_source:
+  - platform: audio_http
+    id: http_announcement_source
+    task_stack_in_psram: true
+  - platform: audio_http
+    id: http_media_source
+    task_stack_in_psram: true
+
+# Acrescente a propriedade aos resamplers existentes, sem mudar saída/rate/bits.
+speaker:
+  - platform: resampler
+    id: announcement_resampling_speaker
+    task_stack_in_psram: true
+  - platform: resampler
+    id: media_resampling_speaker
+    task_stack_in_psram: true
+
+# mixing_speaker já tinha task_stack_in_psram: true no YAML fornecido.

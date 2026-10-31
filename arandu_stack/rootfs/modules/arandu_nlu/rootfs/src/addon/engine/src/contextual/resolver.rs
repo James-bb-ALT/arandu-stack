@@ -52,9 +52,12 @@ fn lexical_tokens(value: &str) -> BTreeSet<String> {
         .split_whitespace()
         .map(|word| {
             match word {
-                "ventiladores" => "ventilador",
-                "luzes" => "luz",
-                "lampadas" => "lampada",
+                "ventiladores" | "ventoinha" | "ventoinhas" => "ventilador",
+                "luzes" | "lampada" | "lampadas" | "luminaria" | "luminarias" => "luz",
+                "tvs" | "televisao" | "televisoes" | "televisor" | "televisores" => "tv",
+                "cortinas" | "cortinado" | "cortinados" => "cortina",
+                "persianas" | "estore" | "estores" => "persiana",
+                "splits" | "split" => "ar",
                 "telefones" | "celular" | "celulares" => "telefone",
                 "tablets" => "tablet",
                 "notebooks" => "notebook",
@@ -70,19 +73,52 @@ fn lexical_tokens(value: &str) -> BTreeSet<String> {
 
 fn type_names(domain: &str, class: Option<&str>) -> Vec<&'static str> {
     match domain {
-        "climate" => vec!["ar", "ar condicionado", "split", "termostato"],
-        "fan" => vec!["ventilador", "ventiladores"],
-        "light" => vec!["luz", "luzes", "iluminacao", "lampada", "lampadas"],
+        "climate" => vec![
+            "ar",
+            "ar condicionado",
+            "ares condicionados",
+            "split",
+            "splits",
+            "termostato",
+        ],
+        "fan" => vec!["ventilador", "ventiladores", "ventoinha", "ventoinhas"],
+        "light" => vec![
+            "luz",
+            "luzes",
+            "iluminacao",
+            "lampada",
+            "lampadas",
+            "luminaria",
+            "luminarias",
+        ],
         "cover" => match class {
             Some("gate") => vec!["portao", "portoes"],
             Some("garage") => vec!["garagem", "portao"],
-            Some("curtain") => vec!["cortina", "cortinas"],
-            Some("blind" | "shade") => vec!["persiana", "persianas"],
+            Some("curtain") => vec!["cortina", "cortinas", "cortinado", "cortinados"],
+            Some("blind" | "shade") => vec!["persiana", "persianas", "estore", "estores"],
+            Some("window") => vec!["janela", "janelas"],
             _ => vec!["cortina", "persiana"],
         },
         "media_player" => match class {
-            Some("tv") => vec!["tv", "televisao", "televisor"],
-            Some("speaker") => vec!["alto falante", "caixa de som", "musica"],
+            Some("tv") => vec![
+                "tv",
+                "tvs",
+                "televisao",
+                "televisoes",
+                "televisor",
+                "televisores",
+                "smart tv",
+            ],
+            Some("speaker") => vec![
+                "alto falante",
+                "alto falantes",
+                "altofalante",
+                "altofalantes",
+                "caixa de som",
+                "caixas de som",
+                "caixa de audio",
+                "musica",
+            ],
             _ => vec!["reprodutor"],
         },
         "lock" => vec!["fechadura", "porta"],
@@ -97,7 +133,7 @@ fn type_names(domain: &str, class: Option<&str>) -> Vec<&'static str> {
                 vec!["umidificador"]
             }
         }
-        "vacuum" => vec!["robo aspirador", "aspirador", "robo"],
+        "vacuum" => vec!["robo aspirador", "aspirador robo", "aspirador", "robo"],
         "lawn_mower" => vec!["cortador de grama", "cortador"],
         "timer" => vec!["timer", "temporizador"],
         "calendar" => vec!["calendario", "agenda"],
@@ -122,6 +158,82 @@ fn type_names(domain: &str, class: Option<&str>) -> Vec<&'static str> {
         },
         _ => Vec::new(),
     }
+}
+
+fn named_type_aliases(backend: &str, names: &[String]) -> BTreeSet<&'static str> {
+    let mut aliases = BTreeSet::new();
+    let names: Vec<String> = names
+        .iter()
+        .map(|name| format!(" {} ", clean(name)))
+        .collect();
+    // Physical device types are independent of the HA entity used to control them.
+    // Expand only types explicitly evidenced by registered names/aliases/IDs.
+    for (domain, class) in [
+        ("media_player", Some("tv")),
+        ("media_player", Some("speaker")),
+        ("fan", None),
+        ("light", None),
+        ("climate", None),
+        ("cover", Some("curtain")),
+        ("cover", Some("blind")),
+        ("vacuum", None),
+        ("humidifier", None),
+        ("timer", None),
+        ("calendar", None),
+        ("camera", None),
+        ("lawn_mower", None),
+    ] {
+        if backend != domain && !matches!(backend, "switch" | "input_boolean" | "remote") {
+            continue;
+        }
+        let group = type_names(domain, class);
+        if group.iter().any(|alias| {
+            // Thermostats alone do not establish air-conditioning capability.
+            if domain == "climate" && *alias == "termostato" {
+                return false;
+            }
+            let phrase = format!(" {} ", clean(alias));
+            names.iter().any(|name| name.starts_with(&phrase))
+        }) {
+            aliases.extend(
+                group
+                    .into_iter()
+                    .filter(|alias| domain != "climate" || *alias != "termostato"),
+            );
+        }
+    }
+    aliases
+}
+
+pub(super) fn category_domain(text: &str) -> Option<&'static str> {
+    for (domain, classes) in [
+        ("climate", vec![None]),
+        ("fan", vec![None]),
+        ("light", vec![None]),
+        ("media_player", vec![Some("tv"), Some("speaker")]),
+        (
+            "cover",
+            vec![Some("curtain"), Some("blind"), Some("gate"), Some("window")],
+        ),
+        ("vacuum", vec![None]),
+        ("humidifier", vec![None]),
+        ("timer", vec![None]),
+        ("calendar", vec![None]),
+        ("camera", vec![None]),
+        ("lawn_mower", vec![None]),
+    ] {
+        if classes
+            .into_iter()
+            .flat_map(|class| type_names(domain, class))
+            .any(|alias| {
+                !(domain == "climate" && alias == "ar" && text.contains("qualidade do ar"))
+                    && format!(" {text} ").contains(&format!(" {alias} "))
+            })
+        {
+            return Some(domain);
+        }
+    }
+    None
 }
 
 impl Index {
@@ -249,6 +361,20 @@ impl Index {
             };
             for synonym in synonyms {
                 add(synonym, 60, "semantic_type");
+            }
+            let labelled_names: Vec<String> = std::iter::once(entity.name.clone())
+                .chain(entity.aliases.iter().cloned())
+                .chain(entity.device_name.iter().cloned())
+                .chain(std::iter::once(
+                    entity
+                        .entity_id
+                        .split_once('.')
+                        .map_or(entity.entity_id.as_str(), |(_, id)| id)
+                        .replace('_', " "),
+                ))
+                .collect();
+            for alias in named_type_aliases(&entity.domain, &labelled_names) {
+                add(alias, 60, "named_device_type");
             }
             // A climatizador alias is admitted only with entity-specific evidence.
             if clean(&entity.name).contains("climatizador") {
@@ -641,13 +767,16 @@ impl Index {
             }
         }
         let unknown_mention = !mention.is_empty() && ranked.is_empty() && !context_target;
-        ranked.retain(|i, _| {
+        ranked.retain(|i, (rank, evidence)| {
             let entity = &self.catalog.entities[*i];
             entity.actions.contains(&command.action)
                 && (if bulk {
                     bulk_eligible(entity, command)
                 } else {
-                    command.domains.is_empty() || command.domains.contains(&entity.domain)
+                    command.domains.is_empty()
+                        || command.domains.contains(&entity.domain)
+                        || (matches!(command.action.as_str(), "turn_on" | "turn_off")
+                            && (*rank >= 70 || *evidence == "named_device_type"))
                 })
                 && area.as_ref().is_none_or(|area| {
                     command.parameters.metric.as_deref() == Some("location")
@@ -902,6 +1031,18 @@ impl Index {
                 .filter(|i| self.catalog.entities[**i].area_id.as_ref() == Some(origin))
                 .copied()
                 .collect();
+            if local.is_empty()
+                && matches!(
+                    command.action.as_str(),
+                    "turn_on" | "turn_off" | "open" | "close"
+                )
+            {
+                return Err(Response::failure(
+                    "unavailable",
+                    &command.intent,
+                    "no_compatible_capability",
+                ));
+            }
             if !local.is_empty() {
                 ranked.retain(|i, _| local.contains(i));
                 area = Some(origin.clone());

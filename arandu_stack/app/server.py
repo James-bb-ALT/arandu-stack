@@ -13,7 +13,7 @@ from wyoming_gateway import WyomingGateway
 from discovery import announce_stack
 from logs import LogStore, SOURCES, LOGGER
 
-APP_VERSION = '0.5.2'
+APP_VERSION = '0.6.0'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""

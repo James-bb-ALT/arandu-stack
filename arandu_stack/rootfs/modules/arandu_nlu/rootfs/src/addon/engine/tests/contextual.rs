@@ -447,6 +447,161 @@ fn request(text: &str) -> ContextRequest {
 }
 
 #[test]
+fn reusable_device_aliases_use_origin_and_preserve_capabilities() {
+    // FIXTURE_TECNICA: generated matrix from device-type groups, not a language metric.
+    let _guard = catalog_test_guard();
+    for (domain, name, class, aliases) in [
+        (
+            "media_player",
+            "Televisão",
+            None,
+            vec!["TV", "televisão", "televisor", "smart TV"],
+        ),
+        (
+            "switch",
+            "Televisão IR",
+            None,
+            vec!["TV", "televisão", "televisor", "smart TV"],
+        ),
+        (
+            "light",
+            "Iluminação",
+            None,
+            vec!["luz", "lâmpada", "luminária"],
+        ),
+        ("fan", "Ventilador", None, vec!["ventilador", "ventoinha"]),
+        (
+            "cover",
+            "Persiana",
+            Some("blind"),
+            vec!["persiana", "estore"],
+        ),
+        (
+            "cover",
+            "Cortina",
+            Some("curtain"),
+            vec!["cortina", "cortinado"],
+        ),
+        (
+            "climate",
+            "Ar condicionado",
+            None,
+            vec!["ar", "ar condicionado", "split"],
+        ),
+        (
+            "switch",
+            "Ar condicionado IR",
+            None,
+            vec!["ar", "ar condicionado", "split"],
+        ),
+    ] {
+        let mut cat = catalog();
+        let action = if domain == "cover" {
+            "close"
+        } else {
+            "turn_off"
+        };
+        cat.entities = vec![
+            entity("local", domain, name, "quarto", class, &[action]),
+            entity("other", domain, name, "sala", class, &[action]),
+        ];
+        assert_eq!(register_catalog(cat.clone()).status, "catalog_ready");
+        for alias in &aliases {
+            let verb = if domain == "cover" {
+                "fecha"
+            } else {
+                "desliga"
+            };
+            let result = interpret(&request(&format!("{verb} {alias}")));
+            assert_eq!(result.status, "plan", "{alias}: {result:?}");
+            assert_eq!(result.operations[0].targets, ["local"], "{alias}");
+            let result = interpret(&request(&format!("{verb} {alias} da sala")));
+            assert_eq!(result.status, "plan", "{alias}: {result:?}");
+            assert_eq!(result.operations[0].targets, ["other"], "{alias}");
+        }
+        cat.entities[0].actions = vec!["query".into()];
+        assert_eq!(register_catalog(cat).status, "catalog_ready");
+        let verb = if domain == "cover" {
+            "fecha"
+        } else {
+            "desliga"
+        };
+        let result = interpret(&request(&format!("{verb} {}", aliases[0])));
+        assert!(
+            result.operations.is_empty(),
+            "No capability in origin must not select another room: {result:?}"
+        );
+    }
+}
+
+#[test]
+fn named_ir_backend_is_not_hidden_by_a_read_only_media_entity() {
+    // FIXTURE_TECNICA: names may come from a dashboard; entity ID is catalog evidence.
+    let _guard = catalog_test_guard();
+    let mut cat = catalog();
+    let mut ir = entity(
+        "ir",
+        "switch",
+        "Saída infravermelha",
+        "quarto",
+        None,
+        &["turn_on", "turn_off"],
+    );
+    ir.entity_id = "switch.tv_fixture_ir".into();
+    cat.entities = vec![
+        ir,
+        entity(
+            "display",
+            "media_player",
+            "TV",
+            "quarto",
+            Some("tv"),
+            &["query"],
+        ),
+    ];
+    assert_eq!(register_catalog(cat.clone()).status, "catalog_ready");
+    for noun in ["TV", "televisão", "televisor"] {
+        let result = interpret(&request(&format!("liga {noun} do quarto?")));
+        assert_eq!(result.status, "plan", "{result:?}");
+        assert_eq!(result.operations[0].action, "turn_on");
+        assert_eq!(result.operations[0].targets, ["ir"]);
+    }
+    cat.entities[0].actions = vec!["query".into()];
+    assert_eq!(register_catalog(cat).status, "catalog_ready");
+    assert!(
+        interpret(&request("liga TV do quarto"))
+            .operations
+            .is_empty()
+    );
+}
+
+#[test]
+fn incidental_type_word_does_not_reclassify_another_appliance() {
+    let _guard = catalog_test_guard();
+    let mut cat = catalog();
+    cat.entities = vec![
+        entity(
+            "fixture_tv_camera",
+            "camera",
+            "Câmera da TV",
+            "quarto",
+            None,
+            &["turn_on", "turn_off"],
+        ),
+        entity(
+            "fixture_tv_light",
+            "switch",
+            "Luz da TV",
+            "quarto",
+            None,
+            &["turn_on", "turn_off"],
+        ),
+    ];
+    assert_eq!(register_catalog(cat).status, "catalog_ready");
+    assert!(interpret(&request("liga TV")).operations.is_empty());
+}
+
+#[test]
 fn all_twenty_frozen_user_examples() {
     let _guard = catalog_test_guard();
     let mut catalog = catalog();

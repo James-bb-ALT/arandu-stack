@@ -795,6 +795,9 @@ fn from_rule(rule: &Rule, values: &BTreeMap<String, String>) -> Option<Command> 
 }
 
 pub fn semantic_domain(text: &str) -> Option<&'static str> {
+    if let Some(domain) = super::resolver::category_domain(text) {
+        return Some(domain);
+    }
     let words: Vec<&str> = text.split_whitespace().collect();
     if text.contains("ar condicionado")
         || words.contains(&"split")

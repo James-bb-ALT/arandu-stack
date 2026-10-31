@@ -1,7 +1,7 @@
 name: Arandu Assistant
 slug: arandu_stack
-version: "0.5.2"
-description: Assistente local — NLU primeiro, Decision/LLM residentes e sequenciais
+version: "0.6.0"
+description: Assistente local — aliases por aparelho, cômodo de origem e fallback sequencial
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
 startup: application

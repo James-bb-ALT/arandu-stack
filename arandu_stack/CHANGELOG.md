@@ -1,3 +1,12 @@
+# 0.6.0 / HACS 1.2.0
+
+- NLU 0.6.0 separa tipo físico de aparelho do domínio que o controla. TV/televisão/televisor e ar/ar-condicionado/split podem usar switches IR ou outros backends de energia quando o catálogo oferece turn_on/turn_off e identifica o tipo por nome, alias, classe ou prefixo de ID registrado.
+- Famílias compartilhadas também abrangem iluminação, ventiladores/ventoinhas, cortinas/cortinados, persianas/estores, caixas de som/alto-falantes e outras categorias suportadas. A gramática e o índice usam as mesmas famílias. Referências incidentais, como “Câmera da TV” ou “Luz da TV”, não transformam esses aparelhos em uma TV.
+- Capacidade continua obrigatória. Um media_player somente de leitura não esconde o switch de energia; um botão Power não vira ligar/desligar idempotente. Para tipos genéricos de ligar/desligar/abrir/fechar, o cômodo de origem é mantido; falta de capacidade local não seleciona outro cômodo. Área explícita continua prevalecendo e ambiguidades permanecem sem ação.
+- Diagnóstico do ReSpeaker: URL TTS entregue seguida de falha md_reader/error 12 identifica alocação de memória no firmware, não falha de geração do TTS. Inclui guia e fragmento ESPHome para colocar stacks compatíveis em PSRAM, preservando FLAC, pinos e pipelines. O fragmento precisa ser mesclado ao YAML completo, validado, compilado e instalado no aparelho; não foi aplicado remotamente.
+- Atualize app 0.6.0 e HACS 1.2.0. NLU interno 0.6.0; Decision/LLM 0.2.2 e servidor TTS mantêm versões anteriores. Metadados de runtime e locks do NLU sincronizados.
+- Validação: 84 testes Rust selecionados de unidade, interpretação contextual e HTTP; 133 testes Python passaram e 1 ignorado; 6 testes JavaScript passaram. Clippy e formatação verificados. Gate completo legado indisponível: o pacote importado não contém os corpus/snapshots congelados exigidos pelos testes antigos. Fragmento ESPHome analisado como YAML e opções conferidas nas fontes oficiais; firmware completo não compilado nem validado no hardware.
+
 # HACS 1.1.0 / app 0.5.2 (sem alteração)
 
 - Configurar agora abre um menu direto: Saídas de áudio, Identidade de voz, Camadas de inteligência e Outras configurações. Remove as checkboxes de navegação.

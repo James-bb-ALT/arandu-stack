@@ -6,6 +6,26 @@ Nenhuma instalação no HA ou alteração de uma pipeline real foi feita nesta s
 
 ## Entrega
 
+App 0.6.0 / HACS 1.2.0 / NLU 0.6.0: famílias de tipos físicos reutilizadas na
+gramática e no índice e escolha de backend de energia por capacidade real.
+Cobertura inclui switch IR reconhecido por ID, media_player homônimo somente
+de leitura, aliases, cômodo de origem/área explícita e referências incidentais.
+Registros residenciais, entidades e transcrições do usuário não foram copiados.
+
+TTS do ReSpeaker: os logs fornecidos identificam falha de alocação da thread
+md_reader no firmware após a entrega da URL. O guia ESPHOME-AUDIO.md e o fragmento
+examples/esphome/respeaker-audio-memory.yaml preparam stacks compatíveis em PSRAM,
+sem alterar rede, pinos, formato de áudio ou duplicar reprodução pelo agente.
+É um ajuste para mesclar ao firmware existente, não uma imagem instalada.
+
+Validação desta entrega: 84 testes Rust selecionados passaram, Clippy sem warnings
+e formatação válida; 133 testes Python passaram, 1 ignorado; 6 testes JS passaram.
+O comando de testes Rust completo também foi tentado e não passou por ausência
+dos corpus/snapshots congelados antigos no pacote importado. Esses dados não foram
+inventados nem regenerados a partir de saídas do produto. O fragmento ESPHome foi
+analisado como YAML e conferido com as opções oficiais; o firmware completo e o
+funcionamento físico continuam pendentes de compilação/instalação no aparelho.
+
 HACS 1.1.0: menu nativo para as seções de configuração, listas de associações de
 áudio e identidade e cadastro de várias associações antes de concluir. Finalização
 desmarcada por padrão; envio vazio conclui e salva a sessão. Correspondência entre

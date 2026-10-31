@@ -1,4 +1,34 @@
-# Camadas de inteligência — app 0.5.2 / HACS 1.1.0
+# Camadas de inteligência — app 0.6.0 / HACS 1.2.0
+
+## Nomes de aparelho e entidades de controle
+
+O nome físico do aparelho não determina o domínio HA. TV/televisão/televisor
+pode estar em media_player, remote ou switch IR; ar/ar-condicionado/split pode
+estar em climate ou switch. As famílias de nomes são indexadas a partir do tipo
+de entidade, device_class e evidência dos nomes, aliases e IDs registrados. Não
+há associação por endereço residencial, marca ou entidade específica do usuário.
+Comandos de ligar/desligar com evidência nominal podem usar o backend real que
+oferece aquela ação, sem confundir o nome da categoria com o domínio de controle.
+
+Exemplos de famílias conhecidas: luz/lâmpada/luminária, ventilador/ventoinha,
+TV/televisão/televisor, ar/ar-condicionado/split, cortina/cortinado,
+persiana/estore, alto-falante/caixa de som, robô aspirador/aspirador robô,
+timer/temporizador e agenda/calendário. Nomes não geram capacidades: um botão
+Power não vira ligar/desligar com estado conhecido, nem um switch ganha controle
+de temperatura. Termostatos sem evidência de refrigeração não viram ar-condicionado.
+
+Área explícita prevalece sobre origem. Para tipos genéricos sem área explícita,
+ações de ligar/desligar/abrir/fechar permanecem no cômodo de origem; se não houver
+ali um alvo com a capacidade pedida, não é escolhido outro cômodo. Duplicidade
+ou falta de capacidade continuam sem ação. Exposição e permissões HA são mantidas.
+
+## TTS no ReSpeaker
+
+URL FLAC recebida seguida de `Failed to create thread 'md_reader': error 12`
+indica falha de alocação no firmware do satélite. O áudio não precisa ser gerado
+ou reproduzido uma segunda vez pelo agente. Veja o [ajuste de memória ESPHome](ESPHOME-AUDIO.md).
+Ele precisa ser mesclado, validado, compilado e instalado no aparelho; a atualização
+do app/HACS não altera automaticamente o firmware.
 
 O AI Lab mostra durações em ms abaixo de 1.000 ms e em segundos a partir desse
 limite. Dados brutos e exportações mantêm os valores originais em milissegundos.

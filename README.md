@@ -4,7 +4,19 @@ Um único app para Home Assistant com **Wake, STT, NLU, Decision, LLM e TTS**.
 Todos os motores estão incluídos na mesma instalação. Você ativa, desativa e
 configura cada módulo pela WebUI, sem instalar seis apps separados.
 
-**Atual: app 0.5.2 / HACS 1.1.0 / Decision e LLM 0.2.2.** AI Lab mostra durações
+**Atual: app 0.6.0 / HACS 1.2.0 / NLU 0.6.0 / Decision e LLM 0.2.2.**
+Tipos de aparelho e suas entidades de controle são independentes: TV/televisão/
+televisor e ar/ar-condicionado/split podem ser controlados por switches IR quando
+o catálogo identifica esse tipo e oferece a ação pedida. Inclui nomes equivalentes
+de iluminação, ventiladores, cortinas/persianas e demais categorias conhecidas.
+Sem cômodo explícito, os tipos genéricos usam o cômodo de origem; sem alvo capaz
+nesse cômodo, a integração não desliga um aparelho de outro cômodo por aproximação.
+
+Para ReSpeaker que recebe a URL do TTS mas registra falha ao criar `md_reader`,
+há um [ajuste de memória ESPHome](arandu_stack/ESPHOME-AUDIO.md). Ele precisa ser
+aplicado ao firmware do satélite; atualizar o app não instala esse ajuste no aparelho.
+
+AI Lab mostra durações
 em segundos a partir de 1.000 ms e em milissegundos abaixo disso. Otimização para CPU:
 duas threads por modelo por padrão, sem reserva de núcleos; Decision e LLM
 permanecem carregados após o primeiro uso e não calculam simultaneamente.
@@ -176,7 +188,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **0.5.2**, integração HACS **1.1.0**, para HA OS/Supervised amd64.
+Versão experimental **0.6.0**, integração HACS **1.2.0**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

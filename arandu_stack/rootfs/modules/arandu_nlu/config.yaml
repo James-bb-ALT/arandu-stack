@@ -1,7 +1,7 @@
 name: ARANDU NLU
-version: 0.5.1
+version: 0.6.0
 slug: ptbr_nlu
-description: Local contextual Brazilian Portuguese intelligence for Home Assistant
+description: PT-BR local — tipos de aparelho independentes da entidade de controle
 arch:
   - aarch64
   - amd64

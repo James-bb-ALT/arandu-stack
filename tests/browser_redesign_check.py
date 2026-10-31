@@ -46,6 +46,13 @@ def main():
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport=dict(width=1440, height=1080), color_scheme='dark')
         errors, writes = [], []
+        trace_data={'include_text':False,'capacity':50,'requests':[{
+            'id':'a'*32,'started_at':'2026-10-31T03:00:00+00:00','received_at':'2026-10-31T03:00:01+00:00',
+            'status':'error','origin':'satellite','result':'execution_failed','reason':'backend_unavailable','total_ms':1200,'text':None,
+            'stages':{name:{'status':'not_observed'} for name in ['wake','stt','prepare','authorization','queue','nlu','decision','llm','validation','ha','tts']}}]}
+        trace_data['requests'][0]['stages'].update(nlu={'status':'accepted','offset_ms':2,'duration_ms':20},
+            decision={'status':'disabled'},llm={'status':'not_reached'},validation={'status':'accepted','duration_ms':5},
+            ha={'status':'error','duration_ms':1100,'reason':'backend_unavailable'})
         page.on('pageerror', lambda error: errors.append(str(error)))
 
         def route(request):
@@ -54,6 +61,12 @@ def main():
                 request.fulfill(json=fixture_state()); return
             if path == '/api/logs':
                 request.fulfill(json={'version': 'FIXTURE_TECNICA', 'sources': []}); return
+            if path == '/api/traces':
+                request.fulfill(json=trace_data); return
+            if path == '/api/traces/options':
+                writes.append((path,request.request.post_data_json))
+                trace_data['include_text']=request.request.post_data_json['include_text']
+                request.fulfill(json={'saved':True});return
             if path.startswith('/api/'):
                 writes.append((path, request.request.post_data_json)); request.fulfill(json={}); return
             if path.startswith('/local_nlu_ai_lab/brand/'):
@@ -84,6 +97,17 @@ def main():
         for tab in ('flow', 'lab', 'phrases', 'logs', 'help', 'overview'):
             page.locator(f'nav [data-tab={tab}]').click()
             assert page.locator('#' + tab).is_visible()
+        page.locator('nav [data-tab=flow]').click()
+        page.locator('#traceSummary').wait_for(state='visible')
+        assert 'Erro técnico' in page.locator('#traceSummary').inner_text()
+        assert '1,10 s' in page.locator('#traceStages').inner_text()
+        assert 'Não observado' in page.locator('#traceStages').inner_text()
+        page.locator('#traceAuto').uncheck()
+        page.locator('#traceText').check()
+        page.wait_for_function("!document.querySelector('#refresh').disabled")
+        assert writes[-1] == ('/api/traces/options', {'include_text':True})
+        page.evaluate('window.scrollTo(0,0)')
+        page.screenshot(path=str(OUT/'request-flow-fixture.png'), full_page=True)
         for width in (390, 820, 1440):
             page.set_viewport_size(dict(width=width, height=1080))
             for tab in ('overview', 'modules', 'flow', 'phrases', 'logs'):

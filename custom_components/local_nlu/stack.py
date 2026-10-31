@@ -27,6 +27,9 @@ async def prepare(hass, entry, user_input):
     from homeassistant.helpers.aiohttp_client import async_get_clientsession
     try:
         state = await local_request(async_get_clientsession(hass), endpoint, '/runtime', timeout=3)
+        from .request_trace import CURRENT
+        if trace := CURRENT.get():
+            trace.include_text = state.get('trace_text') is True
         if state.get('nlu_enabled') is not True:
             return user_input, RuntimeResult(code='unavailable', response_text='O módulo NLU está desativado no Arandu Stack.')
         options = state.get('nlu_options', {})

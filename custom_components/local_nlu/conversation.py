@@ -54,8 +54,12 @@ class LocalNluConversationEntity(
         self, user_input: conversation.ConversationInput
     ) -> conversation.ConversationResult:
         from .stack import prepare
-        prepared, problem = await prepare(self.hass, self._entry, user_input)
-        result = problem if problem is not None else await self._runtime.async_process(prepared)
+        from .request_trace import capture, observe
+        options = {**self._entry.data, **self._entry.options}
+        with capture(self.hass, self._runtime, options, user_input) as trace:
+            prepared, problem = await observe('prepare', prepare(self.hass, self._entry, user_input))
+            result = problem if problem is not None else await self._runtime.async_process(prepared)
+            trace.finish(result, user_input.text, trace.include_text)
         response = intent.IntentResponse(language=user_input.language)
         speech, error_code, query = _render(result)
         if error_code is None:

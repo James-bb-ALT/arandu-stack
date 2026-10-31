@@ -1,3 +1,12 @@
+# 2.0.0 / HACS 3.0.0
+
+- Nova feature: Fluxo de inteligência passa a mostrar requisições reais do agente Arandu no HA, com ID, resultado/motivo, preparação, identidade inicial, espera em fila, NLU, Decision, LLM, validação e execução/consulta. Durações medidas e escala automática ms/s. O diagrama explicativo continua recolhido na mesma seção.
+- Atualização a cada 2 s apenas com a seção aberta e página visível, seleção/seguimento da requisição mais recente, pausa, exportação JSON e limpeza. Após 2 minutos sem atualizar uma requisição em andamento, o estado final é indicado como desconhecido.
+- Coleta de texto desligada por padrão; habilitação explícita para próximas requisições. Desligar remove os textos em memória. Histórico de 50 itens em RAM, sem áudio, credenciais ou URLs TTS; reiniciar limpa dados e desliga a coleta de texto.
+- Integração usa ContextVar por requisição, valida o contrato NLU antes de indicar aceitação, mantém confirmação/esclarecimento distintos e registra fallback sem alterar sua política. Envio em segundo plano com fila de até 32 snapshots e timeout, sem bloquear ou autorizar comandos. Falhas de telemetria não viram falhas de execução.
+- Sink estrito e limitado, sequências antigas descartadas, ingestão interna sem Origin e endpoints da UI preservando ingress/CSRF. Wake/STT/TTS são explicitamente não observados; este recurso não substitui o trace de áudio do HA nem comprova reprodução no ESPHome.
+- Validação: 148 testes Python aprovados, 1 ignorado; 6 JavaScript aprovados; browser check com fixture, tempos, estados, coleta opcional, larguras responsivas e controles existentes. Sem instalação em HAOS real. NLU 0.6.0, Decision 0.3.0, LLM 0.2.3 e perfil ESPHome preservados.
+
 # 1.0.1 / HACS 2.0.1
 
 - Remove a moldura branca da marca exibida: cabeçalhos WebUI/AI Lab usam SVG; ícone PNG do app é renderizado do vetor em canvas transparente, com canal alfa. Mantém o bloco verde-petróleo, preservando o PNG original apenas como referência.

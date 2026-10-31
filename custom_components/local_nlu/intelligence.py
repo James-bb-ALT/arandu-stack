@@ -8,6 +8,7 @@ import time
 from .ai_lab_core import digest, finite, validate_proposal
 from .contextual_protocol import Operation
 from .semantic_context import resolve_device, understood_action, hypothesis_allowed
+from .request_trace import CURRENT
 
 _LOGGER = logging.getLogger(__name__)
 TIMEOUT = 30
@@ -101,6 +102,10 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
             trace[source] = {"status": "disabled"}
             continue
         before = time.perf_counter()
+        recorder = CURRENT.get()
+        reason, confidence = None, None
+        if recorder:
+            recorder.start(source)
         trace[source] = {"status": "started"}
         try:
             body = {"action": source, "text": text, "catalog": snapshot.payload, "context": context or {}}
@@ -110,6 +115,8 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
                 body.update(llm_model="tucano", decision=decision, nlu=nlu or {})
             async with asyncio.timeout(TIMEOUT):
                 response = await request(body)
+            reason = response.get('reason')
+            confidence = response.get('confidence') if source == 'decision' else None
             trace[source] = {"status": "responded"}
             if source == "decision":
                 decision = response
@@ -135,10 +142,16 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
                 if proposed:
                     return proposed, trace
         except asyncio.CancelledError:
+            trace[source] = {'status': 'cancelled'}
             raise
         except Exception as exc:
+            confidence = None
             trace[source] = {"status": "error", "error": type(exc).__name__}
             _LOGGER.warning("ARANDU fallback stage=%s error=%s", source, type(exc).__name__)
         finally:
             trace[source]["latency_ms"] = (time.perf_counter() - before) * 1000
+            if recorder:
+                row = trace[source]
+                status = {'proposed': 'accepted', 'clarification': 'rejected', 'responded': 'rejected'}.get(row['status'], row['status'])
+                recorder.end(source, status, row.get('error') or reason, confidence)
     return (), trace

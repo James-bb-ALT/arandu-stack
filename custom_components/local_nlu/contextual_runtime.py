@@ -18,6 +18,7 @@ from .client import ClientError
 from .contextual_catalog import CatalogCache, Snapshot, exposed, origin_area, origin_context
 from .contextual_protocol import Operation, Outcome, normalize, parse
 from .protocol import ProtocolError
+from .request_trace import CURRENT, observe, observe_execution
 from .queries import QueryError, calendar_response, calendar_parameters, date_window, now, read, render
 from .identity import IDENTITY_OPTIONS, IdentityError, ResolvedIdentity, effective_input, identity_diagnostics, request_origin, resolve_request_identity, revalidate_identity, validate_binding_origin
 
@@ -144,7 +145,7 @@ class ContextualRuntime:
         try:
             options = self.current_options()
             cleaned = without_wake_word(user_input, options, origin_context(self.hass, user_input, options)[1] in ('satellite', 'device'))
-            identity = await resolve_request_identity(self.hass, cleaned, options)
+            identity = await observe('authorization', resolve_request_identity(self.hass, cleaned, options))
         except (ExecutionError, ValueError, TypeError):
             return self.result('invalid_request', user_input)
         except IdentityError:
@@ -157,7 +158,11 @@ class ContextualRuntime:
         self.queued_requests[request_task] = (owner, cancelled)
         # Serializes this agent's live relative updates and retry/confirmation decisions.
         try:
+            if trace := CURRENT.get():
+                trace.start('queue')
             async with self.lock:
+                if trace:
+                    trace.end('queue', 'completed')
                 if cancelled.is_set():
                     from .runtime import RuntimeResult
                     return RuntimeResult(code='cancelled', response_text='', conversation_id=getattr(user_input, 'conversation_id', None))
@@ -221,8 +226,8 @@ class ContextualRuntime:
                 call = prepared.calls[0]
                 try:
                     async with asyncio.timeout(10):
-                        await self.hass.services.async_call(call['domain'], call['service'], call['data'],
-                            blocking=True, context=user_input.context, target={'entity_id': [call['entity_id']]})
+                        await observe('ha', self.hass.services.async_call(call['domain'], call['service'], call['data'],
+                            blocking=True, context=user_input.context, target={'entity_id': [call['entity_id']]}))
                     playback_stopped = True
                 except Exception:
                     _LOGGER.warning('ARANDU satellite output stop failed; dialogue cancelled')
@@ -241,6 +246,11 @@ class ContextualRuntime:
     def validate_options(self, expected: dict) -> None:
         if self.options_revision != self.request_revision or self.current_options() != expected:
             raise ExecutionError("stale", "options_changed")
+
+    async def _interpret(self, payload):
+        async def interpret():
+            return parse(await self.client.async_interpret_v4(payload))
+        return await observe('nlu', interpret())
 
     async def _process(self, user_input: Any) -> Any:
         started = time.perf_counter()
@@ -327,7 +337,7 @@ class ContextualRuntime:
                 from .contextual_catalog import build
                 probe = build(self.hass, user, options)
                 await self._send(probe)
-                recognized = parse(await self.client.async_interpret_v4({"version": 4, "generation": probe.payload["generation"], "text": user_input.text, "origin_area": origin_area(self.hass, user_input, options), "origin_area_source": origin_context(self.hass, user_input, options)[1], "last_area": None, "last_targets": [], "pending": None}))
+                recognized = await self._interpret({"version": 4, "generation": probe.payload["generation"], "text": user_input.text, "origin_area": origin_area(self.hass, user_input, options), "origin_area_source": origin_context(self.hass, user_input, options)[1], "last_area": None, "last_targets": [], "pending": None})
                 independent = recognized.status == "plan" or bool(recognized.command and recognized.command["intent"].endswith(".implicit_on"))
             if expired and not independent:
                 return self.result("stale", user_input, reason="dialogue_expired")
@@ -384,10 +394,10 @@ class ContextualRuntime:
                        "last_targets": list(session.last_targets), "pending": pending}
             _LOGGER.debug("ARANDU contextual route=/v4/interpret")
             self.stage = "intent_recognition"
-            outcome = parse(await self.client.async_interpret_v4(payload))
+            outcome = await self._interpret(payload)
             if outcome.status == "stale":
                 await self._send(snapshot)
-                outcome = parse(await self.client.async_interpret_v4(payload))
+                outcome = await self._interpret(payload)
             self.validate_options(options)
             from .intelligence import eligible, fallback, nlu_summary
             if (options.get("decision_enabled") is True or options.get("llm_enabled") is True) and eligible(outcome, pending=pending is not None or bool(session.candidates)):
@@ -576,8 +586,8 @@ class ContextualRuntime:
             return self.result("missing_slot", user_input, speech=pending["question"], followup=True, reason="invalid_set_choice")
         # Re-run the original interpretation against a fresh authorized snapshot.
         await self._send(snapshot)
-        outcome = parse(await self.client.async_interpret_v4({"version": 4, "generation": snapshot.payload["generation"],
-                      "text": pending["text"], "origin_area": area, "origin_area_source": origin_context(self.hass, user_input, options)[1], "last_area": session.last_area, "last_targets": list(session.last_targets), "pending": None}))
+        outcome = await self._interpret({"version": 4, "generation": snapshot.payload["generation"],
+                      "text": pending["text"], "origin_area": area, "origin_area_source": origin_context(self.hass, user_input, options)[1], "last_area": session.last_area, "last_targets": list(session.last_targets), "pending": None})
         current = next((option for option in outcome.options if option["key"] == choice), None)
         expected = next(option for option in pending["options"] if option["key"] == choice)
         if current != expected or outcome.command != pending["command"]:
@@ -766,6 +776,7 @@ class ContextualRuntime:
             return [{"domain": "remote", "service": "send_command", "entity_id": target, "data": data, "backend_row": backend, "bound_action": action}]
         return [{"domain": backend["domain"], "service": ADAPTERS[(backend["domain"], action)].service, "entity_id": target, "data": {}, "backend_row": backend, "bound_action": action}]
 
+    @observe_execution
     async def execute(self, operations: tuple[Operation, ...], snapshot: Snapshot, user_input: Any, session: Session, options: dict, identity: ResolvedIdentity, *, confirmed: bool = False) -> Any:
         validation_start = time.perf_counter()
         self.stage = "authorization"
@@ -792,6 +803,9 @@ class ContextualRuntime:
         if any(item.operation.action not in READ_ACTIONS for item in prepared) and session.signature == signature and time.monotonic() - session.last_execution < 2:
             return self.result("cancelled", user_input, speech="Evitei repetir a tentativa recente desse comando.")
         validation_ms = (time.perf_counter() - validation_start) * 1000
+        if trace := CURRENT.get():
+            trace.end('validation', 'accepted')
+            trace.start('ha')
         completed = 0
         had_effects = False
         attempted_effect = False

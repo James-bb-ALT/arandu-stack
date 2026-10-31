@@ -1,5 +1,11 @@
 # Relatório de implementação — camadas Decision/LLM e AI Lab
 
+App 2.0.0 / HACS 3.0.0: visualizador real de requisições na WebUI, coleta observacional
+no contexto de cada conversa, envio assíncrono com fila limitada e armazenamento em
+RAM. Mantém decisão/execução existentes; não mede áudio do satélite. 148 testes Python
+aprovados, 1 ignorado; checagem de navegador com fixture do fluxo e temas responsivos.
+Detalhes, endpoints e limitações em `docs/REQUEST-TRACES.md`.
+
 App 1.0.1 / HACS 2.0.1: cabeçalhos usam o SVG sem margem branca; ícone do app
 renderizado do vetor com canal alfa. PNG original preservado como referência.
 

@@ -144,6 +144,7 @@ function selectTab(id){
   document.querySelectorAll('nav [data-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.tab===id);if(b.dataset.tab===id)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   ['overview','modules','flow','lab','phrases','logs','help'].forEach(section=>$(section).hidden=section!==id);
   if(id==='logs')refreshLogs();
+  window.AranduTraces?.activate(id);
 }
 document.querySelectorAll('[data-tab]').forEach(button=>button.onclick=()=>selectTab(button.dataset.tab));
 

@@ -56,10 +56,14 @@ iniciar, preservação de segredo vazio, três larguras, ambos os temas, ausênc
 rolagem horizontal da página, reduced motion e montagem real do custom element.
 O teste requer Playwright/Chromium já instalados; não instala navegador/modelos.
 
+App 2.0.0 / HACS 3.0.0 adicionam [requisições reais](../REQUEST-TRACES.md) à seção
+Fluxo de inteligência. O diagrama explicativo fica recolhido abaixo do visualizador.
+[Captura do fluxo com fixture](screenshots/request-flow-fixture.png).
+
 Comandos executados nesta entrega:
 
 ```text
-python -m unittest discover -s tests -q         137 aprovados; 1 ignorado
+python -m unittest discover -s tests -q         148 aprovados; 1 ignorado
 node --test tests/test_ai_lab_panel.js          6 aprovados
 python tests/browser_redesign_check.py         aprovado com Chromium/fixtures
 esphome config respeaker-device.example.yaml  válido, ESPHome 2026.10.1

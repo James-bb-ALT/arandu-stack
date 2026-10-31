@@ -1,7 +1,7 @@
 name: Arandu Assistant
 slug: arandu_stack
-version: "1.0.1"
-description: Conhecimento em movimento — identidade Arandu sem moldura branca e seis motores locais
+version: "2.0.0"
+description: Seis motores locais e rastreamento de requisições — acompanhe etapas, tempos e falhas
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
 startup: application

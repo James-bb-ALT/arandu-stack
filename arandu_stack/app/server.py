@@ -12,8 +12,9 @@ from modules import ModuleManager
 from wyoming_gateway import WyomingGateway
 from discovery import announce_stack
 from logs import LogStore, SOURCES, LOGGER
+from request_traces import TraceStore
 
-APP_VERSION = '1.0.1'
+APP_VERSION = '2.0.0'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""
@@ -62,6 +63,7 @@ def create_app(data_dir, local=False):
     data_dir.mkdir(parents=True, exist_ok=True)
     reference = [None]
     journal = LogStore(data_dir, lambda: reference[0].config if reference[0] else {})
+    traces = TraceStore(journal.redact)
     journal.configure_logging()
     try:
         manager = ModuleManager(data_dir, local, journal=journal)
@@ -86,15 +88,15 @@ def create_app(data_dir, local=False):
         elif local:
             if peer not in {'127.0.0.1', '::1'} or request.host not in {'127.0.0.1:8770', 'localhost:8770'}:
                 raise web.HTTPForbidden()
-        elif request.path not in {'/runtime', '/status', '/infer', '/synthesize'} and peer != '172.30.32.2':
+        elif request.path not in {'/runtime', '/status', '/infer', '/synthesize', '/request-trace'} and peer != '172.30.32.2':
             raise web.HTTPForbidden()
-        elif request.path in {'/runtime', '/status', '/infer', '/synthesize'}:
+        elif request.path in {'/runtime', '/status', '/infer', '/synthesize', '/request-trace'}:
             import ipaddress
             if not peer or ipaddress.ip_address(peer) not in ipaddress.ip_network('172.30.32.0/23'):
                 raise web.HTTPForbidden()
-        if request.path in {'/infer', '/synthesize'} and (request.headers.get('Origin') or request.headers.get('X-Arandu-Lab') != '1'):
+        if request.path in {'/infer', '/synthesize', '/request-trace'} and (request.headers.get('Origin') or request.headers.get('X-Arandu-Lab') != '1'):
             raise web.HTTPForbidden()
-        if request.method != 'GET' and request.path not in {'/infer', '/synthesize'} and request.headers.get('X-Arandu-CSRF') != csrf:
+        if request.method != 'GET' and request.path not in {'/infer', '/synthesize', '/request-trace'} and request.headers.get('X-Arandu-CSRF') != csrf:
             raise web.HTTPForbidden()
         try:
             response = await handler(request)
@@ -172,7 +174,21 @@ def create_app(data_dir, local=False):
         return web.json_response({'saved': True, 'count': len(rows)})
     async def runtime(request):
         nlu = await manager.status('nlu')
-        return web.json_response({'nlu_enabled': nlu['state'] == 'started', 'nlu_options': {k:v for k,v in manager.config['nlu'].items() if k != 'enabled'}, 'phrases': phrases()})
+        return web.json_response({'nlu_enabled': nlu['state'] == 'started', 'nlu_options': {k:v for k,v in manager.config['nlu'].items() if k != 'enabled'}, 'phrases': phrases(), 'trace_text': traces.include_text})
+    async def receive_trace(request):
+        raw = await read_limited(request.content, 32768)
+        return web.json_response({'accepted': traces.ingest(json.loads(raw))})
+    async def trace_list(request):
+        return web.json_response(traces.view())
+    async def trace_options(request):
+        body = await request.json()
+        if type(body) is not dict or set(body) != {'include_text'}:
+            raise ValueError('Opções de trace inválidas')
+        traces.configure(body['include_text'])
+        return web.json_response({'saved': True, 'include_text': traces.include_text})
+    async def trace_clear(request):
+        traces.rows.clear()
+        return web.json_response({'cleared': True})
     async def model_request(key, path, payload=None):
         if key not in {'decision', 'llm'}:
             raise ValueError('Módulo de inferência inválido')
@@ -265,6 +281,10 @@ def create_app(data_dir, local=False):
     app.router.add_post('/api/modules/{key}/{action}', control)
     app.router.add_post('/api/phrases', save_phrases)
     app.router.add_get('/runtime', runtime)
+    app.router.add_post('/request-trace', receive_trace)
+    app.router.add_get('/api/traces', trace_list)
+    app.router.add_post('/api/traces/options', trace_options)
+    app.router.add_post('/api/traces/clear', trace_clear)
     app.router.add_get('/status', model_status)
     app.router.add_post('/infer', model_infer)
     app.router.add_post('/synthesize', synthesize)

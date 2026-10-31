@@ -1,4 +1,14 @@
-# Camadas de inteligência — app 1.0.1 / HACS 2.0.1
+# Camadas de inteligência — app 2.0.0 / HACS 3.0.0
+
+A aba Fluxo de inteligência agora recebe rastreamento real da integração HACS,
+separado do diagrama estático recolhido. Histórico limitado a 50 requisições em RAM,
+tempos medidos por etapa, confirmação e esclarecimento distintos. Observação não
+autoriza execução e falha de entrega não bloqueia o comando. A preparação inclui
+consulta da política/frases do app; o NLU inclui transporte e validação do contrato;
+HA inclui a execução/consulta e suas checagens ao vivo. Os tempos não medem CPU
+exclusiva nem reprodução física. Wake/STT/TTS permanecem não observados neste caminho.
+Texto opcional desligado por padrão, sem áudio/tokens/URLs e sem persistência em disco.
+Consulte `docs/REQUEST-TRACES.md` na raiz do repositório.
 
 A nova apresentação mantém as APIs e a ordem condicional. A WebUI mostra estado
 dos processos e diagrama explicitamente estático. O AI Lab separa Testar, Comparar

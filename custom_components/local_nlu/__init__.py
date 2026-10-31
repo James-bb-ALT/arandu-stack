@@ -68,6 +68,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
+        if publisher := getattr(entry.runtime_data, '_trace_publisher', None):
+            publisher.close()
         if getattr(entry.runtime_data, "_contextual", None) is not None:
             entry.runtime_data._contextual.close()
         try:

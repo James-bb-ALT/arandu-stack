@@ -4,7 +4,14 @@ Um único app para Home Assistant com **Wake, STT, NLU, Decision, LLM e TTS**.
 Todos os motores estão incluídos na mesma instalação. Você ativa, desativa e
 configura cada módulo pela WebUI, sem instalar seis apps separados.
 
-**Atual: app 1.0.1 / HACS 2.0.1 / NLU 0.6.0 / Decision 0.3.0 / LLM 0.2.3.**
+**Atual: app 2.0.0 / HACS 3.0.0 / NLU 0.6.0 / Decision 0.3.0 / LLM 0.2.3.**
+
+**Fluxo de inteligência agora mostra requisições reais.** Na WebUI do app, consulte
+as últimas 50 requisições, estados e tempos de preparação, fila, NLU, Decision,
+LLM, validação e execução no HA. Atualização a cada 2 segundos só com a seção aberta,
+exportação JSON e texto reconhecido opcional. O histórico fica apenas em memória.
+Wake/STT/TTS aparecem como não observados: não é uma medição de áudio do satélite.
+Atualize app e HACS e reinicie o HA. [Como usar e limites](docs/REQUEST-TRACES.md).
 
 Cabeçalhos usam SVG sem moldura branca; o ícone PNG do app tem transparência ao
 redor do bloco verde-petróleo. O PNG original com margem branca fica como referência.
@@ -209,7 +216,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **1.0.1**, integração HACS **2.0.1**, para HA OS/Supervised amd64.
+Versão experimental **2.0.0**, integração HACS **3.0.0**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

@@ -1,4 +1,7 @@
-# Camadas de inteligência — app 0.5.2 / HACS 0.8.2
+# Camadas de inteligência — app 0.5.2 / HACS 0.8.3
+
+O AI Lab mostra durações em ms abaixo de 1.000 ms e em segundos a partir desse
+limite. Dados brutos e exportações mantêm os valores originais em milissegundos.
 
 ## Habilitar
 

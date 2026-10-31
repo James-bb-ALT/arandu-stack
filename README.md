@@ -4,7 +4,8 @@ Um único app para Home Assistant com **Wake, STT, NLU, Decision, LLM e TTS**.
 Todos os motores estão incluídos na mesma instalação. Você ativa, desativa e
 configura cada módulo pela WebUI, sem instalar seis apps separados.
 
-**Atual: app 0.5.2 / HACS 0.8.2 / Decision e LLM 0.2.2.** Otimização para CPU:
+**Atual: app 0.5.2 / HACS 0.8.3 / Decision e LLM 0.2.2.** AI Lab mostra durações
+em segundos a partir de 1.000 ms e em milissegundos abaixo disso. Otimização para CPU:
 duas threads por modelo por padrão, sem reserva de núcleos; Decision e LLM
 permanecem carregados após o primeiro uso e não calculam simultaneamente.
 NLU resolve primeiro, Decision só entra se necessário e LLM fica como último
@@ -158,7 +159,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **0.5.2**, integração HACS **0.8.2**, para HA OS/Supervised amd64.
+Versão experimental **0.5.2**, integração HACS **0.8.3**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

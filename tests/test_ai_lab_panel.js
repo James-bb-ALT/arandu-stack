@@ -26,6 +26,28 @@ function fixture() {
     catalog:{entities:[{entity_id:'light.fixture',name:'Luz <fixture>',area_id:'sala'}],areas:[{area_id:'sala',names:['Sala']}]},
     stages:Object.fromEntries(['vad','stt','nlu','decision','llm','ha','tts'].map(n=>[n,{status:'skipped'}]))};
 }
+
+test('duration switches units at one second and handles absent metrics',()=>{
+  const panel=new Panel();
+  for(const [input,expected] of [[0,'0,0 ms'],[12.34,'12,3 ms'],[999,'999,0 ms'],
+      [1000,'1,00 s'],[1500,'1,50 s'],[28225,'28,23 s'],[null,'Indisponível'],
+      [undefined,'Indisponível'],[NaN,'Indisponível'],[Infinity,'Indisponível']]) {
+    assert.equal(panel.duration(input),expected);
+  }
+  assert.equal(panel.duration(null,'—'),'—');
+});
+
+test('stage and total durations use automatic units without modifying raw data',()=>{
+  const result=fixture();
+  result.total_ms=1750;
+  result.stages.decision={status:'executed',latency_ms:450};
+  result.stages.llm={status:'executed',latency_ms:1300};
+  const before=JSON.stringify(result),nodes=render(result);
+  assert.match(text(nodes.metrics),/1,75 s/);
+  assert.match(text(nodes.stages),/Decision · executado · 450,0 ms/);
+  assert.match(text(nodes.stages),/LLM · executado · 1,30 s/);
+  assert.equal(JSON.stringify(result),before);
+});
 test('ranking without calibrated acceptance remains a hypothesis',()=>{
   const result=fixture();
   result.stages.decision={status:'executed',output:{decision_status:'uncalibrated',reason:'joint_calibration_missing',ranking:[{entity_id:'light.fixture',intent:'turn_on',raw_score:.99}]}};

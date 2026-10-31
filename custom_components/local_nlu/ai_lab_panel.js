@@ -1,5 +1,9 @@
 /* Native Home Assistant panel. Uses the authenticated hass websocket, never stored tokens. */
 class AranduAILab extends HTMLElement {
+  duration(ms, missing='Indisponível') {
+    if (!Number.isFinite(ms)) return missing;
+    return ms >= 1000 ? (ms / 1000).toFixed(2).replace('.', ',')+' s' : ms.toFixed(1).replace('.', ',')+' ms';
+  }
   set hass(value) { this._hass = value; if (!this.ready) { this.ready = true; this.mount(); } }
   connectedCallback() { if (this._hass && !this.ready) { this.ready = true; this.mount(); } }
   disconnectedCallback() { this.demoStopRequested=true;clearInterval(this.demoTimer);this.stopRecording(); if (this.audioUrl) URL.revokeObjectURL(this.audioUrl); }
@@ -165,7 +169,7 @@ class AranduAILab extends HTMLElement {
     table.append(head); const pct=v=>v==null?'Indisponível':(v*100).toFixed(1)+'%';
     for(const [model,data] of Object.entries(batch.models)) {
       const m=data.metrics,row=document.createElement('tr');
-      const values=[model,pct(m.accuracy),m.device_errors??'Indisponível',m.false_activations??'Indisponível',pct(m.rejection_rate),pct(m.llm_rate),[50,95,99].map(p=>m.latency_ms?.['p'+p]==null?'—':m.latency_ms['p'+p].toFixed(1)).join(' / ')+' ms',m.memory_bytes==null?'Indisponível':(m.memory_bytes/1048576).toFixed(0)+' MiB'];
+      const values=[model,pct(m.accuracy),m.device_errors??'Indisponível',m.false_activations??'Indisponível',pct(m.rejection_rate),pct(m.llm_rate),[50,95,99].map(p=>this.duration(m.latency_ms?.['p'+p],'—')).join(' / '),m.memory_bytes==null?'Indisponível':(m.memory_bytes/1048576).toFixed(0)+' MiB'];
       for(const value of values){const cell=document.createElement('td');cell.textContent=value;row.append(cell);}table.append(row);
     }
     this.$('benchmark').replaceChildren(table);
@@ -224,7 +228,7 @@ class AranduAILab extends HTMLElement {
             result={runner,case_id:sample.id,text:sample.text,expected:sample.expected,actual:null,skipped:true,error:false,reason:model?.reason||'Modelo não instalado ou worker inacessível',stages:[],model_invocations:0};
           }else{
             const before=performance.now();
-            this.demoTimer=setInterval(()=>{this.$('demoStatus').textContent=`${done+1}/${planned} · ${runner.name} · ${sample.text} · ${((performance.now()-before)/1000).toFixed(1)} s`+(this.demoStopRequested?' · encerrando após este caso':' · rodando…');},250);
+            this.demoTimer=setInterval(()=>{this.$('demoStatus').textContent=`${done+1}/${planned} · ${runner.name} · ${sample.text} · ${this.duration(performance.now()-before)}`+(this.demoStopRequested?' · encerrando após este caso':' · rodando…');},250);
             try{result=await this.call('demo_case',{runner_id:runner.id,case_id:sample.id,dataset_hash:this.demoData.dataset_hash});}
             catch(error){result={runner,case_id:sample.id,text:sample.text,expected:sample.expected,actual:null,correct:false,top1_correct:sample.expected.requires_clarification?null:false,error:true,reason:error.message||String(error),stages:[],model_invocations:0,model_ms:null,total_ms:performance.now()-before};}
             finally{clearInterval(this.demoTimer);}
@@ -241,18 +245,18 @@ class AranduAILab extends HTMLElement {
     for(const label of ['Modelo','Casos feitos','Top-1 · positivos','Decisão final','Chamadas / apoio','Etapa média','Carga total','Inferência média','p95 da etapa','Erros']){const th=document.createElement('th');th.textContent=label;head.append(th);}table.append(head);
     const percentage=(count,total)=>total?`${(100*count/total).toFixed(1)}% (${count}/${total})`:'Não medido';
     const number=v=>typeof v==='number'&&Number.isFinite(v);
-    const avg=values=>values.length?(values.reduce((a,b)=>a+b,0)/values.length).toFixed(1)+' ms':'Indisponível';
+    const avg=values=>this.duration(values.length?values.reduce((a,b)=>a+b,0)/values.length:null);
     for(const runner of this.demoRunners||this.demoData?.runners||[]){
       const all=(this.demoResults||[]).filter(r=>r.runner.id===runner.id),rows=all.filter(r=>!r.skipped),positive=rows.filter(r=>r.top1_correct!==null&&r.top1_correct!==undefined);
       const times=rows.map(r=>r.model_ms).filter(number).sort((a,b)=>a-b),loads=rows.map(r=>r.load_ms).filter(number),infer=rows.map(r=>r.inference_ms).filter(number);
-      const values=[runner.name,`${rows.length}/${this.demoPlanned||this.demoCases().length}`+(all.some(r=>r.skipped)?' · indisponível':''),percentage(positive.filter(r=>r.top1_correct).length,positive.length),percentage(rows.filter(r=>r.correct).length,rows.length),`${rows.reduce((a,r)=>a+(r.model_invocations||0),0)} / ${rows.reduce((a,r)=>a+(r.support_invocations||0),0)}`,avg(times),loads.length?loads.reduce((a,b)=>a+b,0).toFixed(1)+' ms':'Indisponível',avg(infer),times.length?times[Math.ceil(times.length*.95)-1].toFixed(1)+' ms':'Indisponível',String(rows.filter(r=>r.error).length)];
+      const values=[runner.name,`${rows.length}/${this.demoPlanned||this.demoCases().length}`+(all.some(r=>r.skipped)?' · indisponível':''),percentage(positive.filter(r=>r.top1_correct).length,positive.length),percentage(rows.filter(r=>r.correct).length,rows.length),`${rows.reduce((a,r)=>a+(r.model_invocations||0),0)} / ${rows.reduce((a,r)=>a+(r.support_invocations||0),0)}`,avg(times),this.duration(loads.length?loads.reduce((a,b)=>a+b,0):null),avg(infer),this.duration(times.length?times[Math.ceil(times.length*.95)-1]:null),String(rows.filter(r=>r.error).length)];
       const tr=document.createElement('tr');for(const value of values){const td=document.createElement('td');td.textContent=value;tr.append(td);}table.append(tr);
     }
     this.$('demoSummary').replaceChildren(table);
     while(this.demoRowsShown<(this.demoResults||[]).length){
       const row=this.demoResults[this.demoRowsShown++],detail=document.createElement('details'),summary=document.createElement('summary');
       const status=row.skipped?'INDISPONÍVEL':row.error?'ERRO TÉCNICO':row.correct?'ACERTO':'DIVERGÊNCIA';
-      summary.textContent=`${row.runner.name} · ${row.text} · ${status}`+(number(row.model_ms)?` · ${row.model_ms.toFixed(1)} ms`:'');detail.append(summary);
+      summary.textContent=`${row.runner.name} · ${row.text} · ${status}`+(number(row.model_ms)?` · ${this.duration(row.model_ms)}`:'');detail.append(summary);
       const comparison=document.createElement('pre');comparison.textContent=JSON.stringify({esperado:row.expected,obtido:row.actual,primeiro_candidato:row.raw_prediction,motivo:row.reason},null,2);detail.append(comparison);
       const trace=document.createElement('details'),title=document.createElement('summary'),json=document.createElement('pre');title.textContent='Tempos, scores, saída completa e erros';json.textContent=JSON.stringify(row,null,2);trace.append(title,json);detail.append(trace);this.$('demoRows').append(detail);
     }
@@ -317,7 +321,7 @@ class AranduAILab extends HTMLElement {
       if(name==='decision'&&stage.output)status=statuses[stage.output.decision_status] || 'respondeu, sem aceitação';
       if(name==='llm'&&stage.output?.proposal?.requires_clarification)status='aguardando esclarecimento';
       if(result.confirmation_required&&name===result.source)status='aguardando confirmação';
-      summary.textContent=(stageNames[name] || name)+' · '+status+(stage.latency_ms!=null?` · ${stage.latency_ms.toFixed(1)} ms`:'');
+      summary.textContent=(stageNames[name] || name)+' · '+status+(stage.latency_ms!=null?` · ${this.duration(stage.latency_ms)}`:'');
       const detail=document.createElement('pre');detail.textContent=JSON.stringify(stage,null,2);node.append(summary,detail);this.$('stages').append(node);
     }
     this.$('answer').textContent = result.execution?.response_text || (result.confirmation_required ? result.clarification_question+' Hipótese aguardando confirmação; nenhuma ação enviada.' : result.operations_validated ? 'A proposta passou pela validação inicial do Home Assistant. '+(result.sensitive?'Exige confirmação de segurança; execução bloqueada no laboratório.':'Não será executada enquanto a simulação estiver ativa.') : result.clarification_question || 'Nenhuma ação autorizada. Tente reformular o comando.');
@@ -337,7 +341,7 @@ class AranduAILab extends HTMLElement {
     this.$('ranking').replaceChildren();
     for (const [index,item] of (de.ranking || []).entries()) { const entity=entities.get(item.entity_id),row = document.createElement('tr'); for (const text of [index+1,entity?.name || item.entity_id,areas.get(entity?.area_id) || '—',labels[item.intent] || item.intent,item.raw_score.toFixed(4),(index===0?statuses[de.decision_status]:'hipótese ranqueada')+' · '+(reasons[de.reason] || de.reason || 'não autoriza execução')]) { const cell = document.createElement('td'); cell.textContent = text; row.append(cell); } this.$('ranking').append(row); }
     this.$('metrics').replaceChildren();
-    const values = [['Total do servidor', result.total_ms.toFixed(1)+' ms'],['Confiança calibrada', de.confidence == null ? 'Não calibrado' : (de.confidence*100).toFixed(1)+'%'],['Margem', de.margin == null ? 'Indisponível' : de.margin.toFixed(4)],['Decisão',statuses[de.decision_status] || 'Não chamada']];
+    const values = [['Total do servidor', this.duration(result.total_ms)],['Confiança calibrada', de.confidence == null ? 'Não calibrado' : (de.confidence*100).toFixed(1)+'%'],['Margem', de.margin == null ? 'Indisponível' : de.margin.toFixed(4)],['Decisão',statuses[de.decision_status] || 'Não chamada']];
     for (const [label,value] of values) { const node = document.createElement('div'); node.className='metric'; const strong=document.createElement('strong'); strong.textContent=value; node.textContent=label; node.append(strong); this.$('metrics').append(node); }
     this.executionState();
   }
@@ -356,7 +360,7 @@ class AranduAILab extends HTMLElement {
         const blob=new Blob(this.parts); if(blob.size>2000000)throw Error('Áudio excedeu 2 MB');
         const bytes=new Uint8Array(await blob.arrayBuffer()); let encoded=''; for(let i=0;i<bytes.length;i+=8192) encoded+=String.fromCharCode(...bytes.subarray(i,i+8192));
         const r=await this.call('transcribe',{audio:btoa(encoded), stt_model:this.$('stt').value});
-        this.transcription=r;this.$('text').value=r.text;this.$('transcription').textContent=`Transcrição ${r.model} · ${r.latency_ms.toFixed(1)} ms. Edite antes de processar.`;
+        this.transcription=r;this.$('text').value=r.text;this.$('transcription').textContent=`Transcrição ${r.model} · ${this.duration(r.latency_ms)}. Edite antes de processar.`;
       });
       this.recorder.start();this.$('record').textContent='Parar e transcrever';this.recordTimer=setTimeout(()=>this.stopRecording(),30000);
     } catch(e){this.stream?.getTracks().forEach(t=>t.stop());this.$('status').textContent=e.message;}

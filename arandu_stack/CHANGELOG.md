@@ -1,3 +1,9 @@
+# HACS 0.8.3 / app 0.5.2 (sem alteração)
+
+- AI Lab converte automaticamente durações a partir de 1.000 ms para segundos, com duas casas decimais; abaixo desse limite mantém milissegundos. Formatação em português: 450,0 ms, 1,50 s.
+- Aplica a mesma regra a etapas, total, percentis, comparativos, médias, carga, testes prontos, contador de execução e transcrição. Dados brutos e exportações continuam em ms para preservar compatibilidade.
+- Mudança apenas no painel HACS; app e serviços Decision/LLM mantêm suas versões. Verificação inclui o limite de 1 segundo e a preservação dos dados originais.
+
 # 0.5.2 / HACS 0.8.2
 
 - Decision/LLM 0.2.2: modelos reutilizados em memória após o primeiro uso, com duas threads por modelo por padrão e sem reserva de núcleos. O LLM limita também threads de processamento do prompt e desativa polling; Decision limita paralelismo auxiliar e usa espera passiva.

@@ -1,3 +1,9 @@
+# 3.0.0 — 2026-11-10
+
+- STT multimodelo: FastConformer legado e faster-whisper Tiny/Base/Small CPU INT8, duas threads por padrão.
+- Catálogo e instalação verificada, revisão Hugging Face fixada, inicialização offline, isolamento de comparações e diagnóstico do motor real.
+- Preserva Wyoming 10350/ID legado e o corretor contextual, com proteção de ação/negação. Laboratório nativo no app integrado; detalhes em docs/STT-MULTIMODEL.md na raiz do repositório.
+
 # Changelog
 
 ## 2.2.0 — 2026-10-14

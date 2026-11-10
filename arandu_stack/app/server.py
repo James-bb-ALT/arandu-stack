@@ -9,12 +9,13 @@ import secrets
 import unicodedata
 from aiohttp import ClientSession, ClientTimeout, ClientError, web
 from modules import ModuleManager
+from stt_lab import STTLab
 from wyoming_gateway import WyomingGateway
 from discovery import announce_stack
 from logs import LogStore, SOURCES, LOGGER
 from request_traces import TraceStore
 
-APP_VERSION = '2.0.1'
+APP_VERSION = '3.0.0'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""
@@ -27,7 +28,7 @@ async def read_limited(content, limit):
 
 MODULES = {
     'wake': ('arandu_wake', 'Wake', 'Palavra de ativação · Wyoming'),
-    'stt': ('arandu_stt', 'STT', 'Áudio para texto · FastConformer'),
+    'stt': ('arandu_stt', 'STT', 'Áudio para texto · FastConformer / Whisper'),
     'nlu': ('ptbr_nlu', 'NLU', 'Comandos e validação · Rust'),
     'decision': ('arandu_decision', 'Decision', 'Multilingual E5 Small'),
     'llm': ('arandu_llm', 'LLM', 'Tucano 2 Qwen 0.5B'),
@@ -71,6 +72,7 @@ def create_app(data_dir, local=False):
         LOGGER.exception('Falha ao carregar as configurações do Arandu Assistant')
         raise
     reference[0] = manager
+    stt_lab = STTLab(manager)
     phrases_file = data_dir / 'phrases.json'
     csrf = secrets.token_urlsafe(32)
     lock = asyncio.Lock()
@@ -81,6 +83,7 @@ def create_app(data_dir, local=False):
     async def boundary(request, handler):
         # Only the Supervisor ingress proxy reaches UI; runtime is internal read-only.
         peer = request.remote
+        stt_internal = request.path.startswith('/api/stt/') and request.headers.get('X-Arandu-Lab') == '1' and not request.headers.get('Origin')
         if os.environ.get('ARANDU_LOCAL_CONTAINER') == '1':
             import ipaddress
             if request.host not in {'127.0.0.1:8770', 'localhost:8770'} or not peer or not ipaddress.ip_address(peer).is_private:
@@ -88,15 +91,15 @@ def create_app(data_dir, local=False):
         elif local:
             if peer not in {'127.0.0.1', '::1'} or request.host not in {'127.0.0.1:8770', 'localhost:8770'}:
                 raise web.HTTPForbidden()
-        elif request.path not in {'/runtime', '/status', '/infer', '/synthesize', '/request-trace'} and peer != '172.30.32.2':
+        elif request.path not in {'/runtime', '/status', '/infer', '/synthesize', '/request-trace'} and not stt_internal and peer != '172.30.32.2':
             raise web.HTTPForbidden()
-        elif request.path in {'/runtime', '/status', '/infer', '/synthesize', '/request-trace'}:
+        elif stt_internal or request.path in {'/runtime', '/status', '/infer', '/synthesize', '/request-trace'}:
             import ipaddress
             if not peer or ipaddress.ip_address(peer) not in ipaddress.ip_network('172.30.32.0/23'):
                 raise web.HTTPForbidden()
         if request.path in {'/infer', '/synthesize', '/request-trace'} and (request.headers.get('Origin') or request.headers.get('X-Arandu-Lab') != '1'):
             raise web.HTTPForbidden()
-        if request.method != 'GET' and request.path not in {'/infer', '/synthesize', '/request-trace'} and request.headers.get('X-Arandu-CSRF') != csrf:
+        if request.method != 'GET' and request.path not in {'/infer', '/synthesize', '/request-trace'} and not stt_internal and request.headers.get('X-Arandu-CSRF') != csrf:
             raise web.HTTPForbidden()
         try:
             response = await handler(request)
@@ -161,6 +164,8 @@ def create_app(data_dir, local=False):
                 await manager.start(key)
             elif action == 'stop':
                 await manager.stop(key)
+            elif key == 'stt':
+                await stt_lab.apply({'model': manager.config['stt']['stt_model'], 'variant': manager.config['stt']['model_variant'], 'confirm': True})
             else:
                 await manager.stop(key, persist=False)
                 await manager.start(key)
@@ -256,6 +261,25 @@ def create_app(data_dir, local=False):
                 raise ValueError('Este módulo Decision usa E5 Small; outros modelos pertencem ao Lab experimental no PC')
             key = 'decision'
         return web.json_response(await model_request(key, '/infer', payload))
+    async def stt_models(request):
+        return web.json_response(await stt_lab.models(request.query.get('variant')))
+    async def stt_action(request):
+        body = await request.json()
+        if type(body) is not dict:
+            raise ValueError('Objeto JSON obrigatório')
+        action = request.match_info['action']
+        if action == 'install':
+            result = stt_lab.start_install(body.get('model'), body.get('variant', 'adapted'))
+        elif action in {'test', 'compare'}:
+            result = await stt_lab.test(body, compare=action == 'compare')
+        elif action == 'apply':
+            async with lock:
+                result = await stt_lab.apply(body)
+        else:
+            raise ValueError('Operação STT inválida')
+        return web.json_response(result)
+
+    app['stt_lab'] = stt_lab
     async def startup(app):
         journal.event('app', 'Arandu Assistant ' + APP_VERSION + ' iniciando.')
         app['wyoming_gateway'] = WyomingGateway(manager, journal)
@@ -272,11 +296,14 @@ def create_app(data_dir, local=False):
             discovery.cancel()
             await asyncio.gather(discovery, return_exceptions=True)
         await app['wyoming_gateway'].close()
+        await stt_lab.close()
         await manager.close()
     app.on_startup.append(startup)
     app.on_cleanup.append(cleanup)
     app.router.add_get('/', index)
     app.router.add_get('/api/state', state)
+    app.router.add_get('/api/stt/models', stt_models)
+    app.router.add_post('/api/stt/{action}', stt_action)
     app.router.add_get('/api/logs', logs)
     app.router.add_post('/api/modules/{key}/{action}', control)
     app.router.add_post('/api/phrases', save_phrases)

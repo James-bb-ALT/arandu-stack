@@ -32,13 +32,15 @@ function renderModules(){
     toggle.onclick=()=>task(async()=>{notice('Aplicando alteração em '+module.name+'…');await api('modules/'+module.id+'/'+(on?'stop':'start'),{});await refresh();});
     const config=el('button','Configurar','secondary');config.onclick=()=>openSettings(module);
     const restart=el('button','Reiniciar','secondary');
-    restart.onclick=()=>task(async()=>{await api('modules/'+module.id+'/restart',{});await refresh();});
+    restart.onclick=()=>task(async()=>{if(module.id==='stt'){if(!confirm('Reiniciar o STT e verificar o modelo '+module.options.stt_model+'?'))return;await api('stt/apply',{model:module.options.stt_model,variant:module.options.model_variant,confirm:true});}else await api('modules/'+module.id+'/restart',{});await refresh();});
     [toggle,config,restart].forEach(b=>{if(!module.installed){b.disabled=true;b.dataset.unavailable='true';}actions.append(b);});
     const logs=el('button',module.state==='error'?'Ver erro':'Logs','secondary');
     logs.onclick=()=>{ $('logsSource').value=module.id; selectTab('logs'); };
     actions.append(logs);
+    if(module.id==='stt'){const test=el('a','Testar STT','button secondary');test.href='/arandu-ai-lab#stt';test.target='_top';actions.append(test);}
     card.append(actions,el('div',module.slug||'Módulo incluído no Arandu Assistant.','slug'));$('cards').append(card);
     if(module.last_error)card.append(el('p',module.last_error,'log-error'));
+    if(module.id==='stt'){const actual=el('p','Consultando motor realmente ativo…','slug');card.append(actual);api('stt/models').then(result=>{if(actual.isConnected)actual.textContent=result.active?'Assist: '+result.active.model+' · '+(result.active.model==='fastconformer'?result.active.variant:'multilíngue')+' · '+result.active.process_rss_mb.toFixed(0)+' MiB'+(Number.isFinite(result.active.recent?.inference_ms)?' · '+result.active.recent.inference_ms.toFixed(1)+' ms':''):'Modelo de produção ainda não confirmou prontidão.';}).catch(()=>{actual.textContent='Diagnóstico STT indisponível.';});}
   });
 }
 function renderOverview(){
@@ -85,16 +87,18 @@ function openSettings(module){
     }
     input.onchange=()=>updateDependencies();group.append(row);
   }
-  const apply=$('saveRestart');apply.disabled=module.state!=='started';
+  const apply=$('saveRestart');apply.disabled=module.state!=='started'&&module.id!=='stt';apply.textContent=module.id==='stt'?'Salvar e aplicar no Assist':'Salvar e reiniciar';
   apply.title=apply.disabled?'Ative o módulo para aplicar imediatamente':'Salva as opções e reinicia somente este módulo';
   if(apply.disabled)apply.dataset.unavailable='true';else delete apply.dataset.unavailable;
   updateDependencies();$('configDialog').showModal();
+  if(module.id==='stt')renderSttManager();
 }
 function settingInput(name){return $('configFields').querySelector('[data-setting="'+name+'"]');}
 function updateDependencies(){
   for(const field of editing?.schema||[]){
     const row=$('configFields').querySelector('[data-field="'+field.id+'"]'),input=settingInput(field.id);
-    const active=!field.depends_on||!!settingInput(field.depends_on)?.checked;
+    const engine=editing?.id==='stt'?settingInput('stt_model')?.value:null;
+    const active=(!field.depends_on||!!settingInput(field.depends_on)?.checked) && !(engine&&['model_variant','profile','closed_vocabulary'].includes(field.id)&&engine!=='fastconformer') && !(engine&&field.id==='whisper_profile'&&engine==='fastconformer');
     row.hidden=!active;input.disabled=!active;
     const clear=row.querySelector('[data-clear-for]');
     if(clear){clear.disabled=!active;if(clear.checked)input.disabled=true;}
@@ -123,8 +127,14 @@ async function saveSettings(restart){
   if(!$('configForm').reportValidity())return;
   $('configError').textContent='';
   try{
-    await api('modules/'+editing.id+'/options',{options:settingsPayload()});
-    if(restart&&editing.state==='started')await api('modules/'+editing.id+'/restart',{});
+    const options=settingsPayload();
+    if(editing.id==='stt'&&restart){
+      if(!confirm('Aplicar '+options.stt_model+' no Assist? Somente o STT será reiniciado.'))return;
+      await api('stt/apply',{model:options.stt_model,variant:options.model_variant||editing.options.model_variant,options,confirm:true});
+    }else{
+      await api('modules/'+editing.id+'/options',{options});
+      if(restart&&editing.state==='started')await api('modules/'+editing.id+'/restart',{});
+    }
   }catch(error){$('configError').textContent=error.message;return;}
   $('configDialog').close();await refresh();
   notice(restart?'Configuração salva e módulo reiniciado.':'Configuração salva. Reinicie o módulo para aplicar.');
@@ -219,3 +229,27 @@ applyTheme($('theme').value);
 $('theme').onchange=()=>{applyTheme($('theme').value);try{localStorage.setItem('arandu-theme',$('theme').value);}catch{}};
 window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
 task(refresh);
+
+async function renderSttManager(){
+  const group=el('fieldset',undefined,'setting-section stt-manager');group.append(el('legend','Pesos e modelo ativo'));
+  const status=el('p','Consultando modelos…');status.setAttribute('role','status');group.append(status);
+  const list=el('div');group.append(list);$('configFields').append(group);
+  async function update(){
+    if(!$('configDialog').open||editing?.id!=='stt'||!group.isConnected)return;
+    try{
+      const result=await api('stt/models?variant='+encodeURIComponent(settingInput('model_variant')?.value||'adapted'));
+      const active=result.active;
+      status.textContent=active?'Ativo no Assist: '+active.model+' · '+(active.model==='fastconformer'?active.variant:'multilíngue')+' · '+active.backend+' · CPU '+active.compute+' · '+active.threads+' threads · '+active.process_rss_mb.toFixed(0)+' MiB'+(Number.isFinite(active.recent?.inference_ms)?' · '+active.recent.inference_ms.toFixed(1)+' ms':''):'Modelo ativo ainda não confirmado.';
+      list.replaceChildren();
+      const labels={not_installed:'Não instalado',installed:'Instalado',downloading:'Baixando',loading:'Carregando',ready:'Pronto',error:'Erro'};
+      for(const model of result.models){
+        const line=el('div',undefined,'stt-model-row');line.append(el('span',model.name+' · '+(labels[model.state]||model.state)+(model.error?' · '+model.error:'')));
+        const button=el('button',model.installed?'Verificar / reinstalar':'Baixar','secondary');button.type='button';button.disabled=['downloading','loading'].includes(model.state);
+        button.onclick=async()=>{button.disabled=true;try{await api('stt/install',{model:model.id,variant:settingInput('model_variant')?.value||'adapted'});await update();}catch(e){status.textContent=e.message;button.disabled=false;}};line.append(button);list.append(line);
+      }
+      if(result.models.some(row=>['downloading','loading'].includes(row.state)))setTimeout(update,2000);
+    }catch(e){status.textContent=e.message;}
+  }
+  const link=el('a','Testar STT no Home Assistant');link.href='/arandu-ai-lab#stt';link.target='_top';group.append(link);
+  settingInput('model_variant').addEventListener('change',update);await update();
+}

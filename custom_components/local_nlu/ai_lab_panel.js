@@ -5,14 +5,14 @@ class AranduAILab extends HTMLElement {
     return ms >= 1000 ? (ms / 1000).toFixed(2).replace('.', ',')+' s' : ms.toFixed(1).replace('.', ',')+' ms';
   }
   set hass(value) { this._hass = value; if (!this.ready) { this.ready = true; this.mount(); } }
-  connectedCallback() { if (this._hass && !this.ready) { this.ready = true; this.mount(); } }
-  disconnectedCallback() { this.demoStopRequested=true;clearInterval(this.demoTimer);this.stopRecording(); if (this.audioUrl) URL.revokeObjectURL(this.audioUrl); }
+  connectedCallback() { this.disconnected=false;if (this._hass && !this.ready) { this.ready = true; this.mount(); } else if(this.ready&&this.sttDisposed)this.mountStt(); }
+  disconnectedCallback() { this.disconnected=true;this.sttGeneration=(this.sttGeneration||0)+1;this.sttDisposed=true;this.sttDispose?.();this.demoStopRequested=true;clearInterval(this.demoTimer);this.stopRecording(); if (this.audioUrl) URL.revokeObjectURL(this.audioUrl); }
   $(id) { return this.shadowRoot.getElementById(id); }
   saved(key, fallback) { try { return JSON.parse(localStorage.getItem('arandu-lab-' + key)) ?? fallback; } catch { return fallback; } }
   store(key, value) { localStorage.setItem('arandu-lab-' + key, JSON.stringify(value)); }
   async call(command, extra = {}) {
     return this._hass.callWS({type: 'local_nlu/ai_lab', payload: {command, worker: this.$('worker').value,
-      entry_id: this.$('entry').value || undefined, stt_endpoint: this.$('sttEndpoint').value,
+      entry_id: this.$('entry').value || undefined,
       tts_endpoint: this.$('ttsEndpoint').value, tts_token: this.$('ttsToken').value,
       model: this.$('decision').value, mode: this.$('mode').value, llm_model:this.$('llm').value || 'tucano',
       test_area_id: this.$('testArea').value,
@@ -24,7 +24,7 @@ class AranduAILab extends HTMLElement {
     this.shadowRoot.querySelectorAll('button').forEach(b => { b.disabled = true; });
     try { await fn(); this.$('status').textContent = 'Teste finalizado.'; }
     catch (e) { this.$('status').textContent = 'Falha: ' + (e.message || e); this.$('status').setAttribute('role', 'alert'); }
-    finally { this.busy = false; this.shadowRoot.querySelectorAll('button').forEach(b => { b.disabled = false; }); this.executionState(); }
+    finally { this.busy = false; this.shadowRoot.querySelectorAll('button').forEach(b => { b.disabled = false; }); this.executionState();this.sttControls?.(); }
   }
   mount() {
     this.attachShadow({mode: 'open'});
@@ -38,7 +38,7 @@ class AranduAILab extends HTMLElement {
       @media(max-width:850px){.layout{grid-template-columns:1fr}main{padding:20px 12px}header{align-items:start}h1{font-size:25px}}
       </style>
       <main><header><div class="lab-brand"><img src="/local_nlu_ai_lab/brand/arandu-icon.svg" width="52" height="52" alt="Símbolo Arandu"><div><p class="muted eyebrow">ARANDU / CONHECIMENTO EM MOVIMENTO</p><h1>AI Decision Lab</h1><p class="muted">Interprete, compare e revise antes de agir.</p></div></div><span class="badge" id="safety" role="status" aria-live="polite">Dry-run ativo</span></header>
-      <nav class="lab-tabs" aria-label="Seções do laboratório"><button data-lab-tab="test" aria-current="page">Testar</button><button data-lab-tab="compare">Comparar</button><button data-lab-tab="advanced">Avançado</button></nav>
+      <nav class="lab-tabs" aria-label="Seções do laboratório"><button data-lab-tab="test" aria-current="page">Testar</button><button data-lab-tab="compare">Comparar</button><button data-lab-tab="stt">STT</button><button data-lab-tab="advanced">Avançado</button></nav>
       <section class="card" id="demoCard"><h2>Testes prontos · casa fictícia</h2>
         <p class="muted">Dataset sintético com dispositivos, aliases, áreas e gabaritos prontos. Os modelos rodam de verdade, somente após seu clique. Nenhuma ação real é permitida nesta suíte.</p>
         <label for="demoSize">Quantidade de casos por modelo</label><select id="demoSize"><option value="quick">Rápida · 8 comandos</option><option value="full">Completa · 16 comandos</option></select>
@@ -53,7 +53,7 @@ class AranduAILab extends HTMLElement {
       <div class="layout"><aside>
       <section class="card"><h2>Componentes</h2>
         <p id="layerReadiness" role="status">Verifique os modelos para consultar a pipeline real.</p>
-        <label for="stt">STT · FastConformer existente</label><select id="stt"><option value="original">Original</option><option value="adapted">Adaptado (se instalado)</option></select>
+        <label for="stt">Motor STT</label><select id="stt"><option value="fastconformer">FastConformer adaptado</option><option value="whisper_tiny">Whisper Tiny</option><option value="whisper_base">Whisper Base</option><option value="whisper_small">Whisper Small</option></select>
         <label for="mode">Modo de interpretação</label><select id="mode"><option value="pipeline">Pipeline com fallbacks</option><option value="nlu">NLU Rust isolado</option><option value="decision">Decision isolado</option><option value="llm">LLM isolado + recuperação</option></select>
         <label for="testArea">Área de origem do teste</label><select id="testArea"><option value="">Padrão da integração / sem contexto</option></select>
         <p id="testAreaStatus" class="muted" role="status">Carregando áreas do catálogo…</p>
@@ -69,7 +69,6 @@ class AranduAILab extends HTMLElement {
       </section>
       <details class="card"><summary>Conexões locais</summary>
         <label for="worker">Worker de inferência (opcional)</label><input id="worker" value="" placeholder="Automático pelo endpoint Arandu Stack">
-        <label for="sttEndpoint">Web app STT</label><input id="sttEndpoint" value="http://127.0.0.1:8765">
         <label for="ttsEndpoint">Web app TTS</label><input id="ttsEndpoint" value="http://127.0.0.1:8099">
         <label for="ttsToken">Token TTS (opcional; não salvo)</label><input id="ttsToken" type="password" autocomplete="off">
         <label for="entry">Entry ID NLU (se houver várias integrações)</label><input id="entry">
@@ -102,14 +101,15 @@ class AranduAILab extends HTMLElement {
         <label for="calibration">Dados de calibração</label><textarea id="calibration" spellcheck="false"></textarea><button id="calibrate">Ajustar e validar calibração</button>
       </details></div></div></main>`;
     this.organize();
+    this.mountStt();
     const defaults = ['Liga a luz da sala', 'Liga a sala', 'Liga todos os dispositivos da sala', 'Liga o ventilador do Jaime', 'Acende a luz perto da TV', 'Apaga a iluminação principal', 'Desliga tudo', 'Acende a lua', 'Qual a temperatura da sala?', 'Está muito quente aqui'];
     this.$('examples').value = JSON.stringify(this.saved('examples', defaults.map(text => ({text, expected: null, expected_area: null, correct_result: null, notes: 'Rotular com entidades reais antes de medir acurácia.'}))), null, 2);
     const config = this.saved('config', {});
-    for (const id of ['worker','sttEndpoint','ttsEndpoint','entry','threshold','margin']) if (config[id] != null) this.$(id).value = config[id];
+    for (const id of ['worker','ttsEndpoint','entry','threshold','margin']) if (config[id] != null) this.$(id).value = config[id];
     this.$('threshold').value = Math.max(.8, Number(this.$('threshold').value) || .8);
-    for (const id of ['worker','sttEndpoint','ttsEndpoint','entry','threshold','margin']) this.$(id).onchange = () => {
+    for (const id of ['worker','ttsEndpoint','entry','threshold','margin']) this.$(id).onchange = () => {
       this.invalidate();
-      this.store('config', Object.fromEntries(['worker','sttEndpoint','ttsEndpoint','entry','threshold','margin'].map(k => [k, this.$(k).value])));
+      this.store('config', Object.fromEntries(['worker','ttsEndpoint','entry','threshold','margin'].map(k => [k, this.$(k).value])));
       const policies=this.saved('policies',{});policies[this.$('decision').value||'e5-small']={threshold:this.$('threshold').value,margin:this.$('margin').value};this.store('policies',policies);
     };
     this.$('decision').onchange=()=>{this.invalidate();const policy=this.saved('policies',{})[this.$('decision').value]||{threshold:.8,margin:.08};this.$('threshold').value=Math.max(.8,Number(policy.threshold)||.8);this.$('margin').value=policy.margin;};
@@ -150,6 +150,12 @@ class AranduAILab extends HTMLElement {
     this.$('json').onclick = () => this.download('json'); this.$('csv').onclick = () => this.download('csv');
     this.history(); this.task(() => this.refresh());
   }
+  mountStt() {
+    const generation=(this.sttGeneration||0)+1;this.sttGeneration=generation;
+    import('/local_nlu_ai_lab/stt.js').then(({mountSTT})=>{
+      if(!this.disconnected&&generation===this.sttGeneration){this.sttDispose?.();mountSTT(this);this.sttDisposed=false;}
+    }).catch(()=>{if(!this.disconnected&&generation===this.sttGeneration)this.$('sttLab').textContent='Não foi possível carregar o laboratório STT. Atualize a integração e recarregue o painel.';});
+  }
   organize() {
     // Move existing controls; preserve IDs, handlers, authenticated calls and tokens.
     const main=this.shadowRoot.querySelector('main'), layout=main.querySelector('.layout');
@@ -181,9 +187,11 @@ class AranduAILab extends HTMLElement {
       @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
     `;this.shadowRoot.append(styles);
     for(const button of this.shadowRoot.querySelectorAll('[data-lab-tab]'))button.onclick=()=>this.selectPane(button.dataset.labTab);
-    this.selectPane('test');
+    const stt=document.createElement('section');stt.id='sttLab';stt.className='card';stt.dataset.labPane='stt';main.append(stt);
+    this.selectPane(location.hash==='#stt'?'stt':'test');
   }
   selectPane(name) {
+    if(name!=='stt')this.sttStop?.();
     for(const pane of this.shadowRoot.querySelectorAll('[data-lab-pane]'))pane.hidden=pane.dataset.labPane!==name;
     for(const button of this.shadowRoot.querySelectorAll('[data-lab-tab]')){
       if(button.dataset.labTab===name)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
@@ -399,12 +407,13 @@ class AranduAILab extends HTMLElement {
       this.parts=[]; this.recorder=new MediaRecorder(this.stream);
       this.recorder.ondataavailable=e=>{if(e.data.size)this.parts.push(e.data);};
       this.recorder.onstop=()=>this.task(async()=>{
-        const blob=new Blob(this.parts); if(blob.size>2000000)throw Error('Áudio excedeu 2 MB');
+        if(this.disconnected)return;
+        const blob=new Blob(this.parts,{type:this.recordMime}); if(blob.size>2000000)throw Error('Áudio excedeu 2 MB');
         const bytes=new Uint8Array(await blob.arrayBuffer()); let encoded=''; for(let i=0;i<bytes.length;i+=8192) encoded+=String.fromCharCode(...bytes.subarray(i,i+8192));
         const r=await this.call('transcribe',{audio:btoa(encoded), stt_model:this.$('stt').value});
         this.transcription=r;this.$('text').value=r.text;this.$('transcription').textContent=`Transcrição ${r.model} · ${this.duration(r.latency_ms)}. Edite antes de processar.`;
       });
-      this.recorder.start();this.$('record').textContent='Parar e transcrever';this.recordTimer=setTimeout(()=>this.stopRecording(),30000);
+      this.recordMime=this.recorder.mimeType;this.recorder.start();this.$('record').textContent='Parar e transcrever';this.recordTimer=setTimeout(()=>this.stopRecording(),11800);
     } catch(e){this.stream?.getTracks().forEach(t=>t.stop());this.$('status').textContent=e.message;}
   }
   stopRecording(){clearTimeout(this.recordTimer);if(this.recorder?.state==='recording')this.recorder.stop();this.stream?.getTracks().forEach(t=>t.stop());this.recorder=null;if(this.shadowRoot)this.$('record').textContent='Gravar microfone';}

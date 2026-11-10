@@ -11,6 +11,7 @@ import time
 
 from inventory_sync import minimal_inventory, sync_inventory
 from model_download import ADAPTED_VERSION, ensure_model
+from model_catalog import install, location, verify, validate
 
 DATA = Path(os.environ.get('ARANDU_MODULE_DATA', '/data'))
 OPTIONS = DATA / "options.json"
@@ -19,7 +20,7 @@ MODEL_DIR = DATA / "models" / "int8"
 
 
 def options() -> dict:
-    defaults = {"model_variant": "adapted", "threads": 2, "padding_ms": 0, "profile": "full", "debug_text": False, "refresh_inventory": True,
+    defaults = {"stt_model": "fastconformer", "auto_download": False, "whisper_profile": "normalize_only", "model_variant": "adapted", "threads": 2, "padding_ms": 0, "profile": "full", "debug_text": False, "refresh_inventory": True,
                 "lexical_enabled": True, "closed_vocabulary": True, "generic_weight": 7,
                 "home_assistant_weight": 10, "inventory_refresh_seconds": 60}
     if OPTIONS.is_file():
@@ -54,20 +55,24 @@ def refresh_inventory(required: bool) -> None:
 def main() -> None:
     cfg = options()
     variant = str(cfg.get("model_variant", "adapted"))
-    model_dir = MODEL_DIR if variant == "original" else DATA / "models" / ADAPTED_VERSION
-    if cfg.get('auto_download', True):
-        ensure_model(model_dir, variant=variant)
+    model = cfg.get('stt_model', 'fastconformer')
+    validate(model, variant)
+    model_dir = location(DATA / 'models', model, variant)
+    if cfg.get('auto_download', False):
+        install(DATA / 'models', model, variant)
+    verify(DATA / 'models', model, variant)
     refresh_inventory(bool(cfg.get("refresh_inventory", True)))
 
     cmd = [
         sys.executable, str(Path(__file__).with_name('server.py')),
         "--model-dir", str(model_dir),
+        "--stt-model", model, "--model-variant", variant,
         "--inventory", str(INVENTORY),
         "--uri", "tcp://0.0.0.0:10350",
         *(["--no-discovery"] if os.environ.get('ARANDU_MODULE_DATA') else []),
         "--threads", str(int(cfg.get("threads", 2))),
         "--padding-ms", str(int(cfg.get("padding_ms", 0))),
-        "--profile", str(cfg.get("profile", "full")),
+        "--profile", str(cfg.get("profile", "full") if model == "fastconformer" else cfg.get("whisper_profile", "normalize_only")),
         "--metrics", str(DATA / 'metrics.jsonl'),
         "--inventory-refresh-seconds", str(int(cfg.get('inventory_refresh_seconds', 60))),
         "--generic-weight", str(cfg.get('generic_weight', 7)),
@@ -77,7 +82,7 @@ def main() -> None:
         cmd.append("--debug-text")
     if not cfg.get('lexical_enabled', True):
         cmd.append('--lexical-disabled')
-    if not cfg.get('closed_vocabulary', True):
+    if model != 'fastconformer' or not cfg.get('closed_vocabulary', True):
         cmd.append('--open-vocabulary')
     if not cfg.get('refresh_inventory', True):
         cmd.append('--no-ha-refresh')

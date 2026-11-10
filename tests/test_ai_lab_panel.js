@@ -94,3 +94,13 @@ test('typed test without origin displays real ambiguity and offers area context'
   assert.match(text(nodes.interpretations),/Ambíguo: Ventilador A · Sala; Ventilador B/);
   assert.match(text(nodes.interpretations),/qual parte está ambígua/);
 });
+
+
+test('cached native panel remounts STT after reconnecting',()=>{
+  const panel=new Panel();let mounted=0;
+  panel.ready=true;panel._hass={};panel.sttDisposed=true;panel.disconnected=true;
+  panel.mountStt=()=>mounted++;
+  panel.connectedCallback();
+  assert.equal(panel.disconnected,false);
+  assert.equal(mounted,1);
+});

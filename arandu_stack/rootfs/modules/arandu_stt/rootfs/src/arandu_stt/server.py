@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Arandu STT production: Wyoming + FastConformer CTC + lexical resolver.
+"""Arandu STT production: Wyoming + FastConformer/Whisper + lexical resolver.
 
 Pipeline: Wyoming PCM -> optional synthetic tail padding -> FastConformer CTC ->
 Arandu lexical resolver (full) -> Transcript. No Home Assistant commands are executed here.
@@ -35,7 +35,7 @@ NAME = 'arandu-fastconformer-ptbr-int8'  # Preserve Assist's existing selected m
 UPSTREAM = 'https://huggingface.co/nvidia/stt_pt_fastconformer_hybrid_large_pc'
 MAX_SECONDS = 35
 MAX_INPUT_BYTES = 2 * 16000 * MAX_SECONDS
-VERSION = '2.2.0'
+VERSION = '3.0.0'
 
 
 def pcm16_to_float32(pcm: bytes) -> np.ndarray:
@@ -44,11 +44,15 @@ def pcm16_to_float32(pcm: bytes) -> np.ndarray:
     return np.frombuffer(pcm, dtype='<i2').astype(np.float32) / 32768.0
 
 
-def build_info() -> Info:
+def build_info(model='fastconformer') -> Info:
+    from model_catalog import CATALOG
+    selected = CATALOG[model]
     attribution = Attribution(name='NVIDIA checkpoint + Arandu lexical resolver', url=UPSTREAM)
+    if model != 'fastconformer':
+        attribution = Attribution(name='OpenAI Whisper / Systran conversion (MIT)', url='https://huggingface.co/' + selected['repo'])
     return Info(asr=[AsrProgram(
         name='arandu-stt',
-        description='FastConformer PT-BR CTC + Arandu lexical resolver',
+        description=selected['name'] + ' PT-BR + Arandu lexical resolver',
         attribution=attribution,
         installed=True,
         version=VERSION,
@@ -56,7 +60,7 @@ def build_info() -> Info:
         supports_transcript_streaming=False,
         models=[AsrModel(
             name=NAME,
-            description='FastConformer PT-BR ONNX + contextual sanitation',
+            description=selected['name'] + ' + contextual sanitation (ID de serviço compatível)',
             attribution=attribution,
             installed=True,
             version=VERSION,
@@ -66,34 +70,47 @@ def build_info() -> Info:
 
 
 class Engine:
-    def __init__(self, model_dir: Path, threads: int):
-        import sherpa_onnx
-        model = model_dir / 'model.onnx'
-        if not model.is_file():
-            model = model_dir / 'model.int8.onnx'
-        tokens = model_dir / 'tokens.txt'
-        if not model.is_file() or model.stat().st_size < 10_000_000 or not tokens.is_file():
-            raise FileNotFoundError(f'Modelo ONNX incompleto em {model_dir}')
-        self.recognizer = sherpa_onnx.OfflineRecognizer.from_nemo_ctc(
-            model=str(model), tokens=str(tokens), num_threads=threads,
-            sample_rate=16000, feature_dim=80, decoding_method='greedy_search',
-            provider='cpu', debug=False,
-        )
+    def __init__(self, model_dir: Path, threads: int, model='fastconformer', variant='adapted'):
+        from backends import create_backend
+        self.model, self.variant, self.threads = model, variant, threads
+        manifest_path = Path(model_dir) / 'manifest.json'
+        self.manifest = json.loads(manifest_path.read_text(encoding='utf-8')) if manifest_path.exists() else {}
+        self.backend = create_backend(model, model_dir, threads).load()
+        import os
+        import psutil
+        if psutil.Process(os.getpid()).memory_info().rss > 3 * 1024**3:
+            self.backend.close()
+            raise MemoryError('STT excedeu o limite de 3 GiB de RAM')
         self._lock = threading.Lock()
+        self.recent = {}
 
-    def recognize(self, audio: np.ndarray) -> tuple[str, float, float]:
-        before_wait = time.perf_counter()
-        with self._lock:
-            wait = time.perf_counter() - before_wait
-            start = time.perf_counter()
-            stream = self.recognizer.create_stream()
-            stream.accept_waveform(16000, audio)
-            self.recognizer.decode_stream(stream)
-            return stream.result.text.strip(), time.perf_counter() - start, wait
+    def recognize(self, audio):
+        if not self._lock.acquire(blocking=False):
+            raise RuntimeError('STT ocupado; tente novamente')
+        try:
+            if not np.any(audio):
+                return '', 0.0, 0.0
+            text, milliseconds = self.backend.recognize(audio)
+            self.recent = {'inference_ms': milliseconds, 'audio_duration_ms': len(audio)/16}
+            return text, milliseconds / 1000, 0.0
+        finally:
+            self._lock.release()
+
+    def metadata(self):
+        import os
+        import psutil
+        from model_catalog import CATALOG
+        manifest = self.manifest
+        return {'revision': manifest.get('revision') or manifest.get('version'), 'model_path': str(self.backend.model_dir), 'model': self.model, 'variant': self.variant, 'backend': CATALOG[self.model]['runtime'],
+                'public_service_id': NAME, 'state': 'ready', 'threads': self.threads, 'device': 'cpu',
+                'compute': 'fp32' if self.model == 'fastconformer' and self.variant == 'adapted' else 'int8',
+                'model_load_ms': self.backend.load_ms, 'process_rss_mb': psutil.Process(os.getpid()).memory_info().rss/1048576,
+                'recent': self.recent}
 
 
 class Metrics:
-    def __init__(self, path: Path, debug_text: bool = False):
+    def __init__(self, path: Path, debug_text: bool = False, model=NAME, variant=None):
+        self.model, self.variant = model, variant
         self.path = path
         self.debug_text = debug_text
         self._lock = threading.Lock()
@@ -104,7 +121,9 @@ class Metrics:
             changes: int, padding_ms: int, outcome: str, lexical: dict | None = None) -> None:
         entry = {
             'utc': datetime.now(timezone.utc).isoformat(),
-            'model': NAME,
+            'model': self.model,
+            'model_variant': self.variant,
+            'public_service_id': NAME,
             'duration_s': round(duration_s, 5),
             'padding_ms': padding_ms,
             'inference_s': round(inference_s, 5),
@@ -135,8 +154,8 @@ class Metrics:
                 self.latencies.append(after_stop_s)
                 self.latencies = self.latencies[-1000:]
                 s = sorted(self.latencies)
-                p95 = s[max(0, int((len(s) * .95 + .999999) - 1))]
-                LOG.info('STT %.3fs | ASR %.3fs | correcao %.2fms | fila %.3fs | P95 %.3fs (n=%s)',
+                p95 = ('%.3fs' % s[max(0, int((len(s) * .95 + .999999) - 1))]) if len(s) >= 20 else 'amostra insuficiente'
+                LOG.info('STT %.3fs | ASR %.3fs | correcao %.2fms | fila %.3fs | P95 %s (n=%s)',
                          after_stop_s, inference_s, correction_ms, queue_s, p95, len(s))
                 if self.debug_text:
                     LOG.info('RAW: %s', raw)
@@ -162,6 +181,13 @@ class Handler(AsyncEventHandler):
         self.started = False
         LOG.info('[WYOMING] client connected')
 
+    async def disconnect(self):
+        self.parts.clear()
+        if self.writer is not None:
+            self.writer.close()
+            with suppress(OSError):
+                await self.writer.wait_closed()
+
     def reset(self) -> None:
         self.converter = AudioChunkConverter(rate=16000, width=2, channels=1)
         self.parts.clear()
@@ -175,7 +201,7 @@ class Handler(AsyncEventHandler):
     async def handle_event(self, event: Event) -> bool:
         if Describe.is_type(event.type):
             LOG.info('[WYOMING] Describe')
-            await self.write_event(build_info().event())
+            await self.write_event(build_info(getattr(self.engine, 'model', 'fastconformer')).event())
             return True
         if Transcribe.is_type(event.type):
             req = Transcribe.from_event(event)
@@ -241,8 +267,9 @@ class Handler(AsyncEventHandler):
                     audio = pcm16_to_float32(pcm)
                     if self.padding_ms:
                         audio = np.concatenate((audio, np.zeros(round(16000*self.padding_ms/1000), dtype=np.float32)))
-                    raw, infer, wait = await asyncio.to_thread(self.engine.recognize, audio)
-                    resolved = await asyncio.to_thread(self.resolver.apply, raw, self.profile)
+                    raw, infer, wait = await asyncio.wait_for(asyncio.to_thread(self.engine.recognize, audio), 60)
+                    from stt_processing import correct
+                    resolved = await asyncio.to_thread(correct, self.resolver, raw, self.profile)
                     final = resolved['text']
                     correction_ms = float(resolved['correction_ms'])
                     changes = len(resolved['changes'])
@@ -271,7 +298,10 @@ class Handler(AsyncEventHandler):
 
 
 def parse_args(argv=None):
-    p = argparse.ArgumentParser(description='Arandu STT - Wyoming + FastConformer INT8 + lexical resolver')
+    p = argparse.ArgumentParser(description='Arandu STT multimodelo - Wyoming + lexical resolver')
+    p.add_argument('--stt-model', choices=('fastconformer','whisper_tiny','whisper_base','whisper_small'), default='fastconformer')
+    p.add_argument('--model-variant', choices=('adapted','original'), default='adapted')
+    p.add_argument('--diagnostics-port', type=int, default=11560)
     p.add_argument('--model-dir', type=Path, default=Path('/data/models/int8'))
     p.add_argument('--inventory', type=Path, default=Path('/data/arandu_ha_inventory.json'))
     p.add_argument('--uri', default='tcp://0.0.0.0:10350')
@@ -289,8 +319,8 @@ def parse_args(argv=None):
     p.add_argument('--debug-text', action='store_true')
     p.add_argument('--no-discovery', action='store_true')
     a = p.parse_args(argv)
-    if not 1 <= a.threads <= 8:
-        p.error('--threads precisa estar entre 1 e 8')
+    if not 1 <= a.threads <= 4:
+        p.error('--threads precisa estar entre 1 e 4')
     if not 0 <= a.inventory_refresh_seconds <= 86400:
         p.error('--inventory-refresh-seconds: 0–86400')
     return a
@@ -312,17 +342,29 @@ async def main(argv=None):
     if weights:
         overrides['source_weights'] = weights
     resolver = ContextualResolver(a.inventory, HERE/'resources', config_path=a.lexical_config, overrides=overrides)
-    LOG.info('Carregando FastConformer INT8 | threads=%s | profile=%s | padding=%sms', a.threads, a.profile, a.padding_ms)
+    LOG.info('Carregando %s | threads=%s | profile=%s | padding=%sms', a.stt_model, a.threads, a.profile, a.padding_ms)
     LOG.info('Resolver: %s', resolver.stats())
-    engine = Engine(a.model_dir, a.threads)
-    metrics = Metrics(a.metrics, a.debug_text)
+    engine = Engine(a.model_dir, a.threads, a.stt_model, a.model_variant)
+    metrics = Metrics(a.metrics, a.debug_text, a.stt_model, a.model_variant)
     server = AsyncServer.from_uri(a.uri)
     LOG.info('PRONTO: Arandu STT Wyoming %s | profile=%s | padding=%sms', a.uri, a.profile, a.padding_ms)
     handler_factory = partial(Handler, engine, resolver, metrics, a.padding_ms, a.profile)
     refresh_task = asyncio.create_task(refresh_loop(resolver, a.inventory_refresh_seconds, query_ha=not a.no_ha_refresh)) if a.inventory_refresh_seconds else None
+    from aiohttp import web
+    diagnostics = web.Application()
+    async def status(request):
+        if request.remote not in {'127.0.0.1', '::1'} or request.headers.get('Origin'):
+            raise web.HTTPForbidden()
+        return web.json_response(engine.metadata())
+    diagnostics.router.add_get('/status', status)
+    runner = web.AppRunner(diagnostics, access_log=None)
+    await runner.setup()
+    await web.TCPSite(runner, '127.0.0.1', a.diagnostics_port).start()
     try:
         await serve(server, handler_factory, a.no_discovery)
     finally:
+        await runner.cleanup()
+        engine.backend.close()
         if refresh_task:
             refresh_task.cancel()
             with suppress(asyncio.CancelledError):

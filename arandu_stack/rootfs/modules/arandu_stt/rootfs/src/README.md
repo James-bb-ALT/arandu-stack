@@ -1,3 +1,11 @@
+# STT 3.0.0 — FastConformer e Whisper local
+
+A seleção `stt_model` aceita `fastconformer`, `whisper_tiny`, `whisper_base` e `whisper_small`. FastConformer mantém `model_variant=adapted|original`; Whisper usa CPU INT8, duas threads e `whisper_profile=normalize_only` por padrão. `auto_download=false` exige instalação explícita; pesos verificados funcionam offline. O ID Wyoming existente é preservado.
+
+Na stack integrada, instale pesos em STT → Configurar e use Arandu AI Lab → STT para gravação/comparação e aplicação confirmada. Consulte `docs/STT-MULTIMODEL.md` na raiz do repositório para contrato, testes, métricas, licenças e rollback. Os pesos FastConformer permanecem CC BY-NC 4.0 (não comercial); Whisper é MIT. Nenhum peso é incluído neste repositório.
+
+## Documentação histórica do FastConformer
+
 # Arandu STT
 
 Speech-to-text local PT-BR para Home Assistant Assist.

@@ -15,7 +15,7 @@ from logs import LogStore
 DEFAULTS = {
     'nlu': {'enabled': True, 'custom_phrases_enabled': True, 'max_input_chars': 512, 'session_ttl': 60, 'low_battery_threshold': 20},
     'wake': {'enabled': False, 'wake_word': 'alexa', 'threshold': .5, 'trigger_level': 1, 'refractory_seconds': 2.0},
-    'stt': {'enabled': False, 'auto_download': False, 'model_variant': 'adapted', 'threads': 2,
+    'stt': {'enabled': False, 'auto_download': False, 'stt_model': 'fastconformer', 'whisper_profile': 'normalize_only', 'model_variant': 'adapted', 'threads': 2,
             'padding_ms': 0, 'profile': 'full', 'debug_text': False, 'refresh_inventory': False,
             'lexical_enabled': True, 'closed_vocabulary': True, 'generic_weight': 7,
             'home_assistant_weight': 10, 'inventory_refresh_seconds': 0},
@@ -131,6 +131,13 @@ class ModuleManager:
         merged = validate_options(key, {**self.config[key], **options}, self.data)
         if merged['enabled'] != self.config[key]['enabled']:
             raise ValueError('Use Ativar/Desativar para mudar enabled')
+        if key == 'stt':
+            backup = self.data / 'stt-last-good.json'
+            if not backup.exists():
+                self.data.mkdir(parents=True, exist_ok=True)
+                staged = backup.with_suffix('.tmp')
+                staged.write_text(json.dumps(self.config[key]), encoding='utf-8')
+                staged.replace(backup)
         self.config[key] = merged
         self.save()
         self.journal.event(key, 'Configurações salvas; reinicie o módulo para aplicar.')
@@ -156,6 +163,8 @@ class ModuleManager:
                                OPENBLAS_NUM_THREADS=str(self.config[key]['threads']),
                                MKL_NUM_THREADS=str(self.config[key]['threads']),
                                OMP_WAIT_POLICY='PASSIVE', KMP_BLOCKTIME='0')
+        if key == 'stt':
+            environment.update(OMP_NUM_THREADS=str(self.config[key]['threads']), MKL_NUM_THREADS=str(self.config[key]['threads']), OMP_WAIT_POLICY='PASSIVE')
         if key == 'stt' and self.config[key].get('refresh_inventory') and os.environ.get('SUPERVISOR_TOKEN'):
             environment['SUPERVISOR_TOKEN'] = os.environ['SUPERVISOR_TOKEN']
         command = ['/usr/bin/local-nlu', 'serve', '--listen', '0.0.0.0:11555'] if key == 'nlu' else [f'/opt/venvs/{key}/bin/python', '/opt/assistant/module_worker.py', key]

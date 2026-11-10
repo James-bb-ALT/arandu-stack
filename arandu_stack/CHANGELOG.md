@@ -1,3 +1,12 @@
+# App 3.0.0 / STT 3.0.0 / HACS 4.0.0 — voz multimodelo
+
+- FastConformer original/adaptado e Whisper Tiny/Base/Small reais, CPU INT8 para Whisper, instalação explícita com staging, revisão imutável, hashes, cache persistente e funcionamento offline.
+- Dashboard seleciona e instala motores; aplicação confirmada verifica carregamento e Wyoming, reinicia somente STT e restaura configuração/processo anteriores em falha. Mantém seleção legada FastConformer.
+- Aba STT nativa no AI Lab: gravação até 12 s, upload/player, conversão FFmpeg, comparação sequencial do mesmo PCM, RAW/FINAL, tempos separados, WER/CER e exportação. Remove o endpoint legado da porta 8765. Não chama NLU nem serviços domésticos em testes de áudio.
+- Preserva ID Wyoming e portas 10350/10212. Mantém ContextualResolver e rejeita reescritas lexicais que troquem negação ou ação explícita. Whisper começa com normalização conservadora e vocabulário aberto.
+- Limites de upload, concorrência, timeout e RSS, autenticação HA administrativa, validação local e CSRF preservados. Áudio/texto dos testes ficam em memória, sem persistência automática.
+- Validação e limitações: [STT-MULTIMODEL](../docs/STT-MULTIMODEL.md). Testes com pesos reais e voz sintética comprovam o fluxo técnico; não comprovam precisão humana ou metas no i5-6500T. Instalação física no HA exige validação separada.
+
 # App 2.0.1 / HACS 3.0.1 — resposta curta no ReSpeaker
 
 - Pedidos não compreendidos, ambíguos ou sem alvo/ação em origens ReSpeaker recebem somente “Não entendi.”, sem continuar a conversa. Descarta o contexto desse pedido para impedir reaproveitamento de seleção/confirmação pendente.

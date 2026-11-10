@@ -105,18 +105,46 @@ class Lab:
             except Exception as exc:
                 return {"models": [{"id": key, **model, "available": False, "installed": None,
                                      "reason": model.get("unavailable") or "Worker inacessível; instalação não verificada"} for key, model in MODELS.items()], "error": str(exc)[:256]}
-        if command == "transcribe":
-            audio = base64.b64decode(payload["audio"], validate=True)
-            if not 1 <= len(audio) <= 2_000_000:
-                raise ValueError("Áudio excedeu 2 MB")
-            started = time.perf_counter()
-            result = await local_request(session, payload.get("stt_endpoint", "http://127.0.0.1:8765"), "/api/compare-upload", body=audio,
-                                         headers={"Content-Type": "application/octet-stream"})
-            selected = payload.get("stt_model", "original")
-            if selected not in ("original", "adapted") or not result.get(selected):
-                raise ValueError("Modelo STT não disponível")
-            return {"text": result[selected]["text"], "model": selected, "latency_ms": (time.perf_counter() - started) * 1000,
-                    "output": result[selected], "vad_ms": None}
+        if command in {'transcribe', 'stt_models', 'stt_test', 'stt_compare', 'stt_install', 'stt_apply'}:
+            if not stack_endpoint:
+                raise ValueError('Configure o endpoint Arandu Stack nas opções da integração')
+            if command == 'stt_models':
+                variant = payload.get('variant', 'adapted')
+                if variant not in ('adapted', 'original'):
+                    raise ValueError('Variante STT inválida')
+                return await local_request(session, stack_endpoint, '/api/stt/models?variant=' + variant)
+            action = 'test' if command == 'transcribe' else command.removeprefix('stt_')
+            model = payload.get('stt_model', payload.get('model', 'fastconformer'))
+            variant = payload.get('variant', 'adapted')
+            # Legacy selector remains compatible while the panel migrates.
+            if model in ('original', 'adapted'):
+                variant, model = model, 'fastconformer'
+            allowed = {'fastconformer', 'whisper_tiny', 'whisper_base', 'whisper_small'}
+            if model not in allowed or variant not in ('original', 'adapted'):
+                raise ValueError('Modelo STT inválido')
+            body = {'model': model, 'variant': variant}
+            for key in ('audio', 'models', 'threads', 'profile', 'reference', 'entity_reference', 'confirm'):
+                if key in payload:
+                    body[key] = payload[key]
+            if action in ('test', 'compare'):
+                audio = body.get('audio')
+                if type(audio) is not str or len(audio) > 1_866_668:
+                    raise ValueError('Áudio excedeu 1,4 MB')
+                decoded = base64.b64decode(audio, validate=True)
+                if not 1 <= len(decoded) <= 1_400_000:
+                    raise ValueError('Áudio vazio ou excedeu 1,4 MB')
+                if action == 'compare' and (type(body.get('models')) is not list or not 1 <= len(body['models']) <= 4 or any(m not in allowed for m in body['models'])):
+                    raise ValueError('Selecione 1–4 modelos STT válidos')
+            if self.lock.locked():
+                raise ValueError('Laboratório ocupado; aguarde')
+            async with self.lock:
+                result = await local_request(session, stack_endpoint, '/api/stt/' + action, payload=body, timeout=420)
+            if command == 'transcribe':
+                row = result['results'][0]
+                if row.get('state') != 'ready':
+                    raise ValueError(row.get('error', 'STT indisponível'))
+                return {'text': row['final_transcript'], 'model': model, 'latency_ms': result['request_total_ms'], 'output': row, 'vad_ms': None}
+            return result
         if command == "tts":
             text = payload.get("text")
             if type(text) is not str or not 1 <= len(text) <= 512:
@@ -329,6 +357,7 @@ async def async_register(hass):
             connection.send_error(msg["id"], "ai_lab_error", str(exc)[:256])
     websocket_api.async_register_command(hass, handle)
     await hass.http.async_register_static_paths([
+        StaticPathConfig("/local_nlu_ai_lab/stt.js", str(Path(__file__).with_name("stt_lab_panel.js")), False),
         StaticPathConfig("/local_nlu_ai_lab/panel.js", str(Path(__file__).with_name("ai_lab_panel.js")), False),
         StaticPathConfig("/local_nlu_ai_lab/brand", str(Path(__file__).with_name("brand")), False),
     ])

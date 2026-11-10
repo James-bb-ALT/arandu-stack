@@ -17,7 +17,7 @@ COPY --from=llama /llama/build/bin/llama-server /usr/local/bin/llama-server
 COPY rootfs/modules /opt/modules
 RUN python -m venv --system-site-packages /opt/venvs/decision && /opt/venvs/decision/bin/pip install --no-cache-dir /opt/modules/arandu_decision/rootfs/src
 RUN python -m venv --system-site-packages /opt/venvs/llm && /opt/venvs/llm/bin/pip install --no-cache-dir /opt/modules/arandu_llm/rootfs/src
-RUN python -m venv --system-site-packages /opt/venvs/stt && /opt/venvs/stt/bin/pip install --no-cache-dir -r /opt/modules/arandu_stt/rootfs/src/arandu_stt/requirements.txt
+RUN python -m venv /opt/venvs/stt && /opt/venvs/stt/bin/pip install --no-cache-dir -r /opt/modules/arandu_stt/rootfs/src/arandu_stt/requirements.txt
 RUN python -m venv --system-site-packages /opt/venvs/tts && /opt/venvs/tts/bin/pip install --no-cache-dir '/opt/modules/arandu_tts/rootfs/src[pocket]'
 RUN python -m venv --system-site-packages /opt/venvs/wake && /opt/venvs/wake/bin/pip install --no-cache-dir -r /opt/modules/arandu_wake/rootfs/src/requirements-detector.txt /opt/modules/arandu_wake/rootfs/src
 COPY app /opt/assistant

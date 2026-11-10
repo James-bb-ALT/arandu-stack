@@ -34,10 +34,6 @@ elif key == 'stt':
     root = sources / 'arandu_stt/rootfs/src/arandu_stt'
     sys.path.insert(0, str(root))
     import launcher
-    if not options.get('auto_download'):
-        variant = 'int8' if options['model_variant'] == 'original' else launcher.ADAPTED_VERSION
-        if not list((data / 'models' / variant).glob('*.onnx')):
-            raise SystemExit('Pesos STT ausentes: habilite auto_download nas opções e reinicie o módulo.')
     launcher.main()
 elif key == 'wake':
     from wake_service import run

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "negation": ["nao", "nunca", "jamais", "nem", "sem"],
+  "exclusion": ["menos", "exceto", "salvo", "a nao ser", "com excecao"],
+  "condition": ["se", "caso", "quando", "desde que", "contanto que", "a menos que", "depois", "antes de", "assim que", "amanha", "mais tarde", "daqui a", "apos", "enquanto", "ate que", "logo que"],
+  "name_prefix": ["pode", "poderia", "por", "favor", "a", "o", "as", "os", "de", "do", "da", "estado", "qual", "quais", "como", "esta", "pra", "para", "queria", "quero"],
+  "speech": ["piada", "historia", "poema", "poesia", "conto", "traduz", "traduza", "traducao", "resuma", "resumo", "explique"],
+  "effects": ["liga", "ligue", "ligar", "acende", "acenda", "acender", "ativa", "ative", "ativar", "desliga", "desligue", "desligar", "apaga", "apague", "apagar", "desativa", "desative", "desativar", "abre", "abra", "abrir", "fecha", "feche", "fechar", "tranca", "tranque", "trancar", "destranca", "destranque", "destrancar", "aumenta", "aumente", "aumentar", "diminui", "diminua", "diminuir", "coloca", "coloque", "colocar", "deixa", "deixe", "ajusta", "ajuste", "muda", "toca", "toque", "pausa", "pare", "desarme", "arme", "cancela", "cancele"],
+  "queries": ["qual", "quais", "quanto", "quantos", "quantas", "como", "onde", "quando", "o que"]
+}

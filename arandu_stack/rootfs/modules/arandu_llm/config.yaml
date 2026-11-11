@@ -1,6 +1,6 @@
 name: Arandu LLM
 slug: arandu_llm
-version: "1.0.0"
+version: "1.0.1"
 description: Tucano residente — conversa geral em PT-BR e fallback de automação validado
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]

@@ -1,3 +1,7 @@
+## Atualização 1.0.1
+
+Política semântica compartilhada: restrições operacionais recusadas antes da carga/inferência; compostos não viram proposta parcial. Nomes registrados, consultas e conversa são tratados pelo contexto. Modelos, embeddings e calibração preservados.
+
 ## Atualização 1.0.0
 
 Pedidos claramente gerais (piadas, explicações, perguntas factuais) recebem geração de texto em PT-BR, sem catálogo doméstico, ferramentas ou gramática de ações. O resultado volta ao Assist como fala, com zero operações. O modelo é residente e reutilizado entre pedidos; truncamento e respostas inválidas são recusados.
@@ -6,7 +10,7 @@ Automação mantém JSON validado, candidatos autorizados, controle de ação/al
 
 # Arandu LLM
 
-Versão atual 1.0.0: último fallback com pistas compactas do NLU/Decision e fala original preservada. O modelo pode discordar das pistas; elas não concedem autorização. Rankings auxiliares limitados a duas hipóteses, sem diagnósticos do NLU. Ganho de acurácia/latência ainda não medido no hardware real.
+Versão atual 1.0.1: último fallback com pistas compactas do NLU/Decision e fala original preservada. O modelo pode discordar das pistas; elas não concedem autorização. Rankings auxiliares limitados a duas hipóteses, sem diagnósticos do NLU. Ganho de acurácia/latência ainda não medido no hardware real.
 
 Pacote Python independente. Não importa o NLU nem o outro pacote. Serviço passivo: recebe catálogo autorizado completo do Home Assistant e devolve proposta; credenciais, autorização e execução ficam na integração HA.
 

@@ -1,3 +1,11 @@
+# 6.0.1 — Fase 1 e NLU Hardening (2026-11-11)
+
+- App 5.0.1, HACS 6.0.1, NLU 0.6.3 e Decision/LLM 1.0.1; STT/TTS e modelos preservados.
+- Política semântica compartilhada para negação, exclusão, condicionais e pedidos temporais; abstenção do plano inteiro e motivos estáveis que não admitem fallback.
+- Defesa independente no executor HA contra propostas que percam restrições, transformem perguntas em efeitos ou usem conversa como autorização.
+- NLU: “queria … acesa”, “dá pra desligar …”, separação de “e depois” e domínio do único alvo pronominal recente. Histórico invalidado por mudança de catálogo/origem nas duas cópias distribuídas.
+- Integração Rust real → HA simulado, serviços isolados, nomes registrados, compostos e contraexemplos das revisões. Relatório em `docs/NLU-HARDENING-PHASE1.md`; gate histórico/corpus ausentes não são declarados aprovados.
+
 # App 5.0.0 / HACS 6.0.0 / Decision 1.0.0 / LLM 1.0.0 / STT 4.0.1
 
 - LLM responde pedidos gerais em PT-BR com geração de fala separada de propostas domésticas. Conversa não recebe catálogo/ferramentas nem produz operações; Assist e AI Lab exibem a resposta.

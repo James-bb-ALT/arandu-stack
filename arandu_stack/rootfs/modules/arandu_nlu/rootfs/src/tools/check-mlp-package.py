@@ -33,6 +33,8 @@ EXPECTED_INTEGRATION = {
     "contextual_protocol.py",
     "contextual_catalog.py",
     "contextual_runtime.py",
+    "semantic_context.py",
+    "semantic_policy.json",
     "contextual_errors.py",
     "device_location.py",
     "diagnostics.py",

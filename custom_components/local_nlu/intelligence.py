@@ -7,7 +7,7 @@ import time
 
 from .ai_lab_core import digest, finite, validate_proposal
 from .contextual_protocol import Operation
-from .semantic_context import resolve_device, understood_action, hypothesis_allowed, conversation_allowed, clearly_conversational
+from .semantic_context import resolve_device, understood_action, hypothesis_allowed, conversation_allowed, clearly_conversational, semantic_refusal, read_only_question, speech_only_request
 from .request_trace import CURRENT
 
 _LOGGER = logging.getLogger(__name__)
@@ -39,10 +39,10 @@ def accepted_decision(response, catalog, text=None, context=None):
         if text is None or response.get('catalog_fingerprint') != digest(catalog):
             raise ValueError('Decisão sem catálogo ou texto verificáveis')
         proposal = validate_proposal(response.get('proposal'), catalog)
-        if not grounded_target(text, proposal, catalog, context) or not hypothesis_allowed(text):
+        if not grounded_target(text, proposal, catalog, context) or not hypothesis_allowed(text, catalog):
             raise ValueError('Decisão sem alvo inequívoco')
         if status == 'resolved':
-            if (response.get('grounding') != 'deterministic-v1' or understood_action(text) != proposal['intent']
+            if (response.get('grounding') != 'deterministic-v1' or understood_action(text, catalog) != proposal['intent']
                     or proposal['requires_clarification'] or proposal['confidence'] is not None):
                 raise ValueError('Resolução determinística inconsistente')
         elif not proposal['requires_clarification'] or response.get('confirmation_required') is not True:
@@ -84,9 +84,11 @@ def grounded_target(text, proposal, catalog, context=None):
 def proposal_route(text, proposal, catalog, context=None, force_review=False, auto_decision=False):
     if proposal['intent'] == 'conversation' and conversation_allowed(text, catalog) and not proposal['requires_clarification']:
         return 'conversation'
-    if not grounded_target(text, proposal, catalog, context) or not hypothesis_allowed(text):
+    if speech_only_request(text) or (read_only_question(text) and proposal['intent'] != 'query'):
+        return 'clarification'
+    if not grounded_target(text, proposal, catalog, context) or not hypothesis_allowed(text, catalog):
         return "clarification"
-    known = understood_action(text)
+    known = understood_action(text, catalog)
     if known is not None and known != proposal["intent"]:
         return "clarification"
     if auto_decision:
@@ -111,6 +113,9 @@ def nlu_summary(outcome):
 
 async def fallback(text, snapshot, options, request, context=None, nlu=None):
     """Snapshot policy per request; bounded calls; no effects or late callbacks."""
+    refusal = semantic_refusal(text, snapshot.payload)
+    if refusal or (nlu and not eligible_summary(nlu)):
+        return (), {'safety': {'status': 'rejected', 'reason': refusal or 'nlu_not_eligible'}}
     trace = {}
     decision = None
     for source in ("decision", "llm"):
@@ -158,7 +163,7 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
                                        auto_decision=source == 'decision' and response.get('decision_status') in {'accepted', 'resolved'})
                 trace[source]["status"] = route
                 if source == 'decision':
-                    trace[source].update(confidence=response.get('confidence'), auto_corrected=understood_action(text) is None)
+                    trace[source].update(confidence=response.get('confidence'), auto_corrected=understood_action(text, snapshot.payload) is None)
                 if route == "clarification":
                     continue
                 if route == "confirmation_required" or source == 'decision':
@@ -180,3 +185,10 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
                 status = {'proposed': 'accepted', 'clarification': 'rejected', 'responded': 'rejected', 'conversation': 'completed'}.get(row['status'], row['status'])
                 recorder.end(source, status, row.get('error') or reason, confidence)
     return (), trace
+
+
+def eligible_summary(summary):
+    """A caller cannot reinterpret an explicit NLU refusal as a neural request."""
+    return (summary.get('status') == 'no_match' and summary.get('reason') in
+            (None, 'no_match', 'unsupported_intent', 'unknown_intent')) or (
+            summary.get('status') == 'clarification' and summary.get('reason') == 'target_not_found')

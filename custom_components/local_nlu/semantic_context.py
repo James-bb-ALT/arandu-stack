@@ -7,6 +7,69 @@ from __future__ import annotations
 
 import re
 import unicodedata
+import json
+from pathlib import Path
+
+POLICY = json.loads(Path(__file__).with_name('semantic_policy.json').read_text(encoding='utf-8'))
+
+
+def read_only_question(text):
+    query = normalized(text)
+    return (not set(query.split()).intersection(POLICY['effects'])
+            and any(query.startswith(word + ' ') for word in POLICY['queries']))
+
+
+def speech_only_request(text):
+    words = set(normalized(text).split())
+    return not words.intersection(POLICY['effects']) and bool(words.intersection(POLICY['speech']))
+
+
+def semantic_refusal(text, catalog=None):
+    """Whole-utterance restrictions, with exact non-verbal catalog labels masked.
+
+    Never mask a label containing an effect verb: a catalog cannot hide a command.
+    Read-only questions may contain negative states without authorizing an effect.
+    This is a conservative syntax boundary, not a complete Portuguese parser.
+    """
+    value = ' ' + normalized(text) + ' '
+    raw_words = value.split()
+    temporal_units = {'horas', 'hora', 'minutos', 'minuto', 'segundos', 'segundo'}
+    clock = lambda tokens: any(word == 'as' and tokens[i + 1][:1].isdigit() for i, word in enumerate(tokens[:-1]))
+    timed = bool(set(raw_words) & temporal_units) or clock(raw_words)
+    if not timed and not any(' ' + phrase + ' ' in value for kind in ('condition', 'exclusion', 'negation') for phrase in POLICY[kind]):
+        return None
+    effects = set(POLICY['effects'])
+    labels = [name for row in (catalog or {}).get('entities', [])
+              for name in [row['name'], *row.get('aliases', [])]]
+    labels += [name for area in (catalog or {}).get('areas', []) for name in area['names']]
+    for label in sorted({normalized(name) for name in labels}, key=lambda name: (-len(name), name)):
+        if label and not effects.intersection(label.split()):
+            pattern = re.compile(' ' + re.escape(label) + ' ')
+            def target_name(match):
+                prefix = set(value[:match.start()].split())
+                allowed = effects | set(POLICY['name_prefix'])
+                return ' alvo ' if prefix and prefix <= allowed else match.group()
+            value = pattern.sub(target_name, value)
+    words = set(value.split())
+    # A date inside an explicit calendar creation is data, not a deferred home action.
+    calendar = (words & {'agenda', 'calendario'} and value.startswith((' coloca ', 'cria ', 'marca '))
+                and words.intersection(effects) <= {'coloca'})
+    if not words.intersection(effects) and any(value.startswith(' ' + query + ' ') for query in POLICY['queries']):
+        return None
+    if not words.intersection(effects) and words.intersection(POLICY['speech']):
+        return None
+    # Explicit timers and calendar dates have typed adapters. Ordinary device
+    # effects with a clock/delay must never be interpreted as immediate effects.
+    timer = bool(words & {'timer', 'temporizador', 'alarme'}) and words.intersection(effects) <= {'coloca', 'ajusta', 'cancela', 'cancele', 'pausa'}
+    if words.intersection(effects) and (words.intersection(temporal_units) or clock(value.split())) and not calendar and not timer:
+        return 'semantic_condition'
+    value = re.sub(r'\be depois (?=\w+)', lambda match: 'e sequencia ' if
+                   value[match.end():].split()[0] in effects else match.group(), value)
+    for kind in ('condition', 'exclusion', 'negation'):
+        if any(' ' + phrase + ' ' in value for phrase in POLICY[kind]
+               if not (calendar and phrase == 'amanha')):
+            return 'semantic_' + kind
+    return None
 
 
 def normalized(value):
@@ -21,10 +84,13 @@ ACTIONS = {
 }
 
 
-def understood_action(text):
+def understood_action(text, catalog=None):
     words = set(normalized(text).split())
-    if words & {"nao", "nunca", "exceto", "menos", "se", "quando"}:
+    if semantic_refusal(text, catalog):
         return None
+    if not words.intersection(POLICY['effects']) and any(
+            normalized(text).startswith(query + ' ') for query in POLICY['queries']):
+        return 'query'
     matches = [action for action, verbs in ACTIONS.items() if words & verbs]
     return matches[0] if len(matches) == 1 else None
 
@@ -108,9 +174,18 @@ def clarification(text, catalog, context=None, allowed=None, reason="not_underst
             "target_area": row.get("area_id") if row else None, "confidence": None,
             "requires_clarification": True, "clarification_question": question, "reason": reason}
 
-def hypothesis_allowed(text):
+def hypothesis_allowed(text, catalog=None):
     words = set(normalized(text).split())
-    return (not words & {"nao", "nunca", "exceto", "menos", "se", "quando"}
+    # Neural fallback supports one explicit operation only. Rust owns compounds.
+    query = ' ' + normalized(text) + ' '
+    for row in (catalog or {}).get('entities', []):
+        for label in [row['name'], *row.get('aliases', [])]:
+            if ' e ' in normalized(label):
+                query = query.replace(' ' + normalized(label) + ' ', ' alvo ')
+    return (semantic_refusal(text, catalog) is None
+            and ' e ' not in query
+            and sum(word in POLICY['effects'] for word in query.split()) <= 1
+            and not re.search(r'[,;].*\w', text.rstrip(' ,;'))
             and sum(bool(words & verbs) for verbs in ACTIONS.values()) <= 1)
 
 

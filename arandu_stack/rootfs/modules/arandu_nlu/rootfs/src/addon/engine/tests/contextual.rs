@@ -447,6 +447,103 @@ fn request(text: &str) -> ContextRequest {
 }
 
 #[test]
+fn phase1_whole_plan_restrictions() {
+    let _guard = catalog_test_guard();
+    assert_eq!(register_catalog(catalog()).status, "catalog_ready");
+    for text in [
+        "Não ligue a luz da sala",
+        "Jamais ligue o ventilador",
+        "Nem pense em abrir o portão",
+        "Não precisa desligar a TV",
+        "Desliga tudo, menos a TV",
+        "Liga a luz e não desliga o ventilador",
+        "Se estiver quente, liga o ar",
+        "Liga a luz, mas não mexe no ventilador",
+        "Sem desligar a TV, apaga a luz",
+        "Liga o ventilador quando eu chegar",
+        "Liga a luz a não ser que esteja claro",
+        "Liga a luz depois de dez minutos",
+        "Liga o ventilador depois",
+        "Liga o ventilador às 18 horas",
+        "Liga o ventilador daqui 10 minutos",
+        "Liga o ventilador às 18:00",
+    ] {
+        let result = interpret(&request(text));
+        assert_ne!(result.status, "plan", "{text}: {result:?}");
+        assert!(
+            result
+                .reason
+                .as_deref()
+                .unwrap_or_default()
+                .starts_with("semantic_")
+        );
+        assert!(result.operations.is_empty());
+    }
+}
+
+#[test]
+fn phase1_names_are_not_operational_restrictions() {
+    let _guard = catalog_test_guard();
+    let mut fixture = catalog();
+    fixture.entities.push(entity(
+        "fixture_wireless",
+        "switch",
+        "Sem Fio",
+        "quarto",
+        None,
+        &["turn_on", "query"],
+    ));
+    assert_eq!(register_catalog(fixture).status, "catalog_ready");
+    let result = interpret(&request("liga Sem Fio"));
+    assert_eq!(result.status, "plan", "{result:?}");
+    assert_eq!(result.operations[0].targets, ["fixture_wireless"]);
+    assert_ne!(
+        interpret(&request("qual o estado de Sem Fio"))
+            .reason
+            .as_deref(),
+        Some("semantic_negation")
+    );
+    // A catalog name must never hide a negative prefix before an effect verb.
+    assert_eq!(interpret(&request("não liga Sem Fio")).status, "cancel");
+}
+
+#[test]
+fn phase1_recent_pronoun_requires_one_current_target() {
+    let _guard = catalog_test_guard();
+    assert_eq!(register_catalog(catalog()).status, "catalog_ready");
+    let mut input = request("Agora diminui ela");
+    assert!(interpret(&input).operations.is_empty());
+    input.last_targets = vec!["light".into()];
+    let result = interpret(&input);
+    assert_eq!(result.status, "plan", "{result:?}");
+    assert_eq!(result.operations[0].action, "brightness");
+    assert_eq!(result.operations[0].targets, ["light"]);
+    input.last_targets.push("fan".into());
+    assert!(interpret(&input).operations.is_empty());
+}
+
+#[test]
+fn phase1_approved_natural_forms_preserve_scope() {
+    let _guard = catalog_test_guard();
+    assert_eq!(register_catalog(catalog()).status, "catalog_ready");
+    for (text, action, target) in [
+        ("Acende a luz do quarto", "turn_on", "light"),
+        ("Pode acender a luz do quarto?", "turn_on", "light"),
+        ("Queria a luz do quarto acesa", "turn_on", "light"),
+        ("Deixa a luz do quarto ligada", "turn_on", "light"),
+        ("Dá pra desligar o ventilador?", "turn_off", "fan"),
+        ("Apaga a iluminação daqui", "turn_off", "light"),
+        ("Coloca a luz em cinquenta por cento", "brightness", "light"),
+        ("Diminui um pouco a iluminação", "brightness", "light"),
+    ] {
+        let result = interpret(&request(text));
+        assert_eq!(result.status, "plan", "{text}: {result:?}");
+        assert_eq!(result.operations[0].action, action);
+        assert_eq!(result.operations[0].targets, [target]);
+    }
+}
+
+#[test]
 fn reusable_device_aliases_use_origin_and_preserve_capabilities() {
     // FIXTURE_TECNICA: generated matrix from device-type groups, not a language metric.
     let _guard = catalog_test_guard();

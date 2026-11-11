@@ -2,7 +2,7 @@
 
 **Sua língua. Sua casa. Seu controle.**
 
-**Versão 0.5.1 — motor NLU 2.0 contextual + AI Lab:** [laboratório e instalação](docs/ai-lab/README.md), [modelos brasileiros e app local](docs/ai-lab/BRAZILIAN-MODELS.md), [arquitetura](docs/nlu-2.0/ARCHITECTURE.md), [contratos HA](docs/nlu-2.0/API-CONTRACTS.md), [implantação e rollback](docs/nlu-2.0/DEPLOYMENT.md), [validação e cobertura](docs/nlu-2.0/REPORT.md).
+**Versão 0.6.3 — motor NLU 2.0 contextual + AI Lab:** [laboratório e instalação](docs/ai-lab/README.md), [modelos brasileiros e app local](docs/ai-lab/BRAZILIAN-MODELS.md), [arquitetura](docs/nlu-2.0/ARCHITECTURE.md), [contratos HA](docs/nlu-2.0/API-CONTRACTS.md), [implantação e rollback](docs/nlu-2.0/DEPLOYMENT.md), [validação e cobertura](docs/nlu-2.0/REPORT.md).
 
 Correções 0.4.5: comandos coletivos acionam todos os dispositivos disponíveis,
 ignorando os offline. Alvos não encontrados recebem uma resposta com o nome entendido.

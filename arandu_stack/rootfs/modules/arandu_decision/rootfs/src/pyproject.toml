@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arandu-decision"
-version = "1.0.0"
+version = "1.0.1"
 description = "Resident Decision with grounded fast paths and calibrated semantic acceptance"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -16,3 +16,6 @@ arandu-decision = "arandu_decision.service:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+arandu_decision = ["semantic_policy.json"]

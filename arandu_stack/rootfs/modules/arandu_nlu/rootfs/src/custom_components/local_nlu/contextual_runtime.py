@@ -45,6 +45,8 @@ class Session:
     response: str | None = None
     signature: str | None = None
     last_execution: float = 0.0
+    history_generation: str | None = None
+    history_origin: tuple[str | None, str] | None = None
     pending_generation: str | None = None
     pending_origin: str | None = None
     pending_options: str | None = None
@@ -245,6 +247,19 @@ class ContextualRuntime:
                 await self._send(snapshot)
             area = origin_area(self.hass, user_input, options)
             spatial_context = origin_context(self.hass, user_input, options)
+            if session.history_generation != generation or session.history_origin != spatial_context:
+                session.last_targets = ()
+                session.last_area = None
+            session.history_generation = generation
+            session.history_origin = spatial_context
+            from .semantic_context import semantic_refusal
+            refusal = semantic_refusal(user_input.text, snapshot.payload)
+            if refusal:
+                session.pending = None
+                session.selection = None
+                session.confirmation = ()
+                session.candidates = ()
+                return self.result('cancelled' if refusal == 'semantic_negation' else 'unavailable', user_input, reason=refusal)
             pending = session.pending
             if pending is not None and (generation != session.pending_generation or area != session.pending_origin or _options_hash(options) != session.pending_options):
                 session.pending = None
@@ -582,6 +597,14 @@ class ContextualRuntime:
         return [{"domain": backend["domain"], "service": ADAPTERS[(backend["domain"], action)].service, "entity_id": target, "data": {}, "backend_row": backend, "bound_action": action}]
 
     async def execute(self, operations: tuple[Operation, ...], snapshot: Snapshot, user_input: Any, session: Session, options: dict, identity: ResolvedIdentity, *, confirmed: bool = False) -> Any:
+        from .semantic_context import semantic_refusal, read_only_question, clearly_conversational, speech_only_request
+        refusal = semantic_refusal(user_input.text, snapshot.payload)
+        if not refusal and (read_only_question(user_input.text) or clearly_conversational(user_input.text, snapshot.payload)) and any(op.action not in READ_ACTIONS for op in operations):
+            refusal = 'semantic_non_effect_request'
+        if speech_only_request(user_input.text):
+            refusal = 'semantic_non_effect_request'
+        if refusal:
+            raise ExecutionError('unavailable', refusal)
         validation_start = time.perf_counter()
         self.stage = "authorization"
         spatial_context = origin_context(self.hass, user_input, options)

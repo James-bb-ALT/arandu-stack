@@ -2,6 +2,7 @@
 pub mod contract;
 mod grammar;
 mod resolver;
+mod safety;
 pub mod slots;
 
 use contract::{Catalog, Command, ContextRequest, Operation, Response};
@@ -70,19 +71,19 @@ pub fn interpret(request: &ContextRequest) -> Response {
 
 #[allow(clippy::too_many_lines)] // Ordered bounded plan construction with fail-closed early exits.
 fn interpret_index(text: &str, request: &ContextRequest, index: &Index) -> Response {
-    if text
-        .split_whitespace()
-        .any(|token| matches!(token, "nao" | "nunca" | "jamais"))
-    {
+    if matches!(text, "nao" | "nao cancela" | "nao pode") {
         return Response::status("cancel");
     }
-    let first = text.split_whitespace().next().unwrap_or_default();
-    if text.starts_with("se ")
-        || text.contains(" exceto ")
-        || (text.contains(" se ")
-            && ["liga", "desliga", "ativa", "abre", "fecha", "coloca"].contains(&first))
-    {
-        return Response::failure("unavailable", "conditional_plan", "condition_not_supported");
+    if let Some(reason) = safety::refusal(text, &index.catalog) {
+        return Response::failure(
+            if reason == "semantic_negation" {
+                "cancel"
+            } else {
+                "unavailable"
+            },
+            "semantic_policy",
+            reason,
+        );
     }
     if matches!(text, "sim" | "confirmo" | "pode confirmar" | "isso") {
         return Response::status("confirm");
@@ -150,7 +151,9 @@ fn interpret_index(text: &str, request: &ContextRequest, index: &Index) -> Respo
             pending
         } else {
             let context_start = Instant::now();
-            let hint = index.domain_hint(clause);
+            let hint = index
+                .domain_hint(clause)
+                .or_else(|| index.recent_domain(clause, request));
             context_ms = context_start.elapsed().as_secs_f64() * 1_000.0;
             let Some(command) = grammar::recognize(clause, inherited.as_ref(), hint.as_deref())
             else {

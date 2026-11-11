@@ -216,6 +216,11 @@ def _er_allowed_row(row: Any) -> dict[str, Any]:
     }
 
 
+def _non_effect_request(text):
+    from .semantic_context import read_only_question, speech_only_request
+    return read_only_question(text) or speech_only_request(text)
+
+
 class LocalNluRuntime:
     """Create a request snapshot, validate the returned plan, and execute it."""
 
@@ -251,12 +256,14 @@ class LocalNluRuntime:
             except ValueError:
                 return RuntimeResult(code='invalid_request')
         control = type(text) is str and (cancellation(text) or volume(text)[0])
-        if control or self._contextual_enabled() or routing.get("decision_enabled") is True or routing.get("llm_enabled") is True:
+        from .semantic_context import semantic_refusal
+        safety_route = type(text) is str and semantic_refusal(text) is not None
+        if control or safety_route or self._contextual_enabled() or routing.get("decision_enabled") is True or routing.get("llm_enabled") is True:
             if self._contextual is None:
                 from .contextual_runtime import ContextualRuntime
                 self._contextual = ContextualRuntime(self._hass, self._client, self._contextual_options)
             result = await self._contextual.process(user_input)
-            if control and result.code in ('success', 'cancelled'):
+            if (control or safety_route) and result.code in ('success', 'cancelled', 'unavailable'):
                 self._pending.pop(getattr(user_input, 'conversation_id', None), None)
             return result
         conversation_id = getattr(user_input, "conversation_id", None)
@@ -330,6 +337,8 @@ class LocalNluRuntime:
             return RuntimeResult(code="unavailable")
 
         if outcome.status == "plan" and outcome.music is not None:
+            if _non_effect_request(user_input.text):
+                return RuntimeResult(code='unavailable', reason='semantic_non_effect_request')
             return await self._async_execute_music(outcome.music, user_input.context)
         if outcome.status == "plan":
             return await self._execute_v2_operations(outcome, user_input, initial)
@@ -378,6 +387,9 @@ class LocalNluRuntime:
             return RuntimeResult(code="unavailable")
         if outcome.status != "plan":
             return RuntimeResult(code=outcome.status)
+
+        if _non_effect_request(user_input.text) and any(op.action != 'get_state' for op in outcome.operations):
+            return RuntimeResult(code='unavailable', reason='semantic_non_effect_request')
 
         user_id = getattr(user_input.context, "user_id", None)
         if type(user_id) is not str:
@@ -455,7 +467,8 @@ class LocalNluRuntime:
         user_input: Any,
         initial: ErSnapshot,
     ) -> RuntimeResult:
-
+        if _non_effect_request(user_input.text) and any(op.action != 'get_state' for op in outcome.operations):
+            return RuntimeResult(code='unavailable', reason='semantic_non_effect_request')
         user_id = getattr(user_input.context, "user_id", None)
         if type(user_id) is not str:
             return RuntimeResult(code="denied")

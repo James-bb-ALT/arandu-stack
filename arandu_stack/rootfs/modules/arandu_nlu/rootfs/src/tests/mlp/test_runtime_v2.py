@@ -391,7 +391,9 @@ class RoutingTests(unittest.IsolatedAsyncioTestCase):
         runtime, _, _ = _runtime(hass, client, v2=True)
 
         result = await runtime.async_process(_input("Qual é o estado do abajur?"))
-        self.assertEqual(result.code, "success")
+        # The forged effect response must not turn a read-only query into control.
+        self.assertEqual(result.code, "unavailable")
+        self.assertEqual(hass.services.calls, [])
         result = await runtime.async_process(
             _input("Apague a luz e ligue o ventilador.")
         )
@@ -782,7 +784,7 @@ class KillSwitchTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(client.v1_calls), 1)
         self.assertEqual(
             [(c["domain"], c["service"]) for c in hass.services.calls],
-            [("light", "turn_off"), ("light", "turn_on")],
+            [("light", "turn_off")],
         )
 
 

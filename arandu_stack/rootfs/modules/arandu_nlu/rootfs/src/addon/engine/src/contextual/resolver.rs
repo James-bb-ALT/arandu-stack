@@ -6,7 +6,7 @@ use crate::model::valid_identifier;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) struct Index {
-    catalog: Catalog,
+    pub(super) catalog: Catalog,
     names: BTreeMap<String, Vec<(usize, u16, &'static str)>>,
     areas: BTreeMap<String, BTreeSet<String>>,
     actions: BTreeMap<String, Vec<usize>>,
@@ -520,6 +520,21 @@ impl Index {
         } else {
             grammar::semantic_domain(text).map(str::to_owned)
         }
+    }
+
+    pub fn recent_domain(&self, text: &str, request: &ContextRequest) -> Option<String> {
+        if request.last_targets.len() != 1 {
+            return None;
+        }
+        let words: Vec<&str> = text.split_whitespace().collect();
+        if !words
+            .iter()
+            .any(|word| matches!(*word, "ele" | "ela" | "isso"))
+        {
+            return None;
+        }
+        let row = self.ids.get(&request.last_targets[0])?;
+        Some(self.catalog.entities[*row].domain.clone())
     }
 
     #[allow(clippy::too_many_lines, clippy::result_large_err)] // Cold failure includes a typed clarification command.

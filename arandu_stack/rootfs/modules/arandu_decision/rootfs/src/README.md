@@ -1,3 +1,7 @@
+## Atualização 1.0.1
+
+Política semântica compartilhada: restrições operacionais recusadas antes da carga/inferência; compostos não viram proposta parcial. Nomes registrados, consultas e conversa são tratados pelo contexto. Modelos, embeddings e calibração preservados.
+
 ## Atualização 1.0.0
 
 Ação explícita + alvo único são resolvidos sem carregar E5, sem inventar confiança numérica. Erro de grafia inequívoco é hipótese que exige confirmação; nenhuma ação é enviada antes de “sim”. O HA revalida ação, alvo, catálogo e permissões. Empates genuínos continuam sem execução.
@@ -8,7 +12,7 @@ Com pesos instalados, o serviço pré-carrega E5 antes de escutar HTTP e expõe 
 
 # Arandu Decision
 
-Pacote Python independente, versão 1.0.0. Não importa o NLU nem o outro pacote. Serviço passivo: recebe catálogo autorizado completo do Home Assistant e devolve proposta; credenciais, autorização e execução ficam na integração HA.
+Pacote Python independente, versão 1.0.1. Não importa o NLU nem o outro pacote. Serviço passivo: recebe catálogo autorizado completo do Home Assistant e devolve proposta; credenciais, autorização e execução ficam na integração HA.
 
 Modelo padrão: intfloat/multilingual-e5-small (MIT), CPU, vetores normalizados com prefixos query/passage. Downloads somente com comando explícito, revisão fixada no código. Pesos não acompanham o pacote.
 

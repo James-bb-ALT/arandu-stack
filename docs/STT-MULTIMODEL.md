@@ -1,6 +1,6 @@
 # STT multimodelo e laboratório de voz
 
-App **5.0.0**, STT **4.0.1**, integração HACS **6.0.0**. Nova etapa de release pela inclusão de funcionalidades, conforme `AGENTS.md`. NLU, Decision, LLM, Wake e TTS mantêm suas versões.
+App **5.0.1**, STT **4.0.1**, integração HACS **6.0.1**. O STT permanece inalterado nesta correção; o hardening de NLU/Decision/LLM está em [Fase 1](NLU-HARDENING-PHASE1.md).
 
 ## Modelos e licenças
 
@@ -124,7 +124,7 @@ $env:ARANDU_STT_TEST_WAV = 'CAMINHO_DO_AUDIO_WAV'
 $env:ARANDU_STT_TEST_MODELS = 'whisper_base,whisper_tiny,whisper_small,fastconformer'
 python -m pytest tests/test_stt_real.py -q
 python tests/stt_browser_check.py
-docker build -t arandu-assistant:5.0.0 ./arandu_stack
+docker build -t arandu-assistant:5.0.1 ./arandu_stack
 ```
 
 O teste de navegador requer Playwright/Chromium e usa a porta local 8770. Testa o componente nativo com API e pesos reais através de uma fixture local; autenticação/permissão HA tem testes separados. Isso não substitui instalação no HA Core. A suíte acústica verifica operação offline, silêncio, liberação de processos e transcrição pelo Wyoming com o ID legado.

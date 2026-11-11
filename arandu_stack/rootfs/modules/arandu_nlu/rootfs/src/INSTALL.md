@@ -1,6 +1,6 @@
 # Arandu NLU — instalação e atualização
 
-Versão atual: `0.5.1`.
+Versão atual: `0.6.3`.
 
 As correções contextuais e os passos de atualização sem perda de configuração
 estão em [auditoria espacial 0.4.4](docs/nlu-2.0/CONTEXTUAL-SPATIAL-AUDIT.md).

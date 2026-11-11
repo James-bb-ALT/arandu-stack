@@ -1,0 +1,265 @@
+"""Deterministic semantic clarification over an already authorized catalog.
+
+Kept identical in the standalone LLM package and HA integration.
+This module never grants execution permission or invents device/area names.
+"""
+from __future__ import annotations
+
+import re
+import unicodedata
+import json
+from pathlib import Path
+
+POLICY = json.loads(Path(__file__).with_name('semantic_policy.json').read_text(encoding='utf-8'))
+
+
+def read_only_question(text):
+    query = normalized(text)
+    return (not set(query.split()).intersection(POLICY['effects'])
+            and any(query.startswith(word + ' ') for word in POLICY['queries']))
+
+
+def speech_only_request(text):
+    words = set(normalized(text).split())
+    return not words.intersection(POLICY['effects']) and bool(words.intersection(POLICY['speech']))
+
+
+def semantic_refusal(text, catalog=None):
+    """Whole-utterance restrictions, with exact non-verbal catalog labels masked.
+
+    Never mask a label containing an effect verb: a catalog cannot hide a command.
+    Read-only questions may contain negative states without authorizing an effect.
+    This is a conservative syntax boundary, not a complete Portuguese parser.
+    """
+    value = ' ' + normalized(text) + ' '
+    raw_words = value.split()
+    temporal_units = {'horas', 'hora', 'minutos', 'minuto', 'segundos', 'segundo'}
+    clock = lambda tokens: any(word == 'as' and tokens[i + 1][:1].isdigit() for i, word in enumerate(tokens[:-1]))
+    timed = bool(set(raw_words) & temporal_units) or clock(raw_words)
+    if not timed and not any(' ' + phrase + ' ' in value for kind in ('condition', 'exclusion', 'negation') for phrase in POLICY[kind]):
+        return None
+    effects = set(POLICY['effects'])
+    labels = [name for row in (catalog or {}).get('entities', [])
+              for name in [row['name'], *row.get('aliases', [])]]
+    labels += [name for area in (catalog or {}).get('areas', []) for name in area['names']]
+    for label in sorted({normalized(name) for name in labels}, key=lambda name: (-len(name), name)):
+        if label and not effects.intersection(label.split()):
+            pattern = re.compile(' ' + re.escape(label) + ' ')
+            def target_name(match):
+                prefix = set(value[:match.start()].split())
+                allowed = effects | set(POLICY['name_prefix'])
+                return ' alvo ' if prefix and prefix <= allowed else match.group()
+            value = pattern.sub(target_name, value)
+    words = set(value.split())
+    # A date inside an explicit calendar creation is data, not a deferred home action.
+    calendar = (words & {'agenda', 'calendario'} and value.startswith((' coloca ', 'cria ', 'marca '))
+                and words.intersection(effects) <= {'coloca'})
+    if not words.intersection(effects) and any(value.startswith(' ' + query + ' ') for query in POLICY['queries']):
+        return None
+    if not words.intersection(effects) and words.intersection(POLICY['speech']):
+        return None
+    # Explicit timers and calendar dates have typed adapters. Ordinary device
+    # effects with a clock/delay must never be interpreted as immediate effects.
+    timer = bool(words & {'timer', 'temporizador', 'alarme'}) and words.intersection(effects) <= {'coloca', 'ajusta', 'cancela', 'cancele', 'pausa'}
+    if words.intersection(effects) and (words.intersection(temporal_units) or clock(value.split())) and not calendar and not timer:
+        return 'semantic_condition'
+    value = re.sub(r'\be depois (?=\w+)', lambda match: 'e sequencia ' if
+                   value[match.end():].split()[0] in effects else match.group(), value)
+    for kind in ('condition', 'exclusion', 'negation'):
+        if any(' ' + phrase + ' ' in value for phrase in POLICY[kind]
+               if not (calendar and phrase == 'amanha')):
+            return 'semantic_' + kind
+    return None
+
+
+def normalized(value):
+    return " ".join(re.findall(r"\w+", "".join(c for c in unicodedata.normalize("NFD", value.casefold()) if not unicodedata.combining(c))))
+
+
+STOP = {"a", "o", "as", "os", "de", "da", "do", "das", "dos", "na", "no", "em", "e", "um", "uma"}
+ACTIONS = {
+    "turn_on": {"liga", "ligar", "ligue", "ligue", "acende", "acenda", "acender", "ativa", "ative", "ativar"},
+    "turn_off": {"desliga", "desligue", "desligar", "apaga", "apague", "apagar", "desativa", "desative", "desativar"},
+    "query": {"qual", "quais", "quanto", "quantos", "consulta", "consultar", "consulte", "estado"},
+}
+
+
+def understood_action(text, catalog=None):
+    words = set(normalized(text).split())
+    if semantic_refusal(text, catalog):
+        return None
+    if not words.intersection(POLICY['effects']) and any(
+            normalized(text).startswith(query + ' ') for query in POLICY['queries']):
+        return 'query'
+    matches = [action for action, verbs in ACTIONS.items() if words & verbs]
+    return matches[0] if len(matches) == 1 else None
+
+
+def device_candidates(text, catalog, context=None, allowed=None, action=None):
+    """Explicit area wins; otherwise use registered origin, never a model area."""
+    query = normalized(text)
+    words = set(query.split()) - STOP
+    areas = {a["area_id"]: a for a in catalog["areas"]}
+    mentioned = {key for key, area in areas.items() if any(
+        normalized(name) and (" " + normalized(name) + " ") in (" " + query + " ")
+        for name in area["names"])}
+    if len(mentioned) > 1:
+        return []
+    origin = (context or {}).get("origin_area")
+    area = next(iter(mentioned)) if mentioned else origin if origin in areas else None
+    # An explicit spatial phrase outside known areas must not silently use origin.
+    if not mentioned:
+        qualifiers = re.findall(r"\b(?:no|na|nos|nas|em|do|da|dos|das)\s+\w+", query)
+        if qualifiers:
+            labels = [normalized(label) for item in catalog["entities"]
+                      for label in [item["name"], *item.get("aliases", [])]
+                      if normalized(label) and (" " + normalized(label) + " ") in (" " + query + " ")]
+            if any(not any((" " + qualifier + " ") in (" " + label + " ") for label in labels) for qualifier in qualifiers):
+                return []
+    scores = {}
+    for row in catalog["entities"]:
+        if allowed is not None and row["entity_id"] not in allowed:
+            continue
+        if row.get("attributes", {}).get("available") is not True:
+            continue
+        if action is not None and action not in row["actions"]:
+            continue
+        if area is not None and row.get("area_id") != area:
+            continue
+        room_words = set(normalized(" ".join(areas.get(row.get("area_id"), {}).get("names", []))).split())
+        names = set(normalized(" ".join([row["name"], *row.get("aliases", [])])).split())
+        evidence = words & (names - room_words - STOP)
+        if evidence:
+            heads = [next((word for word in normalized(label).split() if word not in STOP and word not in room_words), None)
+                     for label in [row["name"], *row.get("aliases", [])]]
+            # A device noun matches the device itself before an incidental mention
+            # in "velocidade do ventilador". Two genuine fans remain tied.
+            score = (len(evidence), int(any(head in words for head in heads if head)))
+            scores[row["entity_id"]] = (score, row)
+    if not scores:
+        return []
+    best = max(score for score, _ in scores.values())
+    winners = [row for score, row in scores.values() if score == best]
+    return sorted(winners, key=lambda row: row["entity_id"])
+
+
+def resolve_device(text, catalog, context=None, allowed=None, action=None):
+    rows = device_candidates(text, catalog, context, allowed, action)
+    return rows[0] if len(rows) == 1 else None
+
+
+def clarification(text, catalog, context=None, allowed=None, reason="not_understood"):
+    row = resolve_device(text, catalog, context, allowed)
+    question = "Não entendi o que você deseja. Pode repetir dizendo o dispositivo e a ação?"
+    matches = device_candidates(text, catalog, context, allowed)
+    if len(matches) > 1:
+        labels = []
+        for item in matches[:4]:
+            area = next((a for a in catalog["areas"] if a["area_id"] == item.get("area_id")), None)
+            label = item["name"]
+            if area and area["names"] and normalized(area["names"][0]) not in normalized(label):
+                label += " (" + area["names"][0] + ")"
+            labels.append(label)
+        question = "Encontrei mais de um dispositivo: " + "; ".join(labels) + ". De qual você está falando?"
+    if row:
+        label = row["name"]
+        area = next((a for a in catalog["areas"] if a["area_id"] == row.get("area_id")), None)
+        if area and area["names"] and normalized(area["names"][0]) not in normalized(label):
+            label += " (" + area["names"][0] + ")"
+        if understood_action(text) is None:
+            question = f"Acredito que você esteja falando de {label}, mas não entendi o que fazer. Pode repetir?"
+        else:
+            question = f"Acredito que você esteja falando de {label}, mas não consegui validar esse pedido. Pode repetir?"
+    return {"intent": None, "target_entities": [row["entity_id"]] if row else [],
+            "target_area": row.get("area_id") if row else None, "confidence": None,
+            "requires_clarification": True, "clarification_question": question, "reason": reason}
+
+def hypothesis_allowed(text, catalog=None):
+    words = set(normalized(text).split())
+    # Neural fallback supports one explicit operation only. Rust owns compounds.
+    query = ' ' + normalized(text) + ' '
+    for row in (catalog or {}).get('entities', []):
+        for label in [row['name'], *row.get('aliases', [])]:
+            if ' e ' in normalized(label):
+                query = query.replace(' ' + normalized(label) + ' ', ' alvo ')
+    return (semantic_refusal(text, catalog) is None
+            and ' e ' not in query
+            and sum(word in POLICY['effects'] for word in query.split()) <= 1
+            and not re.search(r'[,;].*\w', text.rstrip(' ,;'))
+            and sum(bool(words & verbs) for verbs in ACTIONS.values()) <= 1)
+
+
+def decomposition(text, catalog, context=None):
+    """Three diagnostic slots; spelling/embedding similarity never authorizes."""
+    from difflib import SequenceMatcher
+    row = resolve_device(text, catalog, context)
+    areas = {a["area_id"]: a for a in catalog["areas"]}
+    query = normalized(text)
+    explicit = [key for key, area in areas.items() if any(
+        normalized(name) and (" " + normalized(name) + " ") in (" " + query + " ")
+        for name in area["names"])]
+    origin = (context or {}).get("origin_area")
+    area_id = explicit[0] if len(explicit) == 1 else origin if not explicit and origin in areas else None
+    excluded = set(STOP)
+    if row:
+        excluded.update(normalized(" ".join([row["name"], *row.get("aliases", [])])).split())
+    if area_id:
+        excluded.update(normalized(" ".join(areas[area_id]["names"])).split())
+    matches = device_candidates(text, catalog, context)
+    verbs = set().union(*ACTIONS.values())
+    for candidate in matches:
+        excluded.update(set(normalized(" ".join([candidate["name"], *candidate.get("aliases", [])])).split()) - verbs)
+    action_words = [word for word in query.split() if word not in excluded]
+    ranking = [{"intent": action, "lexical_similarity": max(
+        (SequenceMatcher(None, word, verb).ratio() for word in action_words for verb in verbs),
+        default=0.0)} for action, verbs in ACTIONS.items()]
+    ranking.sort(key=lambda item: (-item["lexical_similarity"], item["intent"]))
+    return {"action": {"text": " ".join(action_words), "exact": understood_action(text), "ranking": ranking},
+            "device": {"entity_id": row["entity_id"] if row else None, "name": row["name"] if row else None, "unambiguous": row is not None,
+                       "candidates": [{"entity_id": item["entity_id"], "name": item["name"], "area_id": item.get("area_id")} for item in matches[:8]]},
+            "area": {"area_id": area_id, "source": "explicit" if explicit else "origin" if area_id else "unknown"},
+            "note": "Similaridades são hipóteses, não probabilidades nem autorização."}
+
+
+def confirmation_question(action, row, catalog):
+    label = row["name"]
+    area = next((a for a in catalog["areas"] if a["area_id"] == row.get("area_id")), None)
+    if area and area["names"] and normalized(area["names"][0]) not in normalized(label):
+        label += " (" + area["names"][0] + ")"
+    verb = {"turn_on": "ligar", "turn_off": "desligar", "query": "consultar o estado de"}[action]
+    return f"Acho que você gostaria de {verb} {label}. É isso?"
+
+
+def conversation_allowed(text, catalog):
+    """Speech-only fallback is permitted only without a domestic command signal."""
+    words = set(normalized(text).split())
+    # Definitions/history about an appliance are general questions, not state/control requests.
+    general_subject = re.match(r'^(?:(?:me|voce pode|pode) )?(?:quem (?:inventou|foi|e)|como (?:funciona|surgiu)|o que (?:e|significa)|explique (?:como|o que|a teoria))\b', normalized(text))
+    imperatives = {'liga','ligue','desliga','desligue','acende','acenda','apaga','apague',
+                   'abre','abra','fecha','feche','ajusta','ajuste','aumenta','aumente','diminui','diminua'}
+    if general_subject and not words & imperatives:
+        return True
+    controls = ACTIONS['turn_on'] | ACTIONS['turn_off'] | {
+        'abre','abrir','abra','fecha','fechar','feche','aumenta','aumentar','diminui','diminuir',
+        'coloca','colocar','ajusta','ajustar','define','definir','destranca','tranca','toca','tocar',
+        'cancela','cancelar','apague','desarme','arme'}
+    if words & controls:
+        return False
+    # Explicit requests for content may mention a device as the subject of a joke/story.
+    if re.search(r'\b(?:piada|historia|poema|poesia|conto|traduz|traduza|traducao|resuma|resumo)\b', normalized(text)):
+        return True
+    domestic = {'luz','luzes','lampada','lampadas','ventilador','tomada','cortina','portao',
+                'temperatura','termostato','volume','bateria','dispositivo','quente','frio',
+                'agenda','alarme','musica','aquecedor','refrigeracao'}
+    if words & domestic or device_candidates(text, catalog):
+        return False
+    return bool(words)
+
+
+def clearly_conversational(text, catalog):
+    """Cheap, conservative bypass of semantic retrieval for obvious general requests."""
+    if not conversation_allowed(text, catalog):
+        return False
+    value = normalized(text)
+    return bool(re.match(r'^(?:(?:me|voce pode|pode) )?(?:conta|conte|explique|explica|escreva|escreve|traduza|traduz|resuma|fale|diga|calcule|resolva|crie|quem|qual|quais|quanto|como|por que|porque|o que)\b', value)
+                or value in {'oi','ola','bom dia','boa tarde','boa noite','obrigado','obrigada'})

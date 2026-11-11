@@ -10,7 +10,7 @@ import time
 import copy
 
 from .contracts import ACTION_TEXT, LLM_SCHEMA, MODELS, VERSION, candidates, decision_policy, digest, validate_proposal
-from .semantic_context import clarification, resolve_device, understood_action, hypothesis_allowed, confirmation_question, conversation_allowed, clearly_conversational
+from .semantic_context import clarification, resolve_device, understood_action, hypothesis_allowed, confirmation_question, conversation_allowed, clearly_conversational, semantic_refusal, speech_only_request, read_only_question
 
 
 SYSTEM_PROMPT = (
@@ -140,8 +140,9 @@ def parse_response(output, catalog, ids, max_tokens, *, text=None, context=None)
             return proposal, reply.strip()
         return clarification(text or '', catalog, context, ids, reason='conversation_not_grounded'), None
     if text is not None:
-        known = understood_action(text)
-        if (proposal["intent"] in (None, "conversation") or not hypothesis_allowed(text)
+        known = understood_action(text, catalog)
+        if (proposal["intent"] in (None, "conversation") or not hypothesis_allowed(text, catalog)
+                or speech_only_request(text) or (read_only_question(text) and proposal['intent'] != 'query')
                 or (known is not None and known != proposal["intent"])):
             return clarification(text, catalog, context, ids, reason="action_or_target_unresolved"), None
         row = resolve_device(text, catalog, context, ids, action=proposal["intent"])
@@ -182,6 +183,13 @@ class Llama:
         self.port = None
 
     async def infer(self, payload, catalog):
+        refusal = semantic_refusal(payload['text'], catalog)
+        if not refusal and not clearly_conversational(payload['text'], catalog) and not hypothesis_allowed(payload['text'], catalog):
+            refusal = 'semantic_compound'
+        if refusal:
+            return {'proposal': clarification(payload['text'], catalog, payload.get('context'), reason=refusal),
+                    'reason': refusal, 'confirmation_required': False, 'response_text': None,
+                    'load_ms': 0, 'inference_ms': 0, 'model': payload.get('llm_model', 'tucano')}
         self.phase = "loading"
         import aiohttp
         key = payload.get("llm_model", "tucano")

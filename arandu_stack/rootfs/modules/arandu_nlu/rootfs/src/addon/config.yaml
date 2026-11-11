@@ -1,5 +1,5 @@
 name: ARANDU NLU
-version: 0.6.0
+version: 0.6.3
 slug: ptbr_nlu
 description: Local contextual Brazilian Portuguese intelligence for Home Assistant
 arch:

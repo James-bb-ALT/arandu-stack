@@ -94,7 +94,7 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
     async def status(request):
         installed = (root / KEY / "arandu-model.json").is_file() and (root / KEY / "model.safetensors").is_file()
         available = installed and True
-        return web.json_response({"package": "arandu-decision", "version": "1.0.0", "protocol": "arandu-inference-v1",
+        return web.json_response({"package": "arandu-decision", "version": "1.0.1", "protocol": "arandu-inference-v1",
             "models": [{"id": KEY, **MODELS[KEY], "installed": installed, "available": bool(available),
                 "reason": None if available else "Pesos ou runtime ausentes"}], "busy": lock.locked(), "threads": threads, "loaded": adapter.model is not None, "preload_ms": preload_ms, "deterministic_available": True})
 

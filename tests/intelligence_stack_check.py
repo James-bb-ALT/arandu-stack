@@ -1,6 +1,7 @@
 """Opt-in API/real-model test against an isolated local validation stack."""
 import asyncio
 import json
+import os
 from pathlib import Path
 import time
 
@@ -21,7 +22,7 @@ async def main():
             await asyncio.sleep(.5)
         else:raise AssertionError('services not ready')
         async with session.get(base+'/api/state') as response:state=await response.json()
-        assert state['version']=='5.0.0'
+        assert state['version']=='5.0.1'
         assert next(row for row in state['modules'] if row['id']=='stt')['options']['stt_model']=='orukeet_int8'
         headers={'X-Arandu-CSRF':state['csrf'],'X-Arandu-Lab':'1'}
         async def infer(action,text):
@@ -49,7 +50,7 @@ async def main():
         result={'app_version':state['version'],'stt_default':'orukeet_int8','explicit':explicit,'typo':typo,
                 'semantic_preloaded':semantic,'joke':joke,'answer':answer,'definition':definition,'internal_transport_enforced':True,
                 'home_assistant_actions':0,'physical_ha_validated':False,'source_overrides':False}
-        Path('.local-data/intelligence-validation/stack-result.json').write_text(json.dumps(result,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+        Path(os.environ.get('ARANDU_VALIDATION_OUTPUT', '.local-data/intelligence-validation/stack-result.json')).write_text(json.dumps(result,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
         print('PASS: final image API, real E5 preloaded, grounded Decision, confirmation, real joke/general answer, resident LLM, Orukeet default, protected transport')
 
 if __name__=='__main__':asyncio.run(main())

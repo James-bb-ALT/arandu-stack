@@ -9,7 +9,7 @@ from pathlib import Path
 import time
 
 from .contracts import ACTION_TEXT, VERSION, candidates, decision_policy, digest
-from .semantic_context import decomposition, understood_action, resolve_device, clarification, confirmation_question, hypothesis_allowed
+from .semantic_context import decomposition, understood_action, resolve_device, clarification, confirmation_question, hypothesis_allowed, semantic_refusal, clearly_conversational, speech_only_request
 
 
 class Encoder:
@@ -73,8 +73,17 @@ class Encoder:
     def infer(self, text, catalog, key, config, context=None, *, semantic_only=False):
         total_started = time.perf_counter()
         self.phase = "grounding"
-        known = understood_action(text)
-        row = resolve_device(text, catalog, context, action=known) if not semantic_only and known and hypothesis_allowed(text) else None
+        refusal = semantic_refusal(text, catalog) or (None if hypothesis_allowed(text, catalog) else 'semantic_compound')
+        if clearly_conversational(text, catalog) or speech_only_request(text):
+            refusal = refusal or 'conversation_not_action'
+        if refusal:
+            return {'decision_status': 'rejected', 'reason': refusal, 'proposal': None,
+                    'confidence': None, 'margin': None, 'raw_score': None, 'ranking': [],
+                    'model': key, 'catalog_fingerprint': digest(catalog), 'embedding_used': False,
+                    'load_ms': 0, 'inference_ms': 0, 'retrieval_ms': 0,
+                    'total_ms': (time.perf_counter() - total_started) * 1000}
+        known = understood_action(text, catalog)
+        row = resolve_device(text, catalog, context, action=known) if not semantic_only and known and hypothesis_allowed(text, catalog) else None
         if row:
             proposal = {'intent': known, 'target_entities': [row['entity_id']], 'target_area': None,
                         'confidence': None, 'requires_clarification': False, 'clarification_question': None,
@@ -86,7 +95,7 @@ class Encoder:
                     'total_ms': (time.perf_counter()-total_started)*1000, 'embedding_used': False,
                     'confirmation_required': False}
         # Spelling evidence may ask for confirmation; it never grants automatic execution.
-        if not semantic_only and not known and hypothesis_allowed(text):
+        if not semantic_only and not known and hypothesis_allowed(text, catalog):
             analysis = decomposition(text, catalog, context)
             action_rows = analysis['action']['ranking']
             if action_rows[0]['lexical_similarity'] >= .8 and action_rows[0]['lexical_similarity'] - action_rows[1]['lexical_similarity'] >= .15:
@@ -160,7 +169,7 @@ class Encoder:
                 and result['raw_score'] >= .75 and result['margin'] >= config.get('min_margin', .08)):
             top = result['ranking'][0]
             grounded = resolve_device(text, catalog, context, action=top['intent'])
-            if grounded and grounded['entity_id'] == top['entity_id'] and hypothesis_allowed(text):
+            if grounded and grounded['entity_id'] == top['entity_id'] and hypothesis_allowed(text, catalog):
                 result.update(decision_status='confirmation_required', reason='uncalibrated_grounded_hypothesis',
                     confirmation_required=True, proposal={'intent': top['intent'],
                         'target_entities': [top['entity_id']], 'target_area': None, 'confidence': None,
@@ -168,7 +177,7 @@ class Encoder:
                         'clarification_question': confirmation_question(top['intent'], grounded, catalog),
                         'reason': 'uncalibrated_grounded_hypothesis'})
         proposal = result.get("proposal")
-        known = understood_action(text)
+        known = understood_action(text, catalog)
         automatic = (result.get('decision_status') == 'accepted'
                      and isinstance(result.get('confidence'), (int, float)) and result['confidence'] >= .8)
         if proposal and known != proposal["intent"] and not (automatic and known is None):

@@ -1,4 +1,14 @@
-# Camadas de inteligência — app 2.0.1 / HACS 3.0.1
+# Camadas de inteligência — app 5.0.1 / HACS 6.0.1
+
+A Fase 1 aplica restrições semânticas ao NLU, aos serviços isolados, à
+elegibilidade de fallback e ao executor HA. Negação, exclusão e condição não
+suportada recusam o plano inteiro. Perguntas de leitura e conversa geral não
+podem se transformar em efeitos domésticos; nomes registrados são tratados em
+contexto. Detalhes e limites em
+[NLU Hardening — Fase 1](../docs/NLU-HARDENING-PHASE1.md).
+O Decision atual inclui resolução determinística de ação/alvo explícitos e
+únicos, além da via semântica calibrada descrita nas seções históricas abaixo.
+Consulte também [inteligência v6](../docs/INTELLIGENCE-v6.0.0.md).
 
 A aba Fluxo de inteligência agora recebe rastreamento real da integração HACS,
 separado do diagrama estático recolhido. Histórico limitado a 50 requisições em RAM,

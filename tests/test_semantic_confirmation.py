@@ -166,7 +166,7 @@ class Confirmation(unittest.IsolatedAsyncioTestCase):
                 result=await self.say(text)
                 self.assertEqual(result.code=='success',execute)
                 self.assertEqual(len(self.hass.services.calls),int(execute))
-                self.assertEqual([r['action'] for r in self.requests],['decision'])
+                self.assertEqual([r['action'] for r in self.requests], [] if text.startswith('não ') else ['decision'])
                 if execute:
                     self.assertEqual(self.hass.services.calls[0]['service'],'turn_on')
                     self.assertTrue(self.runtime.last_intelligence['decision']['auto_corrected'])

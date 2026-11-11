@@ -877,6 +877,15 @@ fn implicit_category(text: &str) -> Option<&'static str> {
 
 pub(super) fn canonicalize(text: &str) -> String {
     let mut text = text.strip_prefix("por favor ").unwrap_or(text).to_owned();
+    for prefix in ["da pra ", "da para "] {
+        if let Some(rest) = text.strip_prefix(prefix) {
+            text = format!("pode {rest}");
+            break;
+        }
+    }
+    if let Some(rest) = text.strip_prefix("queria ") {
+        text = format!("quero {rest}");
+    }
     for (from, to) in [
         ("ligar ", "liga "),
         ("desligar ", "desliga "),
@@ -1374,7 +1383,11 @@ fn extended(text: &str, domain: Option<&str>) -> Option<Command> {
             if let Some((head, amount)) = target.split_once(marker)
                 && let Some(value) = slots::numeric_parameter(amount)
             {
-                result.mention = Some(head.into());
+                result.mention = Some(if matches!(head, "a temperatura" | "temperatura") {
+                    "isso".into()
+                } else {
+                    head.into()
+                });
                 result.parameters.relative = Some(sign);
                 result.parameters.value = Some(Value::from(value));
             }
@@ -1500,6 +1513,7 @@ pub fn split_clauses(text: &str) -> Vec<String> {
     }
     let text = text
         .replace(" mas deixa ", " e deixa ")
+        .replace(" e depois ", " e ")
         .replace(" depois ", " e ");
     let mut clauses = Vec::new();
     let mut start = 0;

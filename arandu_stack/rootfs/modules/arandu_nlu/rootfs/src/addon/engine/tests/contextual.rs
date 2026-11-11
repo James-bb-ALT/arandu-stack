@@ -488,12 +488,43 @@ fn phase32_approved_temporal_and_exclusion_forms() {
         Some("tv"),
         &["turn_on", "turn_off", "query"],
     ));
+    cat.entities.push(entity(
+        "vacuum",
+        "vacuum",
+        "Robô aspirador",
+        "quarto",
+        None,
+        &[
+            "vacuum_start",
+            "vacuum_area",
+            "vacuum_pause",
+            "vacuum_stop",
+            "vacuum_dock",
+            "query",
+        ],
+    ));
     assert_eq!(register_catalog(cat).status, "catalog_ready");
     for (text, action, target) in [
-        ("Liga a luz depois de dez minutos", "schedule_action", "light"),
+        (
+            "Liga a luz depois de dez minutos",
+            "schedule_action",
+            "light",
+        ),
         ("Liga o ventilador às 18 horas", "schedule_action", "fan"),
-        ("Liga o ventilador daqui 10 minutos", "schedule_action", "fan"),
+        (
+            "Liga o ventilador daqui 10 minutos",
+            "schedule_action",
+            "fan",
+        ),
         ("Liga o ventilador às 18:00", "schedule_action", "fan"),
+        ("Pausa o aspirador", "vacuum_pause", "vacuum"),
+        ("Pausa a limpeza", "vacuum_pause", "vacuum"),
+        ("Dá uma pausa na limpeza", "vacuum_pause", "vacuum"),
+        ("Para o aspirador", "vacuum_stop", "vacuum"),
+        ("Cancela o aspirador", "vacuum_stop", "vacuum"),
+        ("Para a limpeza", "vacuum_stop", "vacuum"),
+        ("Cancela a limpeza", "vacuum_stop", "vacuum"),
+        ("Manda o robô voltar para a base", "vacuum_dock", "vacuum"),
     ] {
         let result = interpret(&request(text));
         assert_eq!(result.status, "plan", "{text}: {result:?}");
@@ -507,10 +538,7 @@ fn phase32_approved_temporal_and_exclusion_forms() {
         bulk.operations[0].targets,
         vec!["ar_quarto", "fan", "light"]
     );
-    assert_eq!(
-        bulk.operations[0].parameters.excluded_targets,
-        vec!["tv"]
-    );
+    assert_eq!(bulk.operations[0].parameters.excluded_targets, vec!["tv"]);
 }
 
 #[test]

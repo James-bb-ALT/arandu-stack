@@ -14,7 +14,13 @@ pub(super) struct Index {
     groups: BTreeMap<String, Vec<(String, BTreeSet<String>)>>,
     tokens: BTreeMap<String, BTreeSet<usize>>,
 }
-type Resolved = (Vec<String>, Vec<String>, Option<String>, Vec<String>, Vec<String>);
+type Resolved = (
+    Vec<String>,
+    Vec<String>,
+    Option<String>,
+    Vec<String>,
+    Vec<String>,
+);
 
 fn clean(value: &str) -> String {
     slots::normalize(value)
@@ -564,11 +570,22 @@ impl Index {
                 | "timer_list"
                 | "scheduled_action_list"
         ) {
-            return Ok((Vec::new(), vec!["typed_intent".into()], None, Vec::new(), Vec::new()));
+            return Ok((
+                Vec::new(),
+                vec!["typed_intent".into()],
+                None,
+                Vec::new(),
+                Vec::new(),
+            ));
         }
         if matches!(
             command.action.as_str(),
-            "timer_start" | "timer_cancel" | "timer_pause" | "timer_resume" | "timer_change" | "timer_query"
+            "timer_start"
+                | "timer_cancel"
+                | "timer_pause"
+                | "timer_resume"
+                | "timer_change"
+                | "timer_query"
         ) {
             let explicit_target = command
                 .parameters
@@ -630,7 +647,13 @@ impl Index {
                     ));
                 }
             }
-            return Ok((Vec::new(), vec!["typed_timer".into()], None, Vec::new(), Vec::new()));
+            return Ok((
+                Vec::new(),
+                vec!["typed_timer".into()],
+                None,
+                Vec::new(),
+                Vec::new(),
+            ));
         }
         if command.action == "scheduled_action_cancel" && command.mention.is_none() {
             return Ok((
@@ -1262,13 +1285,12 @@ impl Index {
                             &command.intent,
                             "exclusion_out_of_scope",
                         ));
-                    } else {
-                        return Err(Response::failure(
-                            "clarification",
-                            &command.intent,
-                            "target_not_found",
-                        ));
                     }
+                    return Err(Response::failure(
+                        "clarification",
+                        &command.intent,
+                        "target_not_found",
+                    ));
                 }
             }
             for dev_id in &excluded_device_ids {

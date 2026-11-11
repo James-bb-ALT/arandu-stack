@@ -948,10 +948,7 @@ pub(super) fn canonicalize(text: &str) -> String {
             .replace("da uma pausa na faxina", "pausa a limpeza");
     }
     if text.contains("manda o robo voltar para a base") {
-        text = text.replace(
-            "manda o robo voltar para a base",
-            "manda o robo pra base",
-        );
+        text = text.replace("manda o robo voltar para a base", "manda o robo pra base");
     }
     if let Some(rest) = text.strip_prefix("quero ") {
         if let Some(target) = rest
@@ -1584,7 +1581,10 @@ pub fn split_clauses(text: &str) -> Vec<String> {
     let mut text = text
         .replace(" mas deixa ", " e deixa ")
         .replace(" e depois ", " e ");
-    if !text.contains(" depois de ") && !text.contains(" depois do ") && !text.contains(" depois da ") {
+    if !text.contains(" depois de ")
+        && !text.contains(" depois do ")
+        && !text.contains(" depois da ")
+    {
         text = text.replace(" depois ", " e ");
     }
     let mut clauses = Vec::new();
@@ -1609,17 +1609,11 @@ pub fn split_clauses(text: &str) -> Vec<String> {
 }
 
 fn parse_bulk_exclusion(text: &str, _domain_hint: Option<&str>) -> Option<Command> {
-    let (head, tail) = if let Some(pair) = text.split_once(" menos ") {
-        pair
-    } else if let Some(pair) = text.split_once(" exceto ") {
-        pair
-    } else if let Some(pair) = text.split_once(" com excecao de ") {
-        pair
-    } else if let Some(pair) = text.split_once(" com excecao ") {
-        pair
-    } else {
-        return None;
-    };
+    let (head, tail) = text
+        .split_once(" menos ")
+        .or_else(|| text.split_once(" exceto "))
+        .or_else(|| text.split_once(" com excecao de "))
+        .or_else(|| text.split_once(" com excecao "))?;
     let head = head.trim();
     let tail = tail.trim();
     if tail.is_empty() {
@@ -1795,10 +1789,12 @@ fn parse_clock_alarm(text: &str) -> Option<Command> {
     {
         let mut result = command("clock_alarm_cancel", Some("clock_alarm"), None);
         result.intent = "clock_alarm.cancel".into();
-        if let Some((_, tail)) = text.split_once(" das ").or_else(|| text.split_once(" de ")) {
-            if let Some(time) = slots::clock_time(tail) {
-                result.parameters.time = Some(time);
-            }
+        if let Some(time) = text
+            .split_once(" das ")
+            .or_else(|| text.split_once(" de "))
+            .and_then(|(_, tail)| slots::clock_time(tail))
+        {
+            result.parameters.time = Some(time);
         }
         return Some(result);
     }
@@ -1823,10 +1819,11 @@ fn parse_clock_alarm(text: &str) -> Option<Command> {
     if let Some(rec) = slots::recurrence(text) {
         result.parameters.recurrence = Some(rec);
     }
-    if let Some((_, after_chamado)) = text.split_once(" chamado ") {
-        if let Some((name, _)) = after_chamado.split_once(" para ") {
-            result.parameters.name = Some(name.trim().to_owned());
-        }
+    if let Some((name, _)) = text
+        .split_once(" chamado ")
+        .and_then(|(_, after)| after.split_once(" para "))
+    {
+        result.parameters.name = Some(name.trim().to_owned());
     }
     if let Some(time) = slots::clock_time(text) {
         result.parameters.time = Some(time);
@@ -1834,6 +1831,7 @@ fn parse_clock_alarm(text: &str) -> Option<Command> {
     Some(result)
 }
 
+#[allow(clippy::too_many_lines)]
 fn parse_reminder(text: &str) -> Option<Command> {
     if matches!(
         text,
@@ -1943,6 +1941,7 @@ fn parse_reminder(text: &str) -> Option<Command> {
     Some(result)
 }
 
+#[allow(clippy::too_many_lines)]
 fn parse_timer_command(text: &str) -> Option<Command> {
     if text.starts_with("quanto falta no timer")
         || text.starts_with("quanto tempo falta no timer")
@@ -2107,9 +2106,8 @@ fn parse_timer_command(text: &str) -> Option<Command> {
         }
         return Some(result);
     }
-    let is_timer_create = text.contains("timer")
-        || text.contains("temporizador")
-        || text.contains("contagem");
+    let is_timer_create =
+        text.contains("timer") || text.contains("temporizador") || text.contains("contagem");
     if !is_timer_create {
         return None;
     }
@@ -2157,13 +2155,13 @@ fn extract_timer_slots(text: &str) -> (Option<String>, Option<f64>) {
         duration_secs = slots::duration(after);
     } else if let Some((_, after_timer)) = text.split_once(" timer ") {
         let after_timer = after_timer.trim();
-        if let Some((n, dur)) = after_timer.split_once(" de ") {
-            if !matches!(n, "um" | "uma" | "para" | "pra") {
-                if let Some(s) = slots::duration(dur) {
-                    name = Some(n.trim().to_owned());
-                    duration_secs = Some(s);
-                }
-            }
+        if let Some((n, s)) = after_timer
+            .split_once(" de ")
+            .filter(|(n, _)| !matches!(*n, "um" | "uma" | "para" | "pra"))
+            .and_then(|(n, dur)| slots::duration(dur).map(|s| (n, s)))
+        {
+            name = Some(n.trim().to_owned());
+            duration_secs = Some(s);
         }
     }
     if duration_secs.is_none() {
@@ -2191,6 +2189,7 @@ fn extract_duration_from_phrase(text: &str) -> Option<f64> {
     None
 }
 
+#[allow(clippy::too_many_lines)]
 fn parse_schedule_action(text: &str) -> Option<Command> {
     if matches!(
         text,

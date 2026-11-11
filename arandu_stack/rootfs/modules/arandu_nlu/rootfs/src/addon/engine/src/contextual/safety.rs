@@ -14,6 +14,7 @@ struct Policy {
     speech: Vec<String>,
 }
 
+#[allow(clippy::too_many_lines)]
 pub(super) fn refusal(text: &str, catalog: &Catalog) -> Option<&'static str> {
     static POLICY: OnceLock<Policy> = OnceLock::new();
     let policy = POLICY.get_or_init(|| {
@@ -250,7 +251,8 @@ fn is_permitted_temporal(value: &str) -> bool {
                         | "22h"
                         | "22:00"
                         | "23:00"
-                ) || w.ends_with('h') || w.chars().all(|c| c.is_ascii_digit())
+                ) || w.ends_with('h')
+                    || w.chars().all(|c| c.is_ascii_digit())
             }));
     has_action && (has_delay || has_clock)
 }

@@ -100,14 +100,31 @@ A **Fase 3.2** expande o motor contextual determinístico do **Arandu NLU** em R
 
 - **Testes Unitários e de Integração Rust:**
   - `cargo test`: **103 testes aprovados, 0 falhas**.
+  - `cargo clippy -- -D warnings`: **0 avisos, 0 erros** (todos os lints estritos resolvidos).
+  - `cargo fmt -- --check`: **Formatado e em conformidade estrita**.
   - `tests/contextual.rs`: **19 testes aprovados, 0 falhas**.
+  - Versão do crate `local-nlu`: bump de patch para `0.6.4`.
 - **Testes Unitários e de Integração Python (pytest):**
-  - `pytest tests/`: **247 testes aprovados, 19 ignorados/skipped, 0 falhas**.
+  - `pytest tests/`: **248 testes aprovados, 19 ignorados/skipped, 0 falhas**.
   - Suítes dedicadas da Fase 3.2:
     - `tests/test_phase32_temporal.py`: 7 testes aprovados.
     - `tests/test_phase32_scheduler.py`: 6 testes aprovados.
     - `tests/test_phase32_exclusions.py`: 2 testes aprovados.
-    - `tests/test_phase32_vacuum_lexicon.py`: 1 teste aprovado.
+    - `tests/test_phase32_vacuum_lexicon.py`: 2 testes aprovados.
     - `tests/test_phase32_notifications.py`: 3 testes aprovados.
-- **Isolamento de Branches:**
+- **Isolamento de Branches e Titularidade:**
   - Nenhuma alteração efetuada nos arquivos de titularidade do Codex (`arandu_decision/**`, `arandu_stack/app/{modules.py,settings.py,server.py}`, `custom_components/local_nlu/{ai_lab.py, ai_lab_core.py, ai_lab_panel.js}`).
+  - `semantic_context.py` mantido com recusa fail-closed segura idêntica aos pacotes neurais, preservando os testes de invariância estrutural.
+
+---
+
+## 6. Orientações para Integração (PR 3.2 sobre `main` unificado com 3.1)
+
+1. **Sequência Recomendada:**
+   - O PR da Fase 3.1 (Codex) deve ser integrado primeiro ao `main`.
+   - Em seguida, fazer `git rebase origin/main` na branch `feat/arandu-fase-3-2-nlu-temporal`.
+2. **Pontos de Atenção no Merge:**
+   - **`manifest.json` e `config.yaml`:** Como a Fase 3.2 manteve as versões do `main` sem forçar bumps globais, qualquer alteração de versão global introduzida pela 3.1 poderá ser adotada sem conflito.
+   - **Módulos Neurais vs NLU:** O NLU determinístico não toca em pipelines neurais nem depende de GPU/E5. Testes conjuntos devem rodar com flags `--no-neural` ou com Decision desabilitado para confirmar a independência total da 3.2.
+3. **Status de Publicação:**
+   - Conforme o protocolo de desenvolvimento paralelo, tags Git e GitHub Releases não foram criadas nesta branch isolada, ficando pendentes da unificação final com a Fase 3.1.

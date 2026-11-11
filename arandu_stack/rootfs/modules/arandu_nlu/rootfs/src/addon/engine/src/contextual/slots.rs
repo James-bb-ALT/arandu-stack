@@ -212,11 +212,19 @@ pub fn original_slot(source: &str, value: &str) -> Option<String> {
 #[must_use]
 pub fn clock_time(text: &str) -> Option<String> {
     let mut text = text.trim();
-    for marker in [" para as ", " pra as ", " pras ", " para a ", " pra a ", " as "] {
-        if let Some((_, tail)) = text.split_once(marker) {
-            if let Some(t) = clock_time(tail) {
-                return Some(t);
-            }
+    for marker in [
+        " para as ",
+        " pra as ",
+        " pras ",
+        " para a ",
+        " pra a ",
+        " as ",
+    ] {
+        if let Some(t) = text
+            .split_once(marker)
+            .and_then(|(_, tail)| clock_time(tail))
+        {
+            return Some(t);
         }
     }
     for prefix in [
@@ -273,11 +281,10 @@ pub fn clock_time(text: &str) -> Option<String> {
         && m < 60
     {
         (h, m)
-    } else if let Some(n) = number(text) {
-        let h = n as u32;
-        (h, 0)
     } else {
-        return None;
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let h = number(text)? as u32;
+        (h, 0)
     };
     if is_half {
         minutes = 30;
@@ -297,10 +304,11 @@ pub fn clock_time(text: &str) -> Option<String> {
 pub fn relative_delay(text: &str) -> Option<f64> {
     let mut text = text.trim();
     for marker in [" depois de ", " apos ", " daqui a ", " daqui ", " em "] {
-        if let Some((_, tail)) = text.split_once(marker) {
-            if let Some(d) = relative_delay(tail) {
-                return Some(d);
-            }
+        if let Some(d) = text
+            .split_once(marker)
+            .and_then(|(_, tail)| relative_delay(tail))
+        {
+            return Some(d);
         }
     }
     for prefix in ["depois de ", "apos ", "daqui a ", "daqui ", "em ", "por "] {
@@ -338,4 +346,3 @@ pub fn recurrence(text: &str) -> Option<String> {
         None
     }
 }
-

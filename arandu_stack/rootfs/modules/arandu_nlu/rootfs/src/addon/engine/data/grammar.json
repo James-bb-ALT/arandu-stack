@@ -2223,7 +2223,9 @@
     "templates": [
       "carrega o {vacuum}",
       "manda o robô voltar",
+      "manda o robô voltar para a base",
       "manda o {vacuum} pra base",
+      "manda o {vacuum} para a base",
       "volta o {vacuum} pra base"
     ]
   },
@@ -2245,13 +2247,27 @@
     "domains": [
       "vacuum"
     ],
+    "intent": "vacuum.pause",
+    "operation": "vacuum_pause",
+    "templates": [
+      "pausa o {vacuum}",
+      "pausa a limpeza",
+      "da uma pausa na limpeza"
+    ]
+  },
+  {
+    "domains": [
+      "vacuum"
+    ],
     "intent": "vacuum.stop",
     "operation": "vacuum_stop",
     "templates": [
       "cancela a limpeza",
       "chega de limpar",
       "manda o {vacuum} parar",
-      "para o {vacuum}"
+      "para o {vacuum}",
+      "cancela o {vacuum}",
+      "para a limpeza"
     ]
   },
   {

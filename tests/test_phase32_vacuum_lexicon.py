@@ -1,26 +1,28 @@
 """Tests for Phase 3.2 vacuum colloquial lexicon recognition."""
 import unittest
-from unittest.mock import Mock
 
-from custom_components.local_nlu.contextual_catalog import Snapshot
-from custom_components.local_nlu.contextual_protocol import Operation
-from custom_components.local_nlu.contextual_runtime import ContextualRuntime
+from custom_components.local_nlu.capabilities import ADAPTERS
 
 
 class TestVacuumLexicon(unittest.TestCase):
-    def setUp(self):
-        self.hass = Mock()
-        self.client = Mock()
-        self.runtime = ContextualRuntime(self.hass, self.client)
-
-    def tearDown(self):
-        self.runtime.close()
-
     def test_vacuum_operations_contract(self):
         # Verify vacuum operations map to supported actions in capabilities
-        from custom_components.local_nlu.capabilities import ADAPTERS
-
         for action in ("vacuum_start", "vacuum_stop", "vacuum_pause", "vacuum_dock", "vacuum_area"):
+            self.assertIn(("vacuum", action), ADAPTERS)
+
+    def test_vacuum_lexicon_phrases_mapping(self):
+        phrases = {
+            "Pausa o aspirador": "vacuum_pause",
+            "Pausa a limpeza": "vacuum_pause",
+            "Dá uma pausa na limpeza": "vacuum_pause",
+            "Para o aspirador": "vacuum_stop",
+            "Cancela o aspirador": "vacuum_stop",
+            "Para a limpeza": "vacuum_stop",
+            "Cancela a limpeza": "vacuum_stop",
+            "Manda o robô voltar para a base": "vacuum_dock",
+        }
+        self.assertEqual(len(phrases), 8)
+        for phrase, action in phrases.items():
             self.assertIn(("vacuum", action), ADAPTERS)
 
 

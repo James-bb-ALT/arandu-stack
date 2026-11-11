@@ -1,0 +1,142 @@
+{
+  "catalog": {
+    "bytes": 2742,
+    "path": "evaluation/ptbr-independent/data/catalog-v1.json",
+    "sha256": "91c5a2a8e728adc6e51442d0e0b27388a9e795e20638f62e42a85a0512a80c73",
+    "target_count": 12
+  },
+  "created_at": "2026-09-16T01:54:25.226109Z",
+  "data_authorship": {
+    "kind": "PROJECT_AUTHORED_SYNTHETIC",
+    "license": "Apache-2.0",
+    "product_output_used_for_labels": false,
+    "second_annotator": false
+  },
+  "dataset": {
+    "buckets": {
+      "expected-pass-now": 72,
+      "expected-reject-now": 48,
+      "known-gap-future": 24
+    },
+    "bytes": 71857,
+    "id_sha256": "530e16f644d44b808898ad9512f611e9d22ca136b10f12f94096e82fb5094181",
+    "line_count": 144,
+    "path": "evaluation/ptbr-independent/data/dataset-v1.jsonl",
+    "sha256": "b9cdba8ea51ac96f18d3b8dd6508933f6179d7f96c2b34b430e6e2e57591e664"
+  },
+  "engine_source": {
+    "files": [
+      {
+        "bytes": 264,
+        "path": "addon/engine/src/lib.rs",
+        "sha256": "c1ed13e62036416ce702a919cdb49363f56ce2aeb7cf75ee7bb64a7403b91b06"
+      },
+      {
+        "bytes": 959,
+        "path": "addon/engine/src/main.rs",
+        "sha256": "3f79d50b0e5d2b063637fee3494e886c25277631be5c89375522dd193f2fdd20"
+      },
+      {
+        "bytes": 6657,
+        "path": "addon/engine/src/model.rs",
+        "sha256": "554be920ed10baa69292768add3f3511cf6a733598caa8fc626441fbdc4f1a9a"
+      },
+      {
+        "bytes": 1435,
+        "path": "addon/engine/src/normalize.rs",
+        "sha256": "a7673a08b4f717677450b62a73cb6a95c1082bb5ac016b434cb9e7dec9ce9293"
+      },
+      {
+        "bytes": 15117,
+        "path": "addon/engine/src/parser.rs",
+        "sha256": "192bb6a1c8b1d25d7e9984fb5c285402a9a3580550946504e74302c93b242f68"
+      },
+      {
+        "bytes": 8256,
+        "path": "addon/engine/src/server.rs",
+        "sha256": "a3ad47720a5b2bbba74a4bd35f0f7c59f3fd0504a37da83a7a6cfe37528e5fbc"
+      }
+    ],
+    "path": "addon/engine/src",
+    "sha256": "54f8e81af9399f68b7e9b20783e1629839ecc6dc3dfec5fc2f70d962c9bc7092"
+  },
+  "evaluation_source": {
+    "files": [
+      {
+        "bytes": 2632,
+        "path": "evaluation/ptbr-independent/__pycache__/corpus.cpython-310.pyc",
+        "sha256": "05f7e6b668647abf8251be4cab6e546e26285cb337357b0ec57324fe01bd0f68"
+      },
+      {
+        "bytes": 11085,
+        "path": "evaluation/ptbr-independent/__pycache__/semantic.cpython-310.pyc",
+        "sha256": "0517b3b48772ca3d2248ae23549930688aceea7d2821aac74ffc48b1d31273ff"
+      },
+      {
+        "bytes": 2369,
+        "path": "evaluation/ptbr-independent/__pycache__/test_corpus.cpython-310.pyc",
+        "sha256": "9378554ffcb638cd89816681582acf58b5eea7f00d4d9ac0b957524fdd08b064"
+      },
+      {
+        "bytes": 4631,
+        "path": "evaluation/ptbr-independent/__pycache__/test_semantic.cpython-310.pyc",
+        "sha256": "2a618653d5cb2dcd5e9a3704addd4ec75b5be29229d9ac51469d7812f03702fe"
+      },
+      {
+        "bytes": 2583,
+        "path": "evaluation/ptbr-independent/corpus.py",
+        "sha256": "5c54ca5d86655bf86af3f7e8685cb1be01aea6037b5f31e749bc78a6091a82aa"
+      },
+      {
+        "bytes": 2742,
+        "path": "evaluation/ptbr-independent/data/catalog-v1.json",
+        "sha256": "91c5a2a8e728adc6e51442d0e0b27388a9e795e20638f62e42a85a0512a80c73"
+      },
+      {
+        "bytes": 71857,
+        "path": "evaluation/ptbr-independent/data/dataset-v1.jsonl",
+        "sha256": "b9cdba8ea51ac96f18d3b8dd6508933f6179d7f96c2b34b430e6e2e57591e664"
+      },
+      {
+        "bytes": 4636,
+        "path": "evaluation/ptbr-independent/freeze.py",
+        "sha256": "4411af33d65123888181be43532d2fa7f3602a6e2634778cf073801052521399"
+      },
+      {
+        "bytes": 10084,
+        "path": "evaluation/ptbr-independent/generate_dataset.py",
+        "sha256": "0815efe5c8a7382d285e514d806bf91c1b2a456dbd23517823698f1c948f6b48"
+      },
+      {
+        "bytes": 2067,
+        "path": "evaluation/ptbr-independent/README.md",
+        "sha256": "89ce0203cbbc81c134d74bf7e9a4f0e611ced9029ba626b6ea8999fc0b2044ea"
+      },
+      {
+        "bytes": 12683,
+        "path": "evaluation/ptbr-independent/semantic.py",
+        "sha256": "e6f1a1b838fede926998009d13c1bda23ee114c5ee87a9eb0b73e881a0c15ad9"
+      },
+      {
+        "bytes": 1504,
+        "path": "evaluation/ptbr-independent/test_corpus.py",
+        "sha256": "f75cb36365b386946e4308b95fdee3bd5f92630e6e97bea7955de1017813e4db"
+      },
+      {
+        "bytes": 5408,
+        "path": "evaluation/ptbr-independent/test_semantic.py",
+        "sha256": "dbb1f56c907e20a816e019101f068b0e47bb578a3388c1205b254c8085096c0e"
+      }
+    ],
+    "path": "evaluation/ptbr-independent",
+    "sha256": "9237453de6723234027b3720d229f073a1813e42faa6549f6507666cc0db3693"
+  },
+  "freeze_id": "ptbr-independent-v1",
+  "purpose": "frozen project-authored inputs before first product HTTP request",
+  "repository": {
+    "commit": "0f3b7d3337e651d6ebb5fe8706341bead239459c",
+    "status_porcelain": "M implementation-clean-room\n?? .claude/\n?? baseline_check.txt\n?? docs/sophia_behavioral_analysis.md\n?? evaluation/\n?? sophia-ha-app/\n?? test_baseline_output.txt\n?? work/",
+    "tree": "bacc65e4a67beb6559be781d52d261b6b9e170cb"
+  },
+  "schema_version": 1
+}

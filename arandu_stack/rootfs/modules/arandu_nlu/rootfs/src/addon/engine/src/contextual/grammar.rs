@@ -318,6 +318,24 @@ pub fn recognize(
         result.parameters.scope = Some("device_location".into());
         return Some(result);
     }
+    if let Some(cmd) = parse_bulk_exclusion(&text, domain_hint) {
+        return Some(cmd);
+    }
+    if let Some(cmd) = parse_vacuum_command(&text) {
+        return Some(cmd);
+    }
+    if let Some(cmd) = parse_clock_alarm(&text) {
+        return Some(cmd);
+    }
+    if let Some(cmd) = parse_reminder(&text) {
+        return Some(cmd);
+    }
+    if let Some(cmd) = parse_timer_command(&text) {
+        return Some(cmd);
+    }
+    if let Some(cmd) = parse_schedule_action(&text) {
+        return Some(cmd);
+    }
     if matches!(
         text.as_str(),
         "liga" | "ligue" | "acende" | "acenda" | "desliga" | "desligue" | "apaga" | "apague"
@@ -904,6 +922,18 @@ pub(super) fn canonicalize(text: &str) -> String {
         ("trancar ", "tranca "),
         ("destrancar ", "destranca "),
         ("acabar ", "finaliza "),
+        ("fazer ", "faz "),
+        ("criar ", "cria "),
+        ("definir ", "define "),
+        ("configurar ", "configura "),
+        ("programar ", "programa "),
+        ("começar ", "comeca "),
+        ("comece ", "comeca "),
+        ("iniciar ", "inicia "),
+        ("inicie ", "inicia "),
+        ("parar ", "para "),
+        ("pausar ", "pausa "),
+        ("cancelar ", "cancela "),
     ] {
         for prefix in ["", "pode ", "poderia ", "quero "] {
             if let Some(rest) = text.strip_prefix(&format!("{prefix}{from}")) {
@@ -911,6 +941,17 @@ pub(super) fn canonicalize(text: &str) -> String {
                 break;
             }
         }
+    }
+    if text.starts_with("da uma pausa na limpeza") || text.starts_with("da uma pausa na faxina") {
+        text = text
+            .replace("da uma pausa na limpeza", "pausa a limpeza")
+            .replace("da uma pausa na faxina", "pausa a limpeza");
+    }
+    if text.contains("manda o robo voltar para a base") {
+        text = text.replace(
+            "manda o robo voltar para a base",
+            "manda o robo pra base",
+        );
     }
     if let Some(rest) = text.strip_prefix("quero ") {
         if let Some(target) = rest
@@ -1404,20 +1445,44 @@ fn extended(text: &str, domain: Option<&str>) -> Option<Command> {
         }
         return Some(result);
     }
-    for prefix in ["coloca ", "deixa ", "ajusta ", "bota "] {
+    for prefix in ["coloca ", "deixa ", "ajusta ", "bota ", "define "] {
         if let Some(rest) = text.strip_prefix(prefix) {
-            if let Some((target, value)) = rest
+            if let Some((raw_target, value)) = rest
                 .rsplit_once(" em ")
                 .or_else(|| rest.rsplit_once(" para "))
             {
-                let action = if domain == Some("climate") && target.contains("ventilador") {
+                let mut target = raw_target;
+                for p in [
+                    "o brilho da ",
+                    "o brilho do ",
+                    "o brilho de ",
+                    "a luminosidade da ",
+                    "a luminosidade do ",
+                ] {
+                    if let Some(short) = target.strip_prefix(p) {
+                        target = short;
+                        break;
+                    }
+                }
+                let effective_domain = domain.or_else(|| {
+                    if target.contains("luz")
+                        || target.contains("lampada")
+                        || raw_target.contains("brilho")
+                    {
+                        Some("light")
+                    } else {
+                        None
+                    }
+                });
+                let action = if effective_domain == Some("climate") && target.contains("ventilador")
+                {
                     "fan_mode"
                 } else if value.ends_with("graus") {
                     "temperature"
                 } else if value.ends_with("kelvin") {
                     "color_temperature"
                 } else {
-                    match domain {
+                    match effective_domain {
                         Some("light") => "brightness",
                         Some("fan") => "percentage",
                         Some("cover") => "position",
@@ -1428,7 +1493,7 @@ fn extended(text: &str, domain: Option<&str>) -> Option<Command> {
                     }
                 };
                 if !action.is_empty() {
-                    let mut result = command(action, domain, Some(target));
+                    let mut result = command(action, effective_domain, Some(target));
                     if action == "fan_mode" {
                         result.mention = Some(
                             target
@@ -1508,13 +1573,20 @@ pub fn split_clauses(text: &str) -> Vec<String> {
     ]
     .iter()
     .any(|prefix| text.starts_with(prefix))
+        || text.contains(" menos ")
+        || text.contains(" exceto ")
+        || text.contains(" com excecao ")
+        || text.contains(" depois de ")
+        || text.contains(" apos ")
     {
         return vec![text.trim().to_owned()];
     }
-    let text = text
+    let mut text = text
         .replace(" mas deixa ", " e deixa ")
-        .replace(" e depois ", " e ")
-        .replace(" depois ", " e ");
+        .replace(" e depois ", " e ");
+    if !text.contains(" depois de ") && !text.contains(" depois do ") && !text.contains(" depois da ") {
+        text = text.replace(" depois ", " e ");
+    }
     let mut clauses = Vec::new();
     let mut start = 0;
     for (position, _) in text.match_indices(" e ") {
@@ -1524,7 +1596,7 @@ pub fn split_clauses(text: &str) -> Vec<String> {
         if [
             "liga", "ligue", "desliga", "desligue", "apaga", "apague", "acende", "acenda", "ativa",
             "coloca", "deixa", "diminui", "aumenta", "abre", "fecha", "pausa", "toca", "do", "da",
-            "no", "na", "a", "o",
+            "no", "na", "a", "o", "cria", "faz", "define", "timer",
         ]
         .contains(&verb)
         {
@@ -1534,4 +1606,712 @@ pub fn split_clauses(text: &str) -> Vec<String> {
     }
     clauses.push(text[start..].trim().trim_start_matches("agora ").to_owned());
     clauses
+}
+
+fn parse_bulk_exclusion(text: &str, _domain_hint: Option<&str>) -> Option<Command> {
+    let (head, tail) = if let Some(pair) = text.split_once(" menos ") {
+        pair
+    } else if let Some(pair) = text.split_once(" exceto ") {
+        pair
+    } else if let Some(pair) = text.split_once(" com excecao de ") {
+        pair
+    } else if let Some(pair) = text.split_once(" com excecao ") {
+        pair
+    } else {
+        return None;
+    };
+    let head = head.trim();
+    let tail = tail.trim();
+    if tail.is_empty() {
+        return None;
+    }
+    let mut exclusions = Vec::new();
+    for part in tail.split(" e ") {
+        let mut part = part.trim();
+        for prefix in ["a ", "o ", "as ", "os ", "da ", "do ", "de "] {
+            if let Some(rest) = part.strip_prefix(prefix) {
+                part = rest.trim();
+                break;
+            }
+        }
+        if !part.is_empty() {
+            exclusions.push(part.to_owned());
+        }
+    }
+    if exclusions.is_empty() {
+        return None;
+    }
+    let mut bulk_cmd = recognize_bulk_head(head)?;
+    bulk_cmd.parameters.excluded_mentions = exclusions;
+    Some(bulk_cmd)
+}
+
+fn recognize_bulk_head(head: &str) -> Option<Command> {
+    let (verb, rest) = head.split_once(' ')?;
+    let action = match verb {
+        "desliga" | "desligue" | "apaga" | "apague" => "turn_off",
+        "liga" | "ligue" | "acende" | "acenda" => "turn_on",
+        _ => return None,
+    };
+    let mut result = command(action, None, None);
+    result.plural = true;
+    let rest = rest.trim();
+    if rest == "tudo" {
+        result.origin = true;
+        return Some(result);
+    }
+    if let Some(area) = rest
+        .strip_prefix("tudo da ")
+        .or_else(|| rest.strip_prefix("tudo do "))
+        .or_else(|| rest.strip_prefix("tudo na "))
+        .or_else(|| rest.strip_prefix("tudo no "))
+        .or_else(|| rest.strip_prefix("tudo de "))
+    {
+        result.area = Some(area.trim().to_owned());
+        return Some(result);
+    }
+    if let Some(before_toda) = rest
+        .strip_suffix(" toda")
+        .or_else(|| rest.strip_suffix(" todo"))
+    {
+        let area = before_toda
+            .strip_prefix("a ")
+            .or_else(|| before_toda.strip_prefix("o "))
+            .unwrap_or(before_toda)
+            .trim();
+        result.area = Some(area.to_owned());
+        return Some(result);
+    }
+    if let Some(tail) = rest
+        .strip_prefix("todas as luzes da ")
+        .or_else(|| rest.strip_prefix("todas as luzes do "))
+        .or_else(|| rest.strip_prefix("todas luzes da "))
+        .or_else(|| rest.strip_prefix("todas luzes do "))
+        .or_else(|| rest.strip_prefix("todas as lampadas da "))
+        .or_else(|| rest.strip_prefix("todas as lampadas do "))
+    {
+        result.domains.push("light".into());
+        result.area = Some(tail.trim().to_owned());
+        return Some(result);
+    }
+    if let Some(tail) = rest
+        .strip_prefix("todos os ventiladores da ")
+        .or_else(|| rest.strip_prefix("todos os ventiladores do "))
+    {
+        result.domains.push("fan".into());
+        result.area = Some(tail.trim().to_owned());
+        return Some(result);
+    }
+    None
+}
+
+fn parse_vacuum_command(text: &str) -> Option<Command> {
+    if matches!(
+        text,
+        "pausa o aspirador"
+            | "pausa o robo"
+            | "pausa a limpeza"
+            | "da uma pausa na limpeza"
+            | "pausa a faxina"
+    ) {
+        return Some(command("vacuum_pause", Some("vacuum"), Some("aspirador")));
+    }
+    if matches!(
+        text,
+        "para o aspirador"
+            | "para o robo"
+            | "cancela o aspirador"
+            | "cancela o robo"
+            | "para a limpeza"
+            | "cancela a limpeza"
+            | "para a faxina"
+            | "cancela a faxina"
+    ) {
+        return Some(command("vacuum_stop", Some("vacuum"), Some("aspirador")));
+    }
+    if matches!(
+        text,
+        "manda o robo voltar para a base"
+            | "manda o robo pra base"
+            | "volta o robo pra base"
+            | "volta o aspirador para a base"
+            | "manda o aspirador pra base"
+            | "manda o robo para a base"
+    ) {
+        return Some(command("vacuum_dock", Some("vacuum"), Some("aspirador")));
+    }
+    None
+}
+
+fn parse_clock_alarm(text: &str) -> Option<Command> {
+    if text.contains("alarme da casa")
+        || text.contains("seguranca")
+        || text.contains("casa armada")
+        || text.contains("modo armado")
+    {
+        return None;
+    }
+    if matches!(
+        text,
+        "quais despertadores estao ativos"
+            | "quais despertadores ativos"
+            | "quais despertadores eu tenho"
+            | "quais despertadores"
+            | "quais alarmes estao ativos"
+            | "quais alarmes ativos"
+            | "quais alarmes eu tenho"
+    ) {
+        let mut result = command("clock_alarm_list", Some("clock_alarm"), None);
+        result.intent = "clock_alarm.list".into();
+        return Some(result);
+    }
+    if matches!(
+        text,
+        "desliga o alarme que esta tocando"
+            | "desliga o despertador que esta tocando"
+            | "para o alarme que esta tocando"
+            | "desliga o alarme"
+            | "para o despertador que esta tocando"
+            | "desliga o despertador"
+            | "para o alarme"
+    ) {
+        let mut result = command("clock_alarm_dismiss", Some("clock_alarm"), None);
+        result.intent = "clock_alarm.dismiss".into();
+        return Some(result);
+    }
+    if text.starts_with("adia o despertador")
+        || text.starts_with("adia o alarme")
+        || text.starts_with("soneca")
+    {
+        let mut result = command("clock_alarm_snooze", Some("clock_alarm"), None);
+        result.intent = "clock_alarm.snooze".into();
+        let dur = slots::relative_delay(text).unwrap_or(600.0);
+        result.parameters.duration = Some(dur);
+        return Some(result);
+    }
+    if text.starts_with("cancela o despertador")
+        || text.starts_with("cancela o alarme")
+        || text.starts_with("apaga o despertador")
+    {
+        let mut result = command("clock_alarm_cancel", Some("clock_alarm"), None);
+        result.intent = "clock_alarm.cancel".into();
+        if let Some((_, tail)) = text.split_once(" das ").or_else(|| text.split_once(" de ")) {
+            if let Some(time) = slots::clock_time(tail) {
+                result.parameters.time = Some(time);
+            }
+        }
+        return Some(result);
+    }
+    let is_alarm =
+        text.contains("alarme") || text.contains("despertador") || text.contains("acorda");
+    if !is_alarm {
+        return None;
+    }
+    let words: Vec<&str> = text.split_whitespace().collect();
+    let first = words.first()?;
+    if !matches!(
+        *first,
+        "define" | "faz" | "cria" | "coloca" | "configura" | "programa" | "me" | "acorda"
+    ) {
+        return None;
+    }
+    let mut result = command("clock_alarm_create", Some("clock_alarm"), None);
+    result.intent = "clock_alarm.create".into();
+    if text.contains("amanha") {
+        result.parameters.date = Some("amanha".into());
+    }
+    if let Some(rec) = slots::recurrence(text) {
+        result.parameters.recurrence = Some(rec);
+    }
+    if let Some((_, after_chamado)) = text.split_once(" chamado ") {
+        if let Some((name, _)) = after_chamado.split_once(" para ") {
+            result.parameters.name = Some(name.trim().to_owned());
+        }
+    }
+    if let Some(time) = slots::clock_time(text) {
+        result.parameters.time = Some(time);
+    }
+    Some(result)
+}
+
+fn parse_reminder(text: &str) -> Option<Command> {
+    if matches!(
+        text,
+        "quais lembretes eu tenho"
+            | "quais lembretes estao pendentes"
+            | "quais lembretes pendentes"
+            | "quais lembretes"
+            | "quais sao meus lembretes"
+    ) {
+        let mut result = command("reminder_list", Some("reminder"), None);
+        result.intent = "reminder.list".into();
+        return Some(result);
+    }
+    if matches!(
+        text,
+        "marca o lembrete como concluido"
+            | "marca o lembrete como feito"
+            | "conclui o lembrete"
+            | "finaliza o lembrete"
+    ) {
+        let mut result = command("reminder_complete", Some("reminder"), None);
+        result.intent = "reminder.complete".into();
+        return Some(result);
+    }
+    if text.starts_with("adia o lembrete") {
+        let mut result = command("reminder_snooze", Some("reminder"), None);
+        result.intent = "reminder.snooze".into();
+        if let Some((middle, dur_tail)) = text.split_once(" por ") {
+            if let Some(dur) = slots::duration(dur_tail) {
+                result.parameters.duration = Some(dur);
+            }
+            let title = middle
+                .trim_start_matches("adia o lembrete de ")
+                .trim_start_matches("adia o lembrete para ")
+                .trim();
+            if !title.is_empty() {
+                result.parameters.title = Some(title.to_owned());
+            }
+        }
+        return Some(result);
+    }
+    if text.starts_with("cancela o lembrete") || text.starts_with("apaga o lembrete") {
+        let mut result = command("reminder_cancel", Some("reminder"), None);
+        result.intent = "reminder.cancel".into();
+        let tail = text
+            .trim_start_matches("cancela o lembrete de ")
+            .trim_start_matches("cancela o lembrete ")
+            .trim_start_matches("apaga o lembrete de ")
+            .trim_start_matches("apaga o lembrete ")
+            .trim();
+        if !tail.is_empty() {
+            result.parameters.title = Some(tail.to_owned());
+        }
+        return Some(result);
+    }
+    let is_reminder = text.contains("lembrete")
+        || text.starts_with("me lembra ")
+        || text.starts_with("lembra de ")
+        || text.starts_with("lembrar de ");
+    if !is_reminder {
+        return None;
+    }
+    let mut result = command("reminder_create", Some("reminder"), None);
+    result.intent = "reminder.create".into();
+    if text.contains("amanha") {
+        result.parameters.date = Some("amanha".into());
+    }
+    if let Some(delay) = slots::relative_delay(text) {
+        result.parameters.delay = Some(delay);
+    } else if let Some(time) = slots::clock_time(text) {
+        result.parameters.time = Some(time);
+    }
+    let mut clean_text = text.to_owned();
+    if let Some(rest) = clean_text
+        .strip_prefix("cria um lembrete de ")
+        .or_else(|| clean_text.strip_prefix("cria um lembrete para "))
+        .or_else(|| clean_text.strip_prefix("cria um lembrete "))
+        .or_else(|| clean_text.strip_prefix("me lembra de "))
+        .or_else(|| clean_text.strip_prefix("lembra de "))
+        .or_else(|| clean_text.strip_prefix("me lembra "))
+    {
+        clean_text = rest.to_owned();
+    }
+    if clean_text.starts_with("amanha as ") {
+        if let Some((_, task)) = clean_text.split_once(" de ") {
+            result.parameters.title = Some(task.trim().to_owned());
+        }
+    } else {
+        let title = clean_text
+            .split(" daqui a ")
+            .next()
+            .unwrap_or(&clean_text)
+            .split(" daqui ")
+            .next()
+            .unwrap_or(&clean_text)
+            .split(" as ")
+            .next()
+            .unwrap_or(&clean_text)
+            .split(" amanha ")
+            .next()
+            .unwrap_or(&clean_text)
+            .trim();
+        if !title.is_empty() {
+            result.parameters.title = Some(title.to_owned());
+        }
+    }
+    Some(result)
+}
+
+fn parse_timer_command(text: &str) -> Option<Command> {
+    if text.starts_with("quanto falta no timer")
+        || text.starts_with("quanto tempo falta no timer")
+        || text.starts_with("quanto falta no temporizador")
+    {
+        let mut result = command("timer_query", Some("timer"), None);
+        result.intent = "timer.query".into();
+        let tail = text
+            .trim_start_matches("quanto tempo falta no timer")
+            .trim_start_matches("quanto falta no timer")
+            .trim_start_matches("quanto falta no temporizador")
+            .trim();
+        let name = tail
+            .strip_prefix("da ")
+            .or_else(|| tail.strip_prefix("do "))
+            .or_else(|| tail.strip_prefix("de "))
+            .unwrap_or(tail)
+            .trim();
+        if !name.is_empty() {
+            result.parameters.name = Some(name.to_owned());
+            result.mention = Some(name.to_owned());
+        }
+        return Some(result);
+    }
+    if matches!(
+        text,
+        "quais timers estao ativos"
+            | "quais timers ativos"
+            | "quais timers eu tenho"
+            | "quais timers"
+            | "quais temporizadores estao ativos"
+    ) {
+        let mut result = command("timer_list", Some("timer"), None);
+        result.intent = "timer.list".into();
+        return Some(result);
+    }
+    if matches!(
+        text,
+        "cancela todos os timers"
+            | "para todos os timers"
+            | "desativa todos os timers"
+            | "apaga todos os timers"
+    ) {
+        let mut result = command("timer_cancel", Some("timer"), None);
+        result.intent = "timer.cancel_all".into();
+        result.plural = true;
+        return Some(result);
+    }
+    if text.starts_with("pausa o timer")
+        || text.starts_with("pausa o temporizador")
+        || text.starts_with("pausa timer")
+    {
+        let mut result = command("timer_pause", Some("timer"), None);
+        result.intent = "timer.pause".into();
+        let tail = text
+            .trim_start_matches("pausa o timer")
+            .trim_start_matches("pausa o temporizador")
+            .trim_start_matches("pausa timer")
+            .trim();
+        let name = tail
+            .strip_prefix("da ")
+            .or_else(|| tail.strip_prefix("do "))
+            .or_else(|| tail.strip_prefix("de "))
+            .unwrap_or(tail)
+            .trim();
+        if !name.is_empty() {
+            result.parameters.name = Some(name.to_owned());
+            result.mention = Some(name.to_owned());
+        }
+        return Some(result);
+    }
+    if text.starts_with("continua o timer")
+        || text.starts_with("retoma o timer")
+        || text.starts_with("continua timer")
+    {
+        let mut result = command("timer_resume", Some("timer"), None);
+        result.intent = "timer.resume".into();
+        let tail = text
+            .trim_start_matches("continua o timer")
+            .trim_start_matches("retoma o timer")
+            .trim_start_matches("continua timer")
+            .trim();
+        let name = tail
+            .strip_prefix("da ")
+            .or_else(|| tail.strip_prefix("do "))
+            .or_else(|| tail.strip_prefix("de "))
+            .unwrap_or(tail)
+            .trim();
+        if !name.is_empty() {
+            result.parameters.name = Some(name.to_owned());
+            result.mention = Some(name.to_owned());
+        }
+        return Some(result);
+    }
+    if text.starts_with("acrescenta ") || text.starts_with("adiciona ") || text.starts_with("soma ")
+    {
+        let target = text.split_once(' ').map_or("", |(_, tail)| tail);
+        if let Some((amount_str, tail)) = target
+            .split_once(" ao timer")
+            .or_else(|| target.split_once(" no timer"))
+        {
+            let dur = slots::duration(amount_str)?;
+            let mut result = command("timer_change", Some("timer"), None);
+            result.intent = "timer.add_time".into();
+            result.parameters.relative = Some(dur);
+            let name = tail
+                .trim()
+                .strip_prefix("da ")
+                .or_else(|| tail.trim().strip_prefix("do "))
+                .or_else(|| tail.trim().strip_prefix("de "))
+                .unwrap_or(tail.trim());
+            if !name.is_empty() {
+                result.parameters.name = Some(name.to_owned());
+                result.mention = Some(name.to_owned());
+            }
+            return Some(result);
+        }
+    }
+    if text.starts_with("tira ") || text.starts_with("diminui ") || text.starts_with("reduz ") {
+        let target = text.split_once(' ').map_or("", |(_, tail)| tail);
+        if let Some((amount_str, tail)) = target
+            .split_once(" do timer")
+            .or_else(|| target.split_once(" no timer"))
+        {
+            let dur = slots::duration(amount_str)?;
+            let mut result = command("timer_change", Some("timer"), None);
+            result.intent = "timer.remove_time".into();
+            result.parameters.relative = Some(-dur);
+            let name = tail
+                .trim()
+                .strip_prefix("da ")
+                .or_else(|| tail.trim().strip_prefix("do "))
+                .or_else(|| tail.trim().strip_prefix("de "))
+                .unwrap_or(tail.trim());
+            if !name.is_empty() {
+                result.parameters.name = Some(name.to_owned());
+                result.mention = Some(name.to_owned());
+            }
+            return Some(result);
+        }
+    }
+    if text.starts_with("cancela o timer")
+        || text.starts_with("cancela timer")
+        || text.starts_with("apaga o timer")
+    {
+        let mut result = command("timer_cancel", Some("timer"), None);
+        result.intent = "timer.cancel".into();
+        let tail = text
+            .trim_start_matches("cancela o timer")
+            .trim_start_matches("cancela timer")
+            .trim_start_matches("apaga o timer")
+            .trim();
+        let name = tail
+            .strip_prefix("da ")
+            .or_else(|| tail.strip_prefix("do "))
+            .or_else(|| tail.strip_prefix("de "))
+            .unwrap_or(tail)
+            .trim();
+        if !name.is_empty() {
+            result.parameters.name = Some(name.to_owned());
+            result.mention = Some(name.to_owned());
+        }
+        return Some(result);
+    }
+    let is_timer_create = text.contains("timer")
+        || text.contains("temporizador")
+        || text.contains("contagem");
+    if !is_timer_create {
+        return None;
+    }
+    let words: Vec<&str> = text.split_whitespace().collect();
+    let first = words.first()?;
+    if !matches!(
+        *first,
+        "faz" | "cria" | "define" | "configura" | "coloca" | "comeca" | "inicia" | "marca"
+    ) && !text.starts_with("timer ")
+    {
+        return None;
+    }
+    let mut result = command("timer_start", Some("timer"), None);
+    result.intent = "timer.start".into();
+    let (name, duration_secs) = extract_timer_slots(text);
+    if let Some(n) = name {
+        result.parameters.name = Some(n.clone());
+        result.mention = Some(n);
+    }
+    if let Some(dur) = duration_secs {
+        result.parameters.duration = Some(dur);
+        result.parameters.value = Some(Value::from(dur));
+    }
+    Some(result)
+}
+
+fn extract_timer_slots(text: &str) -> (Option<String>, Option<f64>) {
+    let mut name = None;
+    let mut duration_secs = None;
+    if let Some((before, after)) = text.split_once(" chamado ") {
+        if let Some((n, dur)) = after.split_once(" de ") {
+            if let Some(s) = slots::duration(dur) {
+                name = Some(n.trim().to_owned());
+                duration_secs = Some(s);
+            } else {
+                name = Some(after.trim().trim_end_matches('.').to_owned());
+                duration_secs = extract_duration_from_phrase(before);
+            }
+        } else {
+            name = Some(after.trim().trim_end_matches('.').to_owned());
+            duration_secs = extract_duration_from_phrase(before);
+        }
+    } else if let Some((_, after)) = text.split_once(" de pizza de ") {
+        name = Some("pizza".into());
+        duration_secs = slots::duration(after);
+    } else if let Some((_, after_timer)) = text.split_once(" timer ") {
+        let after_timer = after_timer.trim();
+        if let Some((n, dur)) = after_timer.split_once(" de ") {
+            if !matches!(n, "um" | "uma" | "para" | "pra") {
+                if let Some(s) = slots::duration(dur) {
+                    name = Some(n.trim().to_owned());
+                    duration_secs = Some(s);
+                }
+            }
+        }
+    }
+    if duration_secs.is_none() {
+        duration_secs = extract_duration_from_phrase(text);
+    }
+    (name, duration_secs)
+}
+
+fn extract_duration_from_phrase(text: &str) -> Option<f64> {
+    for marker in [
+        "para daqui a ",
+        "para daqui ",
+        "daqui a ",
+        "daqui ",
+        "de ",
+        "em ",
+    ] {
+        if let Some((_, tail)) = text.split_once(marker) {
+            let candidate = tail.split(" chamado ").next().unwrap_or(tail).trim();
+            if let Some(dur) = slots::duration(candidate) {
+                return Some(dur);
+            }
+        }
+    }
+    None
+}
+
+fn parse_schedule_action(text: &str) -> Option<Command> {
+    if matches!(
+        text,
+        "quais acoes estao agendadas"
+            | "quais acoes agendadas"
+            | "quais tarefas estao agendadas"
+            | "quais tarefas agendadas"
+            | "o que esta agendado"
+    ) {
+        let mut result = command("scheduled_action_list", None, None);
+        result.intent = "schedule.list".into();
+        return Some(result);
+    }
+    if matches!(
+        text,
+        "cancela o sleep timer" | "cancela sleep timer" | "desativa o sleep timer"
+    ) {
+        let mut result = command("scheduled_action_cancel", Some("media_player"), None);
+        result.intent = "schedule.cancel".into();
+        result.parameters.target_domain = Some("media_player".into());
+        return Some(result);
+    }
+    if text.starts_with("cancela a tarefa de ") || text.starts_with("cancela a acao de ") {
+        let mut result = command("scheduled_action_cancel", None, None);
+        result.intent = "schedule.cancel".into();
+        let rest = text
+            .trim_start_matches("cancela a tarefa de ")
+            .trim_start_matches("cancela a acao de ");
+        if let Some((verb, target)) = rest.split_once(' ') {
+            result.parameters.target_action = Some(
+                match verb {
+                    "desligar" | "desliga" => "turn_off",
+                    "ligar" | "liga" => "turn_on",
+                    _ => verb,
+                }
+                .into(),
+            );
+            result.mention = Some(target.trim().to_owned());
+        } else {
+            result.mention = Some(rest.trim().to_owned());
+        }
+        return Some(result);
+    }
+    let (verb, rest) = text.split_once(' ')?;
+    let target_action = match verb {
+        "desliga" | "desligue" | "apaga" | "apague" => "turn_off",
+        "liga" | "ligue" | "acende" | "acenda" => "turn_on",
+        "para" | "pare" | "pausa" => "pause",
+        _ => return None,
+    };
+    let delay = slots::relative_delay(rest);
+    let clock = slots::clock_time(rest);
+    if delay.is_none() && clock.is_none() {
+        return None;
+    }
+    let mut result = command("schedule_action", None, None);
+    result.intent = "schedule.action".into();
+    result.parameters.target_action = Some(target_action.into());
+    if let Some(d) = delay {
+        result.parameters.delay = Some(d);
+    }
+    if let Some(c) = clock {
+        result.parameters.time = Some(c);
+    }
+    if rest.contains("hoje") {
+        result.parameters.date = Some("hoje".into());
+    } else if rest.contains("amanha") {
+        result.parameters.date = Some("amanha".into());
+    }
+    let raw_target = rest
+        .split(" daqui a ")
+        .next()
+        .unwrap_or(rest)
+        .split(" daqui ")
+        .next()
+        .unwrap_or(rest)
+        .split(" depois de ")
+        .next()
+        .unwrap_or(rest)
+        .split(" apos ")
+        .next()
+        .unwrap_or(rest)
+        .split(" em ")
+        .next()
+        .unwrap_or(rest)
+        .split(" as ")
+        .next()
+        .unwrap_or(rest)
+        .split(" hoje ")
+        .next()
+        .unwrap_or(rest)
+        .trim();
+    let mut target = raw_target.to_owned();
+    for prefix in ["a ", "o ", "as ", "os "] {
+        if let Some(stripped) = target.strip_prefix(prefix) {
+            target = stripped.to_owned();
+            break;
+        }
+    }
+    if target == "musica" {
+        result.domains.push("media_player".into());
+        result.parameters.target_domain = Some("media_player".into());
+        result.mention = Some("musica".into());
+    } else if target == "som" {
+        result.domains.push("media_player".into());
+        result.parameters.target_domain = Some("media_player".into());
+        result.mention = Some("som".into());
+    } else if !target.is_empty() {
+        result.mention = Some(target.clone());
+        if target.contains("luz") || target.contains("lampada") {
+            result.domains.push("light".into());
+        } else if target.contains("ventilador") {
+            result.domains.push("fan".into());
+        } else if target.contains("ar") || target.contains("split") {
+            result.domains.push("climate".into());
+        } else if target.contains("tv") {
+            result.domains.push("media_player".into());
+        }
+        if target.contains("luzes") || target.contains("lampadas") || target.contains("todas") {
+            result.plural = true;
+        }
+    }
+    Some(result)
 }

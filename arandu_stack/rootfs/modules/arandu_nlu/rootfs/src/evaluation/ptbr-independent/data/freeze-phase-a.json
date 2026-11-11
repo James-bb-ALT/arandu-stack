@@ -1,0 +1,16 @@
+{
+  "data_authorship": {
+    "kind": "PROJECT_AUTHORED_SYNTHETIC",
+    "license": "Apache-2.0",
+    "product_output_used_for_labels": false
+  },
+  "dataset": {
+    "ids_sha256": "6bab3996651adfb5cd644cab093f36159f156649ab2c10bbf066ffcefa09c346",
+    "line_count": 6,
+    "path": "evaluation/ptbr-independent/data/dataset-phase-a.jsonl",
+    "sha256": "1f04cc1830fe3294de5ce8bbcad410f3359a15ee8a9412463c1d94284b990875"
+  },
+  "freeze_id": "ptbr-independent-phase-a",
+  "purpose": "Phase A candidate corpus before product baseline",
+  "schema_version": 1
+}

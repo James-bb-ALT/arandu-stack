@@ -455,18 +455,13 @@ fn phase1_whole_plan_restrictions() {
         "Jamais ligue o ventilador",
         "Nem pense em abrir o portão",
         "Não precisa desligar a TV",
-        "Desliga tudo, menos a TV",
         "Liga a luz e não desliga o ventilador",
         "Se estiver quente, liga o ar",
         "Liga a luz, mas não mexe no ventilador",
         "Sem desligar a TV, apaga a luz",
         "Liga o ventilador quando eu chegar",
         "Liga a luz a não ser que esteja claro",
-        "Liga a luz depois de dez minutos",
         "Liga o ventilador depois",
-        "Liga o ventilador às 18 horas",
-        "Liga o ventilador daqui 10 minutos",
-        "Liga o ventilador às 18:00",
     ] {
         let result = interpret(&request(text));
         assert_ne!(result.status, "plan", "{text}: {result:?}");
@@ -479,6 +474,43 @@ fn phase1_whole_plan_restrictions() {
         );
         assert!(result.operations.is_empty());
     }
+}
+
+#[test]
+fn phase32_approved_temporal_and_exclusion_forms() {
+    let _guard = catalog_test_guard();
+    let mut cat = catalog();
+    cat.entities.push(entity(
+        "tv",
+        "media_player",
+        "TV",
+        "quarto",
+        Some("tv"),
+        &["turn_on", "turn_off", "query"],
+    ));
+    assert_eq!(register_catalog(cat).status, "catalog_ready");
+    for (text, action, target) in [
+        ("Liga a luz depois de dez minutos", "schedule_action", "light"),
+        ("Liga o ventilador às 18 horas", "schedule_action", "fan"),
+        ("Liga o ventilador daqui 10 minutos", "schedule_action", "fan"),
+        ("Liga o ventilador às 18:00", "schedule_action", "fan"),
+    ] {
+        let result = interpret(&request(text));
+        assert_eq!(result.status, "plan", "{text}: {result:?}");
+        assert_eq!(result.operations[0].action, action, "{text}");
+        assert_eq!(result.operations[0].targets, vec![target], "{text}");
+    }
+    let bulk = interpret(&request("Desliga tudo, menos a TV"));
+    assert_eq!(bulk.status, "plan", "Desliga tudo, menos a TV: {bulk:?}");
+    assert_eq!(bulk.operations[0].action, "turn_off");
+    assert_eq!(
+        bulk.operations[0].targets,
+        vec!["ar_quarto", "fan", "light"]
+    );
+    assert_eq!(
+        bulk.operations[0].parameters.excluded_targets,
+        vec!["tv"]
+    );
 }
 
 #[test]

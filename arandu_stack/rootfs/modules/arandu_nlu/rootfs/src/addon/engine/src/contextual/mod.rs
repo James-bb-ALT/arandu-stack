@@ -253,11 +253,31 @@ fn interpret_index(text: &str, request: &ContextRequest, index: &Index) -> Respo
             failure.command = Some(command);
             return failure;
         }
+        if command.action == "timer_start" && command.parameters.duration.is_none() {
+            let mut failure =
+                Response::failure("clarification", &command.intent, "missing_timer_duration");
+            failure.command = Some(command);
+            return failure;
+        }
+        if command.action == "reminder_create" {
+            if command.parameters.title.is_none() {
+                let mut failure =
+                    Response::failure("clarification", &command.intent, "missing_reminder_title");
+                failure.command = Some(command);
+                return failure;
+            }
+            if command.parameters.time.is_none() && command.parameters.delay.is_none() {
+                let mut failure =
+                    Response::failure("clarification", &command.intent, "missing_reminder_time");
+                failure.command = Some(command);
+                return failure;
+            }
+        }
         let resolution = index.resolve(&command, request);
         *response.timings.entry("resolution_ms".into()).or_default() +=
             resolution_start.elapsed().as_secs_f64() * 1_000.0;
         match resolution {
-            Ok((targets, evidence, area_id)) => {
+            Ok((targets, evidence, area_id, excluded_targets, excluded_device_ids)) => {
                 for target in &targets {
                     if command.action != "query"
                         && !properties
@@ -271,6 +291,8 @@ fn interpret_index(text: &str, request: &ContextRequest, index: &Index) -> Respo
                     }
                 }
                 let mut parameters = command.parameters;
+                parameters.excluded_targets = excluded_targets;
+                parameters.excluded_device_ids = excluded_device_ids;
                 if evidence.iter().any(|item| item == "bulk_area") {
                     if command.domains.len() == 1 {
                         parameters.category = command.domains.first().cloned();

@@ -1,0 +1,50 @@
+{
+  "baseline_id": "ptbr-independent-v2-interpret-pre-implementation-v1",
+  "capabilities_absent": [
+    "v2-request-binding",
+    "unlinked-poisoning",
+    "inherits-abstention",
+    "action-capability-constraints",
+    "atomic-multi-mention-plans",
+    "v2-endpoint"
+  ],
+  "corpus": {
+    "cases": 24,
+    "outcomes": {
+      "ambiguous": 2,
+      "no_match": 13,
+      "plan": 9
+    }
+  },
+  "inputs": {
+    "corpus-v1.jsonl": {
+      "path": "evaluation/ptbr-independent/v2-interpret/corpus-v1.jsonl",
+      "sha256": "cdcbfa4249e4bfe925ae8c4d91c8d82473f49859b33916c00ef06a255c61b2ed"
+    },
+    "freeze.py": {
+      "path": "evaluation/ptbr-independent/v2-interpret/freeze.py",
+      "sha256": "624f38d1d48ac29fec9642c2c45356d7a48fba046dcc7ea5e77d08aa6d005e68"
+    },
+    "generate.py": {
+      "path": "evaluation/ptbr-independent/v2-interpret/generate.py",
+      "sha256": "fee9a5e42b20421e567ac0d920605b391ba9f082506ec804d92a80fb43d9c7dd"
+    },
+    "oracle.py": {
+      "path": "evaluation/ptbr-independent/v2-interpret/oracle.py",
+      "sha256": "7133b35418041944e57dd8584dc3721cbdd2b47c0c3a94ad28e8b602736c5c27"
+    },
+    "snapshot-v1.json": {
+      "path": "evaluation/ptbr-independent/v2-interpret/snapshot-v1.json",
+      "sha256": "343c5f16e870c8e3e47ab37807c7f5ed9d73d3b0e7e527cbd565283c0caeeccb"
+    }
+  },
+  "known_contract_gaps": [
+    "no runtime v2 result schema",
+    "no independent product runner",
+    "no Rust implementation or focused tests"
+  ],
+  "product_changes": [],
+  "product_output_used": false,
+  "schema_version": 1,
+  "status": "not_implemented"
+}

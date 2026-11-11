@@ -1,0 +1,30 @@
+{
+  "catalog": {
+    "path": "data/phase-b/catalog-v1.json",
+    "sha256": "c88d80ec13ce288d189cd40a89c5fa4c178ca70230e28a46d289a134a73b57e0"
+  },
+  "corpus": {
+    "buckets": {
+      "expected-pass-now": 5,
+      "expected-reject-now": 6
+    },
+    "line_count": 11,
+    "path": "data/phase-b/corpus-v1.jsonl",
+    "sha256": "d066566bf068fbcda6dce697135726184c304658662b6761298735cf73d5ac25"
+  },
+  "freeze_id": "ptbr-independent-phase-b-v1",
+  "generator": {
+    "path": "evaluation/ptbr-independent/phase-b/generate.py"
+  },
+  "provenance": {
+    "kind": "PROJECT_AUTHORED_SYNTHETIC",
+    "license": "Apache-2.0",
+    "product_output_used_for_labels": false
+  },
+  "purpose": "frozen Phase B inputs before product requests",
+  "schema_version": 1,
+  "spec": {
+    "path": "data/phase-b/spec-v1.json",
+    "sha256": "2b1fa4b896a110ce30d9f2f1781396a3b66fcaff4a27d80c1539239aa29c446c"
+  }
+}

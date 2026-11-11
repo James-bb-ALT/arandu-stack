@@ -1,0 +1,44 @@
+{
+  "corpus": {
+    "line_count": 20,
+    "outcomes": {
+      "ambiguous": 2,
+      "no_match": 9,
+      "resolved": 9
+    }
+  },
+  "files": {
+    "catalog-v1.json": {
+      "path": "evaluation/ptbr-independent/entity-resolution/catalog-v1.json",
+      "sha256": "0a27438783f7e421277caf192af5b3ea1974bb6388e1c3a8e332d723322e3d3a"
+    },
+    "corpus-v1.jsonl": {
+      "path": "evaluation/ptbr-independent/entity-resolution/corpus-v1.jsonl",
+      "sha256": "e0d0f002b628a1369740839a42923fbea57b1112a750f02dad2cd9056fd17a09"
+    },
+    "freeze.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/freeze.py",
+      "sha256": "9ae697ead11c3b4c1f68c70d18d224eb63a6a808973530abf6c15cf83bc37fca"
+    },
+    "generate.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/generate.py",
+      "sha256": "a0793bc73ee6af94db9ed95e01bdfece5a174e8e0cad22e27240b2a0c7a7f860"
+    },
+    "oracle.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/oracle.py",
+      "sha256": "c2e457c7187a8f04f4f62234efd29a660f06f5f7b3f8aa4f5446814e5f980c9a"
+    },
+    "spec-v1.json": {
+      "path": "evaluation/ptbr-independent/entity-resolution/spec-v1.json",
+      "sha256": "cdf5e8d7348a912d15f852395afc25b291877fc6dcaf0278a5645028224669c1"
+    }
+  },
+  "freeze_id": "ptbr-independent-entity-resolution-v1",
+  "provenance": {
+    "kind": "PROJECT_AUTHORED_SYNTHETIC",
+    "license": "Apache-2.0",
+    "product_output_used_for_labels": false
+  },
+  "purpose": "prepared entity-resolution evidence before product implementation",
+  "schema_version": 1
+}

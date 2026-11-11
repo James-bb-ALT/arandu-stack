@@ -1,0 +1,69 @@
+{
+  "activation_note": "resolver is additive library API; protocol v1 interpret() path and Home Assistant integration are unchanged and unwired",
+  "active": false,
+  "baseline_id": "ptbr-independent-entity-resolution-post-implementation-v1",
+  "benchmark": {
+    "iterations": 20000,
+    "mean_ns_per_case": 7865.231428571428,
+    "memory_collection": "Win32 GetProcessMemoryInfo PeakWorkingSetSize sampled externally during probe run",
+    "peak_working_set_bytes": 5201920,
+    "probe": "target/release/examples/er_bench.exe",
+    "throughput_cases_per_second": 127141.84052707921
+  },
+  "conformance": {
+    "cases": 21,
+    "gold_mismatches": 0,
+    "gold_outcomes": {
+      "ambiguous": 2,
+      "no_match": 11,
+      "resolved": 8
+    },
+    "rust_gold_tests": "cargo test --workspace --locked --offline --test entity_resolution (21 gold rows + catalog permutation): pass",
+    "rust_unit_tests": "cargo test --workspace --locked --offline --lib: pass"
+  },
+  "freeze_manifest": {
+    "path": "evaluation/ptbr-independent/entity-resolution/freeze-v4.json",
+    "sha256": "5c69152a1dc737ce969e80fc0bf818f5033231e46482ccb9c08510b0dc3c04e9"
+  },
+  "inputs": {
+    "catalog-v1.json": {
+      "path": "evaluation/ptbr-independent/entity-resolution/catalog-v1.json",
+      "sha256": "0a27438783f7e421277caf192af5b3ea1974bb6388e1c3a8e332d723322e3d3a"
+    },
+    "corpus-v1.jsonl": {
+      "path": "evaluation/ptbr-independent/entity-resolution/corpus-v1.jsonl",
+      "sha256": "8609960679cf2462769ea5c34a5c8b6e3bb97197721c12362010500f26355c22"
+    },
+    "evaluate.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/evaluate.py",
+      "sha256": "1fede6f27b7e2d13ac8ece1de3f7c238403e385efcd9d8d77b3986802008d408"
+    },
+    "freeze.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/freeze.py",
+      "sha256": "54f27d09970701dc59dbdaf3fe41caa853c28b919f605b3a82683f5f87c2e3ed"
+    },
+    "generate.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/generate.py",
+      "sha256": "22c58e229f91308e894d0137a8f57a67fe3d4add53817a1afa372f5fd77bbb9a"
+    },
+    "oracle.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/oracle.py",
+      "sha256": "f748cf244a6cd02ddb8af038d8c48e94461aaecf63cc5f418de0f17ee40fdaa5"
+    },
+    "spec-v1.json": {
+      "path": "evaluation/ptbr-independent/entity-resolution/spec-v1.json",
+      "sha256": "9f5cc90fefa88e44ec6b0712c6b0293dedd8630d0a90f2dbecc21ed2ea251c90"
+    }
+  },
+  "product_changes": [
+    "addon/engine/src/resolution.rs",
+    "addon/engine/src/lib.rs",
+    "addon/engine/src/model.rs",
+    "addon/engine/tests/entity_resolution.rs",
+    "addon/engine/examples/er_bench.rs",
+    "evaluation/ptbr-independent/entity-resolution/evaluate.py"
+  ],
+  "product_output_used": false,
+  "schema_version": 1,
+  "status": "implemented_tested_baselined"
+}

@@ -1,0 +1,1627 @@
+{
+  "cases": [
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-acenda-luz-da-cozinha"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-acenda-luz-do-escritório"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-acenda-luz-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-acenda-luz-do-quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-acenda-cafeteira"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-acenda-monitor"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-acenda-ventilador-do-quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-acenda-ventilador-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-apague-luz-da-cozinha"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-apague-luz-do-escritório"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-apague-luz-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-apague-luz-do-quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-apague-cafeteira"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-apague-monitor"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-apague-ventilador-do-quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-apague-ventilador-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-ligue-luz-da-cozinha"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-ligue-luz-do-escritório"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-ligue-luz-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-ligue-luz-do-quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-ligue-cafeteira"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-ligue-monitor"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-ligue-ventilador-do-quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-ligue-ventilador-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-desligue-luz-da-cozinha"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-desligue-luz-do-escritório"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-desligue-luz-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-desligue-luz-do-quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-desligue-cafeteira"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-desligue-monitor"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-desligue-ventilador-do-quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "domain": "effect",
+        "targeting": "entity"
+      },
+      "id": "effect-desligue-ventilador-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "domain": "read",
+        "targeting": "entity"
+      },
+      "id": "read-qual-luz-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "domain": "read",
+        "targeting": "entity"
+      },
+      "id": "read-qual-cafeteira"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "domain": "read",
+        "targeting": "entity"
+      },
+      "id": "read-qual-ventilador-do-quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "domain": "read",
+        "targeting": "entity"
+      },
+      "id": "read-qual-temperatura-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "domain": "read",
+        "targeting": "entity"
+      },
+      "id": "read-qual-janela-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "domain": "read",
+        "targeting": "entity"
+      },
+      "id": "read-como-luz-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "domain": "read",
+        "targeting": "entity"
+      },
+      "id": "read-como-cafeteira"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "domain": "read",
+        "targeting": "entity"
+      },
+      "id": "read-como-ventilador-do-quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "domain": "read",
+        "targeting": "entity"
+      },
+      "id": "read-como-temperatura-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "domain": "read",
+        "targeting": "entity"
+      },
+      "id": "read-como-janela-da-sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "set_fan_percentage",
+        "domain": "fan",
+        "percentage": "boundary"
+      },
+      "id": "fan-percent-0-reg_fan_quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "set_fan_percentage",
+        "domain": "fan",
+        "percentage": "boundary"
+      },
+      "id": "fan-percent-1-reg_fan_quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "set_fan_percentage",
+        "domain": "fan",
+        "percentage": "boundary"
+      },
+      "id": "fan-percent-25-reg_fan_quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "set_fan_percentage",
+        "domain": "fan",
+        "percentage": "boundary"
+      },
+      "id": "fan-percent-50-reg_fan_sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "set_fan_percentage",
+        "domain": "fan",
+        "percentage": "boundary"
+      },
+      "id": "fan-percent-75-reg_fan_quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "set_fan_percentage",
+        "domain": "fan",
+        "percentage": "boundary"
+      },
+      "id": "fan-percent-99-reg_fan_sala"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "set_fan_percentage",
+        "domain": "fan",
+        "percentage": "boundary"
+      },
+      "id": "fan-percent-100-reg_fan_quarto"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "targeting": "alias"
+      },
+      "id": "alias-light-kitchen"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "targeting": "alias"
+      },
+      "id": "alias-light-office"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "targeting": "alias"
+      },
+      "id": "alias-lamp-living"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "targeting": "alias"
+      },
+      "id": "alias-lamp-bedroom"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "targeting": "alias"
+      },
+      "id": "alias-switch-coffee"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "targeting": "alias"
+      },
+      "id": "alias-switch-monitor"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "targeting": "alias"
+      },
+      "id": "alias-light-bedroom"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "targeting": "alias"
+      },
+      "id": "read-alias-light-kitchen"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "targeting": "alias"
+      },
+      "id": "read-alias-light-office"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "targeting": "alias"
+      },
+      "id": "read-alias-lamp-living"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "targeting": "alias"
+      },
+      "id": "read-alias-lamp-bedroom"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "targeting": "alias"
+      },
+      "id": "read-alias-switch-coffee"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "targeting": "alias"
+      },
+      "id": "read-alias-switch-monitor"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "targeting": "alias"
+      },
+      "id": "read-alias-temperature"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "targeting": "alias"
+      },
+      "id": "read-alias-window"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_on",
+        "area": "sala",
+        "targeting": "area"
+      },
+      "id": "area-lights-sala-on"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "area": "quarto",
+        "targeting": "area"
+      },
+      "id": "area-lights-quarto-off"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "area": "ellipsis",
+        "targeting": "area"
+      },
+      "id": "area-ellipsis-off"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "mixed",
+        "chain": "ordered",
+        "domain": "effect"
+      },
+      "id": "chain-light-fan"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "mixed",
+        "chain": "ordered",
+        "percentage": "digits"
+      },
+      "id": "chain-switch-fan"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "turn_off",
+        "normalization": "case-accent"
+      },
+      "id": "normalization-accent"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "set_fan_percentage",
+        "normalization": "symbol"
+      },
+      "id": "normalization-symbol"
+    },
+    {
+      "bucket": "expected-pass-now",
+      "classification": "exact_pass",
+      "detail": "semantic plan matches",
+      "dimensions": {
+        "action": "get_state",
+        "domain": "sensor"
+      },
+      "id": "read-quanto-temperature"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "ambiguous"
+      },
+      "id": "ambiguous-abajur"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "contradiction-light"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "mixed-query-effect"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-toggle"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unknown-area"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-climate"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "invalid_request"
+      },
+      "id": "empty"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "percentage-high-101"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "percentage-high-200"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "percentage-high-999"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "percentage-high-12345"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-00"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-01"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-02"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-03"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-04"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-05"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-06"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-07"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-08"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-09"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-10"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-11"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-12"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-13"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-14"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-15"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-16"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-17"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-18"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-19"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-20"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-21"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-22"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-23"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-24"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-25"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-26"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-27"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-28"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-29"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-30"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-31"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-32"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-33"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-34"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-35"
+    },
+    {
+      "bucket": "expected-reject-now",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "none",
+        "rejection": "no_match"
+      },
+      "id": "unsupported-syntax-36"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-written-number"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-colloquial"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-asr"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-anaphora"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-context"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-clarification"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-00"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-01"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-02"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-03"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-04"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-05"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-06"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-07"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-08"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-09"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-10"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-11"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-12"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-13"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-14"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-15"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-16"
+    },
+    {
+      "bucket": "known-gap-future",
+      "classification": "exact_pass",
+      "detail": "rejection status matches",
+      "dimensions": {
+        "gap": "future",
+        "rejection": "safe"
+      },
+      "id": "gap-future-17"
+    }
+  ],
+  "dimensions": {
+    "action": {
+      "get_state": {
+        "exact_pass": 19
+      },
+      "mixed": {
+        "exact_pass": 2
+      },
+      "set_fan_percentage": {
+        "exact_pass": 8
+      },
+      "turn_off": {
+        "exact_pass": 22
+      },
+      "turn_on": {
+        "exact_pass": 21
+      }
+    },
+    "area": {
+      "ellipsis": {
+        "exact_pass": 1
+      },
+      "quarto": {
+        "exact_pass": 1
+      },
+      "sala": {
+        "exact_pass": 1
+      }
+    },
+    "chain": {
+      "ordered": {
+        "exact_pass": 2
+      }
+    },
+    "domain": {
+      "effect": {
+        "exact_pass": 33
+      },
+      "fan": {
+        "exact_pass": 7
+      },
+      "read": {
+        "exact_pass": 10
+      },
+      "sensor": {
+        "exact_pass": 1
+      }
+    },
+    "gap": {
+      "future": {
+        "exact_pass": 24
+      },
+      "none": {
+        "exact_pass": 48
+      }
+    },
+    "normalization": {
+      "case-accent": {
+        "exact_pass": 1
+      },
+      "symbol": {
+        "exact_pass": 1
+      }
+    },
+    "percentage": {
+      "boundary": {
+        "exact_pass": 7
+      },
+      "digits": {
+        "exact_pass": 1
+      }
+    },
+    "rejection": {
+      "ambiguous": {
+        "exact_pass": 1
+      },
+      "invalid_request": {
+        "exact_pass": 1
+      },
+      "no_match": {
+        "exact_pass": 46
+      },
+      "safe": {
+        "exact_pass": 24
+      }
+    },
+    "targeting": {
+      "alias": {
+        "exact_pass": 15
+      },
+      "area": {
+        "exact_pass": 3
+      },
+      "entity": {
+        "exact_pass": 42
+      }
+    }
+  },
+  "endpoint": "http://127.0.0.1:49359",
+  "environment": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with",
+    "python": "3.12.14"
+  },
+  "freeze_id": "ptbr-independent-v2",
+  "hashes": {
+    "adapter": "a55b7f60317a62bb3d05edbbf399f876a2706f0cd41f7a519e770ffd6260b272",
+    "binary": "33370a173388c90b80b089d215cf1fd4140f95ba4345dfbeab215fc1b231714e",
+    "catalog": "ad4023b97a05f6b054df53f909e6240dc5eb299c580f4b42e1e6669149f157b4",
+    "comparison": "47c66e841f284d26522ad707b4e89f215980c1df26329010f31d7abe017a3e63",
+    "dataset": "71c65a4f101b3a5adbbfd0918d4760243e1dce74fc267bcc11ea3c1fe29e72d4",
+    "runner": "2ca6dd287fa3dbe4d33b64c8e7a104d189f0dd3805fee2d641713db6aa15ddeb"
+  },
+  "schema_version": 1,
+  "summary": {
+    "buckets": {
+      "expected-pass-now": 72,
+      "expected-reject-now": 48,
+      "known-gap-future": 24
+    },
+    "cases": 144,
+    "classifications": {
+      "exact_pass": 144
+    },
+    "known_gap_cases": 24,
+    "scored_cases": 120,
+    "scored_classifications": {
+      "exact_pass": 120
+    }
+  }
+}

@@ -14,7 +14,7 @@ pub(super) struct Index {
     groups: BTreeMap<String, Vec<(String, BTreeSet<String>)>>,
     tokens: BTreeMap<String, BTreeSet<usize>>,
 }
-type Resolved = (Vec<String>, Vec<String>, Option<String>);
+type Resolved = (Vec<String>, Vec<String>, Option<String>, Vec<String>, Vec<String>);
 
 fn clean(value: &str) -> String {
     slots::normalize(value)
@@ -545,9 +545,101 @@ impl Index {
     ) -> Result<Resolved, Response> {
         if matches!(
             command.action.as_str(),
-            "local_time" | "local_date" | "binding" | "camera_view"
+            "local_time"
+                | "local_date"
+                | "binding"
+                | "camera_view"
+                | "clock_alarm_create"
+                | "clock_alarm_list"
+                | "clock_alarm_query"
+                | "clock_alarm_cancel"
+                | "clock_alarm_snooze"
+                | "clock_alarm_dismiss"
+                | "reminder_create"
+                | "reminder_list"
+                | "reminder_query"
+                | "reminder_cancel"
+                | "reminder_snooze"
+                | "reminder_complete"
+                | "timer_list"
+                | "scheduled_action_list"
         ) {
-            return Ok((Vec::new(), vec!["typed_intent".into()], None));
+            return Ok((Vec::new(), vec!["typed_intent".into()], None, Vec::new(), Vec::new()));
+        }
+        if matches!(
+            command.action.as_str(),
+            "timer_start" | "timer_cancel" | "timer_pause" | "timer_resume" | "timer_change" | "timer_query"
+        ) {
+            let explicit_target = command
+                .parameters
+                .name
+                .as_deref()
+                .or(command.mention.as_deref())
+                .and_then(|name| {
+                    let clean_n = clean(name);
+                    self.catalog.entities.iter().position(|e| {
+                        e.domain == "timer"
+                            && (clean(&e.name) == clean_n
+                                || e.entity_id == format!("timer.{clean_n}"))
+                    })
+                });
+            if let Some(pos) = explicit_target {
+                let reg_id = self.catalog.entities[pos].registry_id.clone();
+                return Ok((
+                    vec![reg_id],
+                    vec!["ha_timer_entity".into()],
+                    None,
+                    Vec::new(),
+                    Vec::new(),
+                ));
+            }
+            if command.parameters.name.is_none() && command.mention.is_none() {
+                let default_timer = self
+                    .catalog
+                    .entities
+                    .iter()
+                    .position(|e| {
+                        e.domain == "timer"
+                            && e.actions.contains(&command.action)
+                            && (request.origin_area.is_none() || e.area_id == request.origin_area)
+                    })
+                    .or_else(|| {
+                        let matching: Vec<_> = self
+                            .catalog
+                            .entities
+                            .iter()
+                            .filter(|e| e.domain == "timer" && e.actions.contains(&command.action))
+                            .collect();
+                        if matching.len() == 1 {
+                            self.catalog
+                                .entities
+                                .iter()
+                                .position(|e| e.registry_id == matching[0].registry_id)
+                        } else {
+                            None
+                        }
+                    });
+                if let Some(pos) = default_timer {
+                    let reg_id = self.catalog.entities[pos].registry_id.clone();
+                    return Ok((
+                        vec![reg_id],
+                        vec!["ha_timer_entity".into()],
+                        None,
+                        Vec::new(),
+                        Vec::new(),
+                    ));
+                }
+            }
+            return Ok((Vec::new(), vec!["typed_timer".into()], None, Vec::new(), Vec::new()));
+        }
+        if command.action == "scheduled_action_cancel" && command.mention.is_none() {
+            return Ok((
+                Vec::new(),
+                vec!["typed_sleep_timer".into()],
+                None,
+                Vec::new(),
+                Vec::new(),
+            ));
         }
         let mut mention = command.mention.as_deref().map(clean).unwrap_or_default();
         let explicit_area = command.area.as_deref().map(clean);
@@ -776,15 +868,25 @@ impl Index {
                     ranked.insert(i, (65, "compositional_name"));
                 }
             }
+        }
+        let effective_action = if command.action == "schedule_action" {
+            command
+                .parameters
+                .target_action
+                .as_deref()
+                .unwrap_or(&command.action)
         } else {
-            for i in self.actions.get(&command.action).into_iter().flatten() {
+            &command.action
+        };
+        if mention.is_empty() {
+            for i in self.actions.get(effective_action).into_iter().flatten() {
                 ranked.insert(*i, (50, "capability_category"));
             }
         }
         let unknown_mention = !mention.is_empty() && ranked.is_empty() && !context_target;
         ranked.retain(|i, (rank, evidence)| {
             let entity = &self.catalog.entities[*i];
-            entity.actions.contains(&command.action)
+            entity.actions.contains(&effective_action.to_owned())
                 && (if bulk {
                     bulk_eligible(entity, command)
                 } else {
@@ -843,7 +945,7 @@ impl Index {
                         .enumerate()
                         .filter(|(_, entity)| {
                             entity.area_id.as_ref() == Some(id)
-                                && entity.actions.contains(&command.action)
+                                && entity.actions.contains(&effective_action.to_owned())
                                 && command.domains.contains(&entity.domain)
                                 && (!bulk || bulk_eligible(entity, command))
                                 && class_compatible(command, entity)
@@ -1111,7 +1213,80 @@ impl Index {
                 evidence.insert("complete_spatial_set".into());
             }
         }
-        Ok((targets, evidence.into_iter().collect(), area.or(group_id)))
+        let mut excluded_targets = BTreeSet::new();
+        let mut excluded_device_ids = BTreeSet::new();
+        if !command.parameters.excluded_mentions.is_empty() {
+            let target_area = area.as_ref().or(request.origin_area.as_ref());
+            if target_area.is_none() {
+                return Err(Response::failure(
+                    "clarification",
+                    &command.intent,
+                    "missing_origin_area",
+                ));
+            }
+            let target_area_id = target_area.unwrap();
+            for mention_str in &command.parameters.excluded_mentions {
+                let clean_m = clean(mention_str);
+                let mut found = false;
+                for entity in &self.catalog.entities {
+                    if entity.area_id.as_deref() == Some(target_area_id.as_str()) {
+                        let name_match = clean(&entity.name) == clean_m
+                            || entity.aliases.iter().any(|a| clean(a) == clean_m)
+                            || clean_m
+                                .split_whitespace()
+                                .all(|w| clean(&entity.name).contains(w))
+                            || type_names(&entity.domain, entity.device_class.as_deref())
+                                .contains(&clean_m.as_str());
+                        if name_match {
+                            found = true;
+                            excluded_targets.insert(entity.registry_id.clone());
+                            if let Some(dev_id) = &entity.device_id {
+                                excluded_device_ids.insert(dev_id.clone());
+                            }
+                        }
+                    }
+                }
+                if !found {
+                    let exists_elsewhere = self.catalog.entities.iter().any(|e| {
+                        clean(&e.name) == clean_m
+                            || e.aliases.iter().any(|a| clean(a) == clean_m)
+                            || clean_m
+                                .split_whitespace()
+                                .all(|w| clean(&e.name).contains(w))
+                            || type_names(&e.domain, e.device_class.as_deref())
+                                .contains(&clean_m.as_str())
+                    });
+                    if exists_elsewhere {
+                        return Err(Response::failure(
+                            "clarification",
+                            &command.intent,
+                            "exclusion_out_of_scope",
+                        ));
+                    } else {
+                        return Err(Response::failure(
+                            "clarification",
+                            &command.intent,
+                            "target_not_found",
+                        ));
+                    }
+                }
+            }
+            for dev_id in &excluded_device_ids {
+                for entity in &self.catalog.entities {
+                    if entity.device_id.as_ref() == Some(dev_id) {
+                        excluded_targets.insert(entity.registry_id.clone());
+                    }
+                }
+            }
+            targets.retain(|t| !excluded_targets.contains(t));
+        }
+        Ok((
+            targets,
+            evidence.into_iter().collect(),
+            area.or(group_id),
+            excluded_targets.into_iter().collect(),
+            excluded_device_ids.into_iter().collect(),
+        ))
     }
 
     fn area(&self, name: &str) -> Option<String> {

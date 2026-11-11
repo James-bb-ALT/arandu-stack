@@ -208,3 +208,134 @@ pub fn original_slot(source: &str, value: &str) -> Option<String> {
     }
     source.get(first..end).map(str::to_owned)
 }
+
+#[must_use]
+pub fn clock_time(text: &str) -> Option<String> {
+    let mut text = text.trim();
+    for marker in [" para as ", " pra as ", " pras ", " para a ", " pra a ", " as "] {
+        if let Some((_, tail)) = text.split_once(marker) {
+            if let Some(t) = clock_time(tail) {
+                return Some(t);
+            }
+        }
+    }
+    for prefix in [
+        "para as ", "para a ", "pra as ", "pra a ", "pras ", "as ", "a ", "para ", "pra ",
+    ] {
+        if let Some(rest) = text.strip_prefix(prefix) {
+            text = rest.trim();
+            break;
+        }
+    }
+    let is_afternoon = text.contains("da tarde") || text.contains("da noite");
+    let is_morning = text.contains("da manha") || text.contains("da madrugada");
+    for suffix in [
+        " da tarde",
+        " da noite",
+        " da manha",
+        " da madrugada",
+        " da manhazinha",
+    ] {
+        if let Some(rest) = text.strip_suffix(suffix) {
+            text = rest.trim();
+            break;
+        }
+    }
+    let is_half = text.ends_with(" e meia");
+    if is_half {
+        text = text.strip_suffix(" e meia")?.trim();
+    }
+    for suffix in [" horas", " hora"] {
+        if let Some(rest) = text.strip_suffix(suffix) {
+            text = rest.trim();
+            break;
+        }
+    }
+    let (mut hours, mut minutes) = if text == "meio dia" {
+        (12, 0)
+    } else if text == "meia noite" {
+        (0, 0)
+    } else if let Some((h_str, m_str)) = text.split_once(':') {
+        let h: u32 = h_str.trim().parse().ok()?;
+        let m: u32 = m_str.trim().parse().ok()?;
+        (h, m)
+    } else if let Some((h_str, m_str)) = text.split_once('h') {
+        let h: u32 = h_str.trim().parse().ok()?;
+        let m: u32 = if m_str.trim().is_empty() {
+            0
+        } else {
+            m_str.trim().parse().ok()?
+        };
+        (h, m)
+    } else if let Some((h_str, m_str)) = text.split_once(' ')
+        && let (Ok(h), Ok(m)) = (h_str.trim().parse::<u32>(), m_str.trim().parse::<u32>())
+        && h < 24
+        && m < 60
+    {
+        (h, m)
+    } else if let Some(n) = number(text) {
+        let h = n as u32;
+        (h, 0)
+    } else {
+        return None;
+    };
+    if is_half {
+        minutes = 30;
+    }
+    if is_afternoon && hours > 0 && hours < 12 {
+        hours += 12;
+    } else if is_morning && hours == 12 {
+        hours = 0;
+    }
+    if hours > 23 || minutes > 59 {
+        return None;
+    }
+    Some(format!("{hours:02}:{minutes:02}"))
+}
+
+#[must_use]
+pub fn relative_delay(text: &str) -> Option<f64> {
+    let mut text = text.trim();
+    for marker in [" depois de ", " apos ", " daqui a ", " daqui ", " em "] {
+        if let Some((_, tail)) = text.split_once(marker) {
+            if let Some(d) = relative_delay(tail) {
+                return Some(d);
+            }
+        }
+    }
+    for prefix in ["depois de ", "apos ", "daqui a ", "daqui ", "em ", "por "] {
+        if let Some(rest) = text.strip_prefix(prefix) {
+            text = rest.trim();
+            break;
+        }
+    }
+    duration(text)
+}
+
+#[must_use]
+pub fn recurrence(text: &str) -> Option<String> {
+    let text = text.trim();
+    if matches!(
+        text,
+        "todo dia" | "todos os dias" | "diariamente" | "diario" | "diaria"
+    ) {
+        Some("daily".into())
+    } else if matches!(
+        text,
+        "de segunda a sexta"
+            | "segunda a sexta"
+            | "dias uteis"
+            | "dias de semana"
+            | "segunda a sexta feira"
+    ) {
+        Some("weekdays".into())
+    } else if matches!(
+        text,
+        "fins de semana" | "fim de semana" | "sabado e domingo" | "sabados e domingos"
+    ) {
+        Some("weekends".into())
+    } else {
+        None
+    }
+}
+

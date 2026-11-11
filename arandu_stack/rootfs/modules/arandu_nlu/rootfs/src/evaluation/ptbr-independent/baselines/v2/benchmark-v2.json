@@ -1,0 +1,108 @@
+{
+  "cold_start": {
+    "samples": [
+      {
+        "classification": "exact_pass",
+        "detail": "semantic plan matches",
+        "hwm_bytes": 770048,
+        "rss_bytes": 770048,
+        "start_to_first_request_ns": 32987078,
+        "start_to_ready_ns": 31623663
+      },
+      {
+        "classification": "exact_pass",
+        "detail": "semantic plan matches",
+        "hwm_bytes": 761856,
+        "rss_bytes": 761856,
+        "start_to_first_request_ns": 32689068,
+        "start_to_ready_ns": 31338328
+      },
+      {
+        "classification": "exact_pass",
+        "detail": "semantic plan matches",
+        "hwm_bytes": 765952,
+        "rss_bytes": 765952,
+        "start_to_first_request_ns": 32939025,
+        "start_to_ready_ns": 31690577
+      }
+    ]
+  },
+  "environment": {
+    "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with",
+    "python": "3.12.14"
+  },
+  "freeze_id": "ptbr-independent-v2",
+  "hashes": {
+    "adapter": "a55b7f60317a62bb3d05edbbf399f876a2706f0cd41f7a519e770ffd6260b272",
+    "benchmark": "941178ecc1aec2037d311dc85301be837e47e999f7c64978d40f66212134e3aa",
+    "binary": "33370a173388c90b80b089d215cf1fd4140f95ba4345dfbeab215fc1b231714e",
+    "comparison": "47c66e841f284d26522ad707b4e89f215980c1df26329010f31d7abe017a3e63"
+  },
+  "http_steady_state": {
+    "failures": [],
+    "measured_rounds": 7,
+    "request_latency": {
+      "count": 1008,
+      "max_ns": 1453687,
+      "mean_ns": 755018.2162698413,
+      "min_ns": 564353,
+      "p50_ns": 732709,
+      "p95_ns": 974043,
+      "p99_ns": 1134107
+    },
+    "requests_per_round": 144,
+    "round_duration": {
+      "count": 7,
+      "max_ns": 115546273,
+      "mean_ns": 108831795.57142857,
+      "min_ns": 105551249,
+      "p50_ns": 108529759,
+      "p95_ns": 109083167,
+      "p99_ns": 109083167
+    },
+    "throughput_requests_per_second": 1323.1427382404052,
+    "warmup_rounds_discarded": 3
+  },
+  "schema_version": 1,
+  "summary": {
+    "cases": 144,
+    "cold_failures": 0,
+    "failures": 0,
+    "hwm": {
+      "collection": "Linux /proc/<pid>/status VmHWM",
+      "max_bytes": 1347584,
+      "process": "local-nlu serve",
+      "samples": [
+        1220608,
+        1220608,
+        1220608,
+        1220608,
+        1220608,
+        1347584,
+        1347584,
+        770048,
+        761856,
+        765952
+      ],
+      "unit": "bytes"
+    },
+    "rss": {
+      "collection": "Linux /proc/<pid>/status VmRSS",
+      "max_bytes": 786432,
+      "process": "local-nlu serve",
+      "samples": [
+        786432,
+        786432,
+        786432,
+        786432,
+        786432,
+        786432,
+        786432,
+        770048,
+        761856,
+        765952
+      ],
+      "unit": "bytes"
+    }
+  }
+}

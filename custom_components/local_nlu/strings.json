@@ -87,6 +87,8 @@
           "excluded_from_bulk_actions": "Exclude from collective actions",
           "low_battery_threshold": "Low battery threshold (%)",
           "fallback_user_id": "User for pipelines without identity",
+          "delivery_media_player": "Audio player for alarms and reminders (optional)",
+          "delivery_tts_engine": "TTS entity for voice announcements (optional)",
           "endpoint": "NLU endpoint (leave blank for automatic detection)"
         },
         "data_description": {

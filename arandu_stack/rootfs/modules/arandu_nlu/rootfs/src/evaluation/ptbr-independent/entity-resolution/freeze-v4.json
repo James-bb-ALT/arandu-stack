@@ -1,0 +1,48 @@
+{
+  "corpus": {
+    "line_count": 21,
+    "outcomes": {
+      "ambiguous": 2,
+      "no_match": 11,
+      "resolved": 8
+    }
+  },
+  "files": {
+    "catalog-v1.json": {
+      "path": "evaluation/ptbr-independent/entity-resolution/catalog-v1.json",
+      "sha256": "0a27438783f7e421277caf192af5b3ea1974bb6388e1c3a8e332d723322e3d3a"
+    },
+    "corpus-v1.jsonl": {
+      "path": "evaluation/ptbr-independent/entity-resolution/corpus-v1.jsonl",
+      "sha256": "8609960679cf2462769ea5c34a5c8b6e3bb97197721c12362010500f26355c22"
+    },
+    "freeze.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/freeze.py",
+      "sha256": "54f27d09970701dc59dbdaf3fe41caa853c28b919f605b3a82683f5f87c2e3ed"
+    },
+    "generate.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/generate.py",
+      "sha256": "22c58e229f91308e894d0137a8f57a67fe3d4add53817a1afa372f5fd77bbb9a"
+    },
+    "oracle.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/oracle.py",
+      "sha256": "f748cf244a6cd02ddb8af038d8c48e94461aaecf63cc5f418de0f17ee40fdaa5"
+    },
+    "prebaseline.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/prebaseline.py",
+      "sha256": "523ffa978a03b00901b61adcadd4847c3b92e56b21dacc12aa93c504843d73ee"
+    },
+    "spec-v1.json": {
+      "path": "evaluation/ptbr-independent/entity-resolution/spec-v1.json",
+      "sha256": "9f5cc90fefa88e44ec6b0712c6b0293dedd8630d0a90f2dbecc21ed2ea251c90"
+    }
+  },
+  "freeze_id": "ptbr-independent-entity-resolution-v4",
+  "provenance": {
+    "kind": "PROJECT_AUTHORED_SYNTHETIC",
+    "license": "Apache-2.0",
+    "product_output_used_for_labels": false
+  },
+  "purpose": "prepared entity-resolution evidence before product implementation",
+  "schema_version": 1
+}

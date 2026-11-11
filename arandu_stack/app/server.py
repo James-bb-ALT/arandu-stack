@@ -15,7 +15,7 @@ from discovery import announce_stack
 from logs import LogStore, SOURCES, LOGGER
 from request_traces import TraceStore
 
-APP_VERSION = '5.0.1'
+APP_VERSION = '6.0.0'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""
@@ -260,7 +260,11 @@ def create_app(data_dir, local=False):
             if payload.get('model', 'e5-small') != 'e5-small':
                 raise ValueError('Este módulo Decision usa E5 Small; outros modelos pertencem ao Lab experimental no PC')
             key = 'decision'
-        return web.json_response(await model_request(key, '/infer', payload))
+        policy = json.dumps(manager.config[key], sort_keys=True)
+        result = await model_request(key, '/infer', payload)
+        if key == 'decision' and policy != json.dumps(manager.config[key], sort_keys=True):
+            raise ValueError('Política Decision mudou durante inferência; resultado descartado')
+        return web.json_response(result)
     async def stt_models(request):
         return web.json_response(await stt_lab.models(request.query.get('variant')))
     async def stt_action(request):

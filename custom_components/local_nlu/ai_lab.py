@@ -207,9 +207,51 @@ class Lab:
                 return asdict(result)
             if command in ("unload", "load", "install", "calibrate"):
                 body = {"action": command, "catalog": catalog, "model": payload.get("model", "e5-small")}
+                body['algorithm'] = payload.get('algorithm', 'structured-v3')
                 if command == "calibrate":
-                    body.update(train=payload["train"], validation=payload["validation"])
+                    body.update(train=payload["train"], validation=payload["validation"], provenance=payload.get('provenance'))
                 return await local_request(session, worker, "/infer", payload=body, timeout=180)
+            if command == 'decision_compare':
+                examples = payload.get('examples')
+                if type(examples) is not list or not 1 <= len(examples) <= 20:
+                    raise ValueError('Use 1–20 exemplos rotulados')
+                area = payload.get('test_area_id') or origin_area(self.hass, SimpleNamespace(device_id=None,satellite_id=None),options)
+                if area is not None and area not in {a['area_id'] for a in catalog['areas']}:
+                    raise ValueError('Área de teste inválida')
+                rows = []
+                metrics = {a:{'labelled':0,'correct':0,'false_activations':0} for a in ('baseline-v2','structured-v3')}
+                for example in examples:
+                    if type(example) is not dict or type(example.get('text')) is not str or not 1 <= len(example['text']) <= 512:
+                        raise ValueError('Exemplo inválido')
+                    label = example.get('expected')
+                    if label is not None:
+                        if type(label) is not dict or not label or not set(label) <= {'intent','target_entities','target_area','requires_clarification'}:
+                            raise ValueError('Rótulo expected inválido')
+                        if 'intent' in label and label['intent'] not in (None,'turn_on','turn_off','query'):
+                            raise ValueError('Intenção de referência inválida')
+                        if 'target_entities' in label and (type(label['target_entities']) is not list or len(label['target_entities']) > 4
+                                or any(type(e) is not str or e not in {r['entity_id'] for r in catalog['entities']} for e in label['target_entities'])):
+                            raise ValueError('Alvo de referência inválido')
+                        if 'requires_clarification' in label and type(label['requires_clarification']) is not bool:
+                            raise ValueError('Rótulo de esclarecimento inválido')
+                        if label.get('target_area') is not None and label['target_area'] not in {a['area_id'] for a in catalog['areas']}:
+                            raise ValueError('Área de referência inválida')
+                    output = await local_request(session,worker,'/infer',payload={
+                        'action':'decision','text':example['text'],'catalog':catalog,'model':'e5-small',
+                        'context':{'origin_area':area},'compare_algorithms':True}, timeout=180)
+                    for result in output.get('algorithm_comparison', []):
+                        algorithm = result.get('algorithm','baseline-v2')
+                        p = result.get('proposal') or {}
+                        actual = {'intent':p.get('intent'),'target_entities':p.get('target_entities',[]),
+                                  'target_area':p.get('target_area'), 'requires_clarification':p.get('requires_clarification',True)}
+                        if label is not None and algorithm in metrics:
+                            metrics[algorithm]['labelled'] += 1
+                            metrics[algorithm]['correct'] += int(all(actual[k] == value for k,value in label.items()))
+                            metrics[algorithm]['false_activations'] += int(label.get('requires_clarification') is True and bool(p) and not p.get('requires_clarification'))
+                    rows.append({'text':example['text'],'expected':label,
+                                 'comparison':output})
+                return {'dry_run':True,'execution_allowed':False,'catalog_generation':catalog['generation'],
+                        'algorithm_comparison':rows,'metrics':metrics,'home_assistant_actions':0}
             if command not in ("run", "compare"):
                 raise ValueError("Comando desconhecido")
             test_area_id = payload.get("test_area_id", "")
@@ -232,7 +274,7 @@ class Lab:
                     threshold, margin = settings(payload)
                     threshold = max(.8, threshold)
                     response = await local_request(session, worker, "/infer", payload={**data, "action": "decision", "catalog": catalog, "context": semantic_context,
-                        "model": model, "config": {"threshold": threshold, "min_margin": margin}})
+                        "model": model, "config": {"threshold": threshold, "min_margin": margin, "algorithm":payload.get('algorithm','structured-v3')}})
                     if response.get("decision_status") == "accepted":
                         confidence, gap = response.get("confidence"), response.get("margin")
                         if not finite(confidence) or confidence < threshold or not finite(gap) or gap < margin:
@@ -241,12 +283,14 @@ class Lab:
                         top = response["ranking"][0]
                         if proposed["target_entities"] != [top["entity_id"]] or proposed["intent"] != top["intent"] or proposed["confidence"] != confidence:
                             raise ValueError("Proposta não corresponde ao ranking calibrado")
-                    if response.get('decision_status') in {'resolved', 'confirmation_required'}:
+                    if response.get('decision_status') in {'resolved', 'confirmation_required', 'accepted'}:
                         from .intelligence import accepted_decision
                         accepted_decision(response, catalog, text, semantic_context)
                     return response
                 async def llm(data):
                     # LLM service performs its own retrieval when Decision was not called.
+                    from .intelligence import llm_hint
+                    data = {**data,'decision':llm_hint(data.get('decision'))}
                     raw = await local_request(session, worker, "/infer", payload={**data, "action": "llm", "catalog": catalog, "context": semantic_context, "llm_model": payload.get("llm_model", "tucano")})
                     retrieval = raw.get("retrieval") or data.get("decision") or {}
                     proposal = validate_proposal(raw["proposal"], catalog, {r["entity_id"] for r in retrieval.get("ranking", [])})

@@ -1,3 +1,7 @@
+## Decision 2.0.0
+
+`structured-v3` separa intenção e entidade em embeddings distintos, com área como filtro. Mantém a média dos cosines, pesos E5 residentes e caches limitados. `baseline-v2` permanece selecionável para comparação/rollback. A calibração v3 usa artefato próprio; não reaproveita probabilidades anteriores nem valida fixtures sintéticas para produção. O HA valida e executa, o serviço apenas propõe. Consulte `docs/DECISION-v2.0.0.md` na raiz.
+
 ## Atualização 1.0.1
 
 Política semântica compartilhada: restrições operacionais recusadas antes da carga/inferência; compostos não viram proposta parcial. Nomes registrados, consultas e conversa são tratados pelo contexto. Modelos, embeddings e calibração preservados.
@@ -12,7 +16,7 @@ Com pesos instalados, o serviço pré-carrega E5 antes de escutar HTTP e expõe 
 
 # Arandu Decision
 
-Pacote Python independente, versão 1.0.1. Não importa o NLU nem o outro pacote. Serviço passivo: recebe catálogo autorizado completo do Home Assistant e devolve proposta; credenciais, autorização e execução ficam na integração HA.
+Pacote Python independente, versão 2.0.0. Não importa o NLU nem o outro pacote. Serviço passivo: recebe catálogo autorizado completo do Home Assistant e devolve proposta; credenciais, autorização e execução ficam na integração HA.
 
 Modelo padrão: intfloat/multilingual-e5-small (MIT), CPU, vetores normalizados com prefixos query/passage. Downloads somente com comando explícito, revisão fixada no código. Pesos não acompanham o pacote.
 

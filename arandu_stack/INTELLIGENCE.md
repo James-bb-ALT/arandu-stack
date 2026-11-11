@@ -1,4 +1,4 @@
-# Camadas de inteligência — app 5.0.1 / HACS 6.0.1
+# Camadas de inteligência — app 6.0.0 / HACS 7.0.0
 
 A Fase 1 aplica restrições semânticas ao NLU, aos serviços isolados, à
 elegibilidade de fallback e ao executor HA. Negação, exclusão e condição não
@@ -6,8 +6,11 @@ suportada recusam o plano inteiro. Perguntas de leitura e conversa geral não
 podem se transformar em efeitos domésticos; nomes registrados são tratados em
 contexto. Detalhes e limites em
 [NLU Hardening — Fase 1](../docs/NLU-HARDENING-PHASE1.md).
-O Decision atual inclui resolução determinística de ação/alvo explícitos e
-únicos, além da via semântica calibrada descrita nas seções históricas abaixo.
+O Decision 2.0 separa intenção, dispositivo e área, preserva a média dos dois
+cosines e mantém E5/cache residentes. O algoritmo structured-v3 é selecionável;
+baseline-v2 continua disponível. A calibração semântica v3 é independente e
+permanece fechada sem corpus representativo validado. Comparação nativa nunca
+executa ações. Consulte [Decision 2.0](../docs/DECISION-v2.0.0.md).
 Consulte também [inteligência v6](../docs/INTELLIGENCE-v6.0.0.md).
 
 A aba Fluxo de inteligência agora recebe rastreamento real da integração HACS,
@@ -26,7 +29,7 @@ e Avançado com dados reais do HA; simulação e revisão explícita continuam v
 Prontidão/calibração e política de produção não são inferidas a partir de processo
 ligado. Nenhuma inferência ou instalação é iniciada para decorar o painel.
 
-O último fallback inclui resumo NLU com status, motivo, ação, menção e área disponíveis (campos até 128 caracteres); nunca inclui operações ou diagnóstico completo. O Decision fornece status, motivo, confiança disponível e até duas hipóteses por ranking auxiliar. A fala original prevalece e o LLM pode discordar das pistas. NLU/Decision aceitos continuam evitando LLM. O efeito na acurácia e na latência precisa ser medido no hardware real.
+O último fallback inclui resumo NLU com status, motivo, ação, menção e área disponíveis (campos até 128 caracteres); nunca inclui operações ou diagnóstico completo. No modo legado, o Decision fornece status, motivo, confiança disponível e até duas hipóteses por ranking auxiliar. No structured-v3, fornece campos/status e pede recuperação independente no catálogo completo pelo LLM, sem restringi-lo ao ranking diagnóstico. A fala original prevalece e o LLM pode discordar das pistas. NLU/Decision aceitos continuam evitando LLM. O efeito na acurácia e na latência precisa ser medido no hardware real.
 
 ## Nomes de aparelho e entidades de controle
 

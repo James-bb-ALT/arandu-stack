@@ -1,3 +1,13 @@
+# 7.0.0 — Decision 2.0 (2026-11-11)
+
+- App 6.0.0, HACS 7.0.0, Decision 2.0.0. NLU, LLM, STT, TTS e Wake preservados.
+- Intenção, dispositivo/categoria e área separados; resolução explícita sem embeddings; comparação baseline-v2/structured-v3 com o mesmo catálogo autorizado.
+- E5 residente, descritores e consultas em cache, dois vetores em lote, média dos cosines preservada e métricas por etapa.
+- Calibração própria, splits independentes, estratos e limite inferior de Wilson, ECE/Brier e proveniência. Fixtures técnicas não autorizam produção.
+- Defesa independente HA, ambiguidade sem ação, confirmação para grafia; política em arquivo separado para rollback compatível.
+- AI Lab nativo mostra campos, evidências, candidatos/exclusões, cache e tempos; comparação autenticada e exportável não produz token de execução.
+- Relatório, medições reais e limites em `docs/DECISION-v2.0.0.md`.
+
 # 6.0.1 — Fase 1 e NLU Hardening (2026-11-11)
 
 - App 5.0.1, HACS 6.0.1, NLU 0.6.3 e Decision/LLM 1.0.1; STT/TTS e modelos preservados.

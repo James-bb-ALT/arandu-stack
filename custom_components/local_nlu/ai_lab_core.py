@@ -143,7 +143,7 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30, gen
                 output = await fn(payload)
             stages[name].update(status="executed", input=payload, output=output)
             if type(output) is dict:
-                for metric in ("model", "load_ms", "retrieval_ms", "inference_ms", "analysis_ms", "cpu_ms", "memory_bytes"):
+                for metric in ("model", "algorithm", "load_ms", "preparation_ms", "retrieval_ms", "inference_ms", "validation_ms", "queue_ms", "analysis_ms", "cache", "cpu_ms", "memory_bytes"):
                     if metric in output:
                         stages[name][metric] = output[metric]
             return output
@@ -162,11 +162,18 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30, gen
     nl = await run("nlu", nlu, text) if mode in ("pipeline", "nlu") else None
     if nl and nl.get("status") == "plan":
         result.update(proposal=nl, source="nlu")
+    elif mode == 'pipeline' and nl and (nl.get('status') not in {'no_match','clarification'}
+            or (nl.get('status') == 'no_match' and nl.get('reason') not in (None,'no_match','unsupported_intent','unknown_intent'))
+            or (nl.get('status') == 'clarification' and (nl.get('reason') != 'target_not_found' or nl.get('candidates') or nl.get('options')))):
+        stages['decision']['reason'] = 'nlu_safety_or_dialogue_refusal'
+        stages['llm']['reason'] = 'nlu_safety_or_dialogue_refusal'
     elif mode != "nlu":
         stages["decision"]["fallback_reason"] = (nl or {}).get("reason") or (nl or {}).get("status") or "isolated_mode"
         de = await run("decision", decision, {"text": text, "nlu": nl}) if mode != "llm" and not (general and mode == "pipeline") else None
         if mode != "llm" and de and de.get("decision_status") in {"accepted", "resolved", "confirmation_required"} and de.get("proposal"):
             result.update(proposal=de["proposal"], source="decision")
+        elif de and de.get('algorithm') == 'structured-v3' and de.get('decision_status') == 'ambiguous' and (de.get('analysis') or {}).get('device',{}).get('candidate_count',0) > 1:
+            stages['llm']['reason'] = 'true_entity_ambiguity'
         elif mode != "decision":
             stages["llm"]["fallback_reason"] = (de or {}).get("reason") or "decision_unavailable"
             output = await run("llm", llm, {"text": text, "nlu": nl, "decision": de})

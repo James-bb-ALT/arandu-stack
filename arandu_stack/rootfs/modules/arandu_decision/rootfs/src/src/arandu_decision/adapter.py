@@ -53,8 +53,18 @@ class Encoder:
             self.load_ms = (time.perf_counter() - started) * 1000
         return signature
 
-    def readiness(self, catalog):
+    def readiness(self, catalog, algorithm='baseline-v2'):
         """Inspect binding without loading weights or fitting calibration."""
+        if algorithm == 'structured-v3':
+            from .structured import load_calibration, binding_valid, operational_scope
+            manifest = self.root/'e5-small'/'arandu-model.json'
+            signature = digest({'key':'e5-small','adapter':'embedding-v2','manifest':json.loads(manifest.read_text())}) if manifest.is_file() else None
+            calibration = load_calibration(self.root)
+            valid = (signature is not None and binding_valid(calibration, signature, catalog)
+                     and calibration.get('operational_scope') == operational_scope(catalog))
+            return {'algorithm':algorithm,'calibration_valid':valid,'can_accept':valid,'diagnostic_only':not valid,
+                    'reason':'structured_calibrated' if valid else 'structured_calibration_missing',
+                    'loaded':self.model is not None,'deterministic_available':True}
         manifest = self.root / "e5-small" / "arandu-model.json"
         calibration_file = self.root / "e5-small-calibration.json"
         valid = False
@@ -71,6 +81,12 @@ class Encoder:
 
 
     def infer(self, text, catalog, key, config, context=None, *, semantic_only=False):
+        algorithm = config.get('algorithm', 'baseline-v2')
+        if algorithm not in {'baseline-v2','structured-v3'}:
+            raise ValueError('Algoritmo Decision desconhecido')
+        if algorithm == 'structured-v3':
+            from .structured import infer
+            return infer(self, text, catalog, key, config, context, rank_only=semantic_only)
         total_started = time.perf_counter()
         self.phase = "grounding"
         refusal = semantic_refusal(text, catalog) or (None if hypothesis_allowed(text, catalog) else 'semantic_compound')
@@ -208,8 +224,11 @@ class Encoder:
                       eligible_pairs=len(ranking), catalog_fingerprint=digest(catalog))
         return result
 
-    def calibrate(self, catalog, key, train, validation):
+    def calibrate(self, catalog, key, train, validation, *, algorithm='baseline-v2', provenance=None):
         """Empirical bins fitted on joint intent+entity correctness, evaluated on disjoint labels."""
+        if algorithm == 'structured-v3':
+            from .structured import calibrate
+            return calibrate(self,catalog,key,train,validation,provenance)
         if len(train) < 50 or len(validation) < 30 or len(train) + len(validation) > 500:
             raise ValueError("Use ≥50 exemplos de calibração e ≥30 de validação; máximo 500.")
         if {r["text"] for r in train} & {r["text"] for r in validation}:

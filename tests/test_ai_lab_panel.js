@@ -27,6 +27,18 @@ function fixture() {
     stages:Object.fromEntries(['vad','stt','nlu','decision','llm','ha','tts'].map(n=>[n,{status:'skipped'}]))};
 }
 
+test('algorithm comparison uses authenticated HA websocket and selected area',async()=>{
+  const panel=new Panel();let sent;
+  panel.$=id=>({value:({decisionAlgorithm:'baseline-v2',testArea:'sala',threshold:'.8',margin:'.08'})[id] || ''});
+  panel._hass={callWS:async body=>{sent=body;return {dry_run:true};}};
+  await panel.call('decision_compare',{examples:[{text:'Liga a luz'}]});
+  assert.equal(sent.type,'local_nlu/ai_lab');
+  assert.equal(sent.payload.algorithm,'baseline-v2');
+  assert.equal(sent.payload.test_area_id,'sala');
+  assert.equal(sent.payload.command,'decision_compare');
+  assert.equal(sent.payload.execute,undefined);
+});
+
 test('duration switches units at one second and handles absent metrics',()=>{
   const panel=new Panel();
   for(const [input,expected] of [[0,'0,0 ms'],[12.34,'12,3 ms'],[999,'999,0 ms'],
@@ -113,4 +125,18 @@ test('general LLM answer is displayed as speech without an execution claim',()=>
   value.stages.llm={status:'executed',output:{proposal:value.proposal,response_text:value.response_text}};
   const nodes=render(value);
   assert.equal(nodes.answer.textContent,value.response_text);
+});
+
+test('structured Decision shows fields, cache and separate scores without inventing certainty',()=>{
+  const value=fixture();
+  value.stages.decision={status:'executed',output:{algorithm:'structured-v3',decision_status:'uncalibrated',
+    analysis:{action:{text:'faz funcionar',exact:null,evidence:null},device:{eligible_count:2,excluded_count:1,candidates:[]},area:{source:'previous'}},
+    ranking:[{intent:'turn_on',entity_id:'fan.fixture',raw_score:.77,intent_score:.81,target_score:.73}],
+    cache:{descriptor_hits:3,descriptor_misses:0,query_hits:2,query_misses:0},queue_ms:1,load_ms:0,retrieval_ms:2,inference_ms:3,validation_ms:1}};
+  const nodes=render(value), rendered=text(nodes.interpretations);
+  assert.match(rendered,/structured-v3/);
+  assert.match(rendered,/Descritores: 3 acertos/);
+  assert.match(rendered,/Intenção: 0.8100/);
+  assert.match(rendered,/Entidade: 0.7300/);
+  assert.match(rendered,/sem interpretação como probabilidade/);
 });

@@ -15,6 +15,7 @@ class AranduAILab extends HTMLElement {
       entry_id: this.$('entry').value || undefined,
       tts_endpoint: this.$('ttsEndpoint').value, tts_token: this.$('ttsToken').value,
       model: this.$('decision').value, mode: this.$('mode').value, llm_model:this.$('llm').value || 'tucano',
+      algorithm: this.$('decisionAlgorithm')?.value || 'structured-v3',
       test_area_id: this.$('testArea').value,
       threshold: Number(this.$('threshold').value), min_margin: Number(this.$('margin').value), ...extra}});
   }
@@ -55,6 +56,7 @@ class AranduAILab extends HTMLElement {
         <p id="layerReadiness" role="status">Verifique os modelos para consultar a pipeline real.</p>
         <label for="stt">Motor STT</label><select id="stt"><option value="fastconformer">FastConformer adaptado</option><option value="whisper_tiny">Whisper Tiny</option><option value="whisper_base">Whisper Base</option><option value="whisper_small">Whisper Small</option><option value="parakeet_ptbr_30s">Parakeet TDT V3 pt-BR 30s</option><option value="parakeet_tagarela">Parakeet TAGARELA pt-BR</option><option value="orukeet_int8" selected>Orukeet INT8</option><option value="granite_turboctc_q4">Granite TurboCTC Q4_K_M</option></select>
         <label for="mode">Modo de interpretação</label><select id="mode"><option value="pipeline">Pipeline com fallbacks</option><option value="nlu">NLU Rust isolado</option><option value="decision">Decision isolado</option><option value="llm">LLM isolado + recuperação</option></select>
+        <label for="decisionAlgorithm">Algoritmo Decision do teste</label><select id="decisionAlgorithm"><option value="structured-v3">Decision 2.0 · campos separados</option><option value="baseline-v2">Decision 1.0 · compatibilidade</option></select>
         <label for="testArea">Área de origem do teste</label><select id="testArea"><option value="">Padrão da integração / sem contexto</option></select>
         <p id="testAreaStatus" class="muted" role="status">Carregando áreas do catálogo…</p>
         <p class="muted"><small>Texto digitado não traz um satélite. Escolha um cômodo para testar essa origem. Esta seleção não altera a pipeline real.</small></p>
@@ -95,9 +97,9 @@ class AranduAILab extends HTMLElement {
         <label for="examples">Exemplos editáveis (máximo 20 por lote)</label><textarea id="examples" spellcheck="false" style="min-height:220px"></textarea>
         <label for="compareModels">Motores para comparar</label><select id="compareModels" multiple aria-label="Motores para comparação"></select>
         <p class="muted"><small>Comparação sequencial, mesmo catálogo, sempre dry-run. Selecione Decision isolado para medir os motores sem a resolução do NLU.</small></p>
-        <div class="row"><button id="saveExamples">Salvar exemplos localmente</button><button id="batch">Executar lote</button><button id="catalog">Ver catálogo real</button></div><div id="benchmark" class="scroll"></div><pre id="batchOutput"></pre>
+        <div class="row"><button id="saveExamples">Salvar exemplos localmente</button><button id="batch">Executar lote</button><button id="decisionCompare">Comparar Decision 1.0 e 2.0 · sem ações</button><button id="decisionCompareJson">Exportar comparação Decision</button><button id="catalog">Ver catálogo real</button></div><div id="benchmark" class="scroll"></div><pre id="batchOutput"></pre>
       </section>
-      <details class="card"><summary>Calibrar com rótulos revisados</summary><p>Forneça {"train": [...], "validation": [...]}, com pelo menos 50 e 30 textos distintos. Campos: text, expected_intent, expected_entities, requires_clarification. Somente calibração validada no mesmo catálogo/modelo pode autorizar Decision.</p>
+      <details class="card"><summary>Calibrar com rótulos revisados</summary><p>Forneça {"train": [...], "validation": [...]}, com pelo menos 50 e 30 textos distintos. Campos: text, expected_intent, expected_entities, requires_clarification. Inclua provenance com representative, kind, license e source. Fixtures técnicas não validam produção. Cada faixa aceita exige 30 exemplos independentes em treino e validação por estrato; a confiança usa limite inferior de Wilson. Somente calibração representativa validada no mesmo catálogo/modelo pode autorizar Decision.</p>
         <label for="calibration">Dados de calibração</label><textarea id="calibration" spellcheck="false"></textarea><button id="calibrate">Ajustar e validar calibração</button>
       </details></div></div></main>`;
     this.organize();
@@ -146,6 +148,12 @@ class AranduAILab extends HTMLElement {
       this.$('batchOutput').textContent = JSON.stringify(this.batch, null, 2);
     });
     this.$('catalog').onclick = () => this.task(async () => { this.$('batchOutput').textContent = JSON.stringify(await this.call('catalog'), null, 2); });
+    this.$('decisionCompare').onclick = () => this.task(async () => {
+      const result = await this.call('decision_compare', {examples:JSON.parse(this.$('examples').value)});
+      this.$('batchOutput').textContent = JSON.stringify(result,null,2);
+      this.decisionComparison = result;
+    });
+    this.$('decisionCompareJson').onclick = () => {if(this.decisionComparison)this.demoDownload('json',this.decisionComparison,'arandu-decision-ab');};
     this.$('calibrate').onclick = () => this.task(async () => { const data = JSON.parse(this.$('calibration').value); this.$('advancedOutput').textContent = JSON.stringify(await this.call('calibrate', data), null, 2); });
     this.$('json').onclick = () => this.download('json'); this.$('csv').onclick = () => this.download('csv');
     this.history(); this.task(() => this.refresh());
@@ -356,10 +364,14 @@ class AranduAILab extends HTMLElement {
       paragraph(interpretation,'O que '+name.toUpperCase()+' entendeu',`${top?'Hipótese: ':''}${labels[action] || action || 'intenção não identificada'}${names.length?' · '+names.join(', '):''} · ${state}. ${reasons[output.reason] || output.reason || stage.reason || p.reason || ''}`);
       if(name==='decision'&&output.analysis){
         const a=output.analysis,actionTop=a.action?.ranking?.[0];
-        paragraph(interpretation,'Ação analisada',`${a.action?.text || 'não identificada'} · hipótese: ${labels[actionTop?.intent] || actionTop?.intent || 'nenhuma'}${Number.isFinite(actionTop?.semantic_similarity)?' · similaridade '+actionTop.semantic_similarity.toFixed(4):''}`);
+        paragraph(interpretation,'Ação analisada',`${a.action?.text || 'não identificada'} · hipótese: ${labels[a.action?.exact || actionTop?.intent] || a.action?.exact || actionTop?.intent || 'nenhuma'}${Number.isFinite(actionTop?.semantic_similarity)?' · similaridade '+actionTop.semantic_similarity.toFixed(4):''} · evidência: ${a.action?.evidence || 'ranking diagnóstico'}`);
         const candidates=a.device?.candidates || [];
         paragraph(interpretation,'Dispositivo analisado',a.device?.name || (candidates.length?'Ambíguo: '+candidates.map(c=>(c.name || c.entity_id)+' · '+(areas.get(c.area_id) || 'sem cômodo')).join('; '):'nenhum candidato inequívoco'));
-        paragraph(interpretation,'Área analisada',`${areas.get(a.area?.area_id) || 'não identificada'} · ${{explicit:'dita no comando',origin:'origem da conversa',unknown:'sem contexto'}[a.area?.source] || 'sem contexto'}`);
+        paragraph(interpretation,'Área analisada',`${areas.get(a.area?.area_id) || 'não identificada'} · ${{explicit:'dita no comando',origin:'origem da conversa',previous:'área anterior autorizada',unknown:'sem contexto'}[a.area?.source] || 'sem contexto'}`);
+        if(output.algorithm)paragraph(interpretation,'Contrato Decision',`${output.algorithm} · ${a.device?.eligible_count ?? '—'} entidades elegíveis · ${a.device?.excluded_count ?? 0} excluídas por área/capacidade. Evidência do alvo: ${a.device?.evidence || 'insuficiente'}.`);
+        if(output.cache)paragraph(interpretation,'Cache em RAM',`Descritores: ${output.cache.descriptor_hits} acertos / ${output.cache.descriptor_misses} ausências. Consultas: ${output.cache.query_hits} acertos / ${output.cache.query_misses} ausências.`);
+        if(output.algorithm){const fieldTop=output.ranking?.[0];paragraph(interpretation,'Similaridades por campo',`Intenção: ${Number.isFinite(fieldTop?.intent_score)?fieldTop.intent_score.toFixed(4):'não necessária'}. Entidade: ${Number.isFinite(fieldTop?.target_score)?fieldTop.target_score.toFixed(4):'não necessária'}. Scores brutos, sem interpretação como probabilidade.`);}
+        if(output.algorithm)paragraph(interpretation,'Tempos Decision',`Fila ${this.duration(output.queue_ms)}, preparação ${this.duration(output.preparation_ms)}, carga ${this.duration(output.load_ms)}, recuperação ${this.duration(output.retrieval_ms)}, inferência ${this.duration(output.inference_ms)}, validação ${this.duration(output.validation_ms)}.`);
       }
     }
     this.$('stages').replaceChildren();

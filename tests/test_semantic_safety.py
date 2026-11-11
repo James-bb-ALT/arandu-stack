@@ -87,6 +87,10 @@ class Execution(unittest.IsolatedAsyncioTestCase):
                         result = decision.infer(text, catalog(), 'e5-small', {})
                     self.assertEqual(result['decision_status'], 'rejected')
                     self.assertIsNone(result['proposal'])
+                    with patch.object(decision, 'load', side_effect=AssertionError('must not load')):
+                        result = decision.infer(text, catalog(), 'e5-small', {'algorithm':'structured-v3'})
+                    self.assertEqual(result['decision_status'], 'rejected')
+                    self.assertIsNone(result['proposal'])
                     result = await llm.infer({'text': text}, catalog())
                     self.assertTrue(result['proposal']['requires_clarification'])
                     self.assertEqual(result['load_ms'], 0)

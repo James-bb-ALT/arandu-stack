@@ -10,7 +10,9 @@ Orukeet INT8 é o STT padrão em instalações novas; seleções existentes são
 
 O STT oferece oito modelos: FastConformer, Whisper Tiny/Base/Small, Parakeet pt-BR 30s/TAGARELA, Orukeet INT8 e Granite TurboCTC Q4, instaláveis individualmente pela dashboard. O [laboratório de voz nativo](docs/STT-MULTIMODEL.md) grava, compara o mesmo áudio e mede carregamento/inferência sem executar ações.
 
-**Atual: app 5.0.1 / HACS 6.0.1 / STT 4.0.1 / NLU 0.6.3 / Decision 1.0.1 / LLM 1.0.1 / TTS 0.2.1.**
+Decision 2.0: [algoritmo, validação A/B e limites](docs/DECISION-v2.0.0.md).
+
+**Atual: app 6.0.0 / HACS 7.0.0 / STT 4.0.1 / NLU 0.6.3 / Decision 2.0.0 / LLM 1.0.1 / TTS 0.2.1.**
 
 HACS 3.0.1: pedidos não compreendidos em origens ReSpeaker recebem apenas
 “Não entendi.” e encerram o diálogo. Identificação pelo dispositivo registrado
@@ -234,7 +236,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **5.0.1**, integração HACS **6.0.1**, para HA OS/Supervised amd64.
+Versão experimental **6.0.0**, integração HACS **7.0.0**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

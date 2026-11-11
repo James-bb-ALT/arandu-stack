@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arandu-decision"
-version = "1.0.1"
-description = "Resident Decision with grounded fast paths and calibrated semantic acceptance"
+version = "2.0.0"
+description = "Structured Decision with resident E5, grounded fields and independent calibration"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"

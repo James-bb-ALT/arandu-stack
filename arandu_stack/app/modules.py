@@ -19,7 +19,7 @@ DEFAULTS = {
             'padding_ms': 0, 'profile': 'full', 'debug_text': False, 'refresh_inventory': False,
             'lexical_enabled': True, 'closed_vocabulary': True, 'generic_weight': 7,
             'home_assistant_weight': 10, 'inventory_refresh_seconds': 0},
-    'decision': {'enabled': False, 'auto_download': False, 'threads': 2, 'threshold': .8, 'min_margin': .08},
+    'decision': {'enabled': False, 'auto_download': False, 'threads': 2, 'threshold': .8, 'min_margin': .08, 'algorithm': 'structured-v3'},
     'llm': {'enabled': False, 'auto_download': False, 'threads': 2, 'context_size': 4096, 'max_tokens': 192, 'temperature': 0.0},
     'tts': {'enabled': False, 'voice': 'pt_BR-arandu-medium', 'auto_download': False, 'max_chars': 3000,
             'preload': True, 'cpu_threads': 2, 'pocket_enabled': False, 'pocket_preload': False,
@@ -87,6 +87,17 @@ class ModuleManager:
         self.stopping = set()
         self.failures = {}
         self.lock = asyncio.Lock()
+        self.decision_policy_file = data/'decision-policy.json'
+        decision_algorithm = None
+        if self.decision_policy_file.exists():
+            try:
+                policy = json.loads(self.decision_policy_file.read_text(encoding='utf-8'))
+                if type(policy) is not dict or policy.get('version') != 1 or policy.get('algorithm') not in {'baseline-v2','structured-v3'}:
+                    raise ValueError('Política Decision inválida')
+                decision_algorithm = policy['algorithm']
+            except (ValueError, TypeError, OSError):
+                decision_algorithm = 'baseline-v2'
+                self.failures['decision'] = 'Política Decision inválida; compatibilidade ativa. Salve o algoritmo para recuperar.'
         if self.file.exists():
             document = json.loads(self.file.read_text(encoding='utf-8'))
             if not isinstance(document, dict):
@@ -106,15 +117,24 @@ class ModuleManager:
                 backup = self.file.with_name('modules-v1-backup.json')
                 if not backup.exists():
                     backup.write_bytes(self.file.read_bytes())
+                if decision_algorithm:
+                    self.config['decision']['algorithm'] = decision_algorithm
                 self.save()
+        if decision_algorithm:
+            self.config['decision']['algorithm'] = decision_algorithm
 
     def installed(self, key):
         return Path('/usr/bin/local-nlu').is_file() if key == 'nlu' else Path(f'/opt/venvs/{key}/bin/python').is_file()
 
     def save(self):
         self.data.mkdir(parents=True, exist_ok=True)
+        compatible = copy.deepcopy(self.config)
+        algorithm = compatible['decision'].pop('algorithm')
+        policy_temp = self.decision_policy_file.with_suffix('.tmp')
+        policy_temp.write_text(json.dumps({'version':1,'algorithm':algorithm})+'\n',encoding='utf-8')
+        policy_temp.replace(self.decision_policy_file)
         temp = self.file.with_suffix('.tmp')
-        temp.write_text(json.dumps({'version': 2, 'modules': self.config}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+        temp.write_text(json.dumps({'version': 2, 'modules': compatible}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
         temp.replace(self.file)
 
     async def status(self, key):

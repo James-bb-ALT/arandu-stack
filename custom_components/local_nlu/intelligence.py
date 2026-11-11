@@ -35,6 +35,31 @@ def operations(proposal, snapshot, source):
 
 def accepted_decision(response, catalog, text=None, context=None):
     status = response.get('decision_status')
+    structured = response.get('algorithm') == 'structured-v3'
+    if response.get('algorithm') not in (None, 'baseline-v2', 'structured-v3'):
+        raise ValueError('Algoritmo Decision desconhecido')
+    if structured:
+        from .decision_context import fields, semantic_fingerprint, grounded
+        if (text is None or response.get('contract_version') != 2
+                or response.get('semantic_fingerprint') != semantic_fingerprint(catalog)):
+            raise ValueError('Contrato semântico incompatível')
+        evidence = fields(text, catalog, context)
+        if status in {'resolved','accepted','confirmation_required'}:
+            p = validate_proposal(response.get('proposal'), catalog)
+            if not grounded(text, p, catalog, context):
+                raise ValueError('Campos sem fundamento independente')
+            if status == 'resolved' and (response.get('grounding') != 'deterministic-v2'
+                    or evidence['action']['exact'] != p['intent']
+                    or evidence['device']['evidence'] == 'spelling_name'
+                    or p['requires_clarification'] or p['confidence'] is not None):
+                raise ValueError('Resolução estruturada inconsistente')
+            if status == 'accepted' and (response.get('calibration_valid') is not True
+                    or evidence['device']['evidence'] == 'spelling_name'):
+                raise ValueError('Aceitação estruturada sem calibração válida')
+        if status == 'resolved':
+            if response.get('catalog_fingerprint') != digest(catalog):
+                raise ValueError('Catálogo alterado')
+            return p
     if status in {'resolved', 'confirmation_required'}:
         if text is None or response.get('catalog_fingerprint') != digest(catalog):
             raise ValueError('Decisão sem catálogo ou texto verificáveis')
@@ -76,6 +101,12 @@ def grounded_target(text, proposal, catalog, context=None):
         return False
     if len(proposal["target_entities"]) != 1:
         return False
+    from .decision_context import fields, grounded
+    field_result = fields(text, catalog, context)
+    if field_result['refusal']:
+        return False
+    if field_result['device']['unambiguous']:
+        return grounded(text, proposal, catalog, context)
     row = resolve_device(text, catalog, context, action=proposal["intent"])
     return (row is not None and row["entity_id"] == proposal["target_entities"][0]
             and proposal["intent"] in row["actions"])
@@ -89,9 +120,14 @@ def proposal_route(text, proposal, catalog, context=None, force_review=False, au
     if not grounded_target(text, proposal, catalog, context) or not hypothesis_allowed(text, catalog):
         return "clarification"
     known = understood_action(text, catalog)
+    from .decision_context import fields
+    evidence = fields(text, catalog, context)
+    known = evidence['action']['exact'] or known
     if known is not None and known != proposal["intent"]:
         return "clarification"
     if auto_decision:
+        if evidence['device']['evidence'] == 'spelling_name':
+            return 'confirmation_required'
         return "proposed"
     if known is None or proposal["requires_clarification"] or force_review:
         return "confirmation_required"
@@ -136,7 +172,7 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
             if source == "decision":
                 body.update(model="e5-small", config={"threshold": .8, "min_margin": .08})
             else:
-                body.update(llm_model="tucano", decision=decision, nlu=nlu or {})
+                body.update(llm_model="tucano", decision=llm_hint(decision), nlu=nlu or {})
             async with asyncio.timeout(TIMEOUT):
                 response = await request(body)
             reason = response.get('reason')
@@ -146,6 +182,10 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
                 decision = response
                 proposal = accepted_decision(response, snapshot.payload, text, context)
                 trace[source]["status"] = response.get("decision_status", "rejected")
+                if (response.get('algorithm') == 'structured-v3' and response.get('decision_status') == 'ambiguous'
+                        and (response.get('analysis') or {}).get('device', {}).get('candidate_count', 0) > 1):
+                    trace['llm'] = {'status':'skipped','reason':'true_entity_ambiguity'}
+                    return (), trace
             else:
                 retrieval = response.get("retrieval") or decision or {}
                 allowed = {r["entity_id"] for r in retrieval.get("ranking", [])}
@@ -192,3 +232,11 @@ def eligible_summary(summary):
     return (summary.get('status') == 'no_match' and summary.get('reason') in
             (None, 'no_match', 'unsupported_intent', 'unknown_intent')) or (
             summary.get('status') == 'clarification' and summary.get('reason') == 'target_not_found')
+
+
+def llm_hint(decision):
+    """A rejected compact v3 ranking must not truncate the LLM search universe."""
+    if decision and decision.get('algorithm') == 'structured-v3':
+        return {'ranking':[], 'analysis':decision.get('analysis'), 'reason':decision.get('reason'),
+                'decision_status':decision.get('decision_status'), 'retrieval_required':True}
+    return decision

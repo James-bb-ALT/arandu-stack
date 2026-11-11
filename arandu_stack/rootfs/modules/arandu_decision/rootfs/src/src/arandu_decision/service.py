@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import shutil
 import sys
+import time
 from .contracts import MODELS, candidates, digest, settings
 from .adapter import Encoder
 from .inference_slot import inference_slot
@@ -39,6 +40,13 @@ def validate_catalog(catalog):
             raise ValueError("Aliases inválidos")
         if not isinstance(row.get("attributes", {}), dict):
             raise ValueError("Atributos inválidos")
+        if len(row['name']) > 256 or len(row.get('aliases', [])) > 32 or any(len(a) > 256 for a in row.get('aliases', [])):
+            raise ValueError('Descritores excedem limites')
+        for field in ('device_name','device_id','registry_id','device_class','area_id'):
+            if row.get(field) is not None and (type(row[field]) is not str or len(row[field]) > 256):
+                raise ValueError('Metadado de entidade inválido')
+        if row.get('attributes',{}).get('semantic_category') is not None and type(row['attributes']['semantic_category']) is not str:
+            raise ValueError('Categoria semântica inválida')
     candidates(catalog)
     return catalog
 
@@ -75,7 +83,7 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
             import logging
             logging.getLogger('arandu.decision').exception('Falha na solicitação de inferência/configuração')
             return web.json_response({"error": "Falha no módulo; consulte os logs.", "error_type": type(exc).__name__,
-                "phase": getattr(adapter, "phase", "validation")}, status=422)
+                "phase": getattr(adapter, "phase", "validation"), 'decision_status':'error', 'proposal':None}, status=422)
 
     app = web.Application(client_max_size=2_097_152, middlewares=[boundary])
     preload_ms = 0.0
@@ -94,18 +102,19 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
     async def status(request):
         installed = (root / KEY / "arandu-model.json").is_file() and (root / KEY / "model.safetensors").is_file()
         available = installed and True
-        return web.json_response({"package": "arandu-decision", "version": "1.0.1", "protocol": "arandu-inference-v1",
+        return web.json_response({"package": "arandu-decision", "version": "2.0.0", "protocol": "arandu-inference-v1",
             "models": [{"id": KEY, **MODELS[KEY], "installed": installed, "available": bool(available),
                 "reason": None if available else "Pesos ou runtime ausentes"}], "busy": lock.locked(), "threads": threads, "loaded": adapter.model is not None, "preload_ms": preload_ms, "deterministic_available": True})
 
     async def infer(request):
+        received = time.perf_counter()
         body = await request.json()
         if not isinstance(body, dict):
             raise ValueError("Objeto JSON obrigatório")
         action = body.get("action", "decision")
         if body.get("model", KEY) != KEY and action != "llm":
             raise ValueError("Modelo não pertence a este pacote")
-        if lock.locked():
+        if lock.locked() or tasks:
             return web.json_response({"error": "Serviço ocupado"}, status=429)
         async def work():
             async with lock, inference_slot():
@@ -117,17 +126,30 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
                 if action == "load":
                     return {"model_fingerprint": await asyncio.to_thread(adapter.load, KEY), "load_ms": adapter.load_ms}
                 catalog = validate_catalog(body.get("catalog"))
+                algorithm = body.get('algorithm', (body.get('config') or {}).get('algorithm', (runtime_settings or {}).get('algorithm', 'baseline-v2')))
+                if algorithm not in {'baseline-v2','structured-v3'}:
+                    raise ValueError('Algoritmo Decision desconhecido')
                 if action == "readiness":
-                    return adapter.readiness(catalog)
+                    return adapter.readiness(catalog, algorithm)
                 if action == "calibrate":
-                    return await asyncio.to_thread(adapter.calibrate, catalog, KEY, body["train"], body["validation"])
+                    return await asyncio.to_thread(adapter.calibrate, catalog, KEY, body["train"], body["validation"], algorithm=algorithm, provenance=body.get('provenance'))
                 text = body.get("text")
                 if not isinstance(text, str) or not 1 <= len(text) <= 512 or any(ord(c) < 32 for c in text):
                     raise ValueError("Texto deve ter 1–512 caracteres em uma linha")
                 config = dict(body.get('config') or {})
+                config['algorithm'] = algorithm
                 config.update({k: v for k, v in (runtime_settings or {}).items() if k in {'threshold', 'min_margin'}})
                 config['threshold'], config['min_margin'] = settings(config)
+                queued = time.perf_counter()
+                if body.get('compare_algorithms') is True:
+                    comparisons = []
+                    for selected in ('baseline-v2','structured-v3'):
+                        comparisons.append(await asyncio.to_thread(adapter.infer, text, catalog, KEY, {**config,'algorithm':selected}, context=body.get('context')))
+                    # Comparison is diagnostic. Never return an executable top-level proposal.
+                    return {'algorithm_comparison':comparisons,'proposal':None,'decision_status':'rejected',
+                            'reason':'diagnostic_comparison_only','dry_run':True,'catalog_fingerprint':digest(catalog)}
                 result = await asyncio.to_thread(adapter.infer, text, catalog, KEY, config, context=body.get("context"))
+                result.setdefault('queue_ms', (queued-received)*1000)
                 result['applied_config'] = config
                 result.update(catalog_fingerprint=digest(catalog), catalog_entities=len(catalog["entities"]), service="arandu-decision")
                 return result
@@ -164,13 +186,14 @@ def main():
     parser.add_argument("command", choices=["serve", "install"])
     parser.add_argument("--models", type=Path, default=Path.home() / ".cache" / "arandu-ai-lab")
     parser.add_argument("--threads", type=int, choices=range(1, 5), default=2)
+    parser.add_argument('--algorithm',choices=['baseline-v2','structured-v3'],default='structured-v3')
     parser.add_argument("--llama-server", default=os.environ.get("ARANDU_LLAMA_SERVER") or shutil.which("llama-server"))
     args = parser.parse_args()
     if args.command == "install":
         install(args.models)
     else:
         from aiohttp import web
-        web.run_app(create_app(args.models, args.llama_server, args.threads), host="127.0.0.1", port=PORT, access_log=None)
+        web.run_app(create_app(args.models, args.llama_server, args.threads, runtime_settings={'algorithm':args.algorithm}), host="127.0.0.1", port=PORT, access_log=None)
 
 if __name__ == "__main__":
     main()

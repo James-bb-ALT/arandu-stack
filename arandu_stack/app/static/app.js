@@ -241,13 +241,13 @@ async function renderSttManager(){
       const active=result.active;
       status.textContent=active?'Ativo no Assist: '+active.model+' · '+(active.model==='fastconformer'?active.variant:'multilíngue')+' · '+active.backend+' · CPU '+active.compute+' · '+active.threads+' threads · '+active.process_rss_mb.toFixed(0)+' MiB'+(Number.isFinite(active.recent?.inference_ms)?' · '+active.recent.inference_ms.toFixed(1)+' ms':''):'Modelo ativo ainda não confirmado.';
       list.replaceChildren();
-      const labels={not_installed:'Não instalado',installed:'Instalado',downloading:'Baixando',loading:'Carregando',ready:'Pronto',error:'Erro'};
+      const labels={not_installed:'Não instalado',installed:'Instalado',downloading:'Baixando',verifying:'Verificando',loading:'Carregando',ready:'Pronto',error:'Erro'};
       for(const model of result.models){
-        const line=el('div',undefined,'stt-model-row');line.append(el('span',model.name+' · '+(labels[model.state]||model.state)+(model.error?' · '+model.error:'')));
-        const button=el('button',model.installed?'Verificar / reinstalar':'Baixar','secondary');button.type='button';button.disabled=['downloading','loading'].includes(model.state);
+        const line=el('div',undefined,'stt-model-row');line.append(el('span',model.name+(model.download_bytes?' · download '+(model.download_bytes/1000000).toFixed(0)+' MB':'')+' · '+(labels[model.state]||model.state)+(model.error?' · '+model.error:'')));
+        const button=el('button',model.installed?'Verificar / reinstalar':'Baixar','secondary');button.type='button';button.disabled=['downloading','verifying','loading'].includes(model.state);
         button.onclick=async()=>{button.disabled=true;try{await api('stt/install',{model:model.id,variant:settingInput('model_variant')?.value||'adapted'});await update();}catch(e){status.textContent=e.message;button.disabled=false;}};line.append(button);list.append(line);
       }
-      if(result.models.some(row=>['downloading','loading'].includes(row.state)))setTimeout(update,2000);
+      if(result.models.some(row=>['downloading','verifying','loading'].includes(row.state)))setTimeout(update,2000);
     }catch(e){status.textContent=e.message;}
   }
   const link=el('a','Testar STT no Home Assistant');link.href='/arandu-ai-lab#stt';link.target='_top';group.append(link);

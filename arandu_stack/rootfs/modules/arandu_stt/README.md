@@ -1,6 +1,6 @@
 # Arandu STT
 
-FastConformer local INT8. Adicione via Wyoming na porta 10350. Pode baixar pesos na primeira inicialização.
+STT **4.0.0**: FastConformer original/adaptado, Whisper Tiny/Base/Small, Parakeet pt-BR 30s/TAGARELA, Orukeet INT8 e Granite TurboCTC Q4. Instalação individual sob demanda, sem pesos na imagem. Wyoming na porta 10350; gateway da stack na 10212.
 
 Instale somente os módulos desejados. O painel Arandu Stack da mesma loja controla ativação, reinício e opções. Consulte o [guia da stack](https://github.com/jaimevictor/arandu-stack#instalação) para instalação e integração.
 

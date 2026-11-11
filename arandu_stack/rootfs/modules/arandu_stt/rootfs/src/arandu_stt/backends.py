@@ -44,4 +44,17 @@ def create_backend(model, directory, threads=2):
     validate(model)
     if type(threads) is not int or not 1 <= threads <= 4:
         raise ValueError('Threads deve ficar entre 1 e 4')
-    return (FastConformerBackend if model == 'fastconformer' else WhisperBackend)(directory, threads)
+    if model == 'fastconformer':
+        factory = FastConformerBackend
+    elif model.startswith('whisper_'):
+        factory = WhisperBackend
+    elif model.startswith('parakeet_'):
+        from parakeet_backend import ParakeetBackend
+        factory = ParakeetBackend
+    elif model == 'orukeet_int8':
+        from orukeet_backend import OrukeetBackend
+        factory = OrukeetBackend
+    else:
+        from granite_backend import GraniteBackend
+        factory = GraniteBackend
+    return factory(directory, threads)

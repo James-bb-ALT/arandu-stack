@@ -67,6 +67,7 @@ def validate_options(key, options, data=Path('/data')):
                 raise ValueError('Use um endereço HTTP/HTTPS; informe credenciais no campo de token')
         if merged['remote_fallback'] and not merged['remote_url']:
             raise ValueError('Informe o endereço do servidor remoto para habilitar esse fallback')
+    # stt_model choices come from the shared settings schema; old configs retain FastConformer.
     if key == 'stt' and (merged['model_variant'] not in {'adapted', 'original'} or merged['padding_ms'] not in {0,100,200,300} or merged['profile'] not in {'raw','normalize_only','acoustic_only','fuzzy_only','inventory_only','full','legacy_full'}):
         raise ValueError('Perfil STT inválido')
     if key == 'tts' and merged['log_level'] not in {'INFO', 'DEBUG', 'WARNING', 'ERROR'}:

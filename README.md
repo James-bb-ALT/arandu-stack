@@ -4,9 +4,9 @@ Um único app para Home Assistant com **Wake, STT, NLU, Decision, LLM e TTS**.
 Todos os motores estão incluídos na mesma instalação. Você ativa, desativa e
 configura cada módulo pela WebUI, sem instalar seis apps separados.
 
-O STT oferece FastConformer e Whisper Tiny/Base/Small, instaláveis pela dashboard. O [laboratório de voz nativo](docs/STT-MULTIMODEL.md) grava, compara o mesmo áudio e mede carregamento/inferência sem executar ações.
+O STT oferece oito modelos: FastConformer, Whisper Tiny/Base/Small, Parakeet pt-BR 30s/TAGARELA, Orukeet INT8 e Granite TurboCTC Q4, instaláveis individualmente pela dashboard. O [laboratório de voz nativo](docs/STT-MULTIMODEL.md) grava, compara o mesmo áudio e mede carregamento/inferência sem executar ações.
 
-**Atual: app 3.0.0 / HACS 4.0.0 / STT 3.0.0 / NLU 0.6.0 / Decision 0.3.0 / LLM 0.2.3 / TTS 0.2.1.**
+**Atual: app 4.0.0 / HACS 5.0.0 / STT 4.0.0 / NLU 0.6.0 / Decision 0.3.0 / LLM 0.2.3 / TTS 0.2.1.**
 
 HACS 3.0.1: pedidos não compreendidos em origens ReSpeaker recebem apenas
 “Não entendi.” e encerram o diálogo. Identificação pelo dispositivo registrado
@@ -125,7 +125,7 @@ A integração mantém o domínio técnico `local_nlu` para compatibilidade.
 | --- | --- | --- | --- |
 | NLU | Interpretador contextual Rust | 11555 | Ativado |
 | Wake | Wyoming openWakeWord | 10212 conjunta; 10400 direta | Desativado |
-| STT | FastConformer PT-BR | 10212 conjunta; 10350 direta | Desativado |
+| STT | FastConformer, Whisper, Parakeet, Orukeet, Granite | 10212 conjunta; 10350 direta | Desativado |
 | Decision | Multilingual E5 Small, CPU | 11557, somente loopback | Desativado |
 | LLM | Tucano 2 Qwen 0.5B Instruct, GGUF comunitário Q4_K_M | 11558, somente loopback | Desativado |
 | TTS | Piper / Pocket | 10212 | Desativado |
@@ -145,7 +145,7 @@ módulo, ou use **Salvar e reiniciar** quando ele estiver ativo.
 | Módulo | Ajustes expostos na UI |
 | --- | --- |
 | Wake | Alexa, Hey Jarvis, Hey Mycroft, Hey Rhasspy ou Okay Nabu; threshold; trigger level; intervalo entre detecções |
-| STT | Modelo adaptado/original, perfil, threads, padding, léxico, vocabulário e sincronização de contexto |
+| STT | Oito modelos, instalação individual, variante FastConformer, perfil, threads, padding, léxico e contexto |
 | NLU | Frases personalizadas, limite do comando, duração do contexto e aviso de bateria |
 | Decision | Download, threads, confiança calibrada e margem mínima |
 | LLM | Download, threads, contexto, limite de tokens e temperatura |
@@ -230,7 +230,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **3.0.0**, integração HACS **4.0.0**, para HA OS/Supervised amd64.
+Versão experimental **4.0.0**, integração HACS **5.0.0**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

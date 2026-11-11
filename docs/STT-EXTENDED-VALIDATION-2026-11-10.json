@@ -1,0 +1,582 @@
+{
+  "date_local": "2026-11-10",
+  "timezone": "America/Bahia",
+  "release": "v5.0.0",
+  "versions": {
+    "app": "4.0.0",
+    "stt": "4.0.0",
+    "hacs": "5.0.0"
+  },
+  "downloads_this_task": [
+    "orukeet_int8"
+  ],
+  "models": [
+    {
+      "id": "parakeet_ptbr_30s",
+      "revision": "ba4da45f60395f13b12da197d3448e66f6ec79c7",
+      "runtime": "onnx-asr",
+      "architecture": "FastConformer TDT",
+      "compute": "fp32",
+      "license": "CC-BY-4.0",
+      "download_bytes": 2550017803,
+      "sha256": {
+        "decoder_joint-model.onnx": "5c29e4daf27e5e150bd4f1e98ad5cfdc777b653b8aa144e6451b9ff375091ff7",
+        "encoder-model.onnx": "4820e7005ed1c5587496162be950f3966ab349956076a8230ca8e5b8d8d20dab",
+        "encoder-model.onnx.data": "f128db4a467ee210262bac470e6a6b94637d510e76c7268b6c781322213fbeaa",
+        "nemo128.onnx": "a9fde1486ebfcc08f328d75ad4610c67835fea58c73ba57e3209a6f6cf019e9f"
+      },
+      "real_weights_inference_validated": false
+    },
+    {
+      "id": "parakeet_tagarela",
+      "revision": "47586335c0b00ba273205f0ed3ef5a2cd651c143",
+      "runtime": "onnx-asr",
+      "architecture": "FastConformer TDT",
+      "compute": "fp32",
+      "license": "CC-BY-4.0",
+      "download_bytes": 2550017801,
+      "sha256": {
+        "decoder_joint-model.onnx": "7ffb7866c27dbd2d983ec82e2780dbb2669f451d33ea0491ac7a81fce5f84ba9",
+        "encoder-model.onnx": "5e6470dc3c6f0bcb5f99dbf3d64285ac52a0e991b3bddcf634e34bbe60d9d6f0",
+        "encoder-model.onnx.data": "21bee798dceaaff37a31ef2b56910eaed90b71ee2be143d8bda3b7be3f549dd7",
+        "nemo128.onnx": "a9fde1486ebfcc08f328d75ad4610c67835fea58c73ba57e3209a6f6cf019e9f"
+      },
+      "real_weights_inference_validated": false
+    },
+    {
+      "id": "orukeet_int8",
+      "revision": "55a984d46f68323301837194ce647c702f55facc",
+      "runtime": "sherpa-onnx",
+      "architecture": "FastConformer TDT transducer",
+      "compute": "int8",
+      "license": "CC-BY-SA-4.0",
+      "download_bytes": 486807585,
+      "sha256": {
+        "encoder.int8.onnx": "7b55f2a504a20a8e462899f5befd45f4a1784948d76ed0127902d9cf39405487",
+        "decoder.int8.onnx": "c185c2afb4c77c94bb1314807ecb3dc1623057a3dc540b83e10301af9bf4cfca",
+        "joiner.int8.onnx": "1a7e90abf7172d926dd7e2edac2a5d5035c24dfb641a15e131d57b6a5f63cdd3",
+        "tokens.txt": "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d",
+        "bpe.vocab": "41d5e71b3591642eff088151efd7acd4e750124cc0054c8ba9fa3245187a4804",
+        "LICENSE-WEIGHTS": "23ee78c8bae49cf08ea2f0c84945c66b987ebe4520881fb51b3dad4fb43d07c2",
+        "NOTICE.md": "440361d963edd9621e744f251332b47f2c4de2e2594ecfe42b215e3f6223fa44"
+      },
+      "real_weights_inference_validated": true
+    },
+    {
+      "id": "granite_turboctc_q4",
+      "revision": "88845afaa7beadca4b9ec545df0dd7332349ab88",
+      "runtime": "transcribe.cpp",
+      "architecture": "Granite TurboCTC",
+      "compute": "Q4_K_M",
+      "license": "Apache-2.0",
+      "download_bytes": 279183655,
+      "sha256": {
+        "granite-speech-5.0-470m-turboctc-Q4_K_M.gguf": "959646de88d43100a82459da1c0c9d3a2b1a7536b54338b9c4fc9535bdb30970"
+      },
+      "real_weights_inference_validated": false
+    }
+  ],
+  "tests": {
+    "python_general": {
+      "passed": 189,
+      "skipped_opt_in": 3,
+      "subtests_passed": 19
+    },
+    "python_stt": {
+      "passed": 49,
+      "subtests_passed": 1003
+    },
+    "javascript_panel": {
+      "passed": 7
+    },
+    "real_acoustic_opt_in": {
+      "passed": 3,
+      "models": [
+        "orukeet_int8",
+        "fastconformer",
+        "whisper_base"
+      ],
+      "offline": true,
+      "silence": true,
+      "real_wyoming": true
+    },
+    "browser": {
+      "passed": true,
+      "eight_options": true,
+      "real_api_and_weights": true,
+      "upload_and_player": true,
+      "base_and_orukeet": true,
+      "sequential_comparison": true,
+      "json_csv": true,
+      "mediarecorder": "simulated audio device; not physical microphone",
+      "track_release": true,
+      "invalid_audio_rejected": true
+    },
+    "nlu_available": {
+      "passed": 84,
+      "offline": true,
+      "suites": [
+        "lib",
+        "contextual",
+        "http",
+        "v2_resolve",
+        "v2_interpret_http",
+        "v3_interpret_http"
+      ]
+    },
+    "nlu_full": {
+      "passed": false,
+      "corpus_tests_failed": 4,
+      "reason": "Frozen data/mlp/project-authored-synthetic-v1.jsonl missing; corpus tests stop full run. Other independent evaluation corpora are also absent from snapshot."
+    },
+    "docker_build": {
+      "passed": true,
+      "image": "arandu-assistant:4.0.0",
+      "image_id": "sha256:af7f5c407059677fbe0cd84e5b69ddd86bae659bfa5e3f20d8ebd917147988ff"
+    },
+    "native_runtime": {
+      "transcribe_cpp": "0.4.1",
+      "onnx_asr": "0.12.0",
+      "cpu_device_detected": true,
+      "torch_in_stt_venv": false
+    },
+    "home_assistant_physical": {
+      "validated": false,
+      "api_status": 401,
+      "reason": "No authenticated administrative HA session available"
+    },
+    "linux_stack": {
+      "passed": true,
+      "source_overrides": false,
+      "hf_offline": true,
+      "dashboard_base_selection": true,
+      "cached_install_endpoint": true,
+      "orukeet_applied_and_transcribed": true,
+      "models_compared": 8,
+      "real_models": 5,
+      "missing_models_individual_errors": 3,
+      "sequential": true,
+      "production_concurrent": true,
+      "wyoming_ports": [
+        10350,
+        10212
+      ],
+      "legacy_service_id": "arandu-fastconformer-ptbr-int8",
+      "failed_candidate_preserves_base": true,
+      "tiny_base_switch": true
+    }
+  },
+  "thread_smoke": {
+    "audio": "SAPI Microsoft Maria pt-BR synthetic technical smoke; not human accuracy evaluation",
+    "hardware": "AMD Ryzen 7 5700X, Windows; not target i5-6500T",
+    "samples_per_configuration": 3,
+    "p95": null,
+    "rows": [
+      {
+        "model": "fastconformer",
+        "threads": 1,
+        "model_load_ms": 1768.839399999706,
+        "warm_inference_ms": [
+          126.97499999922002,
+          128.1001999959699,
+          123.46529999922495
+        ],
+        "raw": "Liga a luz da sala.",
+        "process_rss_mb": 556.22265625
+      },
+      {
+        "model": "fastconformer",
+        "threads": 2,
+        "model_load_ms": 2336.3994999963325,
+        "warm_inference_ms": [
+          104.28339999634773,
+          108.79779999959283,
+          102.88459999719635
+        ],
+        "raw": "Liga a luz da sala.",
+        "process_rss_mb": 557.22265625
+      },
+      {
+        "model": "fastconformer",
+        "threads": 4,
+        "model_load_ms": 2804.165900000953,
+        "warm_inference_ms": [
+          78.27030000044033,
+          82.31510000041453,
+          87.00799999496667
+        ],
+        "raw": "Liga a luz da sala.",
+        "process_rss_mb": 557.9296875
+      },
+      {
+        "model": "whisper_base",
+        "threads": 1,
+        "model_load_ms": 449.9519999953918,
+        "warm_inference_ms": [
+          1101.6090999983135,
+          1144.5047999950475,
+          1212.5761000061175
+        ],
+        "raw": "Liga a luz da sala.",
+        "process_rss_mb": 190.66796875
+      },
+      {
+        "model": "whisper_base",
+        "threads": 2,
+        "model_load_ms": 440.86280000192346,
+        "warm_inference_ms": [
+          847.6025999989361,
+          913.1672000003164,
+          794.2929999990156
+        ],
+        "raw": "Liga a luz da sala.",
+        "process_rss_mb": 195.23828125
+      },
+      {
+        "model": "whisper_base",
+        "threads": 4,
+        "model_load_ms": 331.8892999959644,
+        "warm_inference_ms": [
+          570.5529999977443,
+          558.6364999981015,
+          544.5110000000568
+        ],
+        "raw": "Liga a luz da sala.",
+        "process_rss_mb": 197.5703125
+      },
+      {
+        "model": "orukeet_int8",
+        "threads": 1,
+        "model_load_ms": 2412.6505000022007,
+        "warm_inference_ms": [
+          423.27189999923576,
+          413.66280000511324,
+          394.6441000007326
+        ],
+        "raw": "Liga a luz da sala.",
+        "process_rss_mb": 849.796875
+      },
+      {
+        "model": "orukeet_int8",
+        "threads": 2,
+        "model_load_ms": 3750.0791999991634,
+        "warm_inference_ms": [
+          268.6030999975628,
+          247.3184999980731,
+          249.02239999937592
+        ],
+        "raw": "Liga a luz da sala.",
+        "process_rss_mb": 851.33203125
+      },
+      {
+        "model": "orukeet_int8",
+        "threads": 4,
+        "model_load_ms": 3646.899300001678,
+        "warm_inference_ms": [
+          195.6002000006265,
+          207.0201000024099,
+          232.39959999773419
+        ],
+        "raw": "Liga a luz da sala.",
+        "process_rss_mb": 852.51953125
+      }
+    ],
+    "models_not_downloaded": [
+      "parakeet_ptbr_30s",
+      "parakeet_tagarela",
+      "granite_turboctc_q4"
+    ],
+    "concurrent_development_tasks": true
+  },
+  "limitations": [
+    "No human recording was available for this extension.",
+    "No precision ranking or hardware latency promise for Intel i5-6500T.",
+    "Parakeet 30s, TAGARELA and Granite weights not downloaded; contract tests are not real acoustic validation.",
+    "Q8_0 omitted without accuracy evidence justifying extra download."
+  ],
+  "new_stt_weights_in_git_or_image": false,
+  "linux_comparison": {
+    "results": [
+      {
+        "revision": "arandu-ctc-20261014-continued-fp32",
+        "model_sha256": {
+          "model.onnx": "68fff73a46efa49914df12fa74e83e3e36803ab80a8fbea86b6f7c8684e3c112",
+          "tokens.txt": "c79cd022b6b04e090901e1acce380ad9476bb6a3694112199b835256bb079b9b"
+        },
+        "model": "fastconformer",
+        "variant": "adapted",
+        "state": "ready",
+        "backend": "sherpa-onnx",
+        "device": "cpu",
+        "compute": "fp32",
+        "threads": 2,
+        "profile": "full",
+        "model_load_ms": 3281.0164310001255,
+        "inference_ms": 75.9824369999933,
+        "lexical_ms": 166.28520000017488,
+        "audio_duration_ms": 2496.1875,
+        "queue_ms": 0.0,
+        "processing_ms": 261.49330599992027,
+        "realtime_factor": 0.030439394877185028,
+        "process_rss_mb": 545.37890625,
+        "raw_transcript": "Liga a luz da sala",
+        "final_transcript": "liga a luz da sala",
+        "safety_preserved_raw": false,
+        "quality": {
+          "evaluated": true,
+          "entity_correct": null,
+          "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+          "wer_raw": 0.0,
+          "cer_raw": 0.0,
+          "negation_preserved_raw": true,
+          "action_correct_raw": true,
+          "wer_final": 0.0,
+          "cer_final": 0.0,
+          "negation_preserved_final": true,
+          "action_correct_final": true,
+          "action_correct": true,
+          "negation_preserved": true
+        },
+        "parameters": {
+          "decoding_method": "greedy_search"
+        },
+        "audio_decode_ms": 1182.6432420000401,
+        "audio_sha256": "3f1123044bc0d0700287b5e6d988574739d2331820d5ebbcea92ff8c1db8d08b",
+        "request_total_ms": 10880.239808999931
+      },
+      {
+        "revision": "d90ca5fe260221311c53c58e660288d3deb8d356",
+        "model_sha256": {
+          "model.bin": "dcb76c6586fc06cbdac6dd21f14cfd129cc4cdd9dce19bf4ffa62e59cbe6e6d1",
+          "config.json": "a73a28cdfe1c43ccc7202fa333d1f89c202477271407ae9a7f19afa52039cac8",
+          "tokenizer.json": "fb7b63191e9bb045082c79fd742a3106a12c99513ab30df4a0d47fa6cb6fd0ab",
+          "vocabulary.txt": "34ce3fe1c5041027b3f8d42912270993f986dbc4bb34cf27f951e34a1e453913"
+        },
+        "model": "whisper_tiny",
+        "variant": null,
+        "state": "ready",
+        "backend": "faster-whisper",
+        "device": "cpu",
+        "compute": "int8",
+        "threads": 2,
+        "profile": "normalize_only",
+        "model_load_ms": 534.7873270000036,
+        "inference_ms": 480.2903460001744,
+        "lexical_ms": 158.93639500018253,
+        "audio_duration_ms": 2496.1875,
+        "queue_ms": 0.0,
+        "processing_ms": 647.741089999954,
+        "realtime_factor": 0.19240956298361978,
+        "process_rss_mb": 176.01953125,
+        "raw_transcript": "Liga a luz da sala.",
+        "final_transcript": "Liga a luz da sala.",
+        "safety_preserved_raw": false,
+        "quality": {
+          "evaluated": true,
+          "entity_correct": null,
+          "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+          "wer_raw": 0.0,
+          "cer_raw": 0.0,
+          "negation_preserved_raw": true,
+          "action_correct_raw": true,
+          "wer_final": 0.0,
+          "cer_final": 0.0,
+          "negation_preserved_final": true,
+          "action_correct_final": true,
+          "action_correct": true,
+          "negation_preserved": true
+        },
+        "parameters": {
+          "language": "pt",
+          "beam_size": 1,
+          "vad_filter": false,
+          "condition_on_previous_text": false
+        },
+        "audio_decode_ms": 1182.6432420000401,
+        "audio_sha256": "3f1123044bc0d0700287b5e6d988574739d2331820d5ebbcea92ff8c1db8d08b",
+        "request_total_ms": 2761.783194999907
+      },
+      {
+        "revision": "ebe41f70d5b6dfa9166e2c581c45c9c0cfc57b66",
+        "model_sha256": {
+          "model.bin": "d01c3014881c9c6f3133c182f3d2887eb6ca1c789a7538c5c007196857a0a6a9",
+          "config.json": "56a6d8110d311f19c8f0471e562832c7527f146b567275bfca59fcf7c184da9a",
+          "tokenizer.json": "fb7b63191e9bb045082c79fd742a3106a12c99513ab30df4a0d47fa6cb6fd0ab",
+          "vocabulary.txt": "34ce3fe1c5041027b3f8d42912270993f986dbc4bb34cf27f951e34a1e453913"
+        },
+        "model": "whisper_base",
+        "variant": null,
+        "state": "ready",
+        "backend": "faster-whisper",
+        "device": "cpu",
+        "compute": "int8",
+        "threads": 2,
+        "profile": "normalize_only",
+        "model_load_ms": 1031.936887000029,
+        "inference_ms": 901.2474920000386,
+        "lexical_ms": 196.79261200008114,
+        "audio_duration_ms": 2496.1875,
+        "queue_ms": 0.0,
+        "processing_ms": 1109.1608379999798,
+        "realtime_factor": 0.3610495974361055,
+        "process_rss_mb": 234.9609375,
+        "raw_transcript": "Liga a luz da sala.",
+        "final_transcript": "Liga a luz da sala.",
+        "safety_preserved_raw": false,
+        "quality": {
+          "evaluated": true,
+          "entity_correct": null,
+          "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+          "wer_raw": 0.0,
+          "cer_raw": 0.0,
+          "negation_preserved_raw": true,
+          "action_correct_raw": true,
+          "wer_final": 0.0,
+          "cer_final": 0.0,
+          "negation_preserved_final": true,
+          "action_correct_final": true,
+          "action_correct": true,
+          "negation_preserved": true
+        },
+        "parameters": {
+          "language": "pt",
+          "beam_size": 1,
+          "vad_filter": false,
+          "condition_on_previous_text": false
+        },
+        "audio_decode_ms": 1182.6432420000401,
+        "audio_sha256": "3f1123044bc0d0700287b5e6d988574739d2331820d5ebbcea92ff8c1db8d08b",
+        "request_total_ms": 3574.777101000109
+      },
+      {
+        "revision": "536b0662742c02347bc0e980a01041f333bce120",
+        "model_sha256": {
+          "model.bin": "3e305921506d8872816023e4c273e75d2419fb89b24da97b4fe7bce14170d671",
+          "config.json": "b55496ac7940a7ae47d2c01eab40edfd8701feec1229d9cce3b40014383fb828",
+          "tokenizer.json": "fb7b63191e9bb045082c79fd742a3106a12c99513ab30df4a0d47fa6cb6fd0ab",
+          "vocabulary.txt": "34ce3fe1c5041027b3f8d42912270993f986dbc4bb34cf27f951e34a1e453913"
+        },
+        "model": "whisper_small",
+        "variant": null,
+        "state": "ready",
+        "backend": "faster-whisper",
+        "device": "cpu",
+        "compute": "int8",
+        "threads": 2,
+        "profile": "normalize_only",
+        "model_load_ms": 3024.628469999925,
+        "inference_ms": 2741.959550000047,
+        "lexical_ms": 182.1929899999759,
+        "audio_duration_ms": 2496.1875,
+        "queue_ms": 0.0,
+        "processing_ms": 2932.531903999916,
+        "realtime_factor": 1.0984589699291607,
+        "process_rss_mb": 440.64453125,
+        "raw_transcript": "Liga a luz da sala.",
+        "final_transcript": "Liga a luz da sala.",
+        "safety_preserved_raw": false,
+        "quality": {
+          "evaluated": true,
+          "entity_correct": null,
+          "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+          "wer_raw": 0.0,
+          "cer_raw": 0.0,
+          "negation_preserved_raw": true,
+          "action_correct_raw": true,
+          "wer_final": 0.0,
+          "cer_final": 0.0,
+          "negation_preserved_final": true,
+          "action_correct_final": true,
+          "action_correct": true,
+          "negation_preserved": true
+        },
+        "parameters": {
+          "language": "pt",
+          "beam_size": 1,
+          "vad_filter": false,
+          "condition_on_previous_text": false
+        },
+        "audio_decode_ms": 1182.6432420000401,
+        "audio_sha256": "3f1123044bc0d0700287b5e6d988574739d2331820d5ebbcea92ff8c1db8d08b",
+        "request_total_ms": 11834.787808999863
+      },
+      {
+        "model": "parakeet_ptbr_30s",
+        "state": "error",
+        "error": "Pesos ausentes; instale o modelo selecionado.",
+        "audio_sha256": "3f1123044bc0d0700287b5e6d988574739d2331820d5ebbcea92ff8c1db8d08b"
+      },
+      {
+        "model": "parakeet_tagarela",
+        "state": "error",
+        "error": "Pesos ausentes; instale o modelo selecionado.",
+        "audio_sha256": "3f1123044bc0d0700287b5e6d988574739d2331820d5ebbcea92ff8c1db8d08b"
+      },
+      {
+        "revision": "55a984d46f68323301837194ce647c702f55facc",
+        "model_sha256": {
+          "encoder.int8.onnx": "7b55f2a504a20a8e462899f5befd45f4a1784948d76ed0127902d9cf39405487",
+          "decoder.int8.onnx": "c185c2afb4c77c94bb1314807ecb3dc1623057a3dc540b83e10301af9bf4cfca",
+          "joiner.int8.onnx": "1a7e90abf7172d926dd7e2edac2a5d5035c24dfb641a15e131d57b6a5f63cdd3",
+          "tokens.txt": "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d",
+          "bpe.vocab": "41d5e71b3591642eff088151efd7acd4e750124cc0054c8ba9fa3245187a4804",
+          "LICENSE-WEIGHTS": "23ee78c8bae49cf08ea2f0c84945c66b987ebe4520881fb51b3dad4fb43d07c2",
+          "NOTICE.md": "440361d963edd9621e744f251332b47f2c4de2e2594ecfe42b215e3f6223fa44"
+        },
+        "model": "orukeet_int8",
+        "variant": null,
+        "state": "ready",
+        "backend": "sherpa-onnx",
+        "device": "cpu",
+        "compute": "int8",
+        "threads": 2,
+        "profile": "normalize_only",
+        "model_load_ms": 4807.331529000066,
+        "inference_ms": 190.46277300003567,
+        "lexical_ms": 155.01126699996348,
+        "audio_duration_ms": 2496.1875,
+        "queue_ms": 0.0,
+        "processing_ms": 364.30355600009534,
+        "realtime_factor": 0.076301468940148,
+        "process_rss_mb": 979.15234375,
+        "raw_transcript": "Liga a luz da sala.",
+        "final_transcript": "Liga a luz da sala.",
+        "safety_preserved_raw": false,
+        "quality": {
+          "evaluated": true,
+          "entity_correct": null,
+          "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+          "wer_raw": 0.0,
+          "cer_raw": 0.0,
+          "negation_preserved_raw": true,
+          "action_correct_raw": true,
+          "wer_final": 0.0,
+          "cer_final": 0.0,
+          "negation_preserved_final": true,
+          "action_correct_final": true,
+          "action_correct": true,
+          "negation_preserved": true
+        },
+        "parameters": {
+          "decoding_method": "greedy_search"
+        },
+        "audio_decode_ms": 1182.6432420000401,
+        "audio_sha256": "3f1123044bc0d0700287b5e6d988574739d2331820d5ebbcea92ff8c1db8d08b",
+        "request_total_ms": 8773.958501999914
+      },
+      {
+        "model": "granite_turboctc_q4",
+        "state": "error",
+        "error": "Pesos ausentes; instale o modelo selecionado.",
+        "audio_sha256": "3f1123044bc0d0700287b5e6d988574739d2331820d5ebbcea92ff8c1db8d08b"
+      }
+    ],
+    "sequential": true,
+    "dry_run": true,
+    "audio_decode_ms": 1182.6432420000401,
+    "request_total_ms": 39633.0294899999,
+    "stop_to_transcript_ms": null,
+    "stop_to_transcript_note": "Medido no navegador a partir do botão Parar; inclui espera, upload e rede.",
+    "audio_sha256": "3f1123044bc0d0700287b5e6d988574739d2331820d5ebbcea92ff8c1db8d08b"
+  }
+}

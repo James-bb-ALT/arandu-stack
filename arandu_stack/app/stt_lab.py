@@ -86,7 +86,7 @@ class STTLab:
             stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
             env=environment)
         self.children.add(process)
-        monitor = asyncio.create_task(watch_memory(process, 3 * 1024**3))
+        monitor = asyncio.create_task(watch_memory(process, CATALOG[body.get('model', 'fastconformer')]['memory_limit_mb'] * 1024**2))
         try:
             raw, _ = await asyncio.wait_for(process.communicate(json.dumps({**body, 'root': str(self.root)}).encode()), timeout)
             if len(raw) > 2_097_152:
@@ -129,8 +129,15 @@ class STTLab:
                 row.update(state='error', error='Falha no processo STT; consulte os logs e verifique os pesos.')
             key = (row['id'], variant)
             row.update(self.operations.get(key, {}))
+            if row['state'] == 'downloading':
+                progress = self.root / ('.install-' + row['id'] + '.json')
+                try:
+                    if json.loads(progress.read_text(encoding='utf-8')).get('state') == 'verifying':
+                        row['state'] = 'verifying'
+                except (OSError, ValueError):
+                    pass
             if active and row['id'] == active['model'] and (row['id'] != 'fastconformer' or variant == active['variant']):
-                row.update(state='ready', active=True)
+                row.update(state='ready', ready=True, active=True)
         return {'models': rows, 'active': active, 'configured': self.manager.config['stt']['stt_model'],
                 'configured_variant': self.manager.config['stt']['model_variant']}
 
@@ -139,6 +146,7 @@ class STTLab:
         if self.busy.locked() or self.install_task and not self.install_task.done():
             raise ValueError('STT ocupado; aguarde a operação atual')
         key = (model, variant)
+        (self.root / ('.install-' + model + '.json')).unlink(missing_ok=True)
         self.operations[key] = {'state': 'downloading'}
         async def install_one():
             async with self.busy:
@@ -163,8 +171,8 @@ class STTLab:
     async def test(self, body, compare=False):
         model, variant, threads = self.parameters(body)
         models = body.get('models', [model]) if compare else [model]
-        if type(models) is not list or not 1 <= len(models) <= 4 or len(set(models)) != len(models):
-            raise ValueError('Selecione de 1 a 4 modelos distintos')
+        if type(models) is not list or not 1 <= len(models) <= 8 or any(type(item) is not str for item in models) or len(set(models)) != len(models):
+            raise ValueError('Selecione de 1 a 8 modelos distintos')
         for selected in models:
             validate(selected, variant)
         reference = body.get('reference', '')

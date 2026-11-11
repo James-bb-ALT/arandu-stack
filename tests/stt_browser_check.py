@@ -55,6 +55,9 @@ async def main():
             await page.goto('http://127.0.0.1:8770/fixture')
             field=lambda name:page.locator(f'[data-stt="{name}"]')
             await field('status').filter(has_text='Modelos consultados').wait_for()
+            assert await field('model').locator('option').count()==8
+            assert await field('models').locator('input').count()==8
+            assert '487 MB' in await field('inventory').inner_text()
             await field('file').set_input_files(str(audio))
             await field('player').evaluate('audio=>audio.play().then(()=>audio.pause())')
             await field('reference').fill('Liga a luz da sala')
@@ -69,10 +72,12 @@ async def main():
             assert exported['last']['results'][0]['model']=='whisper_base'
             assert exported['last']['results'][0]['state']=='ready'
             for check in await field('models').locator('input').all():
-                await check.set_checked(await check.input_value() in ('whisper_tiny','whisper_base'))
+                await check.set_checked(await check.input_value() in ('whisper_tiny','whisper_base','orukeet_int8'))
             await field('compare').click()
             await field('status').filter(has_text='Teste concluído').wait_for(timeout=90000)
             assert 'Whisper Tiny' in await field('results').inner_text()
+            assert 'Orukeet INT8' in await field('results').inner_text()
+            await field('model').select_option('orukeet_int8')
             async with page.expect_download() as event:
                 await field('csv').click()
             csv=Path(await (await event.value).path()).read_text(encoding='utf-8')
@@ -95,7 +100,7 @@ async def main():
             await field('status').filter(has_text='inválido').wait_for(timeout=20000)
             await page.evaluate('panel.sttDispose()')
             assert not errors,errors
-            print('PASS: upload, Base real, comparison, JSON/CSV, MediaRecorder, track release, responsive view, invalid audio')
+            print('PASS: eight models, upload, Base real, Orukeet real, comparison, JSON/CSV, MediaRecorder, track release, responsive view, invalid audio')
             await context.close();await browser.close()
     finally:
         await runner.cleanup()

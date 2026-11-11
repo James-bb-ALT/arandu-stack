@@ -1,6 +1,6 @@
 # STT multimodelo e laboratório de voz
 
-App **3.0.0**, STT **3.0.0**, integração HACS **4.0.0**. Nova etapa de release pela inclusão de funcionalidades, conforme `AGENTS.md`. NLU, Decision, LLM, Wake e TTS mantêm suas versões.
+App **4.0.0**, STT **4.0.0**, integração HACS **5.0.0**. Nova etapa de release pela inclusão de funcionalidades, conforme `AGENTS.md`. NLU, Decision, LLM, Wake e TTS mantêm suas versões.
 
 ## Modelos e licenças
 
@@ -11,6 +11,10 @@ App **3.0.0**, STT **3.0.0**, integração HACS **4.0.0**. Nova etapa de release
 | `whisper_tiny` | [Systran/faster-whisper-tiny](https://huggingface.co/Systran/faster-whisper-tiny) | MIT |
 | `whisper_base` | [Systran/faster-whisper-base](https://huggingface.co/Systran/faster-whisper-base) | MIT |
 | `whisper_small` | [Systran/faster-whisper-small](https://huggingface.co/Systran/faster-whisper-small) | MIT |
+| `parakeet_ptbr_30s` | [alefiury/parakeet-tdt-v3-ptBR-30s-onnx](https://huggingface.co/alefiury/parakeet-tdt-v3-ptBR-30s-onnx), FP32, onnx-asr | CC BY 4.0 |
+| `parakeet_tagarela` | [alefiury/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx](https://huggingface.co/alefiury/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx), FP32, onnx-asr | CC BY 4.0 |
+| `orukeet_int8` | [oruk/orukeet](https://huggingface.co/oruk/orukeet), transducer INT8, sherpa-onnx | CC BY-SA 4.0 |
+| `granite_turboctc_q4` | [Conversão GGUF multilíngue](https://huggingface.co/vladers/granite-speech-5.0-470m-turboctc-GGUF) do IBM Granite Speech 5, Q4_K_M | Apache-2.0 |
 
 Runtimes: [faster-whisper](https://github.com/SYSTRAN/faster-whisper) e [CTranslate2](https://github.com/OpenNMT/CTranslate2) (MIT), sherpa-onnx (Apache-2.0). Os pesos não acompanham o Git nem a imagem. As URLs, hashes e diretórios do FastConformer adaptado foram preservados.
 
@@ -18,17 +22,42 @@ O ambiente virtual STT é isolado dos pacotes globais e não instala PyTorch. fa
 
 Whisper usa CPU INT8, português, uma transcrição por vez, beam 1, temperatura zero, sem histórico de texto, timestamps de palavras ou VAD adicional. Padrão de duas threads; ajuste entre uma e quatro. O adaptado permanece FP32, como a implementação anterior.
 
+## Novos motores: instalação e runtime
+
+Os oito IDs usam as mesmas rotas, seletores, cache e aplicação confirmada. A configuração antiga `whisper_profile` continua sendo o perfil de produção dos motores de vocabulário aberto; seu nome foi preservado para compatibilidade. Configurações antigas não são substituídas nem promovidas automaticamente. Apenas FastConformer usa `model_variant=adapted|original`.
+
+| ID | Download previsto | Revisão dos pesos |
+|---|---:|---|
+| `parakeet_ptbr_30s` | 2.550 MB | `ba4da45f60395f13b12da197d3448e66f6ec79c7` |
+| `parakeet_tagarela` | 2.550 MB | `47586335c0b00ba273205f0ed3ef5a2cd651c143` |
+| `orukeet_int8` | 487 MB; 672 MB extraídos | `55a984d46f68323301837194ce647c702f55facc` |
+| `granite_turboctc_q4` | 279 MB | `88845afaa7beadca4b9ec545df0dd7332349ab88` |
+
+MB decimais. O catálogo expõe tamanho previsto, arquivos obrigatórios, arquitetura, runtime, licença, revisão, hashes conhecidos, tamanho instalado e prontidão. A interface mostra o download antes da instalação. Pré-verificação reserva download + arquivos instalados + 256 MB; uma substituição conserva a cópia anterior até a promoção. Falhas preservam os outros modelos.
+
+Os dois Parakeet incluem `encoder-model.onnx.data` (2,435 GB), encoder, decoder/joint, configuração, vocabulário e frontend. Compartilham **onnx-asr 0.12.0**, ONNX Runtime CPU já usado na stack e preprocessamento NumPy. A resolução é explicitamente offline na carga, com threads intra-op configuradas e inter-op 1. TDT não usa prompt de idioma: o argumento `language` documentado pelo onnx-asr é destinado a Whisper/Canary; não é necessário passá-lo ao TAGARELA. Não instala NeMo, Torch ou Transformers no ambiente STT. [API do runtime](https://github.com/istupakov/onnx-asr/tree/v0.12.0).
+
+Orukeet usa `OfflineRecognizer.from_transducer`, `model_type=nemo_transducer`, features 128, greedy CPU. O pacote fornecido é fixado por revisão e SHA256 `f9191f30178cc9122ce2f023bf9fefafc822028307b0efa4caff645ba3fe8d0a`. Antes da extração, verifica o pacote completo; só copia arquivos obrigatórios regulares, rejeita caminhos absolutos/traversal, links, duplicatas e tamanho descomprimido excessivo. Conserva `LICENSE-WEIGHTS` e `NOTICE.md`. Não usa a API CTC do FastConformer. [Documentação da exportação](https://github.com/Oruk-AI/orukeet/blob/main/export/onnx/README.md).
+
+Granite baixa **somente Q4_K_M**, LICENSE e NOTICE. O GGUF aceito tem SHA256 `959646de88d43100a82459da1c0c9d3a2b1a7536b54338b9c4fc9535bdb30970` na revisão multilíngue acima. A carga exige `pt` nas capacidades do motor; conversão somente inglesa é recusada. Q8_0 não é uma opção nesta release: não houve avaliação humana que justificasse mais 506 MB.
+
+A imagem compila [transcribe.cpp](https://github.com/handy-computer/transcribe.cpp/tree/5700f127e38dd53c4735ea23ef743b4b538eacd4) em revisão `5700f127e38dd53c4735ea23ef743b4b538eacd4`, binding **0.4.1** e bibliotecas CPU compartilhadas, com configuração x86 conservadora. Instala o binding construído da mesma revisão, sem buscar outro provider binário, e define `TRANSCRIBE_LIBRARY` para a biblioteca compilada. O adaptador mantém **Model + Session persistentes** no Wyoming; carrega uma vez e mede inferência aquecida separadamente. Não inicia CLI por frase nem acrescenta servidor público. O laboratório destrói seu processo temporário após cada modelo, preservando a produção. O build compila código, nunca baixa pesos. Os Dockerfiles integrado e independente incluem o mesmo runtime.
+
+A instalação muda de Baixando para Verificando quando começa a validação dos arquivos; o worker verifica hashes e carrega o candidato antes de promover seu diretório e registrar `load_validated`. Instalado indica cache disponível; Pronto indica o motor ativo confirmado. O custo de iniciar processo, imports e hashes continua no total do teste, separado de `model_load_ms` e `inference_ms`.
+
+Comparação aceita **1–8 modelos distintos**, um processo temporário por vez, 90 s por modelo; transporte HA limitado a 780 s para acomodar oito. Upload/conversão continuam limitados a 12 s e 1,4 MB. Apenas FastConformer e Whisper Base começam marcados na comparação; marcar os demais não baixa pesos. Modelos ausentes retornam erro individual sem impedir os instalados.
+
 ## Instalar e selecionar
 
 1. Atualize o app e a integração HACS; reinicie o Home Assistant para registrar o módulo frontend novo.
 2. Em Arandu Assistant, abra **STT → Configurar**. Selecione o motor e, para FastConformer, a variante. Em **Pesos e modelo ativo**, clique em **Baixar**. A instalação é explícita; `auto_download=false` continua padrão na stack.
 3. Aguarde **Instalado**. Use **Salvar e reiniciar** e confirme a troca. A aplicação carrega/verifica o candidato antes da troca, reinicia somente STT, consulta a identificação real e verifica Wyoming. Em caso de falha, restaura configuração e processo anteriores.
 
-Salvar sem reiniciar mantém uma configuração pendente. **Modelo ativo** mostra o processo realmente carregado, distinguindo a seleção salva. Configurações antigas sem `stt_model` usam `fastconformer` com a variante existente. Não há promoção automática para Whisper.
+Salvar sem reiniciar mantém uma configuração pendente. **Modelo ativo** mostra o processo realmente carregado, distinguindo a seleção salva. Configurações antigas sem `stt_model` usam `fastconformer` com a variante existente. Não há promoção automática para outro motor.
 
-O cache fica em `/data/modules/stt/models/`; no app STT independente, em `/data/models/`. Instalação Hugging Face usa `snapshot_download` para os quatro arquivos necessários, fixa o commit SHA resolvido e grava hashes SHA256, origem e revisão no manifesto. Os arquivos LFS são comparados com SHA256 de origem quando disponível. A carga confere os hashes sem acessar a rede. Instalações FastConformer antigas sem manifesto podem ser adotadas offline; a revisão de origem do original legado é indicada como desconhecida, nunca inventada. Downloads usam staging e trava entre processos; uma falha preserva a instalação anterior. Uma substituição interrompida é recuperada de `.previous` na próxima verificação.
+O cache fica em `/data/modules/stt/models/`; no app STT independente, em `/data/models/`. Instalação Hugging Face usa `snapshot_download` somente os arquivos necessários de cada motor, fixa o commit SHA resolvido e grava hashes SHA256, origem e revisão no manifesto. Os arquivos LFS são comparados com SHA256 de origem quando disponível. A carga confere os hashes sem acessar a rede. Instalações FastConformer antigas sem manifesto podem ser adotadas offline; a revisão de origem do original legado é indicada como desconhecida, nunca inventada. Downloads usam staging e trava entre processos; uma falha preserva a instalação anterior. Uma substituição interrompida é recuperada de `.previous` na próxima verificação.
 
-Estados: `not_installed`, `downloading`, `installed`, `loading`, `ready`, `error`. Falhas permitem nova tentativa. Não informe URLs arbitrárias: o catálogo é fechado.
+Estados: `not_installed`, `downloading`, `verifying`, `installed`, `loading`, `ready`, `error`. Falhas permitem nova tentativa. Não informe URLs arbitrárias: o catálogo é fechado.
 
 ## Gravar e comparar dentro do Home Assistant
 
@@ -44,7 +73,7 @@ Downloads não começam durante comparações. Modelos temporários são avaliad
 
 ## Correção lexical e segurança de comandos
 
-FastConformer mantém seu `ContextualResolver`, inventário e opções históricas. Whisper usa `normalize_only` e vocabulário aberto por padrão; `raw` e `full` também estão disponíveis, sem reinstalação. O perfil experimental de uma comparação não muda o perfil de produção.
+FastConformer mantém seu `ContextualResolver`, inventário e opções históricas. Whisper e os quatro novos motores usam `normalize_only` e vocabulário aberto por padrão; `raw` e `full` também estão disponíveis, sem reinstalação. O perfil experimental de uma comparação não muda o perfil de produção.
 
 Uma correção lexical que altera a presença de `não` ou troca uma ação explícita ligar/desligar é descartada e mantém o RAW. Isso protege contra alterações do corretor; **não comprova que o modelo acústico reconheceu corretamente a negação**. Compare com áudio humano e gabarito antes de escolher o motor. A confiança lexical continua heurística, sem probabilidade acústica calibrada.
 
@@ -59,12 +88,12 @@ Contrato no controle existente:
 | `GET /api/stt/models?variant=adapted` | Catálogo, instalação, candidato salvo e modelo ativo |
 | `POST /api/stt/install` | Inicia instalação explícita; acompanhe pelo catálogo |
 | `POST /api/stt/test` | Um modelo, áudio Base64 e referência opcional |
-| `POST /api/stt/compare` | Lista de até quatro modelos, mesmo áudio |
+| `POST /api/stt/compare` | Lista de até oito modelos, mesmo áudio |
 | `POST /api/stt/apply` | Candidato e `confirm=true`; pré-validação, reinício e rollback |
 
 Ingress mantém CSRF. Chamadas internas exigem simultaneamente origem de rede Supervisor/Core permitida, ausência de `Origin` e marcador de laboratório; o cabeçalho sozinho não autoriza acesso externo. O serviço de diagnóstico STT em 11560 é somente loopback, sem porta publicada. Não existe dependência da porta legada 8765 nem endpoint público de áudio.
 
-Há uma operação de laboratório por vez, sem fila crescente; entradas concorrentes recebem erro. Uploads ficam abaixo de 2 MiB incluindo Base64/envelope. FFmpeg valida conteúdo, bloqueia protocolos remotos, limita threads/alocação/saída, tem timeout de 15 s e watchdog de RSS de 512 MiB no Linux. Processos de teste têm timeout de 90 s e limite monitorado de RSS de 3 GiB no Linux. Instalação tem timeout de 900 s. O carregamento de produção recusa RSS acima de 3 GiB. Inferência Wyoming tem prazo de 60 s; após expiração, a operação nativa já iniciada pode terminar em segundo plano, mas a trava impede novas inferências concorrentes naquele motor. Um runtime travado pode exigir reinício STT; o laboratório temporário é encerrado pelo supervisor de processo.
+Há uma operação de laboratório por vez, sem fila crescente; entradas concorrentes recebem erro. Uploads ficam abaixo de 2 MiB incluindo Base64/envelope. FFmpeg valida conteúdo, bloqueia protocolos remotos, limita threads/alocação/saída, tem timeout de 15 s e watchdog de RSS de 512 MiB no Linux. Processos de teste têm timeout de 90 s e limite monitorado de RSS de 3 GiB no Linux (4 GiB para Parakeet FP32). Instalação tem timeout de 900 s. O carregamento de produção recusa RSS acima do mesmo orçamento por modelo. Inferência Wyoming tem prazo de 60 s; após expiração, a operação nativa já iniciada pode terminar em segundo plano, mas a trava impede novas inferências concorrentes naquele motor. Um runtime travado pode exigir reinício STT; o laboratório temporário é encerrado pelo supervisor de processo.
 
 STT continua em **10350**, gateway em **10212**. O identificador Wyoming público `arandu-fastconformer-ptbr-int8` é preservado para clientes existentes. A descrição e os diagnósticos revelam o motor real, variante, revisão, threads, memória e carregamento. O contrato com o NLU não muda.
 
@@ -95,12 +124,12 @@ $env:ARANDU_STT_TEST_WAV = 'CAMINHO_DO_AUDIO_WAV'
 $env:ARANDU_STT_TEST_MODELS = 'whisper_base,whisper_tiny,whisper_small,fastconformer'
 python -m pytest tests/test_stt_real.py -q
 python tests/stt_browser_check.py
-docker build -t arandu-assistant:3.0.0 ./arandu_stack
+docker build -t arandu-assistant:4.0.0 ./arandu_stack
 ```
 
 O teste de navegador requer Playwright/Chromium e usa a porta local 8770. Testa o componente nativo com API e pesos reais através de uma fixture local; autenticação/permissão HA tem testes separados. Isso não substitui instalação no HA Core. A suíte acústica verifica operação offline, silêncio, liberação de processos e transcrição pelo Wyoming com o ID legado.
 
-### Medições técnicas em 10/11/2026
+### Medições históricas da release v4.0.0 (10/11/2026)
 
 Uma amostra de 2.496 ms produzida **sinteticamente** pelo Microsoft Maria Desktop PT-BR, “Liga a luz da sala”, em AMD Ryzen 7 5700X, Windows/Python 3.13, CPU INT8 nos Whispers, duas threads. Não é voz humana, benchmark no i5-6500T, avaliação geral de qualidade nem comprovação das metas de mediana/P95. Havia outras tarefas de desenvolvimento na máquina.
 
@@ -117,7 +146,7 @@ Um resultado por modelo; não há P95. Os quatro receberam o mesmo SHA256 PCM. W
 
 ### Verificação da stack Linux
 
-`tests/stt_docker_check.py` testa a dashboard real e o app em um container Linux isolado, com dados de validação e pesos locais: aplicação de Base, comparação de quatro motores enquanto o Wyoming continua atendendo, recuperação de candidato ausente e troca Tiny/Base. Use somente uma instância descartável, `ARANDU_LOCAL_CONTAINER=1` e portas publicadas em `127.0.0.1`; o script pode mudar a configuração dessa instância. O build final usa Python 3.12 e ambiente STT sem pacotes globais.
+`tests/stt_docker_check.py` testa a dashboard real e o app em um container Linux isolado, com dados de validação e pesos locais: aplicação de Base, comparação de oito motores (cinco instalados e três erros individuais por ausência de pesos) enquanto o Wyoming continua atendendo, instalação pelo cache, aplicação real de Orukeet, recuperação de candidato ausente e troca Tiny/Base. Use somente uma instância descartável, `ARANDU_LOCAL_CONTAINER=1` e portas publicadas em `127.0.0.1`; o script pode mudar a configuração dessa instância. O build final usa Python 3.12 e ambiente STT sem pacotes globais.
 
 As regressões Rust NLU disponíveis (`--lib`, `contextual`, `http`, `v2_resolve`, `v2_interpret_http`, `v3_interpret_http`) foram executadas offline no estágio `nlu_builder`, montando `rootfs/src/data` em `/data`: **84 testes passaram**. A suíte completa foi tentada, mas este snapshot não contém `data/mlp/project-authored-synthetic-v1.jsonl` nem os corpora `evaluation/ptbr-independent` exigidos por outras suítes. Esses dados não foram recriados nem tratados como regressões aprovadas.
 
@@ -125,7 +154,7 @@ O Home Assistant local respondeu HTTP 401 em `/api/`; este ambiente não fornece
 
 ## Troubleshooting e rollback
 
-- **Painel não aparece:** atualize HACS 4.0.0, reinicie HA e confirme acesso administrativo. Recarregue a página para carregar `stt.js` novo.
+- **Painel não aparece:** atualize HACS 5.0.0, reinicie HA e confirme acesso administrativo. Recarregue a página para carregar `stt.js` novo.
 - **Configure o endpoint:** nas opções da integração, use o hostname interno do app e porta 8099. `127.0.0.1` do Core não aponta automaticamente ao app.
 - **Não instalado / integridade inválida:** use Baixar novamente. Confira conectividade apenas durante instalação. Não edite manifestos para ignorar hashes.
 - **Microfone indisponível:** confirme HTTPS, permissões e suporte MediaRecorder; upload continua disponível. MP3 não faz parte da allowlist inicial.
@@ -134,3 +163,9 @@ O Home Assistant local respondeu HTTP 401 em `/api/`; este ambiente não fornece
 - **Rollback manual:** selecione `fastconformer` e a variante anterior instalada e confirme aplicar. Configuração anterior fica em `stt-last-good.json`; os pesos antigos são preservados. Em downgrade do app, remova os campos novos da configuração se a versão antiga rejeitar opções desconhecidas, mantendo cópia de segurança.
 
 O resultado de instalação em Home Assistant OS, o microfone físico do usuário e a validação humana no i5-6500T devem ser registrados separadamente; testes locais e sintéticos não os substituem.
+
+## Validação desta extensão
+
+Consulte [registro de validação da extensão](STT-EXTENDED-VALIDATION-2026-11-10.json) e [release v5.0.0](RELEASE-v5.0.0.md). Apenas **Orukeet** foi baixado nesta tarefa; FastConformer e Whisper reutilizaram caches existentes. Parakeet 30s, TAGARELA e Granite têm adaptadores/instalação/testes de contrato, mas **não tiveram inferência comprovada com seus pesos** nesta entrega. O runtime Granite compilado foi importado em Linux e identificou CPU, sem Torch no venv STT.
+
+O áudio técnico disponível é sintético, não gravação humana. Não há classificação de precisão entre os seis candidatos, avaliação de negações/dispositivos humanos, P95 ou promessa de latência no i5-6500T. Foram medidas 1, 2 e 4 threads para FastConformer, Base e Orukeet no Ryzen local; os tempos estão no registro e não substituem avaliação no hardware de produção. A comparação com gravação humana fica disponível no AI Lab, com métricas e exportação.

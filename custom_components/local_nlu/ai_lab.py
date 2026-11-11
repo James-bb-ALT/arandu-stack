@@ -119,8 +119,8 @@ class Lab:
             # Legacy selector remains compatible while the panel migrates.
             if model in ('original', 'adapted'):
                 variant, model = model, 'fastconformer'
-            allowed = {'fastconformer', 'whisper_tiny', 'whisper_base', 'whisper_small'}
-            if model not in allowed or variant not in ('original', 'adapted'):
+            allowed = {'fastconformer', 'whisper_tiny', 'whisper_base', 'whisper_small', 'parakeet_ptbr_30s', 'parakeet_tagarela', 'orukeet_int8', 'granite_turboctc_q4'}
+            if type(model) is not str or model not in allowed or variant not in ('original', 'adapted'):
                 raise ValueError('Modelo STT inválido')
             body = {'model': model, 'variant': variant}
             for key in ('audio', 'models', 'threads', 'profile', 'reference', 'entity_reference', 'confirm'):
@@ -133,12 +133,12 @@ class Lab:
                 decoded = base64.b64decode(audio, validate=True)
                 if not 1 <= len(decoded) <= 1_400_000:
                     raise ValueError('Áudio vazio ou excedeu 1,4 MB')
-                if action == 'compare' and (type(body.get('models')) is not list or not 1 <= len(body['models']) <= 4 or any(m not in allowed for m in body['models'])):
-                    raise ValueError('Selecione 1–4 modelos STT válidos')
+                if action == 'compare' and (type(body.get('models')) is not list or not 1 <= len(body['models']) <= 8 or any(type(m) is not str or m not in allowed for m in body['models'])):
+                    raise ValueError('Selecione 1–8 modelos STT válidos')
             if self.lock.locked():
                 raise ValueError('Laboratório ocupado; aguarde')
             async with self.lock:
-                result = await local_request(session, stack_endpoint, '/api/stt/' + action, payload=body, timeout=420)
+                result = await local_request(session, stack_endpoint, '/api/stt/' + action, payload=body, timeout=780)
             if command == 'transcribe':
                 row = result['results'][0]
                 if row.get('state') != 'ready':

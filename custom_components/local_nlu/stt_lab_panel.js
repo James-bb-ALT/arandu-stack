@@ -6,7 +6,7 @@ export function mountSTT(panel) {
     <div class="row"><button data-stt="record">Gravar áudio</button><button data-stt="stop" disabled>Parar gravação</button>
     <label>Enviar arquivo WAV/áudio<input data-stt="file" type="file" accept="audio/wav,audio/webm,audio/ogg,audio/mp4,video/mp4"></label></div>
     <p data-stt="capture" role="status" aria-live="polite">Nenhum áudio selecionado.</p><audio data-stt="player" controls></audio>
-    <div class="row"><label>Modelo selecionado<select data-stt="model"><option value="fastconformer">Arandu FastConformer</option><option value="whisper_tiny">Whisper Tiny</option><option value="whisper_base" selected>Whisper Base</option><option value="whisper_small">Whisper Small</option></select></label>
+    <div class="row"><label>Modelo selecionado<select data-stt="model"><option value="fastconformer">Arandu FastConformer</option><option value="whisper_tiny">Whisper Tiny</option><option value="whisper_base" selected>Whisper Base</option><option value="whisper_small">Whisper Small</option><option value="parakeet_ptbr_30s">Parakeet TDT V3 pt-BR 30s</option><option value="parakeet_tagarela">Parakeet TAGARELA pt-BR</option><option value="orukeet_int8">Orukeet INT8</option><option value="granite_turboctc_q4">Granite TurboCTC Q4_K_M</option></select></label>
     <label>Variante FastConformer<select data-stt="variant"><option value="adapted">Adaptado</option><option value="original">Original</option></select></label>
     <label>Threads<select data-stt="threads"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
     <label>Correção neste teste<select data-stt="profile"><option value="">Padrão do motor</option><option value="raw">RAW</option><option value="normalize_only">Somente normalização</option><option value="full">Completa</option></select></label></div>
@@ -21,10 +21,10 @@ export function mountSTT(panel) {
     <button data-stt="csv">Exportar CSV</button><button data-stt="clear">Limpar histórico de testes</button></div>`;
   const $=id=>section.querySelector(`[data-stt="${id}"]`);
   let blob=null,url=null,stream=null,recorder=null,timer=null,ticker=null,disposed=false,busy=false,recording=false,stoppedAt=null,rows=[],last=null,inventory=null,poll=null;
-  const names={fastconformer:'Arandu FastConformer',whisper_tiny:'Whisper Tiny',whisper_base:'Whisper Base',whisper_small:'Whisper Small'};
-  const states={not_installed:'Não instalado',downloading:'Baixando',installed:'Instalado',loading:'Carregando',ready:'Pronto',error:'Erro'};
+  const names={fastconformer:'Arandu FastConformer',whisper_tiny:'Whisper Tiny',whisper_base:'Whisper Base',whisper_small:'Whisper Small',parakeet_ptbr_30s:'Parakeet TDT V3 pt-BR 30s',parakeet_tagarela:'Parakeet TAGARELA pt-BR',orukeet_int8:'Orukeet INT8',granite_turboctc_q4:'Granite TurboCTC Q4_K_M'};
+  const states={not_installed:'Não instalado',downloading:'Baixando',verifying:'Verificando',installed:'Instalado',loading:'Carregando',ready:'Pronto',error:'Erro'};
   for(const [id,name] of Object.entries(names)){
-    const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=id;input.checked=true;
+    const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=id;input.checked=['fastconformer','whisper_base'].includes(id);
     label.append(input,document.createTextNode(' '+name));$('models').append(label);
   }
   function status(text,error=false){$('status').textContent=text;$('status').setAttribute('role',error?'alert':'status');}
@@ -49,9 +49,9 @@ export function mountSTT(panel) {
     const active=inventory.active;
     $('active').textContent=active?`Assist ativo: ${names[active.model]||active.model} · ${active.model==='fastconformer'?active.variant:'multilíngue'} · ${active.backend} · CPU ${active.compute} · ${active.threads} threads · ${active.process_rss_mb.toFixed(0)} MiB · última inferência ${panel.duration(active.recent?.inference_ms)}`:'STT de produção parado ou sem confirmação de prontidão.';
     $('inventory').replaceChildren();
-    for(const model of inventory.models){const line=document.createElement('p');line.textContent=`${model.name}: ${states[model.state]||model.state}${model.error?' · '+model.error:''}`;$('inventory').append(line);}
+    for(const model of inventory.models){const line=document.createElement('p');line.textContent=`${model.name}${model.download_bytes?' · download '+(model.download_bytes/1000000).toFixed(0)+' MB':''}: ${states[model.state]||model.state}${model.error?' · '+model.error:''}`;$('inventory').append(line);}
     clearTimeout(poll);
-    if(inventory.models.some(model=>model.state==='downloading')){status('Baixando pesos. Você pode acompanhar o estado aqui.');poll=setTimeout(()=>refresh().catch(e=>status(e.message,true)),2000);}
+    if(inventory.models.some(model=>['downloading','verifying'].includes(model.state))){status('Baixando pesos. Você pode acompanhar o estado aqui.');poll=setTimeout(()=>refresh().catch(e=>status(e.message,true)),2000);}
     else status('Modelos consultados. Testes não alteram o Assist.');
   }
   $('record').onclick=async()=>{
@@ -80,10 +80,10 @@ export function mountSTT(panel) {
     $('results').replaceChildren();
     if(!rows.length){$('summary').textContent='Nenhum teste no histórico desta sessão.';return;}
     const table=document.createElement('table'),head=document.createElement('tr');
-    for(const name of ['Modelo','RAW','Corrigida','Inferência','Carregamento','Lexical','WER RAW / FINAL','CER RAW / FINAL','Estado']){const th=document.createElement('th');th.textContent=name;head.append(th);}table.append(head);
+    for(const name of ['Modelo','RAW','Corrigida','Inferência','Carregamento','Total do teste','Lexical','WER RAW / FINAL','CER RAW / FINAL','Estado']){const th=document.createElement('th');th.textContent=name;head.append(th);}table.append(head);
     for(const row of last?.results||[]){
       const tr=document.createElement('tr'),q=row.quality;
-      const values=[names[row.model],row.raw_transcript??'—',row.final_transcript??'—',panel.duration(row.inference_ms),panel.duration(row.model_load_ms),panel.duration(row.lexical_ms),
+      const values=[names[row.model],row.raw_transcript??'—',row.final_transcript??'—',panel.duration(row.inference_ms),panel.duration(row.model_load_ms),panel.duration(row.request_total_ms),panel.duration(row.lexical_ms),
         q?.evaluated?`${q.wer_raw.toFixed(3)} / ${q.wer_final.toFixed(3)}`:'Não avaliado',q?.evaluated?`${q.cer_raw.toFixed(3)} / ${q.cer_final.toFixed(3)}`:'Não avaliado',row.error||states[row.state]];
       for(const value of values){const td=document.createElement('td');td.textContent=value;tr.append(td);}table.append(tr);
     }

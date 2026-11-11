@@ -1,3 +1,11 @@
+# App 4.0.0 / STT 4.0.0 / HACS 5.0.0 — oito modelos STT
+
+- Adiciona Parakeet pt-BR 30s, Parakeet TAGARELA, Orukeet INT8 e Granite TurboCTC Q4 às interfaces/APIs existentes; preserva FastConformer e Whisper.
+- Instalação individual com revisão pinada, hashes, tamanho previsto, espaço em disco, staging, extração segura e validação de carga antes da promoção. Pesos fora do Git/imagem.
+- Compartilha onnx-asr/ONNX Runtime nos Parakeet e sherpa-onnx transducer no Orukeet. Granite mantém modelo/sessão CPU persistentes em transcribe.cpp compilado por revisão imutável.
+- AI Lab aceita até oito modelos sequenciais no mesmo PCM. Mantém autenticação, isolamento, gravação/upload/player, RAW/FINAL, métricas e exportação; aplicação confirmada preserva rollback e Wyoming 10350/10212.
+- Orukeet validado com pesos reais e áudio sintético; os outros três novos modelos não foram baixados. Sem benchmark humano ou no i5-6500T. Ver [notas da release](../docs/RELEASE-v5.0.0.md) e [guia STT](../docs/STT-MULTIMODEL.md).
+
 # App 3.0.0 / STT 3.0.0 / HACS 4.0.0 — voz multimodelo
 
 - FastConformer original/adaptado e Whisper Tiny/Base/Small reais, CPU INT8 para Whisper, instalação explícita com staging, revisão imutável, hashes, cache persistente e funcionamento offline.

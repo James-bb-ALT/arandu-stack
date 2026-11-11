@@ -18,7 +18,19 @@ def run(body):
     if command == 'models':
         return {'models': [describe(root, key, variant) for key in CATALOG]}
     if command == 'install':
-        install(root, model, variant)
+        from backends import create_backend
+        def validate_load(directory):
+            engine = create_backend(model, directory, body.get('threads', 2))
+            try:
+                engine.load()
+            finally:
+                engine.close()
+        def progress(state):
+            status = root / ('.install-' + model + '.json')
+            staged = status.with_suffix('.tmp')
+            staged.write_text(json.dumps({'state': state}), encoding='utf-8')
+            staged.replace(status)
+        install(root, model, variant, progress=progress, validator=validate_load)
         return describe(root, model, variant)
     from backends import create_backend
     manifest = verify(root, model, variant)
@@ -49,12 +61,12 @@ def run(body):
                                'closed_vocabulary': cfg.get('closed_vocabulary', True) if model == 'fastconformer' else False,
                                'source_weights': {'generic_lexicon': cfg.get('generic_weight', 7),
                                    'home_assistant': cfg.get('home_assistant_weight', 10)}})
-        profile = body.get('profile') or (cfg.get('profile', 'full') if model == 'fastconformer' else 'normalize_only')
+        profile = body.get('profile') or (cfg.get('profile', 'full') if model == 'fastconformer' else cfg.get('whisper_profile', 'normalize_only'))
         resolved = correct(resolver, raw, profile)
         lexical_ms = (time.perf_counter() - lexical_start) * 1000
         import psutil
         return {'revision': manifest.get('revision') or manifest.get('version'), 'model_sha256': manifest.get('sha256'), 'model': model, 'variant': variant if model == 'fastconformer' else None, 'state': 'ready',
-                'backend': CATALOG[model]['runtime'], 'device': 'cpu', 'compute': 'int8' if model != 'fastconformer' or variant == 'original' else 'fp32',
+                'backend': CATALOG[model]['runtime'], 'device': 'cpu', 'compute': 'fp32' if model == 'fastconformer' and variant == 'adapted' else CATALOG[model]['compute'],
                 'threads': body.get('threads', 2), 'profile': profile,
                 'model_load_ms': engine.load_ms, 'inference_ms': inference_ms, 'lexical_ms': lexical_ms,
                 'audio_duration_ms': len(pcm)/32, 'queue_ms': 0.0,
@@ -64,7 +76,7 @@ def run(body):
                 'raw_transcript': raw, 'final_transcript': resolved['text'],
                 'safety_preserved_raw': resolved.get('safety_preserved_raw', False),
                 'quality': evaluate(body.get('reference'), raw, resolved['text'], body.get('entity_reference')),
-                'parameters': {'language': 'pt', 'beam_size': 1, 'vad_filter': False, 'condition_on_previous_text': False} if model != 'fastconformer' else {'decoding_method': 'greedy_search'}}
+                'parameters': {'language': 'pt', 'beam_size': 1, 'vad_filter': False, 'condition_on_previous_text': False} if model.startswith('whisper_') else ({'language': 'pt', 'timestamps': 'none', 'persistent_session': True} if model == 'granite_turboctc_q4' else {'decoding_method': 'greedy_search'})}
     finally:
         engine.close()
 
@@ -85,5 +97,7 @@ if __name__ == '__main__':
             'ModuleNotFoundError': 'Dependência STT indisponível; atualize o app.',
             'ConnectionError': 'Falha de rede ao instalar pesos; tente novamente.',
         }.get(type(exc).__name__, 'Falha de carregamento, rede ou inferência; verifique o runtime e a origem dos pesos.')
+        if isinstance(exc, ValueError) and str(exc) == 'Espaço insuficiente para download e instalação temporária':
+            message = str(exc)
         print(json.dumps({'error': type(exc).__name__, 'message': message}))
         sys.exit(1)

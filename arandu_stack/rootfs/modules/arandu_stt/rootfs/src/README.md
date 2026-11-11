@@ -1,8 +1,8 @@
-# STT 3.0.0 — FastConformer e Whisper local
+# STT 4.0.0 — oito modelos locais
 
-A seleção `stt_model` aceita `fastconformer`, `whisper_tiny`, `whisper_base` e `whisper_small`. FastConformer mantém `model_variant=adapted|original`; Whisper usa CPU INT8, duas threads e `whisper_profile=normalize_only` por padrão. `auto_download=false` exige instalação explícita; pesos verificados funcionam offline. O ID Wyoming existente é preservado.
+FastConformer original/adaptado e Whisper Tiny/Base/Small são preservados. Novos IDs: `parakeet_ptbr_30s`, `parakeet_tagarela`, `orukeet_int8`, `granite_turboctc_q4`. CPU, duas threads por padrão, carga offline após instalação individual verificada. Sem pesos ou Torch no ambiente STT.
 
-Na stack integrada, instale pesos em STT → Configurar e use Arandu AI Lab → STT para gravação/comparação e aplicação confirmada. Consulte `docs/STT-MULTIMODEL.md` na raiz do repositório para contrato, testes, métricas, licenças e rollback. Os pesos FastConformer permanecem CC BY-NC 4.0 (não comercial); Whisper é MIT. Nenhum peso é incluído neste repositório.
+Dashboard e AI Lab usam o mesmo catálogo: gravação/upload/player, comparação sequencial, RAW/FINAL, carga/inferência/total, WER/CER, exportação e aplicação confirmada com rollback. Portas e identificador Wyoming preservados. Consulte `docs/STT-MULTIMODEL.md` na raiz para licenças, tamanhos, revisões, validação e limitações. Os três novos motores sem pesos reais não são anunciados como acusticamente validados.
 
 ## Documentação histórica do FastConformer
 

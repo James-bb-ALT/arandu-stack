@@ -1,3 +1,10 @@
+# 4.0.0 — 2026-11-10
+
+- Oito modelos: adiciona Parakeet pt-BR 30s/TAGARELA, Orukeet transducer INT8 e Granite TurboCTC Q4 aos quatro existentes.
+- Instalação individual pinada, hashes, espaço pré-verificado, extração segura, carga de validação e promoção atômica.
+- onnx-asr compartilhado; transcribe.cpp CPU compilado e persistente. Sem pesos ou Torch no ambiente STT.
+- AI Lab integrado compara até oito sequencialmente; preserva correção opcional, Wyoming e rollback. Orukeet validado com voz sintética; outros três novos motores sem inferência real nesta entrega. Detalhes em docs/STT-MULTIMODEL.md.
+
 # 3.0.0 — 2026-11-10
 
 - STT multimodelo: FastConformer legado e faster-whisper Tiny/Base/Small CPU INT8, duas threads por padrão.

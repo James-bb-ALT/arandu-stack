@@ -6,6 +6,8 @@ Arandu lexical resolver (full) -> Transcript. No Home Assistant commands are exe
 """
 from __future__ import annotations
 
+from model_catalog import CATALOG
+
 import argparse
 import asyncio
 from contextlib import suppress
@@ -35,7 +37,7 @@ NAME = 'arandu-fastconformer-ptbr-int8'  # Preserve Assist's existing selected m
 UPSTREAM = 'https://huggingface.co/nvidia/stt_pt_fastconformer_hybrid_large_pc'
 MAX_SECONDS = 35
 MAX_INPUT_BYTES = 2 * 16000 * MAX_SECONDS
-VERSION = '3.0.0'
+VERSION = '4.0.0'
 
 
 def pcm16_to_float32(pcm: bytes) -> np.ndarray:
@@ -49,7 +51,7 @@ def build_info(model='fastconformer') -> Info:
     selected = CATALOG[model]
     attribution = Attribution(name='NVIDIA checkpoint + Arandu lexical resolver', url=UPSTREAM)
     if model != 'fastconformer':
-        attribution = Attribution(name='OpenAI Whisper / Systran conversion (MIT)', url='https://huggingface.co/' + selected['repo'])
+        attribution = Attribution(name=selected['name'] + ' (' + selected['license'] + ')', url='https://huggingface.co/' + selected['repo'])
     return Info(asr=[AsrProgram(
         name='arandu-stt',
         description=selected['name'] + ' PT-BR + Arandu lexical resolver',
@@ -78,9 +80,9 @@ class Engine:
         self.backend = create_backend(model, model_dir, threads).load()
         import os
         import psutil
-        if psutil.Process(os.getpid()).memory_info().rss > 3 * 1024**3:
+        if psutil.Process(os.getpid()).memory_info().rss > CATALOG[model]['memory_limit_mb'] * 1024**2:
             self.backend.close()
-            raise MemoryError('STT excedeu o limite de 3 GiB de RAM')
+            raise MemoryError('STT excedeu o orçamento de RAM do modelo')
         self._lock = threading.Lock()
         self.recent = {}
 
@@ -103,7 +105,7 @@ class Engine:
         manifest = self.manifest
         return {'revision': manifest.get('revision') or manifest.get('version'), 'model_path': str(self.backend.model_dir), 'model': self.model, 'variant': self.variant, 'backend': CATALOG[self.model]['runtime'],
                 'public_service_id': NAME, 'state': 'ready', 'threads': self.threads, 'device': 'cpu',
-                'compute': 'fp32' if self.model == 'fastconformer' and self.variant == 'adapted' else 'int8',
+                'compute': 'fp32' if self.model == 'fastconformer' and self.variant == 'adapted' else CATALOG[self.model]['compute'],
                 'model_load_ms': self.backend.load_ms, 'process_rss_mb': psutil.Process(os.getpid()).memory_info().rss/1048576,
                 'recent': self.recent}
 
@@ -299,7 +301,7 @@ class Handler(AsyncEventHandler):
 
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description='Arandu STT multimodelo - Wyoming + lexical resolver')
-    p.add_argument('--stt-model', choices=('fastconformer','whisper_tiny','whisper_base','whisper_small'), default='fastconformer')
+    p.add_argument('--stt-model', choices=tuple(CATALOG), default='fastconformer')
     p.add_argument('--model-variant', choices=('adapted','original'), default='adapted')
     p.add_argument('--diagnostics-port', type=int, default=11560)
     p.add_argument('--model-dir', type=Path, default=Path('/data/models/int8'))

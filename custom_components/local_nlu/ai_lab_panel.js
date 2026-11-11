@@ -53,7 +53,7 @@ class AranduAILab extends HTMLElement {
       <div class="layout"><aside>
       <section class="card"><h2>Componentes</h2>
         <p id="layerReadiness" role="status">Verifique os modelos para consultar a pipeline real.</p>
-        <label for="stt">Motor STT</label><select id="stt"><option value="fastconformer">FastConformer adaptado</option><option value="whisper_tiny">Whisper Tiny</option><option value="whisper_base">Whisper Base</option><option value="whisper_small">Whisper Small</option></select>
+        <label for="stt">Motor STT</label><select id="stt"><option value="fastconformer">FastConformer adaptado</option><option value="whisper_tiny">Whisper Tiny</option><option value="whisper_base">Whisper Base</option><option value="whisper_small">Whisper Small</option><option value="parakeet_ptbr_30s">Parakeet TDT V3 pt-BR 30s</option><option value="parakeet_tagarela">Parakeet TAGARELA pt-BR</option><option value="orukeet_int8">Orukeet INT8</option><option value="granite_turboctc_q4">Granite TurboCTC Q4_K_M</option></select>
         <label for="mode">Modo de interpretação</label><select id="mode"><option value="pipeline">Pipeline com fallbacks</option><option value="nlu">NLU Rust isolado</option><option value="decision">Decision isolado</option><option value="llm">LLM isolado + recuperação</option></select>
         <label for="testArea">Área de origem do teste</label><select id="testArea"><option value="">Padrão da integração / sem contexto</option></select>
         <p id="testAreaStatus" class="muted" role="status">Carregando áreas do catálogo…</p>

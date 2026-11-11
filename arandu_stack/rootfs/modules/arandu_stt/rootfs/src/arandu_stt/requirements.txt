@@ -9,3 +9,5 @@ ctranslate2==4.6.0
 psutil==7.2.2
 aiohttp==3.13.3
 setuptools==80.9.0
+
+onnx-asr[cpu,hub]==0.12.0

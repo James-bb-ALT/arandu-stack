@@ -27,6 +27,33 @@ function fixture() {
     stages:Object.fromEntries(['vad','stt','nlu','decision','llm','ha','tts'].map(n=>[n,{status:'skipped'}]))};
 }
 
+test('LLM v2 exposes typed plan and measured generation without execution claims',()=>{
+  const result=fixture();result.source='llm';result.operations_validated=true;
+  result.plan={version:2,type:'automation',operations:[{action:'brightness',entity_id:'light.fixture',parameters:{value:40},evidence:0}]};
+  result.stages.llm={status:'executed',output:{contract_version:2,model:'tucano',kind:'automation',plan:result.plan,
+    first_token_ms:1200,generated_tokens:80,tokens_per_second:20,memory_bytes:104857600,load_ms:0,inference_ms:4000,
+    raw_json_validated:true,validated_json:result.plan,retrieval:{ranking:[{entity_id:'light.fixture'}]}}};
+  const nodes=render(result);
+  assert.match(text(nodes.interpretations),/LLM e contrato.*tucano.*v2/);
+  assert.match(text(nodes.interpretations),/"value":40/);
+  assert.match(text(nodes.interpretations),/1,20 s.*80 tokens.*20.0 tokens\/s/);
+  assert.match(text(nodes.answer),/simulação/);
+});
+
+test('LLM exports omit private text, device names, IDs, raw JSON and credentials',()=>{
+  const panel=new Panel();panel.llmComparison={metrics:{tucano:{samples:1}},rows:[{
+    case:0,text:'PRIVATE_COMMAND',expected_plan:{entity_id:'PRIVATE_ENTITY'},actual:{name:'PRIVATE_NAME'},model:'tucano',correct:true,
+    result:{kind:'automation',raw_json:{secret:'PRIVATE_TOKEN'},generated_tokens:80,inference_ms:2000}}]};
+  const data=panel.llmExportData();
+  assert.doesNotMatch(JSON.stringify(data),/PRIVATE|raw_json|expected_plan|entity_id/);
+  assert.equal(data.rows[0].generated_tokens,80);
+});
+
+test('LLM v2 test utterances are not automatically persisted in local history',()=>{
+  const panel=new Panel();panel.last={text:'PRIVATE',stages:{llm:{output:{contract_version:2}}}};
+  panel.store=()=>{throw Error('must not persist');};panel.persist();
+});
+
 test('algorithm comparison uses authenticated HA websocket and selected area',async()=>{
   const panel=new Panel();let sent;
   panel.$=id=>({value:({decisionAlgorithm:'baseline-v2',testArea:'sala',threshold:'.8',margin:'.08'})[id] || ''});

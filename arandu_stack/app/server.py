@@ -15,7 +15,7 @@ from discovery import announce_stack
 from logs import LogStore, SOURCES, LOGGER
 from request_traces import TraceStore
 
-APP_VERSION = '6.0.0'
+APP_VERSION = '7.0.0'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""
@@ -31,7 +31,7 @@ MODULES = {
     'stt': ('arandu_stt', 'STT', 'Áudio para texto · FastConformer / Whisper'),
     'nlu': ('ptbr_nlu', 'NLU', 'Comandos e validação · Rust'),
     'decision': ('arandu_decision', 'Decision', 'Multilingual E5 Small'),
-    'llm': ('arandu_llm', 'LLM', 'Tucano 2 Qwen 0.5B'),
+    'llm': ('arandu_llm', 'LLM', 'LLM 2.0 · Tucano / Qwen3 CPU'),
     'tts': ('arandu_tts', 'TTS', 'Texto para áudio · Piper / Pocket'),
 }
 
@@ -83,7 +83,7 @@ def create_app(data_dir, local=False):
     async def boundary(request, handler):
         # Only the Supervisor ingress proxy reaches UI; runtime is internal read-only.
         peer = request.remote
-        stt_internal = request.path.startswith('/api/stt/') and request.headers.get('X-Arandu-Lab') == '1' and not request.headers.get('Origin')
+        module_internal = request.path.startswith(('/api/stt/','/api/llm/')) and request.headers.get('X-Arandu-Lab') == '1' and not request.headers.get('Origin')
         if os.environ.get('ARANDU_LOCAL_CONTAINER') == '1':
             import ipaddress
             if request.host not in {'127.0.0.1:8770', 'localhost:8770'} or not peer or not ipaddress.ip_address(peer).is_private:
@@ -91,15 +91,15 @@ def create_app(data_dir, local=False):
         elif local:
             if peer not in {'127.0.0.1', '::1'} or request.host not in {'127.0.0.1:8770', 'localhost:8770'}:
                 raise web.HTTPForbidden()
-        elif request.path not in {'/runtime', '/status', '/infer', '/synthesize', '/request-trace'} and not stt_internal and peer != '172.30.32.2':
+        elif request.path not in {'/runtime', '/status', '/infer', '/synthesize', '/request-trace'} and not module_internal and peer != '172.30.32.2':
             raise web.HTTPForbidden()
-        elif stt_internal or request.path in {'/runtime', '/status', '/infer', '/synthesize', '/request-trace'}:
+        elif module_internal or request.path in {'/runtime', '/status', '/infer', '/synthesize', '/request-trace'}:
             import ipaddress
             if not peer or ipaddress.ip_address(peer) not in ipaddress.ip_network('172.30.32.0/23'):
                 raise web.HTTPForbidden()
         if request.path in {'/infer', '/synthesize', '/request-trace'} and (request.headers.get('Origin') or request.headers.get('X-Arandu-Lab') != '1'):
             raise web.HTTPForbidden()
-        if request.method != 'GET' and request.path not in {'/infer', '/synthesize', '/request-trace'} and not stt_internal and request.headers.get('X-Arandu-CSRF') != csrf:
+        if request.method != 'GET' and request.path not in {'/infer', '/synthesize', '/request-trace'} and not module_internal and request.headers.get('X-Arandu-CSRF') != csrf:
             raise web.HTTPForbidden()
         try:
             response = await handler(request)
@@ -199,7 +199,7 @@ def create_app(data_dir, local=False):
             raise ValueError('Módulo de inferência inválido')
         port = 11557 if key == 'decision' else 11558
         url = 'http://127.0.0.1:' + str(port) + path
-        async with ClientSession(timeout=ClientTimeout(total=185), trust_env=False) as session:
+        async with ClientSession(timeout=ClientTimeout(total=360 if payload and payload.get('action')=='install' else 185), trust_env=False) as session:
             async with session.request('GET' if payload is None else 'POST', url, json=payload,
                     headers={'X-Arandu-Lab': '1'}, allow_redirects=False) as response:
                 raw = await read_limited(response.content, 2_097_152)
@@ -239,7 +239,8 @@ def create_app(data_dir, local=False):
         async def one(key, model):
             try:
                 result = await model_request(key, '/status')
-                return result['models'][0]
+                rows=result['models']
+                return next((row for row in rows if row.get('selected')),rows[0])
             except Exception:
                 return {'id': model, 'name': MODULES[key][1], 'kind': key, 'installed': None,
                         'available': False, 'reason': 'Módulo ausente, parado ou inacessível'}
@@ -252,9 +253,9 @@ def create_app(data_dir, local=False):
         if action == 'unload':
             results = await asyncio.gather(*(model_request(k, '/infer', {'action': 'unload'}) for k in ('decision', 'llm')), return_exceptions=True)
             return web.json_response({'unloaded': [k for k, r in zip(('decision', 'llm'), results) if not isinstance(r, Exception)]})
-        if action == 'llm':
-            if payload.get('llm_model', 'tucano') != 'tucano':
-                raise ValueError('Este módulo LLM usa Tucano; outros modelos pertencem ao Lab experimental no PC')
+        if action in {'llm','llm_compare'}:
+            if payload.get('llm_model',manager.config['llm']['llm_model']) not in {'tucano','qwen3'}:
+                raise ValueError('Modelo LLM desconhecido')
             key = 'llm'
         else:
             if payload.get('model', 'e5-small') != 'e5-small':
@@ -262,9 +263,56 @@ def create_app(data_dir, local=False):
             key = 'decision'
         policy = json.dumps(manager.config[key], sort_keys=True)
         result = await model_request(key, '/infer', payload)
-        if key == 'decision' and policy != json.dumps(manager.config[key], sort_keys=True):
-            raise ValueError('Política Decision mudou durante inferência; resultado descartado')
+        if policy != json.dumps(manager.config[key], sort_keys=True):
+            raise ValueError('Política de inferência mudou durante a solicitação; resultado descartado')
         return web.json_response(result)
+    async def llm_control(request):
+        action=request.match_info['action']
+        if action=='models':
+            try:result=await model_request('llm','/status')
+            except Exception:
+                result={'models':[{'id':k,'name':name,'installed':None,'available':False,'loaded':False,
+                    'reason':'Serviço parado ou indisponível; instalação explícita inicia o módulo.'} for k,name in
+                    [('tucano','Tucano 2 0.5B Q4_K_M'),('qwen3','Qwen3 0.6B Q8_0 experimental')]]}
+            return web.json_response({**result,'profiles':manager.llm_profiles,'configured_model':manager.config['llm']['llm_model']})
+        if action not in {'install','apply'}:raise ValueError('Ação LLM inválida')
+        if request.method!='POST':raise web.HTTPMethodNotAllowed(request.method,['POST'])
+        body=await request.json()
+        if type(body) is not dict:raise ValueError('Objeto JSON obrigatório')
+        model=body.get('model')
+        if model not in {'tucano','qwen3'}:raise ValueError('Modelo LLM inválido')
+        if action=='apply' and body.get('confirm') is not True:raise ValueError('Confirmação explícita necessária')
+        if type(body.get('options',{})) is not dict:raise ValueError('Opções devem ser objeto JSON')
+        from modules import validate_options
+        if lock.locked():return web.json_response({'error':'Controle ocupado; aguarde'},status=429)
+        async with lock:
+            if action=='install':
+                await manager.start('llm')
+                return web.json_response(await model_request('llm','/infer',{'action':'install','llm_model':model}))
+            if (await manager.status('llm'))['state']!='started':raise ValueError('Ative ou instale o módulo LLM antes de aplicar um modelo')
+            old=dict(manager.config['llm'])
+            old_profiles=json.loads(json.dumps(manager.llm_profiles))
+            saved_profile=manager.llm_profiles.get(model,{}) if model!=old['llm_model'] else {}
+            candidate=validate_options('llm',{**old,**saved_profile,
+                **({'contract_version':2} if model=='qwen3' else {}),**body.get('options',{}),'llm_model':model},manager.data)
+            if candidate['enabled']!=old['enabled']:raise ValueError('Use Ativar/Desativar para mudar enabled')
+            if candidate['contract_version']==1 and model!='tucano':raise ValueError('Contrato legado exige Tucano')
+            generation={k:candidate[k] for k in ('threads','context_size','max_tokens','temperature')}
+            try:
+                result=await model_request('llm','/infer',{'action':'apply','llm_model':model,'generation':generation,'contract_version':candidate['contract_version']})
+                if result.get('loaded') is not True or result.get('model')!=model or result.get('integrity_verified') is not True:
+                    raise ValueError('O serviço não confirmou carga, identidade e integridade do modelo solicitado')
+                await manager.configure('llm',candidate)
+                return web.json_response({**result,'applied':True})
+            except BaseException:
+                manager.config['llm']=old
+                manager.llm_profiles=old_profiles
+                try:
+                    await model_request('llm','/infer',{'action':'apply','llm_model':old['llm_model'],
+                        'generation':{k:old[k] for k in ('threads','context_size','max_tokens','temperature')},'contract_version':old['contract_version']})
+                    manager.save()
+                except Exception:LOGGER.exception('Falha ao restaurar configuração LLM')
+                raise
     async def stt_models(request):
         return web.json_response(await stt_lab.models(request.query.get('variant')))
     async def stt_action(request):
@@ -310,6 +358,8 @@ def create_app(data_dir, local=False):
     app.router.add_post('/api/stt/{action}', stt_action)
     app.router.add_get('/api/logs', logs)
     app.router.add_post('/api/modules/{key}/{action}', control)
+    app.router.add_get('/api/llm/{action}',llm_control)
+    app.router.add_post('/api/llm/{action}',llm_control)
     app.router.add_post('/api/phrases', save_phrases)
     app.router.add_get('/runtime', runtime)
     app.router.add_post('/request-trace', receive_trace)

@@ -1,7 +1,7 @@
 name: Arandu Assistant
 slug: arandu_stack
-version: "6.0.0"
-description: Assist local PT-BR com Decision 2.0, análise estruturada e laboratório comparativo
+version: "7.0.0"
+description: Assist local PT-BR com Decision 2.0, LLM 2.0 tipado, modelos locais e AI Lab nativo
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
 startup: application

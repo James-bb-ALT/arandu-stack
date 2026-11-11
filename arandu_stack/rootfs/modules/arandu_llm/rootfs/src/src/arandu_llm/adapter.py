@@ -172,6 +172,7 @@ class Llama:
         self.root, self.executable, self.threads = root, executable, threads
         self.process = None
         self.port = None
+        self.active_model = None
         self.phase = "loading"
         self.settings = {'context_size': 4096, 'temperature': 0.0, 'max_tokens': 192, **(settings or {})}
 
@@ -181,8 +182,25 @@ class Llama:
             await self.process.wait()
         self.process = None
         self.port = None
+        self.active_model = None
 
     async def infer(self, payload, catalog):
+        version=payload.get('contract_version',self.settings.get('contract_version',1))
+        if version not in (1,2) or type(version) is not int:
+            raise ValueError('Contrato LLM desconhecido')
+        if version==2:
+            from .structured import infer
+            try:return await infer(self,payload,catalog)
+            except LlmOutputError:raise
+            except BaseException:
+                if self.phase=='inference':await self.unload()
+                raise
+        if self.active_model not in (None,'tucano'):
+            await self.unload()
+        self.active_model='tucano'
+        return await self.infer_legacy(payload,catalog)
+
+    async def infer_legacy(self, payload, catalog):
         refusal = semantic_refusal(payload['text'], catalog)
         if not refusal and not clearly_conversational(payload['text'], catalog) and not hypothesis_allowed(payload['text'], catalog):
             refusal = 'semantic_compound'
@@ -269,7 +287,12 @@ class Llama:
                     row = resolve_device(payload["text"], catalog, payload.get("context"), ids, action=result["intent"])
                     result = {**result, "requires_clarification": True,
                               "clarification_question": confirmation_question(result["intent"], row, catalog)}
-                return {"proposal": result, "response_text": reply, "confirmation_required": confirmation, "load_ms": load_ms, "inference_ms": (time.perf_counter() - before) * 1000, "model": key, "cpu_ms": cpu_ms, "memory_bytes": memory}
+                duration=(time.perf_counter()-before)*1000
+                usage=output.get('usage') or {};generated=usage.get('completion_tokens')
+                return {"proposal": result, "response_text": reply, "confirmation_required": confirmation, "load_ms": load_ms, "inference_ms": duration, "model": key, "cpu_ms": cpu_ms, "memory_bytes": memory,
+                    'generated_tokens':generated,'prompt_tokens':usage.get('prompt_tokens'),
+                    'tokens_per_second':generated/(duration/1000) if type(generated) is int and duration>0 else None,
+                    'first_token_ms':None,'cpu_measurement':'legacy_process_lifetime'}
         except LlmOutputError:
             # Invalid/incomplete text does not mean the loaded server is unhealthy.
             # Keep one server resident; proposals remain rejected without retries.

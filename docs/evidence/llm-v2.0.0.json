@@ -1,0 +1,2263 @@
+{
+  "representative": false,
+  "provenance": "Approved Phase 3 examples / FIXTURE_TECNICA",
+  "hardware": "Ryzen 7 5700X / Docker Linux, not i5-6500T",
+  "threads": 2,
+  "source_overrides": false,
+  "ha_actions": 0,
+  "baseline": "LLM 1.0.1 frozen legacy path after Phase 2, not original 1.0.0 binary",
+  "runs": {
+    "tucano-v1": {
+      "samples": 37,
+      "correct": 12,
+      "false_activations": 0,
+      "errors": 0,
+      "wall_latency": {
+        "p50_ms": 1696.6617080000788,
+        "p95_ms": 2515.7043220000332,
+        "p99_ms": 10304.061426999964
+      },
+      "warm_generation_samples": 28,
+      "warm_generation_latency": {
+        "p50_ms": 1847.7870820000817,
+        "p95_ms": 2513.8942990000714,
+        "p99_ms": 3869.689745999949
+      },
+      "peak_rss_bytes": 1289621504,
+      "quality": {
+        "intent": {
+          "correct": 0,
+          "total": 25
+        },
+        "entity": {
+          "correct": 0,
+          "total": 25
+        },
+        "parameters": {
+          "correct": 0,
+          "total": 25
+        },
+        "correct_abstention": {
+          "correct": 10,
+          "total": 10
+        },
+        "llm_generated_requests": 29,
+        "early_refusals": 8,
+        "confirmations": 0,
+        "generated_responses_accepted": 29
+      },
+      "first_token_ms_median": null,
+      "tokens_per_second_median": 39.73762721451918,
+      "cpu_ms_median": 58890.0,
+      "load_ms_median": 0,
+      "cold_load_ms": 6781.915464999997,
+      "cpu_measurement": "legacy_process_lifetime",
+      "rss_measurement": "llama-server process RSS sampled after each request; maximum observed, not system peak",
+      "generated_json_validation": "All generated responses parsed and accepted by their contract; early refusals do not generate JSON.",
+      "cases": [
+        {
+          "text": "Coloca a luz da sala em 40%",
+          "expected": [
+            {
+              "action": "brightness",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 40
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 10304.061426999964
+        },
+        {
+          "text": "Deixa o ar em 23 graus",
+          "expected": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 23
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 2062.2168329999795
+        },
+        {
+          "text": "Liga a televisão",
+          "expected": [
+            {
+              "action": "turn_on",
+              "entity_id": "switch.tv",
+              "parameters": {}
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1561.9919170000003
+        },
+        {
+          "text": "Aumenta a iluminação em 10%",
+          "expected": [
+            {
+              "action": "brightness",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 10,
+                "relative": 1
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1626.010787000041
+        },
+        {
+          "text": "Abre a persiana até a metade",
+          "expected": [
+            {
+              "action": "position",
+              "entity_id": "cover.sala",
+              "parameters": {
+                "value": 50
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 2435.7631370000945
+        },
+        {
+          "text": "Coloca a iluminação azul",
+          "expected": [
+            {
+              "action": "color",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": "azul"
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1829.9798189999592
+        },
+        {
+          "text": "Coloca o ventilador em 50%",
+          "expected": [
+            {
+              "action": "percentage",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": 50
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1869.8940180000818
+        },
+        {
+          "text": "Liga a TV e apaga a luz da sala",
+          "expected": [
+            {
+              "action": "turn_on",
+              "entity_id": "switch.tv",
+              "parameters": {}
+            },
+            {
+              "action": "turn_off",
+              "entity_id": "light.sala",
+              "parameters": {}
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.5805179999924803
+        },
+        {
+          "text": "Coloca o ar em 23 graus e liga o ventilador",
+          "expected": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 23
+              }
+            },
+            {
+              "action": "turn_on",
+              "entity_id": "fan.sala",
+              "parameters": {}
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.4930489999424026
+        },
+        {
+          "text": "Apaga a luz da sala e da cozinha",
+          "expected": [
+            {
+              "action": "turn_off",
+              "entity_id": "light.sala",
+              "parameters": {}
+            },
+            {
+              "action": "turn_off",
+              "entity_id": "light.cozinha",
+              "parameters": {}
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.3211880000435485
+        },
+        {
+          "text": "Pausa o som",
+          "expected": [
+            {
+              "action": "pause",
+              "entity_id": "media_player.sala",
+              "parameters": {}
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1830.420049000054
+        },
+        {
+          "text": "Inicia o aspirador",
+          "expected": [
+            {
+              "action": "vacuum_start",
+              "entity_id": "vacuum.casa",
+              "parameters": {}
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1634.3337480000173
+        },
+        {
+          "text": "Coloca o ar no modo frio",
+          "expected": [
+            {
+              "action": "hvac_mode",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": "cool"
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1849.4487310000522
+        },
+        {
+          "text": "Coloca o ar no modo ventilação alta",
+          "expected": [
+            {
+              "action": "fan_mode",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": "high"
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1619.0125570000191
+        },
+        {
+          "text": "Oscila o ventilador",
+          "expected": [
+            {
+              "action": "oscillate",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": true
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1512.262810999914
+        },
+        {
+          "text": "Coloca a direção do ventilador para frente",
+          "expected": [
+            {
+              "action": "direction",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": "forward"
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 2498.1240399999933
+        },
+        {
+          "text": "Coloca a luz em 3000 kelvin",
+          "expected": [
+            {
+              "action": "color_temperature",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 3000
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 2474.735563000081
+        },
+        {
+          "text": "Coloca o volume do som em 30%",
+          "expected": [
+            {
+              "action": "volume",
+              "entity_id": "media_player.sala",
+              "parameters": {
+                "value": 30
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1643.1403929999533
+        },
+        {
+          "text": "Avance a faixa do som",
+          "expected": [
+            {
+              "action": "next",
+              "entity_id": "media_player.sala",
+              "parameters": {}
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1832.569526000043
+        },
+        {
+          "text": "Manda o aspirador para a base",
+          "expected": [
+            {
+              "action": "vacuum_dock",
+              "entity_id": "vacuum.casa",
+              "parameters": {}
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1540.9758569999212
+        },
+        {
+          "text": "Ativa a cena noite",
+          "expected": [
+            {
+              "action": "activate",
+              "entity_id": "scene.noite",
+              "parameters": {}
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1937.09495600001
+        },
+        {
+          "text": "Ativa a automação noite",
+          "expected": [
+            {
+              "action": "automation_enable",
+              "entity_id": "automation.noite",
+              "parameters": {}
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1908.4637350000548
+        },
+        {
+          "text": "Qual a temperatura do quarto?",
+          "expected": [
+            {
+              "action": "query",
+              "entity_id": "sensor.quarto",
+              "parameters": {
+                "metric": "temperature"
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3871.573456999954
+        },
+        {
+          "text": "Aumenta mais dois",
+          "expected": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 2,
+                "relative": 1
+              }
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1598.0601269999397
+        },
+        {
+          "text": "Desliga o da cozinha",
+          "expected": [
+            {
+              "action": "turn_off",
+              "entity_id": "light.cozinha",
+              "parameters": {}
+            }
+          ],
+          "actual": [],
+          "correct": false,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1696.6617080000788
+        },
+        {
+          "text": "Diminui o ventilador um pouco",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 2270.0646089999736
+        },
+        {
+          "text": "Não liga nenhuma luz",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1.1357570000427586
+        },
+        {
+          "text": "Se estiver quente liga o ar",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.5540869999549614
+        },
+        {
+          "text": "Liga a TV ou o ventilador",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 2036.0267480000402
+        },
+        {
+          "text": "Desliga tudo menos a TV",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.6063969999559049
+        },
+        {
+          "text": "Abre o portão e desativa o alarme",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.45898300004409975
+        },
+        {
+          "text": "Coloca a luz em 140%",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1902.0780280000054
+        },
+        {
+          "text": "Liga o ventilador do banheiro",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 2515.7043220000332
+        },
+        {
+          "text": "Liga a TV então desliga a TV",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.7194650000883485
+        },
+        {
+          "text": "Coloca a iluminação em 40 watts",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1960.6737079999448
+        },
+        {
+          "text": "O que é uma lâmpada?",
+          "expected": "conversation",
+          "actual": "conversation",
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 886.4118670001062
+        },
+        {
+          "text": "Conta uma piada curta",
+          "expected": "conversation",
+          "actual": "conversation",
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 307.661625000037
+        }
+      ]
+    },
+    "tucano-v2": {
+      "samples": 37,
+      "correct": 37,
+      "false_activations": 0,
+      "errors": 0,
+      "wall_latency": {
+        "p50_ms": 3171.9381070000736,
+        "p95_ms": 5294.227054999965,
+        "p99_ms": 7322.011992999933
+      },
+      "warm_generation_samples": 26,
+      "warm_generation_latency": {
+        "p50_ms": 3205.7877260000396,
+        "p95_ms": 5292.276322000021,
+        "p99_ms": 5530.062222999959
+      },
+      "peak_rss_bytes": 1950490624,
+      "quality": {
+        "intent": {
+          "correct": 25,
+          "total": 25
+        },
+        "entity": {
+          "correct": 25,
+          "total": 25
+        },
+        "parameters": {
+          "correct": 25,
+          "total": 25
+        },
+        "correct_abstention": {
+          "correct": 10,
+          "total": 10
+        },
+        "llm_generated_requests": 27,
+        "early_refusals": 10,
+        "confirmations": 0,
+        "generated_responses_accepted": 27
+      },
+      "first_token_ms_median": 1239.4261510000888,
+      "tokens_per_second_median": 31.869198720288182,
+      "cpu_ms_median": 6260.000000000019,
+      "load_ms_median": 0.0,
+      "cold_load_ms": 4106.154969000045,
+      "cpu_measurement": "request_delta",
+      "rss_measurement": "llama-server process RSS sampled after each request; maximum observed, not system peak",
+      "generated_json_validation": "All generated responses parsed and accepted by their contract; early refusals do not generate JSON.",
+      "cases": [
+        {
+          "text": "Coloca a luz da sala em 40%",
+          "expected": [
+            {
+              "action": "brightness",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 40
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "brightness",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 40.0
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 7322.011992999933
+        },
+        {
+          "text": "Deixa o ar em 23 graus",
+          "expected": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 23
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 23.0
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3021.471951999956
+        },
+        {
+          "text": "Liga a televisão",
+          "expected": [
+            {
+              "action": "turn_on",
+              "entity_id": "switch.tv",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "turn_on",
+              "entity_id": "switch.tv",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 2669.681166999908
+        },
+        {
+          "text": "Aumenta a iluminação em 10%",
+          "expected": [
+            {
+              "action": "brightness",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 10,
+                "relative": 1
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "brightness",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 10.0,
+                "relative": 1
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3195.1261320000413
+        },
+        {
+          "text": "Abre a persiana até a metade",
+          "expected": [
+            {
+              "action": "position",
+              "entity_id": "cover.sala",
+              "parameters": {
+                "value": 50
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "position",
+              "entity_id": "cover.sala",
+              "parameters": {
+                "value": 50
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 2835.73231999992
+        },
+        {
+          "text": "Coloca a iluminação azul",
+          "expected": [
+            {
+              "action": "color",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": "azul"
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "color",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": "azul"
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 2916.025019000017
+        },
+        {
+          "text": "Coloca o ventilador em 50%",
+          "expected": [
+            {
+              "action": "percentage",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": 50
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "percentage",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": 50.0
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3171.9381070000736
+        },
+        {
+          "text": "Liga a TV e apaga a luz da sala",
+          "expected": [
+            {
+              "action": "turn_on",
+              "entity_id": "switch.tv",
+              "parameters": {}
+            },
+            {
+              "action": "turn_off",
+              "entity_id": "light.sala",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "turn_on",
+              "entity_id": "switch.tv",
+              "parameters": {}
+            },
+            {
+              "action": "turn_off",
+              "entity_id": "light.sala",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4171.631752000053
+        },
+        {
+          "text": "Coloca o ar em 23 graus e liga o ventilador",
+          "expected": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 23
+              }
+            },
+            {
+              "action": "turn_on",
+              "entity_id": "fan.sala",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 23.0
+              }
+            },
+            {
+              "action": "turn_on",
+              "entity_id": "fan.sala",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 5294.227054999965
+        },
+        {
+          "text": "Apaga a luz da sala e da cozinha",
+          "expected": [
+            {
+              "action": "turn_off",
+              "entity_id": "light.sala",
+              "parameters": {}
+            },
+            {
+              "action": "turn_off",
+              "entity_id": "light.cozinha",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "turn_off",
+              "entity_id": "light.sala",
+              "parameters": {}
+            },
+            {
+              "action": "turn_off",
+              "entity_id": "light.cozinha",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 5531.9812840000395
+        },
+        {
+          "text": "Pausa o som",
+          "expected": [
+            {
+              "action": "pause",
+              "entity_id": "media_player.sala",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "pause",
+              "entity_id": "media_player.sala",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3193.338198000106
+        },
+        {
+          "text": "Inicia o aspirador",
+          "expected": [
+            {
+              "action": "vacuum_start",
+              "entity_id": "vacuum.casa",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "vacuum_start",
+              "entity_id": "vacuum.casa",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3202.333805999956
+        },
+        {
+          "text": "Coloca o ar no modo frio",
+          "expected": [
+            {
+              "action": "hvac_mode",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": "cool"
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "hvac_mode",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": "cool"
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3534.0269170000056
+        },
+        {
+          "text": "Coloca o ar no modo ventilação alta",
+          "expected": [
+            {
+              "action": "fan_mode",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": "high"
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "fan_mode",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": "high"
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3378.791245000002
+        },
+        {
+          "text": "Oscila o ventilador",
+          "expected": [
+            {
+              "action": "oscillate",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": true
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "oscillate",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": true
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3280.8886779999966
+        },
+        {
+          "text": "Coloca a direção do ventilador para frente",
+          "expected": [
+            {
+              "action": "direction",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": "forward"
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "direction",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": "forward"
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3278.8371000000325
+        },
+        {
+          "text": "Coloca a luz em 3000 kelvin",
+          "expected": [
+            {
+              "action": "color_temperature",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 3000
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "color_temperature",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 3000.0
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3247.626288000106
+        },
+        {
+          "text": "Coloca o volume do som em 30%",
+          "expected": [
+            {
+              "action": "volume",
+              "entity_id": "media_player.sala",
+              "parameters": {
+                "value": 30
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "volume",
+              "entity_id": "media_player.sala",
+              "parameters": {
+                "value": 30.0
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3391.724839999938
+        },
+        {
+          "text": "Avance a faixa do som",
+          "expected": [
+            {
+              "action": "next",
+              "entity_id": "media_player.sala",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "next",
+              "entity_id": "media_player.sala",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 2971.238506000077
+        },
+        {
+          "text": "Manda o aspirador para a base",
+          "expected": [
+            {
+              "action": "vacuum_dock",
+              "entity_id": "vacuum.casa",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "vacuum_dock",
+              "entity_id": "vacuum.casa",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3268.204540000056
+        },
+        {
+          "text": "Ativa a cena noite",
+          "expected": [
+            {
+              "action": "activate",
+              "entity_id": "scene.noite",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "activate",
+              "entity_id": "scene.noite",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3323.8280519999535
+        },
+        {
+          "text": "Ativa a automação noite",
+          "expected": [
+            {
+              "action": "automation_enable",
+              "entity_id": "automation.noite",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "automation_enable",
+              "entity_id": "automation.noite",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 2966.577597999958
+        },
+        {
+          "text": "Qual a temperatura do quarto?",
+          "expected": [
+            {
+              "action": "query",
+              "entity_id": "sensor.quarto",
+              "parameters": {
+                "metric": "temperature"
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "query",
+              "entity_id": "sensor.quarto",
+              "parameters": {
+                "metric": "temperature"
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3207.5531289999617
+        },
+        {
+          "text": "Aumenta mais dois",
+          "expected": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 2,
+                "relative": 1
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 2,
+                "relative": 1
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3385.5372379999835
+        },
+        {
+          "text": "Desliga o da cozinha",
+          "expected": [
+            {
+              "action": "turn_off",
+              "entity_id": "light.cozinha",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "turn_off",
+              "entity_id": "light.cozinha",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3221.6223679999985
+        },
+        {
+          "text": "Diminui o ventilador um pouco",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.33800999995037273
+        },
+        {
+          "text": "Não liga nenhuma luz",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.24594199999228294
+        },
+        {
+          "text": "Se estiver quente liga o ar",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.21825900000749243
+        },
+        {
+          "text": "Liga a TV ou o ventilador",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.18050699998184427
+        },
+        {
+          "text": "Desliga tudo menos a TV",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.2767619999985982
+        },
+        {
+          "text": "Abre o portão e desativa o alarme",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.4271919999609963
+        },
+        {
+          "text": "Coloca a luz em 140%",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.23049300000366202
+        },
+        {
+          "text": "Liga o ventilador do banheiro",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.8660539999709727
+        },
+        {
+          "text": "Liga a TV então desliga a TV",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.15801400002146693
+        },
+        {
+          "text": "Coloca a iluminação em 40 watts",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.2898870000080933
+        },
+        {
+          "text": "O que é uma lâmpada?",
+          "expected": "conversation",
+          "actual": "conversation",
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 786.929095000005
+        },
+        {
+          "text": "Conta uma piada curta",
+          "expected": "conversation",
+          "actual": "conversation",
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 643.9968739999813
+        }
+      ]
+    },
+    "qwen3-v2": {
+      "samples": 37,
+      "correct": 37,
+      "false_activations": 0,
+      "errors": 0,
+      "wall_latency": {
+        "p50_ms": 3985.6984630000625,
+        "p95_ms": 5598.06937999997,
+        "p99_ms": 17551.638134000088
+      },
+      "warm_generation_samples": 26,
+      "warm_generation_latency": {
+        "p50_ms": 4172.747102000017,
+        "p95_ms": 5596.224943000038,
+        "p99_ms": 5800.383607999947
+      },
+      "peak_rss_bytes": 2077360128,
+      "quality": {
+        "intent": {
+          "correct": 25,
+          "total": 25
+        },
+        "entity": {
+          "correct": 25,
+          "total": 25
+        },
+        "parameters": {
+          "correct": 25,
+          "total": 25
+        },
+        "correct_abstention": {
+          "correct": 10,
+          "total": 10
+        },
+        "llm_generated_requests": 27,
+        "early_refusals": 10,
+        "confirmations": 0,
+        "generated_responses_accepted": 27
+      },
+      "first_token_ms_median": 1571.5242850000095,
+      "tokens_per_second_median": 21.0434264864466,
+      "cpu_ms_median": 8060.000000000016,
+      "load_ms_median": 0.0,
+      "cold_load_ms": 13158.800001000032,
+      "cpu_measurement": "request_delta",
+      "rss_measurement": "llama-server process RSS sampled after each request; maximum observed, not system peak",
+      "generated_json_validation": "All generated responses parsed and accepted by their contract; early refusals do not generate JSON.",
+      "cases": [
+        {
+          "text": "Coloca a luz da sala em 40%",
+          "expected": [
+            {
+              "action": "brightness",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 40
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "brightness",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 40.0
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 17551.638134000088
+        },
+        {
+          "text": "Deixa o ar em 23 graus",
+          "expected": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 23
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 23.0
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4799.013777000027
+        },
+        {
+          "text": "Liga a televisão",
+          "expected": [
+            {
+              "action": "turn_on",
+              "entity_id": "switch.tv",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "turn_on",
+              "entity_id": "switch.tv",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3878.619771999979
+        },
+        {
+          "text": "Aumenta a iluminação em 10%",
+          "expected": [
+            {
+              "action": "brightness",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 10,
+                "relative": 1
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "brightness",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 10.0,
+                "relative": 1
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4554.561137000064
+        },
+        {
+          "text": "Abre a persiana até a metade",
+          "expected": [
+            {
+              "action": "position",
+              "entity_id": "cover.sala",
+              "parameters": {
+                "value": 50
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "position",
+              "entity_id": "cover.sala",
+              "parameters": {
+                "value": 50
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4110.125584999992
+        },
+        {
+          "text": "Coloca a iluminação azul",
+          "expected": [
+            {
+              "action": "color",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": "azul"
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "color",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": "azul"
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4407.643819999976
+        },
+        {
+          "text": "Coloca o ventilador em 50%",
+          "expected": [
+            {
+              "action": "percentage",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": 50
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "percentage",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": 50.0
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4341.79584900005
+        },
+        {
+          "text": "Liga a TV e apaga a luz da sala",
+          "expected": [
+            {
+              "action": "turn_on",
+              "entity_id": "switch.tv",
+              "parameters": {}
+            },
+            {
+              "action": "turn_off",
+              "entity_id": "light.sala",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "turn_on",
+              "entity_id": "switch.tv",
+              "parameters": {}
+            },
+            {
+              "action": "turn_off",
+              "entity_id": "light.sala",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 5242.016893999903
+        },
+        {
+          "text": "Coloca o ar em 23 graus e liga o ventilador",
+          "expected": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 23
+              }
+            },
+            {
+              "action": "turn_on",
+              "entity_id": "fan.sala",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 23.0
+              }
+            },
+            {
+              "action": "turn_on",
+              "entity_id": "fan.sala",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 5802.299429000072
+        },
+        {
+          "text": "Apaga a luz da sala e da cozinha",
+          "expected": [
+            {
+              "action": "turn_off",
+              "entity_id": "light.sala",
+              "parameters": {}
+            },
+            {
+              "action": "turn_off",
+              "entity_id": "light.cozinha",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "turn_off",
+              "entity_id": "light.sala",
+              "parameters": {}
+            },
+            {
+              "action": "turn_off",
+              "entity_id": "light.cozinha",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 5598.06937999997
+        },
+        {
+          "text": "Pausa o som",
+          "expected": [
+            {
+              "action": "pause",
+              "entity_id": "media_player.sala",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "pause",
+              "entity_id": "media_player.sala",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3988.041998999961
+        },
+        {
+          "text": "Inicia o aspirador",
+          "expected": [
+            {
+              "action": "vacuum_start",
+              "entity_id": "vacuum.casa",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "vacuum_start",
+              "entity_id": "vacuum.casa",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3926.8806720000384
+        },
+        {
+          "text": "Coloca o ar no modo frio",
+          "expected": [
+            {
+              "action": "hvac_mode",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": "cool"
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "hvac_mode",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": "cool"
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4141.08426100006
+        },
+        {
+          "text": "Coloca o ar no modo ventilação alta",
+          "expected": [
+            {
+              "action": "fan_mode",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": "high"
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "fan_mode",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": "high"
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4174.334208999994
+        },
+        {
+          "text": "Oscila o ventilador",
+          "expected": [
+            {
+              "action": "oscillate",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": true
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "oscillate",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": true
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3985.6984630000625
+        },
+        {
+          "text": "Coloca a direção do ventilador para frente",
+          "expected": [
+            {
+              "action": "direction",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": "forward"
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "direction",
+              "entity_id": "fan.sala",
+              "parameters": {
+                "value": "forward"
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4307.886460999953
+        },
+        {
+          "text": "Coloca a luz em 3000 kelvin",
+          "expected": [
+            {
+              "action": "color_temperature",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 3000
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "color_temperature",
+              "entity_id": "light.sala",
+              "parameters": {
+                "value": 3000.0
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4544.852411000079
+        },
+        {
+          "text": "Coloca o volume do som em 30%",
+          "expected": [
+            {
+              "action": "volume",
+              "entity_id": "media_player.sala",
+              "parameters": {
+                "value": 30
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "volume",
+              "entity_id": "media_player.sala",
+              "parameters": {
+                "value": 30.0
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4244.835676999969
+        },
+        {
+          "text": "Avance a faixa do som",
+          "expected": [
+            {
+              "action": "next",
+              "entity_id": "media_player.sala",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "next",
+              "entity_id": "media_player.sala",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3779.266739000036
+        },
+        {
+          "text": "Manda o aspirador para a base",
+          "expected": [
+            {
+              "action": "vacuum_dock",
+              "entity_id": "vacuum.casa",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "vacuum_dock",
+              "entity_id": "vacuum.casa",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3949.509110000008
+        },
+        {
+          "text": "Ativa a cena noite",
+          "expected": [
+            {
+              "action": "activate",
+              "entity_id": "scene.noite",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "activate",
+              "entity_id": "scene.noite",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3803.1982439999865
+        },
+        {
+          "text": "Ativa a automação noite",
+          "expected": [
+            {
+              "action": "automation_enable",
+              "entity_id": "automation.noite",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "automation_enable",
+              "entity_id": "automation.noite",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 3768.944359000102
+        },
+        {
+          "text": "Qual a temperatura do quarto?",
+          "expected": [
+            {
+              "action": "query",
+              "entity_id": "sensor.quarto",
+              "parameters": {
+                "metric": "temperature"
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "query",
+              "entity_id": "sensor.quarto",
+              "parameters": {
+                "metric": "temperature"
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4201.770044
+        },
+        {
+          "text": "Aumenta mais dois",
+          "expected": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 2,
+                "relative": 1
+              }
+            }
+          ],
+          "actual": [
+            {
+              "action": "temperature",
+              "entity_id": "climate.sala",
+              "parameters": {
+                "value": 2,
+                "relative": 1
+              }
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4591.477689000044
+        },
+        {
+          "text": "Desliga o da cozinha",
+          "expected": [
+            {
+              "action": "turn_off",
+              "entity_id": "light.cozinha",
+              "parameters": {}
+            }
+          ],
+          "actual": [
+            {
+              "action": "turn_off",
+              "entity_id": "light.cozinha",
+              "parameters": {}
+            }
+          ],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 4240.547762000006
+        },
+        {
+          "text": "Diminui o ventilador um pouco",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.27133200001117075
+        },
+        {
+          "text": "Não liga nenhuma luz",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.20152799993411463
+        },
+        {
+          "text": "Se estiver quente liga o ar",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.18854300003567914
+        },
+        {
+          "text": "Liga a TV ou o ventilador",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.110291999931178
+        },
+        {
+          "text": "Desliga tudo menos a TV",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.1646870000513445
+        },
+        {
+          "text": "Abre o portão e desativa o alarme",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.35316999992573983
+        },
+        {
+          "text": "Coloca a luz em 140%",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.20379199997933028
+        },
+        {
+          "text": "Liga o ventilador do banheiro",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.42514800009030296
+        },
+        {
+          "text": "Liga a TV então desliga a TV",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.11406900000565656
+        },
+        {
+          "text": "Coloca a iluminação em 40 watts",
+          "expected": [],
+          "actual": [],
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 0.20083699996575888
+        },
+        {
+          "text": "O que é uma lâmpada?",
+          "expected": "conversation",
+          "actual": "conversation",
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1101.962286999992
+        },
+        {
+          "text": "Conta uma piada curta",
+          "expected": "conversation",
+          "actual": "conversation",
+          "correct": true,
+          "false_activation": false,
+          "error": null,
+          "wall_ms": 1472.8456719999485
+        }
+      ]
+    }
+  },
+  "validation": {
+    "pytest": {
+      "passed": 269,
+      "skipped": 3,
+      "subtests_passed": 200,
+      "warnings": 6
+    },
+    "javascript": {
+      "passed": 13
+    },
+    "rust_available_suites": {
+      "passed": 88
+    },
+    "docker_image": "arandu-assistant:7.0.0",
+    "image_id": "sha256:0d5062a0379f85a256d615cc5107063dcf189accf698764d603f6f8021ba9ec7",
+    "gateway": {
+      "app_version": "7.0.0",
+      "physical_ha": false,
+      "actions": 0,
+      "source_overrides": false,
+      "tucano_verified": true,
+      "qwen3_verified_and_inferred": true,
+      "resident_reuse": true,
+      "concurrency_statuses": [
+        200,
+        502,
+        502,
+        502,
+        502,
+        502
+      ],
+      "truncation_rejected": true,
+      "legacy_negotiation": true,
+      "final_model": "tucano"
+    },
+    "rollback_missing_model": {
+      "app_version": "7.0.0",
+      "physical_ha": false,
+      "actions": 0,
+      "source_overrides": false,
+      "tucano_verified": true,
+      "missing_model_rollback": true,
+      "resident_reuse": true,
+      "concurrency_statuses": [
+        200,
+        502,
+        502,
+        502,
+        502,
+        502
+      ],
+      "truncation_rejected": true,
+      "legacy_negotiation": true,
+      "final_model": "tucano"
+    },
+    "real_cascade": {
+      "representative": false,
+      "rows": [
+        {
+          "contract": 1,
+          "relative_result": "no_match",
+          "relative_wall_ms": 3767.6393000001553,
+          "trace": {
+            "decision": {
+              "status": "rejected",
+              "latency_ms": 10.483299993211403
+            },
+            "llm": {
+              "status": "clarification",
+              "latency_ms": 3747.761599996011
+            }
+          },
+          "simulated_calls": 1,
+          "physical_actions": 0
+        },
+        {
+          "contract": 2,
+          "relative_result": "success",
+          "relative_wall_ms": 3616.007000004174,
+          "trace": {
+            "decision": {
+              "status": "rejected",
+              "latency_ms": 10.678899998310953
+            },
+            "llm": {
+              "status": "proposed",
+              "question": null,
+              "contract_version": 2,
+              "latency_ms": 3598.270600006799
+            }
+          },
+          "simulated_calls": 2,
+          "physical_actions": 0
+        }
+      ]
+    },
+    "restart": {
+      "persisted_model": "tucano",
+      "contract_version": 2,
+      "max_tokens": 384,
+      "active_model_before_first_infer": null
+    },
+    "physical_ha_probe": {
+      "http_status": 403,
+      "authenticated_validation": false
+    },
+    "hacs_zip": {
+      "files": 51,
+      "bytes": 433364,
+      "sha256": "585ba3abd4266f4744ed226fa6efcf684505acbe4bfea7a4c6309ed42565c83e"
+    },
+    "release_image_id": "sha256:63e0e53319faa27446c4fdb34e95eef548edaa7d760603f08ece05b4988de06d",
+    "release_image_note": "Rebuilt after correcting only generation-limit UI help. LLM source hashes unchanged from real benchmark.",
+    "final_control_tests": {
+      "passed": 18,
+      "warnings": 2
+    }
+  }
+}

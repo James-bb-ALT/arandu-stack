@@ -12,7 +12,9 @@ O STT oferece oito modelos: FastConformer, Whisper Tiny/Base/Small, Parakeet pt-
 
 Decision 2.0: [algoritmo, validação A/B e limites](docs/DECISION-v2.0.0.md).
 
-**Atual: app 6.0.0 / HACS 7.0.0 / STT 4.0.1 / NLU 0.6.3 / Decision 2.0.0 / LLM 1.0.1 / TTS 0.2.1.**
+LLM 2.0: [planos tipados, modelos, comparação real e limites](docs/LLM-v2.0.0.md).
+
+**Atual: app 7.0.0 / HACS 8.0.0 / STT 4.0.1 / NLU 0.6.3 / Decision 2.0.0 / LLM 2.0.0 / TTS 0.2.1.**
 
 HACS 3.0.1: pedidos não compreendidos em origens ReSpeaker recebem apenas
 “Não entendi.” e encerram o diálogo. Identificação pelo dispositivo registrado
@@ -236,7 +238,7 @@ a usar esse mesmo hostname nas entradas Wyoming.
 
 ## Desenvolvimento e validação
 
-Versão experimental **6.0.0**, integração HACS **7.0.0**, para HA OS/Supervised amd64.
+Versão experimental **7.0.0**, integração HACS **8.0.0**, para HA OS/Supervised amd64.
 O código dos motores fica em `arandu_stack/rootfs/modules/`; essa pasta é interna
 ao app e não cria apps adicionais na loja. A integração HA fica em
 `custom_components/local_nlu/`.

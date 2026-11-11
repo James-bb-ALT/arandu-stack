@@ -1,4 +1,6 @@
-# Camadas de inteligência — app 6.0.0 / HACS 7.0.0
+# Camadas de inteligência — app 7.0.0 / HACS 8.0.0
+
+LLM 2.0 usa contrato v2, evidência determinística independente e o executor HA existente para parâmetros e compostos seguros. Tucano Q4_K_M continua padrão; Qwen3 0.6B Q8_0 é experimental. Instalação individual pinada por revisão/tamanho/SHA-256, troca com verificação/rollback, perfis por modelo e negociação v1/v2. O AI Lab compara sem executar e exporta métricas sem identificadores residenciais. Guia atual: [LLM 2.0](../docs/LLM-v2.0.0.md). As notas versionadas abaixo preservam os contratos históricos; expansões v2 seguem o guia atual.
 
 A Fase 1 aplica restrições semânticas ao NLU, aos serviços isolados, à
 elegibilidade de fallback e ao executor HA. Negação, exclusão e condição não

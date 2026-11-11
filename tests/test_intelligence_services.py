@@ -38,6 +38,7 @@ class LlmHttp(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as directory, patch('arandu_llm.service.Llama') as cls:
             cls.return_value.infer=AsyncMock(side_effect=LlmOutputError('llm_output_truncated','Limite de geração atingido; nenhuma ação autorizada.'))
             cls.return_value.unload=AsyncMock()
+            cls.return_value.settings={}
             client=TestClient(TestServer(create_app(Path(directory))))
             await client.start_server()
             try:
@@ -60,6 +61,7 @@ class LlmHttp(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as directory, patch('arandu_llm.service.Llama') as cls:
             cls.return_value.infer=AsyncMock(side_effect=infer)
             cls.return_value.unload=AsyncMock()
+            cls.return_value.settings={}
             client=TestClient(TestServer(create_app(Path(directory))))
             await client.start_server()
             try:
@@ -280,6 +282,7 @@ class InferenceSerialization(unittest.IsolatedAsyncioTestCase):
                 patch('arandu_llm.service.Llama') as llama, patch('arandu_decision.service.Encoder') as encoder:
             llama.return_value.infer = AsyncMock(side_effect=llm_infer)
             llama.return_value.unload = AsyncMock()
+            llama.return_value.settings = {}
             encoder.return_value.infer.return_value = {'decision_status': 'uncalibrated'}
             clients = [TestClient(TestServer(create_app(Path(directory)))),
                        TestClient(TestServer(decision_app(Path(directory))))]

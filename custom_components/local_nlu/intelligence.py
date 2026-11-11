@@ -91,6 +91,19 @@ def accepted_decision(response, catalog, text=None, context=None):
     return proposal
 
 
+def typed_operations(response, text, snapshot, context=None):
+    """Rebuild an LLM v2 plan independently inside the HA trust boundary."""
+    from .automation_contract import validate
+    from .contextual_protocol import validate_parameters
+    if response.get('contract_version') != 2 or response.get('catalog_fingerprint') != digest(snapshot.payload):
+        raise ValueError('Contrato/catálogo LLM v2 incompatível')
+    plan=validate(response.get('plan'),text,snapshot.payload,context)
+    if plan['type']!='automation':return ()
+    by_entity={row['entity_id']:key for key,row in snapshot.by_id.items()}
+    return tuple(Operation('llm2.'+op['action'],op['action'],(by_entity[op['entity_id']],),
+        validate_parameters(op['parameters']),evidence=('llm_v2_grounded',)) for op in plan['operations'])
+
+
 def grounded_target(text, proposal, catalog, context=None):
     """Independent conservative entity evidence; model ranking alone is insufficient.
 
@@ -172,7 +185,7 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
             if source == "decision":
                 body.update(model="e5-small", config={"threshold": .8, "min_margin": .08})
             else:
-                body.update(llm_model="tucano", decision=llm_hint(decision), nlu=nlu or {})
+                body.update(decision=llm_hint(decision), nlu=nlu or {}, accept_contracts=[1,2])
             async with asyncio.timeout(TIMEOUT):
                 response = await request(body)
             reason = response.get('reason')
@@ -187,6 +200,11 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
                     trace['llm'] = {'status':'skipped','reason':'true_entity_ambiguity'}
                     return (), trace
             else:
+                if response.get('contract_version') == 2 and response.get('kind') in {'automation','clarification'}:
+                    proposed=typed_operations(response,text,snapshot,context) if response.get('kind')=='automation' else ()
+                    trace[source].update(status='proposed' if proposed else 'clarification',
+                        question=(response.get('plan') or {}).get('question'),contract_version=2)
+                    return proposed,trace
                 retrieval = response.get("retrieval") or decision or {}
                 allowed = {r["entity_id"] for r in retrieval.get("ranking", [])}
                 proposal = validate_proposal(response.get("proposal"), snapshot.payload, allowed)

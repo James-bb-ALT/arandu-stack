@@ -20,7 +20,7 @@ DEFAULTS = {
             'lexical_enabled': True, 'closed_vocabulary': True, 'generic_weight': 7,
             'home_assistant_weight': 10, 'inventory_refresh_seconds': 0},
     'decision': {'enabled': False, 'auto_download': False, 'threads': 2, 'threshold': .8, 'min_margin': .08, 'algorithm': 'structured-v3'},
-    'llm': {'enabled': False, 'auto_download': False, 'threads': 2, 'context_size': 4096, 'max_tokens': 192, 'temperature': 0.0},
+    'llm': {'enabled': False, 'auto_download': False, 'threads': 2, 'context_size': 4096, 'max_tokens': 384, 'temperature': 0.0, 'llm_model':'tucano', 'contract_version':2},
     'tts': {'enabled': False, 'voice': 'pt_BR-arandu-medium', 'auto_download': False, 'max_chars': 3000,
             'preload': True, 'cpu_threads': 2, 'pocket_enabled': False, 'pocket_preload': False,
             'pocket_threads': 2, 'pocket_fallback': False, 'fallback_voice': 'pt_BR-faber-medium',
@@ -48,6 +48,8 @@ def validate_options(key, options, data=Path('/data')):
         if name == 'trigger_level' and not 1 <= value <= 20:
             raise ValueError('Trigger level deve ficar entre 1 e 20')
     merged = {**DEFAULTS[key], **options}
+    if key=='llm' and merged['contract_version']==1 and merged['llm_model']!='tucano':
+        raise ValueError('Contrato legado exige Tucano')
     for row in schema(key, merged, data):
         value = merged[row['id']]
         if row['type'] == 'number' and (value < row['min'] or value > row['max']):
@@ -87,6 +89,9 @@ class ModuleManager:
         self.stopping = set()
         self.failures = {}
         self.lock = asyncio.Lock()
+        self.llm_policy_file=data/'llm-policy.json'
+        self.llm_profiles={}
+        needs_save=False
         self.decision_policy_file = data/'decision-policy.json'
         decision_algorithm = None
         if self.decision_policy_file.exists():
@@ -119,9 +124,29 @@ class ModuleManager:
                     backup.write_bytes(self.file.read_bytes())
                 if decision_algorithm:
                     self.config['decision']['algorithm'] = decision_algorithm
-                self.save()
+                needs_save=True
         if decision_algorithm:
             self.config['decision']['algorithm'] = decision_algorithm
+        if self.llm_policy_file.exists():
+            try:
+                policy=json.loads(self.llm_policy_file.read_text(encoding='utf-8'))
+                if (type(policy) is not dict or policy.get('version')!=1 or policy.get('llm_model') not in {'tucano','qwen3'}
+                        or type(policy.get('contract_version')) is not int or policy['contract_version'] not in (1,2)
+                        or type(policy.get('profiles')) is not dict or set(policy['profiles'])-{'tucano','qwen3'}):
+                    raise ValueError('Política LLM inválida')
+                for model,profile in policy['profiles'].items():
+                    if type(profile) is not dict or set(profile)-{'threads','context_size','max_tokens','temperature'}:
+                        raise ValueError('Perfil LLM inválido')
+                    checked=validate_options('llm',{**self.config['llm'],**profile},data)
+                    self.llm_profiles[model]={k:checked[k] for k in ('threads','context_size','max_tokens','temperature')}
+                if policy['contract_version']==1 and policy['llm_model']!='tucano':raise ValueError('Contrato legado exige Tucano')
+                self.config['llm'].update(llm_model=policy['llm_model'],contract_version=policy['contract_version'])
+                self.config['llm'].update(self.llm_profiles.get(policy['llm_model'],{}))
+            except (ValueError,TypeError,OSError):
+                self.llm_profiles={}
+                self.config['llm'].update(llm_model='tucano',contract_version=1)
+                self.failures['llm']='Política LLM inválida; Tucano/contrato legado ativo. Salve para recuperar.'
+        if needs_save:self.save()
 
     def installed(self, key):
         return Path('/usr/bin/local-nlu').is_file() if key == 'nlu' else Path(f'/opt/venvs/{key}/bin/python').is_file()
@@ -129,6 +154,11 @@ class ModuleManager:
     def save(self):
         self.data.mkdir(parents=True, exist_ok=True)
         compatible = copy.deepcopy(self.config)
+        model=compatible['llm'].pop('llm_model');version=compatible['llm'].pop('contract_version')
+        self.llm_profiles[model]={k:compatible['llm'][k] for k in ('threads','context_size','max_tokens','temperature')}
+        llm_temp=self.llm_policy_file.with_suffix('.tmp')
+        llm_temp.write_text(json.dumps({'version':1,'llm_model':model,'contract_version':version,'profiles':self.llm_profiles})+'\n',encoding='utf-8')
+        llm_temp.replace(self.llm_policy_file)
         algorithm = compatible['decision'].pop('algorithm')
         policy_temp = self.decision_policy_file.with_suffix('.tmp')
         policy_temp.write_text(json.dumps({'version':1,'algorithm':algorithm})+'\n',encoding='utf-8')
@@ -152,7 +182,10 @@ class ModuleManager:
         if key not in DEFAULTS:
             raise ValueError('Módulo desconhecido')
         # enabled is controlled only by start/stop so persisted state matches lifecycle.
-        merged = validate_options(key, {**self.config[key], **options}, self.data)
+        base={**self.config[key]}
+        if key=='llm' and options.get('llm_model',base['llm_model'])!=base['llm_model']:
+            base.update(self.llm_profiles.get(options['llm_model'],{}))
+        merged = validate_options(key, {**base, **options}, self.data)
         if merged['enabled'] != self.config[key]['enabled']:
             raise ValueError('Use Ativar/Desativar para mudar enabled')
         if key == 'stt':
@@ -178,7 +211,12 @@ class ModuleManager:
             return
         directory = self.data / 'modules' / key
         directory.mkdir(parents=True, exist_ok=True)
-        (directory / 'options.json').write_text(json.dumps(self.config[key]), encoding='utf-8')
+        worker_options={**self.config[key]}
+        if key=='llm':
+            profiles=copy.deepcopy(self.llm_profiles)
+            profiles[self.config[key]['llm_model']]={k:self.config[key][k] for k in ('threads','context_size','max_tokens','temperature')}
+            worker_options['profiles']=profiles
+        (directory / 'options.json').write_text(json.dumps(worker_options), encoding='utf-8')
         environment = {k: v for k, v in os.environ.items() if k not in {'SUPERVISOR_TOKEN','HASSIO_TOKEN','HA_TOKEN','HASS_TOKEN','HF_TOKEN'}}
         environment.update(ARANDU_MODULE_DATA=str(directory), OMP_NUM_THREADS='2', OPENBLAS_NUM_THREADS='2')
         if key in {'decision', 'llm'}:

@@ -43,7 +43,7 @@ async def local_request(session, endpoint, path, *, payload=None, body=None, tim
         if response.status != 200:
             code, phase = f"http_{response.status}", "connection" if response.status in (502, 503, 504) else "inference"
             messages = {
-                "llm_output_truncated": "LLM atingiu o limite de tokens. Nenhuma ação autorizada. Nas opções do módulo LLM, use max_tokens 192 ou 256, salve e reinicie o módulo.",
+                "llm_output_truncated": "LLM atingiu o limite de tokens. Nenhuma ação autorizada. Nas opções LLM, use max_tokens 192 ou 256 no legado; 384 para planos v2 maiores. Salve e aplique o módulo.",
                 "llm_invalid_json": "LLM retornou JSON inválido. Nenhuma ação autorizada. Confira o limite de geração e os logs do runtime.",
                 "llm_response_invalid": "LLM retornou um envelope de resposta inválido. Nenhuma ação autorizada.",
                 "llm_response_incomplete": "LLM não concluiu a resposta normalmente. Nenhuma ação autorizada.",
@@ -82,6 +82,7 @@ class Lab:
             selected = entries[0]
         stack_endpoint = selected.options.get('stack_endpoint', selected.data.get('stack_endpoint', '')) if selected else ''
         worker = payload.get('worker') or stack_endpoint or 'http://127.0.0.1:11556'
+        llm_worker=stack_endpoint or worker
         if command in {"demo_suite", "demo_case"}:
             from .ai_lab_demo import suite, run_case
             if command == "demo_suite":
@@ -101,10 +102,20 @@ class Lab:
                 return await run_case(payload, entry.runtime_data._client, demo_infer)
         if command == "status":
             try:
-                return await local_request(session, worker, "/status", timeout=5)
+                result=await local_request(session, worker, "/status", timeout=5)
+                try:
+                    llms=await local_request(session,llm_worker,'/api/llm/models',timeout=5)
+                    result['models']=[m for m in result['models'] if m.get('kind')!='llm']+[{**m,'kind':'llm'} for m in llms['models']]
+                except Exception:pass
+                return result
             except Exception as exc:
                 return {"models": [{"id": key, **model, "available": False, "installed": None,
                                      "reason": model.get("unavailable") or "Worker inacessível; instalação não verificada"} for key, model in MODELS.items()], "error": str(exc)[:256]}
+        if command=='install' and payload.get('model') in {'tucano','qwen3'}:
+            return await local_request(session,llm_worker,'/api/llm/install',payload={'model':payload['model']},timeout=360)
+        if command=='llm_apply':
+            if payload.get('confirm') is not True:raise ValueError('Confirmação explícita necessária')
+            return await local_request(session,llm_worker,'/api/llm/apply',payload={'model':payload.get('llm_model'),'confirm':True},timeout=180)
         if command in {'transcribe', 'stt_models', 'stt_test', 'stt_compare', 'stt_install', 'stt_apply'}:
             if not stack_endpoint:
                 raise ValueError('Configure o endpoint Arandu Stack nas opções da integração')
@@ -252,6 +263,33 @@ class Lab:
                                  'comparison':output})
                 return {'dry_run':True,'execution_allowed':False,'catalog_generation':catalog['generation'],
                         'algorithm_comparison':rows,'metrics':metrics,'home_assistant_actions':0}
+            if command=='llm_compare':
+                from .automation_contract import validate
+                examples=payload.get('examples');models=payload.get('models',['tucano','qwen3'])
+                if type(examples) is not list or not 1<=len(examples)<=20:raise ValueError('Use 1–20 exemplos')
+                if type(models) is not list or not 1<=len(models)<=2 or any(m not in {'tucano','qwen3'} for m in models):raise ValueError('Modelo LLM inválido')
+                area=payload.get('test_area_id') or origin_area(self.hass,SimpleNamespace(device_id=None,satellite_id=None),options)
+                if area is not None and area not in {a['area_id'] for a in catalog['areas']}:raise ValueError('Área inválida')
+                rows=[];metrics={m:{'samples':0,'labelled':0,'correct_plan':0,'false_activations':0,'errors':0} for m in models}
+                async with asyncio.timeout(180):
+                    for index,example in enumerate(examples):
+                        text=example.get('text') if type(example) is dict else None
+                        if type(text) is not str or not 1<=len(text)<=512:raise ValueError('Exemplo inválido')
+                        expected=example.get('expected_plan')
+                        if expected is not None and (type(expected) is not dict or set(expected)-{'type','operations'}):raise ValueError('Rótulo expected_plan inválido')
+                        compared=await local_request(session,options.get('stack_endpoint') or worker,'/infer',payload={'action':'llm_compare','models':models,
+                            'text':text,'catalog':catalog,'context':{'origin_area':area}},timeout=180)
+                        for result in compared['comparisons']:
+                            model=result['model'];plan=result.get('plan');actual={'type':result.get('kind'),
+                                'operations':[{k:o[k] for k in ('action','entity_id','parameters')} for o in (plan or {}).get('operations',[])]}
+                            if actual['type']=='automation':validate(plan,text,catalog,{'origin_area':area})
+                            metrics[model]['samples']+=1;metrics[model]['errors']+=int(actual['type']=='error')
+                            correct=None if expected is None else all(actual[k]==v for k,v in expected.items())
+                            if expected is not None:
+                                metrics[model]['labelled']+=1;metrics[model]['correct_plan']+=int(correct)
+                                metrics[model]['false_activations']+=int(expected.get('operations')==[] and bool(actual['operations']))
+                            rows.append({'case':index,'text':text,'model':model,'correct':correct,'actual':actual,'result':result})
+                return {'dry_run':True,'execution_allowed':False,'home_assistant_actions':0,'rows':rows,'metrics':metrics}
             if command not in ("run", "compare"):
                 raise ValueError("Comando desconhecido")
             test_area_id = payload.get("test_area_id", "")
@@ -269,7 +307,8 @@ class Lab:
                 return raw
 
             async def run(text, model, mode):
-                semantic_context = {"origin_area": selected_area}
+                semantic_context = {"origin_area": selected_area,
+                    'temperature_unit':getattr(getattr(getattr(self.hass,'config',None),'units',None),'temperature_unit',None)}
                 async def decision(data):
                     threshold, margin = settings(payload)
                     threshold = max(.8, threshold)
@@ -291,7 +330,12 @@ class Lab:
                     # LLM service performs its own retrieval when Decision was not called.
                     from .intelligence import llm_hint
                     data = {**data,'decision':llm_hint(data.get('decision'))}
-                    raw = await local_request(session, worker, "/infer", payload={**data, "action": "llm", "catalog": catalog, "context": semantic_context, "llm_model": payload.get("llm_model", "tucano")})
+                    raw = await local_request(session, options.get('stack_endpoint') or worker, "/infer", payload={**data, "action": "llm", "catalog": catalog, "context": semantic_context, "llm_model": payload.get("llm_model", "tucano"),'contract_version':payload.get('llm_contract',2)})
+                    if raw.get('contract_version')==2 and raw.get('kind') in {'automation','clarification'}:
+                        if raw['kind']=='automation':
+                            from .intelligence import typed_operations
+                            typed_operations(raw,text,snapshot,semantic_context)
+                        return raw
                     retrieval = raw.get("retrieval") or data.get("decision") or {}
                     proposal = validate_proposal(raw["proposal"], catalog, {r["entity_id"] for r in retrieval.get("ranking", [])})
                     proposal["confidence"] = None
@@ -317,7 +361,10 @@ class Lab:
                         proposal = clarification(text, catalog, semantic_context, reason="action_or_target_unresolved")
                         result.update(proposal=proposal, clarification_question=proposal["clarification_question"])
                 operations = ()
-                if proposal and result["source"] == "nlu":
+                if result.get('plan') and result.get('kind')=='automation':
+                    from .intelligence import typed_operations
+                    operations=typed_operations(result['stages']['llm']['output'],text,snapshot,semantic_context)
+                elif proposal and result["source"] == "nlu":
                     operations = parse(proposal).operations
                 elif proposal:
                     validate_proposal(proposal, catalog)

@@ -11,11 +11,12 @@ from collections import Counter
 VERSION = "arandu-joint-v1"
 ACTION_TEXT = {"turn_on": "Ligar acender ativar", "turn_off": "Desligar apagar desativar", "query": "Consultar qual é o estado a temperatura"}
 MODELS = {
+    'qwen3': {'name':'Qwen3 0.6B Q8_0 · experimental','repo':'Qwen/Qwen3-0.6B-GGUF','license':'Apache-2.0','kind':'llm','runtime':'llama.cpp / CPU'},
     "brazembed": {"name": "BrazEmbed PT-BR 110M", "repo": "tardellirs/brazembed-pt-br", "license": "MIT", "runtime": "sentence-transformers / CPU", "kind": "decision"},
     "e5-small": {"name": "Multilingual E5 Small", "repo": "intfloat/multilingual-e5-small", "license": "MIT", "runtime": "sentence-transformers / CPU; query/passsage prefixes", "kind": "decision"},
     "saracura": {"name": "Saracura PT-BR 322M", "repo": "felhen-ai/saracura-ptbr-v0", "license": "Apache-2.0", "kind": "decision", "runtime": "Laya / CPU", "github": "https://github.com/felhen-ai/saracura"},
     "jatoba": {"name": "JATOBÁ Decision 169M · não comercial", "repo": "leoabreu288/jatoba-decision", "license": "CC-BY-NC-SA-4.0 (pesos); Apache-2.0 (código)", "kind": "decision", "runtime": "jatoba / CPU", "github": "https://github.com/LeonardoVilela/jatoba-decision", "noncommercial": True},
-    "qwen": {"name": "Qwen3.5 0.8B Q4_0", "repo": "ggml-org/Qwen3.5-0.8B-GGUF", "license": "Apache-2.0", "kind": "llm", "file": "Qwen3.5-0.8B-Q4_0.gguf", "runtime": "llama.cpp / CPU"},
+    "qwen": {"name": "Qwen3.5 0.8B Q4_0 · catálogo PC", "repo": "ggml-org/Qwen3.5-0.8B-GGUF", "license": "Apache-2.0", "kind": "llm", "file": "Qwen3.5-0.8B-Q4_0.gguf", "runtime": "llama.cpp / CPU", 'unavailable':'Catálogo histórico do Lab PC; não validado pelo backend deste app nesta release.'},
     "tucano": {"name": "Tucano 2 Qwen 0.5B Instruct Q4_K_M", "repo": "2DTi/tucano2-0.5b-instruct-gguf", "source_repo": "Polygl0t/Tucano2-qwen-0.5B-Instruct", "license": "Apache-2.0", "kind": "llm", "file": "tucano2-0.5b-instruct-Q4_K_M.gguf", "runtime": "llama.cpp / CPU", "github": "https://github.com/Polygl0t/llm-foundry"},
 }
 
@@ -178,8 +179,12 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30, gen
             stages["llm"]["fallback_reason"] = (de or {}).get("reason") or "decision_unavailable"
             output = await run("llm", llm, {"text": text, "nlu": nl, "decision": de})
             if output:
-                result.update(proposal=output.get("proposal", output), source="llm", response_text=output.get("response_text"), requires_review=not bool(output.get("response_text")))
-    result["clarification_question"] = (result["proposal"] or {}).get("clarification_question") or (None if result["proposal"] else "Não entendi o que você deseja. Pode repetir dizendo o dispositivo e a ação?")
+                typed=output.get('contract_version')==2 and 'plan' in output
+                result.update(proposal=None if typed else output.get("proposal", output),plan=output.get('plan'),kind=output.get('kind'),
+                    source="llm", response_text=output.get("response_text"), requires_review=not bool(output.get("response_text")))
+    result["clarification_question"] = ((result.get('plan') or {}).get('question') or
+        (result["proposal"] or {}).get("clarification_question") or
+        (None if result["proposal"] or (result.get('plan') or {}).get('type')=='automation' else "Não entendi o que você deseja. Pode repetir dizendo o dispositivo e a ação?"))
     result["total_ms"] = (time.perf_counter() - started) * 1000
     return result
 

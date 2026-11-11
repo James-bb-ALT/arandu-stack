@@ -1,3 +1,15 @@
+# Arandu LLM 2.0.0
+
+Resolvedor passivo de fallback PT-BR. Contrato v2 tipado de operações, parâmetros e evidências; conversa geral sem ferramentas. O HA recompõe o plano, valida permissões, capacidades e estado atual e continua único executor. Não interpreta parâmetros como serviços, URLs, código ou templates.
+
+Tucano 2 Qwen 0.5B Q4_K_M padrão; Qwen3 0.6B Q8_0 experimental. Registro em `models.py` com revisões/tamanhos/SHA-256 imutáveis. Instalação explícita, staging, integridade e cache persistente. Nenhum download na inferência. Um processo CPU residente, troca serializada e rollback de carga, perfis de geração por modelo no app. Qwen3 recebe enable_thinking=false; Tucano não recebe esse parâmetro no v2. Templates vêm dos respectivos GGUF.
+
+CLI: `arandu-llm install --model tucano` ou `--model qwen3`; `arandu-llm serve --model tucano --contract-version 2`. A API recebe contract_version explícito ou accept_contracts=[1,2]; clientes sem negociação conservam v1/Tucano. Contrato v1 continua selecionável no app. Porta passiva 11558/loopback e controles de origem preservados.
+
+Guia, resultados reais e limitações: `docs/LLM-v2.0.0.md` na raiz. Testes são executados nesta etapa; não interpretar as notas históricas abaixo como status da entrega atual.
+
+## Histórico até 1.0.1
+
 ## Atualização 1.0.1
 
 Política semântica compartilhada: restrições operacionais recusadas antes da carga/inferência; compostos não viram proposta parcial. Nomes registrados, consultas e conversa são tratados pelo contexto. Modelos, embeddings e calibração preservados.

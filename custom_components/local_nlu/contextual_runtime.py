@@ -37,6 +37,7 @@ class Session:
     identity_source: str | None = None
     last_targets: tuple[str, ...] = ()
     last_area: str | None = None
+    last_action: str | None = None
     pending: dict | None = None
     candidates: tuple[str, ...] = ()
     confirmation: tuple[Operation, ...] = ()
@@ -394,6 +395,7 @@ class ContextualRuntime:
             if session.history_generation != generation or session.history_origin != spatial_context:
                 session.last_targets = ()
                 session.last_area = None
+                session.last_action = None
             session.history_generation = generation
             session.history_origin = spatial_context
             from .semantic_context import semantic_refusal
@@ -433,7 +435,8 @@ class ContextualRuntime:
                         raise ValueError("Endpoint Arandu Stack ausente")
                     return await local_request(async_get_clientsession(self.hass), endpoint, "/infer", payload=body, timeout=30)
                 proposed, trace = await fallback(user_input.text, snapshot, options, infer,
-                    {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets)},
+                    {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets), "last_action":session.last_action,
+                     'temperature_unit':getattr(getattr(getattr(self.hass,'config',None),'units',None),'temperature_unit',None)},
                     nlu=nlu_summary(outcome))
                 self.validate_options(options)
                 self.last_intelligence = trace
@@ -752,7 +755,7 @@ class ContextualRuntime:
                 if adapter is None:
                     raise ExecutionError("unavailable", "adapter_missing")
                 try:
-                    data = parameters(operation.action, adapter, state, operation.parameters, options.get("increments", {}))
+                    data = parameters(operation.action, adapter, state, operation.parameters, options.get("increments", {}), strict_numeric=operation.intent.startswith('llm2.'))
                 except CapabilityError as error:
                     raise ExecutionError("unavailable", str(error)) from None
                 if operation.action == "vacuum_area":
@@ -903,7 +906,9 @@ class ContextualRuntime:
                 session.signature, session.last_execution = signature, time.monotonic()
             return self.result("partial_failure" if completed or had_effects else "execution_failed", user_input, speech=f"Concluí {completed} operações; houve uma falha na próxima." if completed else "Parte dos dispositivos respondeu; o serviço não confirmou o restante." if had_effects else "O serviço não confirmou a execução.", count=completed)
         session.last_targets = operations[-1].targets
-        session.last_area = operations[-1].parameters.get("area") or session.last_area
+        session.last_action = operations[-1].action
+        target_areas={snapshot.by_id[t].get('area_id') for t in session.last_targets}
+        session.last_area = next(iter(target_areas)) if len(target_areas)==1 else None
         session.signature, session.last_execution = signature, time.monotonic()
         speech = " ".join(responses) if responses else "Pronto." if completed == 1 else f"Pronto, executei {completed} operações."
         if len(speech.encode()) > 8192:
@@ -919,6 +924,9 @@ class ContextualRuntime:
             if action in READ_ACTIONS:
                 continue
             property_name = "power" if action in ("turn_on", "turn_off", "open", "close", "unlock", "lock", "activate") else "playback" if action in ("music", "play", "pause", "stop") else action
+            if item.operation.intent.startswith('llm2.'):
+                from .automation_contract import effect_property
+                property_name=effect_property(action)
             for row in item.rows:
                 key = (row["entity_id"], property_name)
                 if key in affected:

@@ -1,3 +1,13 @@
+# 8.0.0 — LLM 2.0 (2026-11-11)
+
+- App 7.0.0, HACS 8.0.0, LLM 2.0.0. NLU, Decision 2.0, STT, TTS e Wake preservados.
+- Contrato v2 de automação/conversa/esclarecimento, operações ordenadas, parâmetros absolutos/relativos, evidências e reconstrução independente no executor HA existente.
+- Recuperação completa por nomes, aliases, área, categoria, capacidades e contexto curto; não depende exclusivamente do Decision. Restrições e modificadores não comprovados abstêm o plano inteiro.
+- GGUF individuais por revisão/tamanho/SHA-256, instalação explícita com staging, modelos residentes, seleção/troca verificada com rollback e perfis de geração independentes. Tucano padrão, Qwen3 experimental.
+- Negociação v1/v2 e política em arquivo separado preservam configurações e leitura pelo app anterior. Estado, unidade, limites e incrementos continuam verificados no HA; nenhum clamp silencioso novo.
+- AI Lab nativo testa/compara modelos sem ações, mostra plano/candidatos/evidências/JSON/tempos/tokens/RAM e exporta métricas sem falas ou IDs residenciais. Novos resultados LLM não são persistidos automaticamente no histórico local.
+- Benchmarks reais, limites e validação em `docs/LLM-v2.0.0.md`.
+
 # 7.0.0 — Decision 2.0 (2026-11-11)
 
 - App 6.0.0, HACS 7.0.0, Decision 2.0.0. NLU, LLM, STT, TTS e Wake preservados.

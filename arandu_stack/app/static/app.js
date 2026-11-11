@@ -92,6 +92,7 @@ function openSettings(module){
   if(apply.disabled)apply.dataset.unavailable='true';else delete apply.dataset.unavailable;
   updateDependencies();$('configDialog').showModal();
   if(module.id==='stt')renderSttManager();
+  if(module.id==='llm')renderLlmManager();
 }
 function settingInput(name){return $('configFields').querySelector('[data-setting="'+name+'"]');}
 function updateDependencies(){
@@ -131,13 +132,16 @@ async function saveSettings(restart){
     if(editing.id==='stt'&&restart){
       if(!confirm('Aplicar '+options.stt_model+' no Assist? Somente o STT será reiniciado.'))return;
       await api('stt/apply',{model:options.stt_model,variant:options.model_variant||editing.options.model_variant,options,confirm:true});
+      }else if(editing.id==='llm'&&restart){
+        if(!confirm('Aplicar '+options.llm_model+' no Assist após verificar a carga?'))return;
+        await api('llm/apply',{model:options.llm_model,options,confirm:true});
     }else{
       await api('modules/'+editing.id+'/options',{options});
       if(restart&&editing.state==='started')await api('modules/'+editing.id+'/restart',{});
     }
   }catch(error){$('configError').textContent=error.message;return;}
   $('configDialog').close();await refresh();
-  notice(restart?'Configuração salva e módulo reiniciado.':'Configuração salva. Reinicie o módulo para aplicar.');
+    notice(restart?(editing.id==='llm'?'Configuração aplicada; carga e identidade do modelo verificadas.':'Configuração salva e módulo reiniciado.'):'Configuração salva. Reinicie o módulo para aplicar.');
 }
 function phraseRow(row){
   const item=el('div',undefined,'phrase-row'),enabled=el('input');
@@ -230,6 +234,33 @@ $('theme').onchange=()=>{applyTheme($('theme').value);try{localStorage.setItem('
 window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue='';}});
 task(refresh);
 
+async function renderLlmManager(){
+  const group=el('fieldset',undefined,'setting-section');group.append(el('legend','Modelos LLM e prontidão'));
+  const status=el('p','Consultando modelos…');status.setAttribute('role','status');
+  const list=el('div');group.append(status,list);$('configFields').append(group);
+  let profiles={};
+  async function update(){
+    try{
+      const result=await api('llm/models');profiles=result.profiles||{};
+      status.textContent='Configurado: '+result.configured_model+'. Residente: '+(result.active_model||'nenhum confirmado')+'. A instalação não muda a seleção.';
+      list.replaceChildren();
+      for(const model of result.models){
+        const row=el('div',undefined,'setting-row');row.append(el('span',model.name+' · '+(model.loaded?('carregado'+(model.integrity_verified?' e verificado':' · integridade não verificada')):model.installed===true?'instalado':model.installed===false?'não instalado':'instalação não verificada')));
+        const button=el('button',model.installed?'Verificar pesos':'Instalar pesos ('+(model.id==='qwen3'?'640':'306')+' MB)','secondary');button.type='button';
+        button.onclick=async()=>{button.disabled=true;status.textContent='Instalando/verificando '+model.name+'…';
+          try{await api('llm/install',{model:model.id});await update();}catch(e){status.textContent=e.message;button.disabled=false;}};
+        row.append(button);list.append(row);
+      }
+    }catch(e){status.textContent=e.message;}
+  }
+  const model=settingInput('llm_model');
+  model?.addEventListener('change',()=>{
+    const profile=profiles[model.value];
+    if(profile)for(const [key,value] of Object.entries(profile)){const input=settingInput(key);if(input)input.value=String(value);}
+    if(model.value==='qwen3'&&settingInput('contract_version').value==='1')settingInput('contract_version').value='2';
+  });
+  await update();
+}
 async function renderSttManager(){
   const group=el('fieldset',undefined,'setting-section stt-manager');group.append(el('legend','Pesos e modelo ativo'));
   const status=el('p','Consultando modelos…');status.setAttribute('role','status');group.append(status);

@@ -18,7 +18,7 @@ if key in {'decision', 'llm'}:
     root = data / 'models'
     root.mkdir(exist_ok=True)
     if options.get('auto_download'):
-        service.install(root)
+        service.install(root,options.get('llm_model','tucano')) if key=='llm' else service.install(root)
     web.run_app(service.create_app(root, '/usr/local/bin/llama-server' if key == 'llm' else None, options['threads'], runtime_settings=options), host='127.0.0.1', port=service.PORT, access_log=None)
 elif key == 'tts':
     from arandu_tts.addon_main import configure

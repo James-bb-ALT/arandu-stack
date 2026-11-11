@@ -159,7 +159,7 @@ class CapabilityError(Exception):
     """A semantic operation cannot be bound to a live safe service call."""
 
 
-def parameters(action: str, adapter: Adapter, state: Any, params: dict, increments: dict) -> dict:
+def parameters(action: str, adapter: Adapter, state: Any, params: dict, increments: dict, *, strict_numeric: bool = False) -> dict:
     """Validate typed slots and resolve relative values from live state, never snapshot values."""
     from .contextual_protocol import normalize
     value = params.get("value")
@@ -246,20 +246,28 @@ def parameters(action: str, adapter: Adapter, state: Any, params: dict, incremen
         delta = value if finite(value) else increments.get(action, adapter.step)
         if not finite(delta) or delta <= 0 or delta > 1000:
             raise CapabilityError("increment")
-        value = min(high, max(low, current + relative * delta))
+        resolved=current + relative * delta
+        if strict_numeric and not low <= resolved <= high:
+            raise CapabilityError('relative_out_of_range')
+        value = min(high, max(low, resolved))
     if not finite(value) or not low <= value <= high:
         raise CapabilityError("range")
     if action in ("number", "temperature") and finite(step) and step > 0:
-        value = low + round((value - low) / step) * step
+        quantized = low + round((value - low) / step) * step
+        if strict_numeric and abs(quantized-value)>1e-6:raise CapabilityError('unsupported_step')
+        value = quantized
         value = min(high, max(low, value))
     if action == "percentage" and value > 0:
         step = attrs.get("percentage_step", 1)
         if not finite(step) or not 0 < step <= 100:
             raise CapabilityError("percentage_step")
-        value = min(high, max(step, round(value / step) * step))
+        quantized=min(high, max(step, round(value / step) * step))
+        if strict_numeric and abs(quantized-value)>1e-6:raise CapabilityError('unsupported_step')
+        value = quantized
     if action == "volume":
         value /= 100
     if action in ("position", "brightness", "percentage", "humidity", "color_temperature"):
+        if strict_numeric and abs(round(value)-value)>1e-6:raise CapabilityError('unsupported_step')
         value = round(value)
     return {adapter.field: value}
 

@@ -22,12 +22,12 @@ async def main():
             await asyncio.sleep(.5)
         else:raise AssertionError('services not ready')
         async with session.get(base+'/api/state') as response:state=await response.json()
-        assert state['version']=='6.0.0'
+        assert state['version']=='7.0.0'
         assert next(row for row in state['modules'] if row['id']=='stt')['options']['stt_model']=='orukeet_int8'
         headers={'X-Arandu-CSRF':state['csrf'],'X-Arandu-Lab':'1'}
         async def infer(action,text):
             start=time.perf_counter()
-            async with session.post(base+'/infer',json={'action':action,'text':text,'catalog':CATALOG},headers=headers) as response:
+            async with session.post(base+'/infer',json={'action':action,'text':text,'catalog':CATALOG,'accept_contracts':[1,2]},headers=headers) as response:
                 result=await response.json();assert response.status==200,result
             result['http_total_ms']=(time.perf_counter()-start)*1000
             return result

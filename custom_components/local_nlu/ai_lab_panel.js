@@ -16,6 +16,7 @@ class AranduAILab extends HTMLElement {
       tts_endpoint: this.$('ttsEndpoint').value, tts_token: this.$('ttsToken').value,
       model: this.$('decision').value, mode: this.$('mode').value, llm_model:this.$('llm').value || 'tucano',
       algorithm: this.$('decisionAlgorithm')?.value || 'structured-v3',
+      llm_contract:Number(this.$('llmContract')?.value || '2'),
       test_area_id: this.$('testArea').value,
       threshold: Number(this.$('threshold').value), min_margin: Number(this.$('margin').value), ...extra}});
   }
@@ -61,13 +62,14 @@ class AranduAILab extends HTMLElement {
         <p id="testAreaStatus" class="muted" role="status">Carregando áreas do catálogo…</p>
         <p class="muted"><small>Texto digitado não traz um satélite. Escolha um cômodo para testar essa origem. Esta seleção não altera a pipeline real.</small></p>
         <label for="decision">Decision Engine</label><select id="decision"><option value="e5-small">Arandu Decision · E5 Small · verificar serviço</option></select>
-        <label for="llm">LLM local</label><select id="llm"><option value="tucano">Arandu LLM · Tucano 2 Qwen 0.5B · verificar serviço</option></select>
+        <label for="llm">LLM local</label><select id="llm"><option value="tucano">Tucano 2 Qwen 0.5B Q4_K_M</option><option value="qwen3">Qwen3 0.6B Q8_0 · experimental</option></select><button id="llmApply">Aplicar LLM no Assist…</button>
+        <label for="llmContract">Contrato do teste LLM</label><select id="llmContract"><option value="2">LLM 2.0 · plano tipado</option><option value="1">Baseline 1.0 · somente Tucano</option></select>
         <label for="threshold">Confiança calibrada mínima (80% ou mais)</label><input id="threshold" type="number" min="0.8" max="1" step="0.01" value="0.8">
         <label for="margin">Margem mínima</label><input id="margin" type="number" min="0.001" max="1" step="0.001" value="0.08">
         <p class="muted"><small>Cosine similarity não é probabilidade. Sem calibração válida, o motor encaminha ao próximo nível.</small></p>
         <label for="tts">TTS existente</label><select id="tts"><option value="piper">Piper PT-BR</option><option value="pocket">Pocket TTS</option></select>
         <button id="refresh">Verificar modelos</button><button id="load">Pré-carregar encoder</button><button id="unload">Descarregar modelos</button>
-        <label for="installModel">Instalação sob demanda (download no worker)</label><select id="installModel"><option value="brazembed">BrazEmbed · MIT</option><option value="e5-small">E5 Small · MIT</option><option value="saracura">Saracura · Apache-2.0</option><option value="jatoba">JATOBÁ · pesos não comerciais</option><option value="qwen">Qwen Q4 · Apache-2.0</option><option value="tucano">Tucano 2 Q4 · Apache-2.0</option></select><button id="install">Baixar pesos selecionados</button>
+        <label for="installModel">Instalação sob demanda (download no worker)</label><select id="installModel"><option value="brazembed">BrazEmbed · MIT</option><option value="e5-small">E5 Small · MIT</option><option value="saracura">Saracura · Apache-2.0</option><option value="jatoba">JATOBÁ · pesos não comerciais</option><option value="qwen3">Qwen3 0.6B Q8_0 · experimental</option><option value="tucano">Tucano 2 Q4 · Apache-2.0</option></select><button id="install">Baixar pesos selecionados</button>
       </section>
       <details class="card"><summary>Conexões locais</summary>
         <label for="worker">Worker de inferência (opcional)</label><input id="worker" value="" placeholder="Automático pelo endpoint Arandu Stack">
@@ -96,6 +98,9 @@ class AranduAILab extends HTMLElement {
       <section class="card"><h2>Suíte de comandos e benchmark</h2><p class="muted">Edite o JSON. Exemplos sem rótulo não entram na acurácia. Informe entidades reais; nunca use resultados do modelo como gabarito.</p>
         <label for="examples">Exemplos editáveis (máximo 20 por lote)</label><textarea id="examples" spellcheck="false" style="min-height:220px"></textarea>
         <label for="compareModels">Motores para comparar</label><select id="compareModels" multiple aria-label="Motores para comparação"></select>
+        <label for="compareLlms">Modelos LLM para comparar</label><select id="compareLlms" multiple aria-label="Modelos LLM"><option value="tucano" selected>Tucano 2 Q4_K_M</option><option value="qwen3" selected>Qwen3 Q8_0 experimental</option></select>
+        <p class="muted">Para LLM, use expected_plan com type e operations (action, entity_id, parameters). A comparação não gera token de execução. Exportações LLM omitem comandos, nomes e IDs residenciais.</p>
+        <div class="row"><button id="llmCompare">Comparar LLMs · sem ações</button><button id="llmJson">Exportar métricas LLM JSON</button><button id="llmCsv">Exportar métricas LLM CSV</button></div>
         <p class="muted"><small>Comparação sequencial, mesmo catálogo, sempre dry-run. Selecione Decision isolado para medir os motores sem a resolução do NLU.</small></p>
         <div class="row"><button id="saveExamples">Salvar exemplos localmente</button><button id="batch">Executar lote</button><button id="decisionCompare">Comparar Decision 1.0 e 2.0 · sem ações</button><button id="decisionCompareJson">Exportar comparação Decision</button><button id="catalog">Ver catálogo real</button></div><div id="benchmark" class="scroll"></div><pre id="batchOutput"></pre>
       </section>
@@ -154,6 +159,15 @@ class AranduAILab extends HTMLElement {
       this.decisionComparison = result;
     });
     this.$('decisionCompareJson').onclick = () => {if(this.decisionComparison)this.demoDownload('json',this.decisionComparison,'arandu-decision-ab');};
+    this.$('llmApply').onclick=()=>this.task(async()=>{
+      const model=this.$('llm').value;if(!confirm('Aplicar '+model+' ao fallback do Assist após verificar a carga?'))return;
+      this.$('advancedOutput').textContent=JSON.stringify(await this.call('llm_apply',{llm_model:model,confirm:true}),null,2);
+    });
+    this.$('llmCompare').onclick=()=>this.task(async()=>{
+      this.llmComparison=await this.call('llm_compare',{examples:JSON.parse(this.$('examples').value),models:[...this.$('compareLlms').selectedOptions].map(o=>o.value)});
+      this.$('batchOutput').textContent=JSON.stringify(this.llmComparison,null,2);
+    });
+    this.$('llmJson').onclick=()=>this.exportLlm('json');this.$('llmCsv').onclick=()=>this.exportLlm('csv');
     this.$('calibrate').onclick = () => this.task(async () => { const data = JSON.parse(this.$('calibration').value); this.$('advancedOutput').textContent = JSON.stringify(await this.call('calibrate', data), null, 2); });
     this.$('json').onclick = () => this.download('json'); this.$('csv').onclick = () => this.download('csv');
     this.history(); this.task(() => this.refresh());
@@ -255,11 +269,11 @@ class AranduAILab extends HTMLElement {
       for (const model of result.models.filter(m=>m.kind===kind)) {
         const option = document.createElement('option'); option.value = model.id;
         option.textContent = model.name + (model.installed?' · instalado':' · instalação não confirmada') + (model.available ? ' · serviço respondendo' : ' · indisponível: ' + model.reason);
-        option.disabled = !model.available; this.$(id).append(option);
+        option.disabled = !model.available;if(id==='compareLlms')option.selected=!!model.available; this.$(id).append(option);
       }
       if([...this.$(id).options].some(o=>o.value===previous&&!o.disabled))this.$(id).value=previous;
     };
-    fill('decision','decision'); fill('compareModels','decision'); fill('llm','llm');
+    fill('decision','decision'); fill('compareModels','decision'); fill('llm','llm');fill('compareLlms','llm');
     if (result.error) this.$('batchOutput').textContent = result.error;
     try{this.demoData=await this.call('demo_suite');this.$('demoDataset').textContent=JSON.stringify(this.demoData,null,2);this.demoPreview();this.renderDemo();}
     catch(error){this.$('demoStatus').textContent='Suíte indisponível: '+(error.message||error);}
@@ -330,7 +344,27 @@ class AranduAILab extends HTMLElement {
     }
     const url=URL.createObjectURL(new Blob([text],{type:format==='csv'?'text/csv;charset=utf-8':'application/json'}));const link=document.createElement('a');link.href=url;link.download=name+'.'+format;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
+  llmExportData(){
+    if(!this.llmComparison)return null;
+    return {dry_run:true,metrics:this.llmComparison.metrics,rows:this.llmComparison.rows.map(row=>{
+      const r=row.result||{};return {case:row.case,model:row.model,type:r.kind,correct:row.correct,
+        load_ms:r.load_ms,inference_ms:r.inference_ms,first_token_ms:r.first_token_ms,
+        generated_tokens:r.generated_tokens,tokens_per_second:r.tokens_per_second,memory_bytes:r.memory_bytes};
+    })};
+  }
+  exportLlm(format,data=this.llmExportData()){
+    if(!data)return;
+    let text=JSON.stringify(data,null,2);
+    if(format==='csv'){
+      const keys=['case','model','type','correct','load_ms','inference_ms','first_token_ms','generated_tokens','tokens_per_second','memory_bytes'];
+      const cell=v=>'"'+String(v??'').replaceAll('"','""').replace(/^[=+@-]/,"'$&")+'"';
+      text=[keys.join(','),...data.rows.map(r=>keys.map(k=>cell(r[k])).join(','))].join('\r\n');
+    }
+    const url=URL.createObjectURL(new Blob([text],{type:format==='csv'?'text/csv;charset=utf-8':'application/json'}));
+    const a=document.createElement('a');a.href=url;a.download='arandu-llm-metricas.'+format;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
   async run(previous) {
+    this.batch=null;
     const input = previous || {text:this.$('text').value, model:this.$('decision').value || 'e5-small', llm_model:this.$('llm').value || 'tucano', mode:this.$('mode').value,
       test_area_id:this.$('testArea').value,
       threshold:Number(this.$('threshold').value), min_margin:Number(this.$('margin').value)};
@@ -362,6 +396,13 @@ class AranduAILab extends HTMLElement {
       const names=targets.map(id=>entities.get(id)?.name || result.catalog?.entities?.find(r=>r.id===id)?.name || id);
       const state=name==='decision'?(statuses[output.decision_status] || 'sem decisão'):name==='llm'&&p.requires_clarification?'aguardando esclarecimento':statuses[stage.status] || 'não necessário';
       paragraph(interpretation,'O que '+name.toUpperCase()+' entendeu',`${top?'Hipótese: ':''}${labels[action] || action || 'intenção não identificada'}${names.length?' · '+names.join(', '):''} · ${state}. ${reasons[output.reason] || output.reason || stage.reason || p.reason || ''}`);
+      if(name==='llm'&&output.contract_version===2){
+        paragraph(interpretation,'LLM e contrato',`${output.model} · v2 · ${output.kind || 'erro'} · ${output.validation_reason || output.reason || 'validado'} · confirmação: ${result.sensitive||result.confirmation_required?'necessária':'não solicitada'}`);
+        paragraph(interpretation,'Plano tipado',JSON.stringify(output.plan?.operations||[]));
+        paragraph(interpretation,'Candidatos e evidências',JSON.stringify(output.retrieval||{}));
+        paragraph(interpretation,'Geração',`Primeiro token ${this.duration(output.first_token_ms)} · ${output.generated_tokens??'—'} tokens · ${Number.isFinite(output.tokens_per_second)?output.tokens_per_second.toFixed(1):'—'} tokens/s · ${Number.isFinite(output.memory_bytes)?(output.memory_bytes/1048576).toFixed(0):'—'} MiB. Carga ${this.duration(output.load_ms)}; inferência ${this.duration(output.inference_ms)}.`);
+        paragraph(interpretation,'JSON recebido',`${output.raw_json_validated?'validado':'não autorizado'} · ${JSON.stringify(output.raw_json||output.validated_json||null)}`);
+      }
       if(name==='decision'&&output.analysis){
         const a=output.analysis,actionTop=a.action?.ranking?.[0];
         paragraph(interpretation,'Ação analisada',`${a.action?.text || 'não identificada'} · hipótese: ${labels[a.action?.exact || actionTop?.intent] || a.action?.exact || actionTop?.intent || 'nenhuma'}${Number.isFinite(actionTop?.semantic_similarity)?' · similaridade '+actionTop.semantic_similarity.toFixed(4):''} · evidência: ${a.action?.evidence || 'ranking diagnóstico'}`);
@@ -388,7 +429,7 @@ class AranduAILab extends HTMLElement {
     }
     this.$('answer').textContent = result.execution?.response_text || result.response_text || (result.confirmation_required ? result.clarification_question+' Hipótese aguardando confirmação; nenhuma ação enviada.' : result.operations_validated ? 'A proposta passou pela validação inicial do Home Assistant. '+(result.sensitive?'Exige confirmação de segurança; execução bloqueada no laboratório.':'Não será executada enquanto a simulação estiver ativa.') : result.clarification_question || 'Nenhuma ação autorizada. Tente reformular o comando.');
     const final=this.$('finalAction');final.replaceChildren();
-    const proposal=result.proposal || {};
+    const proposal=result.plan || result.proposal || {};
     const ids=result.target_entities || proposal.target_entities || [];
     const action=proposal.intent || proposal.operations?.[0]?.action;
     paragraph(final,'Ação',labels[action] || action || 'nenhuma');
@@ -408,6 +449,7 @@ class AranduAILab extends HTMLElement {
     this.executionState();
   }
   persist() {
+    if(this.last?.stages?.llm?.output?.contract_version===2)return;
     const safe = JSON.parse(JSON.stringify(this.last, (key,value) => key==='execution_token' ? undefined : value));
     const items = this.saved('history', []); items.unshift(safe); this.store('history', items.slice(0,30)); this.history();
   }
@@ -431,6 +473,13 @@ class AranduAILab extends HTMLElement {
   stopRecording(){clearTimeout(this.recordTimer);if(this.recorder?.state==='recording')this.recorder.stop();this.stream?.getTracks().forEach(t=>t.stop());this.recorder=null;if(this.shadowRoot)this.$('record').textContent='Gravar microfone';}
   download(format) {
     const value=this.batch || this.last;if(!value)return;
+    const entries=value.models?Object.values(value.models).flatMap(m=>m.rows.map(r=>r.result)):[value];
+    if(entries.some(r=>r.stages?.llm?.output?.contract_version===2)){
+      const rows=entries.map((r,index)=>{const o=r.stages?.llm?.output||{};return {case:index,model:o.model||'unknown',type:o.kind,
+        load_ms:o.load_ms,inference_ms:o.inference_ms,first_token_ms:o.first_token_ms,generated_tokens:o.generated_tokens,
+        tokens_per_second:o.tokens_per_second,memory_bytes:o.memory_bytes};});
+      this.exportLlm(format,{dry_run:true,rows});return;
+    }
     let text=JSON.stringify(value,(key,v)=>key==='execution_token'?undefined:v,2);
     if(format==='csv') {
       const rows=this.batch ? Object.entries(this.batch.models).flatMap(([model,data])=>data.rows.map(r=>({model,text:r.result.text,source:r.result.source,total_ms:r.result.total_ms,expected:r.expected,actual:r.actual}))) : [{text:value.text,source:value.source,total_ms:value.total_ms}];

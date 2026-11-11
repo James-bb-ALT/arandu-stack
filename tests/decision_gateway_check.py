@@ -20,7 +20,7 @@ async def main():
     async with ClientSession(timeout=ClientTimeout(total=185)) as session:
         async with session.get(BASE+'/api/state') as response:
             state=await response.json()
-        assert state['version']=='6.0.0'
+        assert state['version']=='7.0.0'
         headers={'X-Arandu-CSRF':state['csrf'],'X-Arandu-Lab':'1'}
         options=next(r for r in state['modules'] if r['id']=='decision')['options']
         async def post(path, body):

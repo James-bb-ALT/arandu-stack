@@ -1,4 +1,4 @@
-"""CPU-only, offline inference. Downloading is an explicit, separate operation."""
+"""Explicit CPU/Intel GPU offline inference. Downloads and conversion are separate."""
 from __future__ import annotations
 
 import asyncio
@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 import time
 
-from .contracts import ACTION_TEXT, VERSION, candidates, decision_policy, digest
+from .contracts import MODELS, selection, ACTION_TEXT, VERSION, candidates, decision_policy, digest
 from .semantic_context import decomposition, understood_action, resolve_device, clarification, confirmation_question, hypothesis_allowed, semantic_refusal, clearly_conversational, speech_only_request
 
 
@@ -17,73 +17,106 @@ class Encoder:
         self.root, self.threads = root, threads
         self.model = None
         self.key = None
+        self.active_backend = None
         self.cache = {}
         self.query_cache = {}
         self.load_ms = 0
         self.phase = "loading"
         self._threads_configured = False
+        self.backend_name="cpu"
+        self.model_key="e5-small"
+        self.verified={}
+        self.measurements={}
 
     def unload(self):
+        if self.model is not None and hasattr(self.model,"close"):self.model.close()
+        self.active_backend=None
         self.model = None
         self.key = None
         self.cache.clear()
         self.query_cache.clear()
         gc.collect()
 
-    def load(self, key):
-        if key != "e5-small":
-            raise ValueError("Adaptador indisponível")
-        directory = self.root / key
-        if not (directory / "arandu-model.json").is_file():
-            raise ValueError("Pesos não instalados; execute install --model " + key)
-        signature = digest({"key": key, "adapter": "embedding-v2", "manifest": json.loads((directory / "arandu-model.json").read_text())})
-        self.load_ms = 0
-        if self.key != signature:
-            self.unload()
-            started = time.perf_counter()
+    def load(self, key, backend=None):
+        started=time.perf_counter()
+        from .contracts import selection
+        from .installation import signature, verify
+        from .backends import create_backend
+        backend=backend or self.backend_name
+        selection(key,backend)
+        bound=signature(key,backend);self.load_ms=0
+        if self.key==bound and self.model is not None:return bound
+        directory=self.root/key
+        identity=tuple((n,(directory/n).stat().st_size,(directory/n).stat().st_mtime_ns) for n in MODELS[key]['files'])
+        if self.verified.get(key)!=identity:
+            verify(directory,key);self.verified[key]=identity
+        previous=(getattr(self,'active_model_key',self.model_key),self.active_backend) if self.model is not None else None
+        self.unload()
+        candidate=None
+        try:
             import torch
             torch.set_num_threads(self.threads)
             if not self._threads_configured:
-                torch.set_num_interop_threads(1)
-                self._threads_configured = True
-            from sentence_transformers import SentenceTransformer
-            self.model = SentenceTransformer(str(directory), device="cpu", local_files_only=True, trust_remote_code=False)
-            self.model.max_seq_length = 256
-            self.key = signature
-            self.load_ms = (time.perf_counter() - started) * 1000
-        return signature
+                torch.set_num_interop_threads(1);self._threads_configured=True
+            candidate=create_backend(self.root,key,backend,self.threads)
+            probe=candidate.encode([MODELS[key]['prefixes']['query']+'teste do Arandu'])
+            import numpy as np
+            if probe.shape!=(1,MODELS[key]['dimension']) or not np.isfinite(probe).all():raise ValueError('Smoke de embedding inválido')
+            self.model=candidate;self.key=bound;self.model_key=key
+            self.active_model_key=key
+            self.backend_name=backend;self.active_backend=backend
+            self.load_ms=(time.perf_counter()-started)*1000
+            return bound
+        except BaseException:
+            candidate=None
+            self.unload()
+            if previous:
+                try:self.load(*previous)
+                except Exception:pass
+            raise
+
+    def encode(self,texts,*,query=False):
+        prefix=MODELS[self.model_key]['prefixes']['query' if query else 'passage']
+        values=self.model.encode([prefix+t for t in texts],normalize_embeddings=True,batch_size=32,show_progress_bar=False)
+        import numpy as np
+        if values.shape!=(len(texts),MODELS[self.model_key]['dimension']) or not np.isfinite(values).all():
+            raise ValueError('Dimensão ou conteúdo de embedding inválido')
+        metrics=getattr(self.model,'metrics',{})
+        for name in ('tokenization_ms','embedding_ms'):self.measurements[name]=self.measurements.get(name,0)+metrics.get(name,0)
+        return values
+
+    def calibration_path(self,key,algorithm='baseline-v2'):
+        from .installation import signature
+        return self.root/(key+'-'+self.backend_name+'-'+algorithm+'-'+signature(key,self.backend_name)[:20]+'-calibration.json')
 
     def readiness(self, catalog, algorithm='baseline-v2'):
-        """Inspect binding without loading weights or fitting calibration."""
-        if algorithm == 'structured-v3':
-            from .structured import load_calibration, binding_valid, operational_scope
-            manifest = self.root/'e5-small'/'arandu-model.json'
-            signature = digest({'key':'e5-small','adapter':'embedding-v2','manifest':json.loads(manifest.read_text())}) if manifest.is_file() else None
-            calibration = load_calibration(self.root)
-            valid = (signature is not None and binding_valid(calibration, signature, catalog)
-                     and calibration.get('operational_scope') == operational_scope(catalog))
-            return {'algorithm':algorithm,'calibration_valid':valid,'can_accept':valid,'diagnostic_only':not valid,
-                    'reason':'structured_calibrated' if valid else 'structured_calibration_missing',
-                    'loaded':self.model is not None,'deterministic_available':True}
-        manifest = self.root / "e5-small" / "arandu-model.json"
-        calibration_file = self.root / "e5-small-calibration.json"
-        valid = False
-        reason = "joint_calibration_missing"
-        if manifest.is_file() and calibration_file.is_file():
-            signature = digest({"key": "e5-small", "adapter": "embedding-v2", "manifest": json.loads(manifest.read_text())})
-            calibration = json.loads(calibration_file.read_text())
-            valid = (calibration.get("version") == VERSION and calibration.get("model") == signature
-                     and calibration.get("catalog") == digest(catalog) and calibration.get("validated") is True)
-            reason = "joint_calibrated" if valid else "calibration_model_or_catalog_changed"
-        return {"calibration_valid": valid, "can_accept": valid, "diagnostic_only": not valid,
-                "reason": reason, "loaded": self.model is not None, "deterministic_available": True,
-                "note": "Ação explícita e alvo único usam resolução determinística; hipóteses exigem confirmação ou calibração conjunta >=80%."}
+        from .installation import signature,installed
+        key=self.model_key;bound=signature(key,self.backend_name)
+        path=self.calibration_path(key,algorithm)
+        try:calibration=json.loads(path.read_text(encoding='utf-8'))
+        except (OSError,ValueError):calibration=None
+        if algorithm=='structured-v3':
+            from .structured import binding_valid,operational_scope
+            valid=bool(calibration and binding_valid(calibration,bound,catalog) and calibration.get('operational_scope')==operational_scope(catalog))
+        else:
+            valid=bool(calibration and calibration.get('version')==VERSION and calibration.get('model')==bound
+                and calibration.get('catalog')==digest(catalog) and calibration.get('validated') is True
+                and calibration.get('provenance',{}).get('representative') is True)
+        valid=bool(valid and installed(self.root,key))
+        ready=self.model is not None and self.key==bound
+        return {'algorithm':algorithm,'calibration_valid':valid,'can_accept':valid and ready,'diagnostic_only':not(valid and ready),
+            'reason':'calibrated' if valid else 'combination_calibration_missing','model':key,'backend':self.backend_name,
+            'loaded':ready,'runtime_ready':ready,'installed':installed(self.root,key),'deterministic_available':True}
 
 
     def infer(self, text, catalog, key, config, context=None, *, semantic_only=False):
+        selection(key,config.get('backend',self.backend_name))
+        self.model_key=key;self.backend_name=config.get('backend',self.backend_name);self.measurements={}
         algorithm = config.get('algorithm', 'baseline-v2')
         if algorithm not in {'baseline-v2','structured-v3'}:
             raise ValueError('Algoritmo Decision desconhecido')
+        if algorithm!=getattr(self,'cache_algorithm',None):
+            self.cache.clear();self.query_cache.clear();self.cache_algorithm=algorithm
         if algorithm == 'structured-v3':
             from .structured import infer
             return infer(self, text, catalog, key, config, context, rank_only=semantic_only)
@@ -134,8 +167,7 @@ class Encoder:
         rows = candidates(catalog)
         import numpy as np
         def encode(texts, query=False):
-            prefix = ("query: " if query else "passage: ") if key == "e5-small" else ""
-            return self.model.encode([prefix + t for t in texts], normalize_embeddings=True, batch_size=32, show_progress_bar=False)
+            return self.encode(texts,query=query)
         descriptions = list(dict.fromkeys([r["description"] for r in rows] + list(ACTION_TEXT.values())))
         if len(self.cache) + len(descriptions) > 32768:
             self.cache.clear()
@@ -158,6 +190,7 @@ class Encoder:
             self.query_cache.update(zip(absent, encode(absent, query=True)))
         queries = [self.query_cache[value] for value in texts]
         query = queries[0]
+        ranking_started=time.perf_counter()
         ranking = []
         for row in rows:
             target_score = float(np.dot(query, self.cache[row["description"]]))
@@ -165,7 +198,9 @@ class Encoder:
             ranking.append({**row, "raw_score": max(-1., min(1., (target_score + intent_score) / 2)),
                             "target_score": target_score, "intent_score": intent_score,
                             "reason": "mean(intent cosine, device cosine); joint-v2 candidate"})
+        ranking_ms=(time.perf_counter()-ranking_started)*1000
         result = self.finish(ranking, signature, catalog, key, config, inference_started, cpu_start)
+        result['ranking_ms']=ranking_ms
         analysis_started = time.perf_counter()
         part_queries = queries[1:]
         if fragment:
@@ -210,7 +245,7 @@ class Encoder:
 
     def finish(self, ranking, signature, catalog, key, config, started, cpu_start):
         self.phase = "validation"
-        calibration_file = self.root / (key + "-calibration.json")
+        calibration_file = self.calibration_path(key)
         calibration = json.loads(calibration_file.read_text()) if calibration_file.exists() else None
         result = decision_policy(ranking, signature, catalog, config, calibration)
         try:
@@ -264,8 +299,9 @@ class Encoder:
         ece = sum(v["n"] * abs(b["correct"] / b["n"] - v["correct"] / v["n"]) for b, v in zip(bins, validation_bins) if b["n"] >= 10 and v["n"]) / covered if covered else None
         result = {"version": VERSION, "model": self.key, "catalog": digest(catalog), "bins": bins,
                   "validation_bins": validation_bins, "validation_n": len(validation), "ece": ece,
-                  "validated": covered >= 30 and ece is not None and ece <= .1,
+                  "validated": covered >= 30 and ece is not None and ece <= .1 and (provenance or {}).get("representative") is True,
+                  "provenance":provenance or {},
                   "dataset": digest({"train": train, "validation": validation})}
-        path = self.root / (key + "-calibration.json")
+        path = self.calibration_path(key)
         path.write_text(json.dumps(result), encoding="utf-8")
         return result

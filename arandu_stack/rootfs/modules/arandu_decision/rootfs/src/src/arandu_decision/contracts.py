@@ -6,13 +6,19 @@ import hashlib
 import json
 import math
 import time
+from pathlib import Path
 from collections import Counter
 
 VERSION = "arandu-joint-v2"
 ACTION_TEXT = {"turn_on": "Ligar acender ativar", "turn_off": "Desligar apagar desativar", "query": "Consultar qual é o estado a temperatura"}
-MODELS = {
-    "e5-small": {"name": "Multilingual E5 Small", "repo": "intfloat/multilingual-e5-small", "license": "MIT", "runtime": "sentence-transformers / CPU; query/passsage prefixes", "kind": "decision"},
-}
+MODELS = json.loads(Path(__file__).with_name('model_manifests.json').read_text(encoding='utf-8'))
+BACKENDS = ('cpu','gpu_intel')
+
+
+def selection(model='e5-small', backend='cpu'):
+    if type(model) is not str or model not in MODELS:raise ValueError('Modelo Decision desconhecido')
+    if type(backend) is not str or backend not in BACKENDS:raise ValueError('Backend Decision desconhecido')
+    return model,backend
 
 
 def digest(value):
@@ -27,7 +33,7 @@ def settings(value):
     threshold, margin = value.get("threshold", .8), value.get("min_margin", .08)
     if not finite(threshold) or not .5 <= threshold <= 1 or not finite(margin) or not .001 <= margin <= 1:
         raise ValueError("Threshold: 0,50–1; margem: 0,001–1.")
-    return max(.8, threshold), margin
+    return max(.8, threshold), max(.08, margin)
 
 
 def candidates(catalog):
@@ -59,7 +65,8 @@ def decision_policy(ranking, model, catalog, config, calibration=None):
     confidence = None
     # Calibration is bound to model fingerprint, descriptor catalog, and joint scoring algorithm.
     valid = (calibration and calibration.get("version") == VERSION and calibration.get("model") == model
-             and calibration.get("catalog") == digest(catalog) and calibration.get("validated") is True)
+             and calibration.get("catalog") == digest(catalog) and calibration.get("validated") is True
+             and calibration.get('provenance',{}).get('representative') is True)
     if valid:
         index = min(4, max(0, int(top["raw_score"] * 5)))
         cell = calibration["bins"][index]

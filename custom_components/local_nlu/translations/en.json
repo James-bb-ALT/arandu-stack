@@ -37,7 +37,7 @@
       },
       "intelligence": {
         "title": "Intelligence layers",
-        "description": "NLU first. Decision resolves an explicit action and unique target without embeddings; clear spelling hypotheses require confirmation. Automatic semantic acceptance requires calibrated joint confidence >=80% and margin. LLM handles general conversation in Brazilian Portuguese and assists home automation when needed. Negation, conflicts and permissions remain enforced. Start processes in the app; changes apply to new requests.",
+        "description": "NLU first. Decision resolves an explicit action and unique target without embeddings; clear spelling hypotheses require confirmation. Automatic semantic acceptance requires calibrated joint confidence >=80% and margin. LLM handles general conversation in Brazilian Portuguese and assists home automation when needed. Negation, conflicts and permissions remain enforced. Start processes in the app; changes apply to new requests. Select the Decision model and CPU/Intel GPU in the app; GPU requires verified runtime inference and never silently falls back to CPU.",
         "data": {
           "decision_enabled": "Use Decision Engine",
           "llm_enabled": "Use LLM for general conversation and fallback"

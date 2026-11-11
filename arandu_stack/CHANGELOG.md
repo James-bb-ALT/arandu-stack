@@ -1,3 +1,12 @@
+# Proposta da Fase 3.1 — Decision 3.0.0 (sem release global)
+
+- Três modelos individuais pinados/verificados: E5 Small (default preservado), MiniLM Multilingual e E5 Base; prefixos, tokenizer/pooling e dimensões próprios.
+- Interface de embeddings CPU/SentenceTransformer e GPU Intel/OpenVINO 2024.6 explícita. Exportação IR offline separada; detecção, compilação GPU e smoke numérico obrigatórios, sem fallback silencioso. Drivers são somente do container; não muda kernel/driver HAOS.
+- Seleção verificada, status efetivo, instalação em staging, perfis persistidos separadamente e rollback. Cache/calibração isolados por modelo/runtime/backend/precisão/conversor/algoritmo; mantém structured-v3 e gates >=0,80 e >=0,08.
+- Dashboard e AI Lab nativo com matriz de até seis combinações, repetições/warm-up, métricas e exports sem falas/IDs residenciais. Comparação passiva, sem operações HA.
+- Esta branch não altera gramática, scheduler, executor, protocolos NLU ou versão global. PR e release combinada seguem o protocolo de integração com a Fase 3.2.
+- Evidências, limitações e superfícies compartilhadas em `docs/PHASE-3.1-DECISION-MULTIMODEL.md`.
+
 # 8.0.0 — LLM 2.0 (2026-11-11)
 
 - App 7.0.0, HACS 8.0.0, LLM 2.0.0. NLU, Decision 2.0, STT, TTS e Wake preservados.

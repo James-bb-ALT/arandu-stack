@@ -11,6 +11,8 @@ from collections import Counter
 VERSION = "arandu-joint-v1"
 ACTION_TEXT = {"turn_on": "Ligar acender ativar", "turn_off": "Desligar apagar desativar", "query": "Consultar qual é o estado a temperatura"}
 MODELS = {
+    'minilm-multilingual':{'name':'Multilingual MiniLM L12','repo':'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2','license':'Apache-2.0','kind':'decision','runtime':'CPU / OpenVINO Intel GPU'},
+    'e5-base':{'name':'Multilingual E5 Base','repo':'intfloat/multilingual-e5-base','license':'MIT','kind':'decision','runtime':'CPU / OpenVINO Intel GPU'},
     'qwen3': {'name':'Qwen3 0.6B Q8_0 · experimental','repo':'Qwen/Qwen3-0.6B-GGUF','license':'Apache-2.0','kind':'llm','runtime':'llama.cpp / CPU'},
     "brazembed": {"name": "BrazEmbed PT-BR 110M", "repo": "tardellirs/brazembed-pt-br", "license": "MIT", "runtime": "sentence-transformers / CPU", "kind": "decision"},
     "e5-small": {"name": "Multilingual E5 Small", "repo": "intfloat/multilingual-e5-small", "license": "MIT", "runtime": "sentence-transformers / CPU; query/passsage prefixes", "kind": "decision"},
@@ -27,6 +29,54 @@ def digest(value):
 
 def finite(value):
     return type(value) in (int, float) and math.isfinite(value)
+
+
+def decision_matrix(rows,examples,catalog):
+    """Labelled diagnostics only. Warm-ups excluded; no cosine-as-confidence."""
+    import statistics
+    metrics={};by_entity={e['entity_id']:e for e in catalog['entities']}
+    for row in rows:
+        key=row['combination']
+        cell=metrics.setdefault(key,{'samples':0,'labelled':0,'plan_labelled':0,'correct_plan':0,'intent_correct':0,'entity_correct':0,
+            'intent_labelled':0,'entity_labelled':0,'area_labelled':0,'abstention_labelled':0,
+            'area_correct':0,'abstention_correct':0,'false_activations':0,'confirmations':0,'errors':0,'latencies':[],
+            'embedding_requests':0,'deterministic_requests':0,'stage_values':{},
+            'peak_rss_bytes':None,'status':'pass','cold_start_ms':None})
+        if finite(row.get('cold_start_ms')):cell['cold_start_ms']=max(cell['cold_start_ms'] or 0,row['cold_start_ms'])
+        if row.get('warmup'):continue
+        if row.get('decision_status') in {'unsupported','error'}:
+            cell.update(status=row['decision_status'],reason=row.get('reason'));cell['errors']+=1;continue
+        cell['samples']+=1;cell['latencies'].append(row.get('wall_ms',row.get('total_ms',0)))
+        cell['embedding_requests']+=int(row.get('embedding_used') is True)
+        cell['deterministic_requests']+=int(row.get('embedding_used') is False)
+        for name in ['tokenization_ms','embedding_ms','ranking_ms','cpu_ms','retrieval_ms']:
+            if finite(row.get(name)):cell['stage_values'].setdefault(name,[]).append(row[name])
+        if isinstance(row.get('memory_bytes'),int):cell['peak_rss_bytes']=max(cell['peak_rss_bytes'] or 0,row['memory_bytes'])
+        label=examples[row['case']].get('expected');p=row.get('proposal') or {};targets=p.get('target_entities',[])
+        areas={by_entity[e].get('area_id') for e in targets if e in by_entity}
+        actual={'intent':p.get('intent'),'target_entities':targets,'target_area':next(iter(areas)) if len(areas)==1 else None,
+            'requires_clarification':not bool(p) or p.get('requires_clarification') is True}
+        cell['confirmations']+=int(row.get('confirmation_required') is True)
+        if label is not None:
+            cell['labelled']+=1
+            whole=set(label)>={'intent','target_entities','target_area','requires_clarification'} or label.get('requires_clarification') is True
+            cell['plan_labelled']+=int(whole)
+            cell['correct_plan']+=int(whole and all(actual[k]==v for k,v in label.items()) and (label.get('requires_clarification') is not True or not targets))
+            for field,score in [('intent','intent_correct'),('target_entities','entity_correct'),('target_area','area_correct')]:
+                if field in label:
+                    cell[score]+=int(actual[field]==label[field]);cell[score.replace('_correct','_labelled')]+=1
+            cell['abstention_labelled']+=int(label.get('requires_clarification') is True)
+            cell['abstention_correct']+=int(label.get('requires_clarification') is True and actual['requires_clarification'])
+            cell['false_activations']+=int(label.get('requires_clarification') is True and bool(targets) and not actual['requires_clarification'])
+    for cell in metrics.values():
+        latencies=sorted(cell.pop('latencies'))
+        cell['latency_ms']={f'p{p}':latencies[min(len(latencies)-1,round((len(latencies)-1)*p/100))] for p in [50,95,99]} if latencies else {}
+        cell['stage_latency']={name:{'samples':len(values),**{f'p{p}':sorted(values)[min(len(values)-1,round((len(values)-1)*p/100))] for p in [50,95,99]}}
+            for name,values in cell.pop('stage_values').items()}
+        cell['throughput_per_second']=1000*len(latencies)/sum(latencies) if latencies and sum(latencies)>0 else None
+        cell['rss_measurement']='maximum post-request process RSS sample; not instantaneous peak'
+        cell['gpu_utilization']=None
+    return metrics
 
 
 def settings(value):

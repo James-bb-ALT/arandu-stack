@@ -21,6 +21,8 @@ FIELDS = {
          field('session_ttl', 'Duração do contexto da conversa (segundos)', 'number', min=1, max=600, step=1),
          field('low_battery_threshold', 'Aviso de bateria baixa (%)', 'number', min=0, max=100, step=1)],
  'decision': [DOWNLOAD, THREADS,
+              field('model','Modelo Decision','select',choices=[('e5-small','E5 Small · padrão'),('minilm-multilingual','MiniLM Multilingual L12'),('e5-base','E5 Base')]),
+              field('backend','Processador Decision','select',choices=[('cpu','CPU · PyTorch'),('gpu_intel','GPU Intel · requer validação OpenVINO')],help='GPU explícita indisponível falha sem trocar para CPU. Prepare o modelo e confirme a carga antes de aplicar.'),
               field('algorithm', 'Algoritmo de interpretação', 'select', 'Decisão', choices=[('structured-v3','Decision 2.0 · intenção, alvo e área'),('baseline-v2','Compatibilidade · Decision 1.0')], help='Calibrações são separadas por algoritmo. Comparação no AI Lab nunca executa ações.'),
               field('threshold', 'Confiança mínima calibrada', 'number', 'Decisão', min=.5, max=1, step=.01, help='Aceitação semântica automática exige confiança conjunta calibrada >=80% e margem. Similaridade não é certeza. Ação explícita/alvo único usam validação determinística; hipóteses não calibradas exigem confirmação.'),
               field('min_margin', 'Margem mínima entre candidatos', 'number', 'Decisão', min=.001, max=1, step=.001)],

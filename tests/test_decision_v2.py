@@ -112,7 +112,8 @@ class Calibration(unittest.TestCase):
             self.assertEqual(artifact['brier'],0)
             self.assertEqual(artifact['strata']['semantic_intent']['validation_bins'][4]['n'],30)
             self.assertEqual(previous.read_text(),'{"legacy":true}')
-            self.assertTrue((root/'e5-small-structured-v3-calibration.json').is_file())
+            from arandu_decision.structured import calibration_path
+            self.assertTrue(calibration_path(root).is_file())
 
     def test_synthetic_or_previous_algorithm_artifact_never_accepts(self):
         data=catalog();rank=[{'entity_id':'fan.fixture','intent':'turn_on','raw_score':.95}]

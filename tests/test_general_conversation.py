@@ -114,13 +114,14 @@ class Contracts(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             encoder=Encoder(Path(folder));encoder.load=Mock(return_value='fixture')
             encoder.model=SimpleNamespace(encode=encode)
+            encoder.encode=lambda texts,query=False:encode([("query: " if query else "passage: ")+t for t in texts])
             with patch.dict(sys.modules,{'numpy':SimpleNamespace(dot=dot)}):
                 first=encoder.infer('faz o ventilador funcionar',catalog(),'e5-small',{'min_margin':.001})
                 encoder.infer('faz o ventilador funcionar',catalog(),'e5-small',{'min_margin':.001})
             self.assertAlmostEqual(first['raw_score'],.875)
             self.assertAlmostEqual(first['margin'],.025)
             self.assertIsNone(first['confidence'])
-            self.assertEqual(first['decision_status'],'confirmation_required')
+            self.assertEqual(first['decision_status'],'ambiguous') # Mandatory minimum margin is now .08.
             self.assertEqual(len(calls),2) # One descriptor batch and one batch of three queries; cached repeat.
 
 
@@ -153,8 +154,8 @@ class DecisionPreload(unittest.IsolatedAsyncioTestCase):
             root=Path(folder);(root/'e5-small').mkdir()
             (root/'e5-small/arandu-model.json').write_text('{}')
             (root/'e5-small/model.safetensors').touch()
-            with patch('arandu_decision.service.Encoder') as factory:
-                encoder=factory.return_value;encoder.load_ms=12.5
+            with patch('arandu_decision.service.Encoder') as factory,patch('arandu_decision.service.installed',return_value=True):
+                encoder=factory.return_value;encoder.load_ms=12.5;encoder.active_backend="cpu";encoder.active_model_key="e5-small";encoder.threads=2
                 client=TestClient(TestServer(create_app(root)))
                 await client.start_server()
                 try:
@@ -162,5 +163,5 @@ class DecisionPreload(unittest.IsolatedAsyncioTestCase):
                     value=await response.json()
                     self.assertEqual(response.status,200)
                     self.assertEqual(value['preload_ms'],12.5)
-                    self.assertTrue(value['loaded']);encoder.load.assert_called_once_with('e5-small')
+                    self.assertTrue(value['loaded']);encoder.load.assert_called_once_with('e5-small','cpu')
                 finally:await client.close()

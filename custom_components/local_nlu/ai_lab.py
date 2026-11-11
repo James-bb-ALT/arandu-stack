@@ -43,6 +43,7 @@ async def local_request(session, endpoint, path, *, payload=None, body=None, tim
         if response.status != 200:
             code, phase = f"http_{response.status}", "connection" if response.status in (502, 503, 504) else "inference"
             messages = {
+                'backend_unavailable':'GPU Intel indisponível. Verifique a detecção OpenVINO e a preparação IR no app. Nenhuma troca silenciosa para CPU.',
                 "llm_output_truncated": "LLM atingiu o limite de tokens. Nenhuma ação autorizada. Nas opções LLM, use max_tokens 192 ou 256 no legado; 384 para planos v2 maiores. Salve e aplique o módulo.",
                 "llm_invalid_json": "LLM retornou JSON inválido. Nenhuma ação autorizada. Confira o limite de geração e os logs do runtime.",
                 "llm_response_invalid": "LLM retornou um envelope de resposta inválido. Nenhuma ação autorizada.",
@@ -106,11 +107,20 @@ class Lab:
                 try:
                     llms=await local_request(session,llm_worker,'/api/llm/models',timeout=5)
                     result['models']=[m for m in result['models'] if m.get('kind')!='llm']+[{**m,'kind':'llm'} for m in llms['models']]
+                    decisions=await local_request(session,llm_worker,'/api/decision/models',timeout=5)
+                    result['models']=[m for m in result['models'] if m.get('kind')!='decision']+[{**m,'kind':'decision'} for m in decisions['models']]
+                    result['decision_backends']=decisions.get('backends',[])
                 except Exception:pass
                 return result
             except Exception as exc:
                 return {"models": [{"id": key, **model, "available": False, "installed": None,
                                      "reason": model.get("unavailable") or "Worker inacessível; instalação não verificada"} for key, model in MODELS.items()], "error": str(exc)[:256]}
+        if command in {'decision_models','decision_prepare','decision_apply'} or command=='install' and payload.get('model') in {'e5-small','minilm-multilingual','e5-base'}:
+            if command=='decision_models':return await local_request(session,llm_worker,'/api/decision/models',timeout=10)
+            if command=='decision_apply' and payload.get('confirm') is not True:raise ValueError('Confirmação explícita necessária')
+            action={'decision_prepare':'prepare','decision_apply':'apply'}.get(command,'install')
+            return await local_request(session,llm_worker,'/api/decision/'+action,payload={'model':payload.get('model','e5-small'),
+                'backend':payload.get('backend','cpu'),'confirm':payload.get('confirm')},timeout=970 if action=='install' else 310)
         if command=='install' and payload.get('model') in {'tucano','qwen3'}:
             return await local_request(session,llm_worker,'/api/llm/install',payload={'model':payload['model']},timeout=360)
         if command=='llm_apply':
@@ -202,7 +212,7 @@ class Lab:
             if command == "readiness":
                 policy = {"nlu": True, "decision": options.get("decision_enabled", False), "llm": options.get("llm_enabled", False)}
                 try:
-                    readiness = await local_request(session, worker, "/infer", payload={"action": "readiness", "catalog": catalog, "model": "e5-small"}, timeout=5)
+                    readiness = await local_request(session, options.get('stack_endpoint') or worker, "/infer", payload={"action": "readiness", "catalog": catalog}, timeout=5)
                 except Exception:
                     readiness = {"calibration_valid": None, "can_accept": False, "reason": "Serviço Decision indisponível; calibração não verificada."}
                 return {"production_policy": policy, "decision": readiness}
@@ -217,11 +227,38 @@ class Lab:
                 result = await runtime.execute(saved["operations"], snapshot, input_, Session(now + 30), options, ResolvedIdentity(user.id, user, "context"))
                 return asdict(result)
             if command in ("unload", "load", "install", "calibrate"):
-                body = {"action": command, "catalog": catalog, "model": payload.get("model", "e5-small")}
+                body = {"action": command, "catalog": catalog, "model": payload.get("model", "e5-small"),'backend':payload.get('backend','cpu')}
                 body['algorithm'] = payload.get('algorithm', 'structured-v3')
                 if command == "calibrate":
                     body.update(train=payload["train"], validation=payload["validation"], provenance=payload.get('provenance'))
                 return await local_request(session, worker, "/infer", payload=body, timeout=180)
+            if command=='decision_matrix':
+                from .ai_lab_core import decision_matrix
+                label_source=payload.get('label_source','administrator_supplied')
+                if label_source not in {'administrator_supplied','approved_technical_fixtures'}:raise ValueError('Fonte de rótulos inválida')
+                examples=payload.get('examples');combinations=payload.get('combinations')
+                if type(examples) is not list or not 1<=len(examples)<=20:raise ValueError('Use 1–20 exemplos')
+                if type(combinations) is not list or not 1<=len(combinations)<=6:raise ValueError('Use 1–6 combinações')
+                for c in combinations:
+                    if type(c) is not dict or c.get('model') not in {'e5-small','minilm-multilingual','e5-base'} or c.get('backend') not in {'cpu','gpu_intel'}:raise ValueError('Combinação inválida')
+                ids={r['entity_id'] for r in catalog['entities']};areas={a['area_id'] for a in catalog['areas']}
+                for example in examples:
+                    if type(example) is not dict or type(example.get('text')) is not str or not 1<=len(example['text'])<=512:raise ValueError('Exemplo inválido')
+                    label=example.get('expected')
+                    if label is not None:
+                        if type(label) is not dict or not label or set(label)-{'intent','target_entities','target_area','requires_clarification'}:raise ValueError('Rótulo inválido')
+                        if 'intent' in label and label['intent'] not in (None,'turn_on','turn_off','query'):raise ValueError('Intenção inválida')
+                        if 'target_entities' in label and (type(label['target_entities']) is not list or any(type(e) is not str or e not in ids for e in label['target_entities'])):raise ValueError('Alvo inválido')
+                        if 'requires_clarification' in label and type(label['requires_clarification']) is not bool:raise ValueError('Rótulo inválido')
+                        if label.get('target_area') is not None and label['target_area'] not in areas:raise ValueError('Área inválida')
+                area=payload.get('test_area_id') or origin_area(self.hass,SimpleNamespace(device_id=None,satellite_id=None),options)
+                if area is not None and area not in areas:raise ValueError('Área inválida')
+                result=await local_request(session,options.get('stack_endpoint') or worker,'/infer',payload={'action':'compare',
+                    'combinations':combinations,'examples':[{'text':e['text']} for e in examples],
+                    'repetitions':payload.get('repetitions',3),'warmup':payload.get('warmup',1),'catalog':catalog,'context':{'origin_area':area}},timeout=310)
+                return {'dry_run':True,'execution_allowed':False,'home_assistant_actions':0,'rows':result['comparisons'],
+                    'metrics':decision_matrix(result['comparisons'],examples,catalog),'repetitions':payload.get('repetitions',3),
+                    'warmup':payload.get('warmup',1),'label_source':label_source,'representative':False}
             if command == 'decision_compare':
                 examples = payload.get('examples')
                 if type(examples) is not list or not 1 <= len(examples) <= 20:
@@ -313,7 +350,7 @@ class Lab:
                     threshold, margin = settings(payload)
                     threshold = max(.8, threshold)
                     response = await local_request(session, worker, "/infer", payload={**data, "action": "decision", "catalog": catalog, "context": semantic_context,
-                        "model": model, "config": {"threshold": threshold, "min_margin": margin, "algorithm":payload.get('algorithm','structured-v3')}})
+                        "model": model,"backend":payload.get("backend","cpu"), "config": {"threshold": threshold, "min_margin": margin, "algorithm":payload.get('algorithm','structured-v3')}})
                     if response.get("decision_status") == "accepted":
                         confidence, gap = response.get("confidence"), response.get("margin")
                         if not finite(confidence) or confidence < threshold or not finite(gap) or gap < margin:
@@ -396,7 +433,7 @@ class Lab:
             if command == "compare":
                 models = payload.get("models", [payload.get("model", "e5-small")])
                 examples = payload.get("examples", [])
-                if type(models) is not list or not 1 <= len(models) <= 4 or any(m not in ("brazembed", "e5-small", "saracura", "jatoba") for m in models) or type(examples) is not list or not 1 <= len(examples) <= 20:
+                if type(models) is not list or not 1 <= len(models) <= 4 or any(m not in ("brazembed", "e5-small", "minilm-multilingual", "e5-base", "saracura", "jatoba") for m in models) or type(examples) is not list or not 1 <= len(examples) <= 20:
                     raise ValueError("Compare 1–4 motores e 1–20 exemplos por lote")
                 output = {}
                 for example in examples:

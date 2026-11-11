@@ -1,4 +1,4 @@
-"""Field-separated E5 ranking. Shared weights/cache; no HA execution."""
+"""Field-separated ranking with model-native embeddings; no HA execution."""
 from __future__ import annotations
 
 import json
@@ -28,12 +28,13 @@ def operational_scope(catalog):
                          for r in catalog['entities'] if r.get('attributes', {}).get('available') is True))
 
 
-def calibration_path(root):
-    return Path(root)/'e5-small-structured-v3-calibration.json'
+def calibration_path(root, key="e5-small", backend="cpu"):
+    from .installation import signature
+    return Path(root)/(key+"-"+backend+"-structured-v3-"+signature(key,backend)[:20]+"-calibration.json")
 
 
-def load_calibration(root):
-    path = calibration_path(root)
+def load_calibration(root,key="e5-small",backend="cpu"):
+    path = calibration_path(root,key,backend)
     try:
         return json.loads(path.read_text(encoding='utf-8')) if path.is_file() else None
     except (OSError, ValueError):
@@ -106,7 +107,7 @@ def infer(encoder, text, catalog, key, config, context=None, *, rank_only=False)
             'semantic_fingerprint': semantic_fingerprint(catalog), 'catalog_fingerprint': digest(catalog),
             'model': key, 'model_fingerprint': None, 'raw_score': None, 'margin': None, 'confidence': None,
             'proposal': None, 'ranking': [], 'embedding_used': False, 'confirmation_required': False,
-            'load_ms': 0, 'retrieval_ms': 0, 'inference_ms': 0, 'analysis_ms': 0,
+            'load_ms': 0, 'retrieval_ms': 0, 'inference_ms': 0, 'analysis_ms': 0, 'ranking_ms':0,
             'preparation_ms': (prepared-started)*1000, 'validation_ms': 0,
             'cache': {'descriptor_hits': 0, 'descriptor_misses': 0, 'query_hits': 0, 'query_misses': 0}}
     def finish(state, reason):
@@ -157,7 +158,7 @@ def infer(encoder, text, catalog, key, config, context=None, *, rank_only=False)
     missing = [d for d in descriptions if 'v3:'+d not in encoder.cache]
     base['cache'].update(descriptor_hits=len(descriptions)-len(missing), descriptor_misses=len(missing))
     if missing:
-        embeddings = encoder.model.encode(['passage: '+d for d in missing], normalize_embeddings=True, batch_size=32, show_progress_bar=False)
+        embeddings = encoder.encode(missing)
         encoder.cache.update(('v3:'+d, v) for d, v in zip(missing, embeddings))
     base['retrieval_ms'] = (time.perf_counter()-before)*1000
     before = time.perf_counter()
@@ -169,9 +170,10 @@ def infer(encoder, text, catalog, key, config, context=None, *, rank_only=False)
         encoder.query_cache.clear()
         absent = unique
     if absent:
-        vectors = encoder.model.encode(['query: '+q for q in absent], normalize_embeddings=True, batch_size=32, show_progress_bar=False)
+        vectors = encoder.encode(absent,query=True)
         encoder.query_cache.update(('v3:'+q,v) for q,v in zip(absent,vectors))
     import numpy as np
+    ranking_started=time.perf_counter()
     action_query, device_query = [encoder.query_cache['v3:'+q] for q in texts]
     ranking = []
     for row, intent in pairs:
@@ -180,10 +182,11 @@ def infer(encoder, text, catalog, key, config, context=None, *, rank_only=False)
         ranking.append({'entity_id': row['entity_id'], 'intent': intent, 'area_id': row.get('area_id'),
                         'raw_score': max(-1., min(1., (a+d)/2)), 'intent_score': a, 'target_score': d,
                         'reason': 'mean of separate intent and entity cosine fields'})
+    base['ranking_ms']=(time.perf_counter()-ranking_started)*1000
     base['inference_ms'] = (time.perf_counter()-before)*1000
     before = time.perf_counter()
     stratum = 'explicit_intent' if action else 'semantic_intent'
-    base.update(policy(ranking, signature, catalog, {**config,'stratum':stratum}, load_calibration(encoder.root)))
+    base.update(policy(ranking, signature, catalog, {**config,'stratum':stratum}, load_calibration(encoder.root,key,encoder.backend_name)))
     base['calibration_stratum'] = stratum
     base.update(eligible_pairs=len(pairs), validation_ms=(time.perf_counter()-before)*1000)
     if not rank_only and base['ranking']:
@@ -263,7 +266,7 @@ def calibrate(encoder, catalog, key, train, validation, provenance):
               'dataset':digest({'train':train,'validation':validation}),
               'confidence_method':'minimum Wilson 95% lower bound of independent train/validation bins'}
     encoder.root.mkdir(parents=True,exist_ok=True)
-    path = calibration_path(encoder.root)
+    path = calibration_path(encoder.root,key,encoder.backend_name)
     with tempfile.NamedTemporaryFile('w',encoding='utf-8',dir=encoder.root,delete=False) as file:
         temporary = Path(file.name)
         json.dump(result,file,ensure_ascii=False,allow_nan=False)

@@ -7,7 +7,7 @@ RUN mkdir -p /runtime/lib /runtime/wheels && find /transcribe/build -name '*.so*
 
 FROM python:3.12-slim-bookworm
 
-ARG BUILD_VERSION="4.0.0"
+ARG BUILD_VERSION="4.0.1"
 ARG BUILD_ARCH="amd64"
 
 LABEL \

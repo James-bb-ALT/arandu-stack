@@ -213,8 +213,8 @@ class DecisionParts(unittest.TestCase):
             encoder.model=SimpleNamespace(encode=lambda texts,**kwargs:[[1.,0.,0.] for _ in texts])
             numpy=SimpleNamespace(dot=lambda a,b:sum(x*y for x,y in zip(a,b)))
             with patch.dict(sys.modules,{'numpy':numpy}):
-                result=encoder.infer('acnde o ventilador',catalog(),'e5-small',{},context={'origin_area':'office'})
-            self.assertEqual(result['analysis']['action']['text'],'acnde')
+                result=encoder.infer('leva o ventilador',catalog(),'e5-small',{},context={'origin_area':'office'})
+            self.assertEqual(result['analysis']['action']['text'],'leva')
             self.assertIn('semantic_similarity',result['analysis']['action']['ranking'][0])
             self.assertEqual(result['analysis']['device']['entity_id'],'fan.office')
             self.assertEqual(result['analysis']['device']['text'],'Ventilador')

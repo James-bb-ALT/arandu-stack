@@ -1,6 +1,6 @@
 # STT multimodelo e laboratório de voz
 
-App **4.0.0**, STT **4.0.0**, integração HACS **5.0.0**. Nova etapa de release pela inclusão de funcionalidades, conforme `AGENTS.md`. NLU, Decision, LLM, Wake e TTS mantêm suas versões.
+App **5.0.0**, STT **4.0.1**, integração HACS **6.0.0**. Nova etapa de release pela inclusão de funcionalidades, conforme `AGENTS.md`. NLU, Decision, LLM, Wake e TTS mantêm suas versões.
 
 ## Modelos e licenças
 
@@ -124,7 +124,7 @@ $env:ARANDU_STT_TEST_WAV = 'CAMINHO_DO_AUDIO_WAV'
 $env:ARANDU_STT_TEST_MODELS = 'whisper_base,whisper_tiny,whisper_small,fastconformer'
 python -m pytest tests/test_stt_real.py -q
 python tests/stt_browser_check.py
-docker build -t arandu-assistant:4.0.0 ./arandu_stack
+docker build -t arandu-assistant:5.0.0 ./arandu_stack
 ```
 
 O teste de navegador requer Playwright/Chromium e usa a porta local 8770. Testa o componente nativo com API e pesos reais através de uma fixture local; autenticação/permissão HA tem testes separados. Isso não substitui instalação no HA Core. A suíte acústica verifica operação offline, silêncio, liberação de processos e transcrição pelo Wyoming com o ID legado.
@@ -154,7 +154,7 @@ O Home Assistant local respondeu HTTP 401 em `/api/`; este ambiente não fornece
 
 ## Troubleshooting e rollback
 
-- **Painel não aparece:** atualize HACS 5.0.0, reinicie HA e confirme acesso administrativo. Recarregue a página para carregar `stt.js` novo.
+- **Painel não aparece:** atualize HACS 6.0.0, reinicie HA e confirme acesso administrativo. Recarregue a página para carregar `stt.js` novo.
 - **Configure o endpoint:** nas opções da integração, use o hostname interno do app e porta 8099. `127.0.0.1` do Core não aponta automaticamente ao app.
 - **Não instalado / integridade inválida:** use Baixar novamente. Confira conectividade apenas durante instalação. Não edite manifestos para ignorar hashes.
 - **Microfone indisponível:** confirme HTTPS, permissões e suporte MediaRecorder; upload continua disponível. MP3 não faz parte da allowlist inicial.
@@ -169,3 +169,7 @@ O resultado de instalação em Home Assistant OS, o microfone físico do usuári
 Consulte [registro de validação da extensão](STT-EXTENDED-VALIDATION-2026-11-10.json) e [release v5.0.0](RELEASE-v5.0.0.md). Apenas **Orukeet** foi baixado nesta tarefa; FastConformer e Whisper reutilizaram caches existentes. Parakeet 30s, TAGARELA e Granite têm adaptadores/instalação/testes de contrato, mas **não tiveram inferência comprovada com seus pesos** nesta entrega. O runtime Granite compilado foi importado em Linux e identificou CPU, sem Torch no venv STT.
 
 O áudio técnico disponível é sintético, não gravação humana. Não há classificação de precisão entre os seis candidatos, avaliação de negações/dispositivos humanos, P95 ou promessa de latência no i5-6500T. Foram medidas 1, 2 e 4 threads para FastConformer, Base e Orukeet no Ryzen local; os tempos estão no registro e não substituem avaliação no hardware de produção. A comparação com gravação humana fica disponível no AI Lab, com métricas e exportação.
+
+## Padrão atualizado em 11/11/2026
+
+Instalações novas usam Orukeet INT8; configurações explícitas e FastConformer legado sem `stt_model` são preservados. O decoder atual não oferece bloqueio suportado em PT-BR: [investigação e limites](INTELLIGENCE-v6.0.0.md#orukeet-padrão-e-idioma). Nenhuma opção de idioma fictícia foi acrescentada.

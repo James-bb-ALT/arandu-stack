@@ -78,12 +78,25 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
                 "phase": getattr(adapter, "phase", "validation")}, status=422)
 
     app = web.Application(client_max_size=2_097_152, middlewares=[boundary])
+    preload_ms = 0.0
+    async def warm(app):
+        nonlocal preload_ms
+        if (root / KEY / 'arandu-model.json').is_file() and (root / KEY / 'model.safetensors').is_file():
+            try:
+                async with inference_slot():
+                    await asyncio.to_thread(adapter.load, KEY)
+                    preload_ms = adapter.load_ms
+                    adapter.phase = 'ready'
+            except Exception:
+                import logging
+                logging.getLogger('arandu.decision').exception('Pré-carga indisponível; resoluções explícitas permanecem disponíveis')
+    app.on_startup.append(warm)
     async def status(request):
         installed = (root / KEY / "arandu-model.json").is_file() and (root / KEY / "model.safetensors").is_file()
         available = installed and True
-        return web.json_response({"package": "arandu-decision", "version": "0.3.0", "protocol": "arandu-inference-v1",
+        return web.json_response({"package": "arandu-decision", "version": "1.0.0", "protocol": "arandu-inference-v1",
             "models": [{"id": KEY, **MODELS[KEY], "installed": installed, "available": bool(available),
-                "reason": None if available else "Pesos ou runtime ausentes"}], "busy": lock.locked(), "threads": threads})
+                "reason": None if available else "Pesos ou runtime ausentes"}], "busy": lock.locked(), "threads": threads, "loaded": adapter.model is not None, "preload_ms": preload_ms, "deterministic_available": True})
 
     async def infer(request):
         body = await request.json()

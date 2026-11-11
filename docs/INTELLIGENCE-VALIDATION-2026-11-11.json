@@ -1,0 +1,853 @@
+{
+  "date_local": "2026-11-11",
+  "timezone": "America/Bahia",
+  "release": "v6.0.0",
+  "versions": {
+    "app": "5.0.0",
+    "hacs": "6.0.0",
+    "decision": "1.0.0",
+    "llm": "1.0.0",
+    "stt": "4.0.1",
+    "nlu": "0.6.0",
+    "tts": "0.2.1"
+  },
+  "tests": {
+    "python_general": {
+      "passed": 201,
+      "opt_in_skipped": 3,
+      "subtests_passed": 29
+    },
+    "decision_llm_packages": {
+      "passed": 10
+    },
+    "python_stt": {
+      "passed": 49,
+      "subtests_passed": 1003
+    },
+    "javascript": {
+      "passed": 8
+    },
+    "real_stt_opt_in": {
+      "passed": 3,
+      "model": "orukeet_int8",
+      "synthetic_audio": true,
+      "offline": true,
+      "wyoming_legacy_id": true
+    },
+    "rust_nlu_available": {
+      "passed": 84,
+      "offline": true,
+      "suites": [
+        "lib",
+        "contextual",
+        "http",
+        "v2_resolve",
+        "v2_interpret_http",
+        "v3_interpret_http"
+      ]
+    },
+    "full_rust_nlu_suite": "Not rerun: frozen corpus absent in this snapshot, documented by prior release validation.",
+    "docker_build": {
+      "passed": true,
+      "image": "arandu-assistant:5.0.0",
+      "tested_image_id": "sha256:8e3f79c452bad521c65d6e508f2c64342f09b8b7b34094c006ba2264b82764b2"
+    },
+    "real_http": {
+      "passed": true,
+      "source_overrides": false,
+      "model_weights_real": true,
+      "models_read_only": true,
+      "protected_transport": true
+    },
+    "home_assistant_physical": {
+      "validated": false,
+      "api_http_status": 401
+    }
+  },
+  "cold_and_cached_adapter_smoke": {
+    "hardware": "AMD Ryzen 7 5700X, Docker Linux; not target i5-6500T",
+    "threads": 2,
+    "model_weights_real": true,
+    "decision": [
+      {
+        "text": "liga ventilador",
+        "decision_status": "resolved",
+        "reason": "explicit_action_and_unique_target",
+        "proposal": {
+          "intent": "turn_on",
+          "target_entities": [
+            "fan.fixture"
+          ],
+          "target_area": null,
+          "confidence": null,
+          "requires_clarification": false,
+          "clarification_question": null,
+          "reason": "explicit_action_and_unique_target"
+        },
+        "confidence": null,
+        "margin": null,
+        "raw_score": null,
+        "ranking": [],
+        "grounding": "deterministic-v1",
+        "catalog_fingerprint": "7180450438175ee2a382d29e629a8445e2d38587c40ea9c4a5bbcc08429a6d19",
+        "model": "e5-small",
+        "load_ms": 0,
+        "inference_ms": 0,
+        "retrieval_ms": 0,
+        "analysis_ms": 0,
+        "total_ms": 0.2903330000094684,
+        "embedding_used": false,
+        "confirmation_required": false
+      },
+      {
+        "text": "acnde ventilador",
+        "decision_status": "confirmation_required",
+        "reason": "spelling_hypothesis",
+        "proposal": {
+          "intent": "turn_on",
+          "target_entities": [
+            "fan.fixture"
+          ],
+          "target_area": null,
+          "confidence": null,
+          "requires_clarification": true,
+          "clarification_question": "Acho que você gostaria de ligar Ventilador (Sala). É isso?",
+          "reason": "spelling_hypothesis"
+        },
+        "confirmation_required": true,
+        "confidence": null,
+        "margin": null,
+        "raw_score": null,
+        "ranking": [],
+        "analysis": {
+          "action": {
+            "text": "acnde",
+            "exact": null,
+            "ranking": [
+              {
+                "intent": "turn_on",
+                "lexical_similarity": 0.9090909090909091
+              },
+              {
+                "intent": "query",
+                "lexical_similarity": 0.46153846153846156
+              },
+              {
+                "intent": "turn_off",
+                "lexical_similarity": 0.36363636363636365
+              }
+            ]
+          },
+          "device": {
+            "entity_id": "fan.fixture",
+            "name": "Ventilador",
+            "unambiguous": true,
+            "candidates": [
+              {
+                "entity_id": "fan.fixture",
+                "name": "Ventilador",
+                "area_id": "sala"
+              }
+            ]
+          },
+          "area": {
+            "area_id": "sala",
+            "source": "origin"
+          },
+          "note": "Similaridades são hipóteses, não probabilidades nem autorização."
+        },
+        "embedding_used": false,
+        "model": "e5-small",
+        "catalog_fingerprint": "7180450438175ee2a382d29e629a8445e2d38587c40ea9c4a5bbcc08429a6d19",
+        "load_ms": 0,
+        "inference_ms": 0,
+        "retrieval_ms": 0,
+        "analysis_ms": 0,
+        "total_ms": 13.753437000048052
+      },
+      {
+        "text": "faz o ventilador funcionar",
+        "ranking": [
+          {
+            "entity_id": "fan.fixture",
+            "intent": "turn_off",
+            "description": "Ventilador Sala  ",
+            "text": "Desligar apagar desativar Ventilador Sala  ",
+            "area_id": "sala",
+            "actions": [
+              "turn_on",
+              "turn_off",
+              "query"
+            ],
+            "aliases": [],
+            "raw_score": 0.872649222612381,
+            "target_score": 0.8942584991455078,
+            "intent_score": 0.8510399460792542,
+            "reason": "mean(intent cosine, device cosine); joint-v2 candidate"
+          },
+          {
+            "entity_id": "fan.fixture",
+            "intent": "turn_on",
+            "description": "Ventilador Sala  ",
+            "text": "Ligar acender ativar Ventilador Sala  ",
+            "area_id": "sala",
+            "actions": [
+              "turn_on",
+              "turn_off",
+              "query"
+            ],
+            "aliases": [],
+            "raw_score": 0.8716501295566559,
+            "target_score": 0.8942584991455078,
+            "intent_score": 0.849041759967804,
+            "reason": "mean(intent cosine, device cosine); joint-v2 candidate"
+          },
+          {
+            "entity_id": "fan.fixture",
+            "intent": "query",
+            "description": "Ventilador Sala  ",
+            "text": "Consultar qual é o estado a temperatura Ventilador Sala  ",
+            "area_id": "sala",
+            "actions": [
+              "turn_on",
+              "turn_off",
+              "query"
+            ],
+            "aliases": [],
+            "raw_score": 0.8684707283973694,
+            "target_score": 0.8942584991455078,
+            "intent_score": 0.842682957649231,
+            "reason": "mean(intent cosine, device cosine); joint-v2 candidate"
+          }
+        ],
+        "raw_score": 0.872649222612381,
+        "confidence": null,
+        "margin": 0.0009990930557250977,
+        "decision_status": "ambiguous",
+        "reason": "insufficient_margin",
+        "proposal": null,
+        "model": "e5-small",
+        "model_fingerprint": "23c79772d3e5fbfea25909a35a2f11f60a32468616e12e893721d4c1b9d171a5",
+        "load_ms": 7726.950796000039,
+        "inference_ms": 29.445066999983283,
+        "cpu_ms": 5492.137451,
+        "memory_bytes": 819851264,
+        "eligible_pairs": 3,
+        "catalog_fingerprint": "7180450438175ee2a382d29e629a8445e2d38587c40ea9c4a5bbcc08429a6d19",
+        "analysis": {
+          "action": {
+            "text": "faz funcionar",
+            "exact": null,
+            "ranking": [
+              {
+                "intent": "turn_off",
+                "lexical_similarity": 0.35294117647058826,
+                "semantic_similarity": 0.8625037670135498
+              },
+              {
+                "intent": "turn_on",
+                "lexical_similarity": 0.42857142857142855,
+                "semantic_similarity": 0.858242928981781
+              },
+              {
+                "intent": "query",
+                "lexical_similarity": 0.5555555555555556,
+                "semantic_similarity": 0.839806079864502
+              }
+            ]
+          },
+          "device": {
+            "entity_id": "fan.fixture",
+            "name": "Ventilador",
+            "unambiguous": true,
+            "candidates": [
+              {
+                "entity_id": "fan.fixture",
+                "name": "Ventilador",
+                "area_id": "sala"
+              }
+            ],
+            "text": "Ventilador",
+            "ranking": [
+              {
+                "entity_id": "fan.fixture",
+                "semantic_similarity": 0.9142246246337891
+              }
+            ]
+          },
+          "area": {
+            "area_id": "sala",
+            "source": "origin"
+          },
+          "note": "Similaridades são hipóteses, não probabilidades nem autorização."
+        },
+        "analysis_ms": 0.027954000017871294,
+        "retrieval_ms": 321.35873400000037,
+        "total_ms": 8086.016303999997
+      },
+      {
+        "text": "faz o ventilador funcionar",
+        "ranking": [
+          {
+            "entity_id": "fan.fixture",
+            "intent": "turn_off",
+            "description": "Ventilador Sala  ",
+            "text": "Desligar apagar desativar Ventilador Sala  ",
+            "area_id": "sala",
+            "actions": [
+              "turn_on",
+              "turn_off",
+              "query"
+            ],
+            "aliases": [],
+            "raw_score": 0.872649222612381,
+            "target_score": 0.8942584991455078,
+            "intent_score": 0.8510399460792542,
+            "reason": "mean(intent cosine, device cosine); joint-v2 candidate"
+          },
+          {
+            "entity_id": "fan.fixture",
+            "intent": "turn_on",
+            "description": "Ventilador Sala  ",
+            "text": "Ligar acender ativar Ventilador Sala  ",
+            "area_id": "sala",
+            "actions": [
+              "turn_on",
+              "turn_off",
+              "query"
+            ],
+            "aliases": [],
+            "raw_score": 0.8716501295566559,
+            "target_score": 0.8942584991455078,
+            "intent_score": 0.849041759967804,
+            "reason": "mean(intent cosine, device cosine); joint-v2 candidate"
+          },
+          {
+            "entity_id": "fan.fixture",
+            "intent": "query",
+            "description": "Ventilador Sala  ",
+            "text": "Consultar qual é o estado a temperatura Ventilador Sala  ",
+            "area_id": "sala",
+            "actions": [
+              "turn_on",
+              "turn_off",
+              "query"
+            ],
+            "aliases": [],
+            "raw_score": 0.8684707283973694,
+            "target_score": 0.8942584991455078,
+            "intent_score": 0.842682957649231,
+            "reason": "mean(intent cosine, device cosine); joint-v2 candidate"
+          }
+        ],
+        "raw_score": 0.872649222612381,
+        "confidence": null,
+        "margin": 0.0009990930557250977,
+        "decision_status": "ambiguous",
+        "reason": "insufficient_margin",
+        "proposal": null,
+        "model": "e5-small",
+        "model_fingerprint": "23c79772d3e5fbfea25909a35a2f11f60a32468616e12e893721d4c1b9d171a5",
+        "load_ms": 0,
+        "inference_ms": 1.2173109999480403,
+        "cpu_ms": 8.451160999999985,
+        "memory_bytes": 819851264,
+        "eligible_pairs": 3,
+        "catalog_fingerprint": "7180450438175ee2a382d29e629a8445e2d38587c40ea9c4a5bbcc08429a6d19",
+        "analysis": {
+          "action": {
+            "text": "faz funcionar",
+            "exact": null,
+            "ranking": [
+              {
+                "intent": "turn_off",
+                "lexical_similarity": 0.35294117647058826,
+                "semantic_similarity": 0.8625037670135498
+              },
+              {
+                "intent": "turn_on",
+                "lexical_similarity": 0.42857142857142855,
+                "semantic_similarity": 0.858242928981781
+              },
+              {
+                "intent": "query",
+                "lexical_similarity": 0.5555555555555556,
+                "semantic_similarity": 0.839806079864502
+              }
+            ]
+          },
+          "device": {
+            "entity_id": "fan.fixture",
+            "name": "Ventilador",
+            "unambiguous": true,
+            "candidates": [
+              {
+                "entity_id": "fan.fixture",
+                "name": "Ventilador",
+                "area_id": "sala"
+              }
+            ],
+            "text": "Ventilador",
+            "ranking": [
+              {
+                "entity_id": "fan.fixture",
+                "semantic_similarity": 0.9142246246337891
+              }
+            ]
+          },
+          "area": {
+            "area_id": "sala",
+            "source": "origin"
+          },
+          "note": "Similaridades são hipóteses, não probabilidades nem autorização."
+        },
+        "analysis_ms": 0.025128000004315254,
+        "retrieval_ms": 0.02516799997920316,
+        "total_ms": 4.582717000005232
+      }
+    ],
+    "llm": [
+      {
+        "text": "Conta uma piada curta",
+        "proposal": {
+          "intent": "conversation",
+          "target_entities": [],
+          "target_area": null,
+          "confidence": null,
+          "requires_clarification": false,
+          "clarification_question": null,
+          "reason": "general_conversation"
+        },
+        "response_text": "Por que os cientistas não confiam nos átomos? Porque eles compõem tudo!",
+        "confirmation_required": false,
+        "load_ms": 3037.8054720000023,
+        "inference_ms": 610.7579370000167,
+        "model": "tucano",
+        "cpu_ms": 2590.0,
+        "memory_bytes": 1022918656,
+        "request_total_ms": 3883.3127789999935
+      },
+      {
+        "text": "Qual é a capital da França?",
+        "proposal": {
+          "intent": "conversation",
+          "target_entities": [],
+          "target_area": null,
+          "confidence": null,
+          "requires_clarification": false,
+          "clarification_question": null,
+          "reason": "general_conversation"
+        },
+        "response_text": "A capital da França é Paris.",
+        "confirmation_required": false,
+        "load_ms": 0,
+        "inference_ms": 173.81435300001158,
+        "model": "tucano",
+        "cpu_ms": 2929.9999999999995,
+        "memory_bytes": 1023053824,
+        "request_total_ms": 175.661631999958
+      }
+    ],
+    "home_assistant_actions": 0,
+    "physical_ha_validated": false
+  },
+  "final_stack_http": {
+    "app_version": "5.0.0",
+    "stt_default": "orukeet_int8",
+    "explicit": {
+      "decision_status": "resolved",
+      "reason": "explicit_action_and_unique_target",
+      "proposal": {
+        "intent": "turn_on",
+        "target_entities": [
+          "fan.fixture"
+        ],
+        "target_area": null,
+        "confidence": null,
+        "requires_clarification": false,
+        "clarification_question": null,
+        "reason": "explicit_action_and_unique_target"
+      },
+      "confidence": null,
+      "margin": null,
+      "raw_score": null,
+      "ranking": [],
+      "grounding": "deterministic-v1",
+      "catalog_fingerprint": "7180450438175ee2a382d29e629a8445e2d38587c40ea9c4a5bbcc08429a6d19",
+      "model": "e5-small",
+      "load_ms": 0,
+      "inference_ms": 0,
+      "retrieval_ms": 0,
+      "analysis_ms": 0,
+      "total_ms": 0.23248399998010427,
+      "embedding_used": false,
+      "confirmation_required": false,
+      "applied_config": {
+        "threshold": 0.8,
+        "min_margin": 0.08
+      },
+      "catalog_entities": 1,
+      "service": "arandu-decision",
+      "http_total_ms": 4.935299999488052
+    },
+    "typo": {
+      "decision_status": "confirmation_required",
+      "reason": "spelling_hypothesis",
+      "proposal": {
+        "intent": "turn_on",
+        "target_entities": [
+          "fan.fixture"
+        ],
+        "target_area": null,
+        "confidence": null,
+        "requires_clarification": true,
+        "clarification_question": "Acho que você gostaria de ligar Ventilador (Sala). É isso?",
+        "reason": "spelling_hypothesis"
+      },
+      "confirmation_required": true,
+      "confidence": null,
+      "margin": null,
+      "raw_score": null,
+      "ranking": [],
+      "analysis": {
+        "action": {
+          "text": "acnde",
+          "exact": null,
+          "ranking": [
+            {
+              "intent": "turn_on",
+              "lexical_similarity": 0.9090909090909091
+            },
+            {
+              "intent": "query",
+              "lexical_similarity": 0.46153846153846156
+            },
+            {
+              "intent": "turn_off",
+              "lexical_similarity": 0.36363636363636365
+            }
+          ]
+        },
+        "device": {
+          "entity_id": "fan.fixture",
+          "name": "Ventilador",
+          "unambiguous": true,
+          "candidates": [
+            {
+              "entity_id": "fan.fixture",
+              "name": "Ventilador",
+              "area_id": "sala"
+            }
+          ]
+        },
+        "area": {
+          "area_id": null,
+          "source": "unknown"
+        },
+        "note": "Similaridades são hipóteses, não probabilidades nem autorização."
+      },
+      "embedding_used": false,
+      "model": "e5-small",
+      "catalog_fingerprint": "7180450438175ee2a382d29e629a8445e2d38587c40ea9c4a5bbcc08429a6d19",
+      "load_ms": 0,
+      "inference_ms": 0,
+      "retrieval_ms": 0,
+      "analysis_ms": 0,
+      "total_ms": 0.5299629999626632,
+      "applied_config": {
+        "threshold": 0.8,
+        "min_margin": 0.08
+      },
+      "catalog_entities": 1,
+      "service": "arandu-decision",
+      "http_total_ms": 4.620100000465754
+    },
+    "semantic_preloaded": {
+      "ranking": [
+        {
+          "entity_id": "fan.fixture",
+          "intent": "turn_off",
+          "description": "Ventilador Sala  ",
+          "text": "Desligar apagar desativar Ventilador Sala  ",
+          "area_id": "sala",
+          "actions": [
+            "turn_on",
+            "turn_off",
+            "query"
+          ],
+          "aliases": [],
+          "raw_score": 0.872649222612381,
+          "target_score": 0.8942584991455078,
+          "intent_score": 0.8510399460792542,
+          "reason": "mean(intent cosine, device cosine); joint-v2 candidate"
+        },
+        {
+          "entity_id": "fan.fixture",
+          "intent": "turn_on",
+          "description": "Ventilador Sala  ",
+          "text": "Ligar acender ativar Ventilador Sala  ",
+          "area_id": "sala",
+          "actions": [
+            "turn_on",
+            "turn_off",
+            "query"
+          ],
+          "aliases": [],
+          "raw_score": 0.8716501295566559,
+          "target_score": 0.8942584991455078,
+          "intent_score": 0.849041759967804,
+          "reason": "mean(intent cosine, device cosine); joint-v2 candidate"
+        },
+        {
+          "entity_id": "fan.fixture",
+          "intent": "query",
+          "description": "Ventilador Sala  ",
+          "text": "Consultar qual é o estado a temperatura Ventilador Sala  ",
+          "area_id": "sala",
+          "actions": [
+            "turn_on",
+            "turn_off",
+            "query"
+          ],
+          "aliases": [],
+          "raw_score": 0.8684707283973694,
+          "target_score": 0.8942584991455078,
+          "intent_score": 0.842682957649231,
+          "reason": "mean(intent cosine, device cosine); joint-v2 candidate"
+        }
+      ],
+      "raw_score": 0.872649222612381,
+      "confidence": null,
+      "margin": 0.0009990930557250977,
+      "decision_status": "ambiguous",
+      "reason": "insufficient_margin",
+      "proposal": null,
+      "model": "e5-small",
+      "model_fingerprint": "23c79772d3e5fbfea25909a35a2f11f60a32468616e12e893721d4c1b9d171a5",
+      "load_ms": 0,
+      "inference_ms": 37.52337900004932,
+      "cpu_ms": 225.80407799999946,
+      "memory_bytes": 832602112,
+      "eligible_pairs": 3,
+      "catalog_fingerprint": "7180450438175ee2a382d29e629a8445e2d38587c40ea9c4a5bbcc08429a6d19",
+      "analysis": {
+        "action": {
+          "text": "faz funcionar",
+          "exact": null,
+          "ranking": [
+            {
+              "intent": "turn_off",
+              "lexical_similarity": 0.35294117647058826,
+              "semantic_similarity": 0.8625037670135498
+            },
+            {
+              "intent": "turn_on",
+              "lexical_similarity": 0.42857142857142855,
+              "semantic_similarity": 0.858242928981781
+            },
+            {
+              "intent": "query",
+              "lexical_similarity": 0.5555555555555556,
+              "semantic_similarity": 0.839806079864502
+            }
+          ]
+        },
+        "device": {
+          "entity_id": "fan.fixture",
+          "name": "Ventilador",
+          "unambiguous": true,
+          "candidates": [
+            {
+              "entity_id": "fan.fixture",
+              "name": "Ventilador",
+              "area_id": "sala"
+            }
+          ],
+          "text": "Ventilador",
+          "ranking": [
+            {
+              "entity_id": "fan.fixture",
+              "semantic_similarity": 0.9142246246337891
+            }
+          ]
+        },
+        "area": {
+          "area_id": null,
+          "source": "unknown"
+        },
+        "note": "Similaridades são hipóteses, não probabilidades nem autorização."
+      },
+      "analysis_ms": 0.03705100016304641,
+      "retrieval_ms": 1242.7093280000463,
+      "total_ms": 1283.334282999931,
+      "applied_config": {
+        "threshold": 0.8,
+        "min_margin": 0.08
+      },
+      "catalog_entities": 1,
+      "service": "arandu-decision",
+      "http_total_ms": 1288.1591000041226
+    },
+    "joke": {
+      "proposal": {
+        "intent": "conversation",
+        "target_entities": [],
+        "target_area": null,
+        "confidence": null,
+        "requires_clarification": false,
+        "clarification_question": null,
+        "reason": "general_conversation"
+      },
+      "response_text": "Por que os cientistas não confiam nos átomos? Porque eles compõem tudo!",
+      "confirmation_required": false,
+      "load_ms": 7384.799865000105,
+      "inference_ms": 621.9742030000361,
+      "model": "tucano",
+      "cpu_ms": 3050.0,
+      "memory_bytes": 1022877696,
+      "retrieval": {
+        "ranking": [],
+        "retrieval": "general_conversation"
+      },
+      "retrieval_ms": 0,
+      "catalog_fingerprint": "7180450438175ee2a382d29e629a8445e2d38587c40ea9c4a5bbcc08429a6d19",
+      "catalog_entities": 1,
+      "service": "arandu-llm",
+      "http_total_ms": 8013.600399994175
+    },
+    "answer": {
+      "proposal": {
+        "intent": "conversation",
+        "target_entities": [],
+        "target_area": null,
+        "confidence": null,
+        "requires_clarification": false,
+        "clarification_question": null,
+        "reason": "general_conversation"
+      },
+      "response_text": "A capital da França é Paris.",
+      "confirmation_required": false,
+      "load_ms": 0,
+      "inference_ms": 189.93312799989326,
+      "model": "tucano",
+      "cpu_ms": 3420.0,
+      "memory_bytes": 1023016960,
+      "retrieval": {
+        "ranking": [],
+        "retrieval": "general_conversation"
+      },
+      "retrieval_ms": 0,
+      "catalog_fingerprint": "7180450438175ee2a382d29e629a8445e2d38587c40ea9c4a5bbcc08429a6d19",
+      "catalog_entities": 1,
+      "service": "arandu-llm",
+      "http_total_ms": 195.76950000191573
+    },
+    "definition": {
+      "proposal": {
+        "intent": "conversation",
+        "target_entities": [],
+        "target_area": null,
+        "confidence": null,
+        "requires_clarification": false,
+        "clarification_question": null,
+        "reason": "general_conversation"
+      },
+      "response_text": "Uma lâmpada é um dispositivo elétrico usado para produzir luz. Ela converte energia elétrica em calor ou luz através de lâmpadas incandescentes ou fluorescentes, dependendo do tipo.",
+      "confirmation_required": false,
+      "load_ms": 0,
+      "inference_ms": 573.915468999985,
+      "model": "tucano",
+      "cpu_ms": 4550.0,
+      "memory_bytes": 1023131648,
+      "retrieval": {
+        "ranking": [],
+        "retrieval": "general_conversation"
+      },
+      "retrieval_ms": 0,
+      "catalog_fingerprint": "7180450438175ee2a382d29e629a8445e2d38587c40ea9c4a5bbcc08429a6d19",
+      "catalog_entities": 1,
+      "service": "arandu-llm",
+      "http_total_ms": 579.5004000028712
+    },
+    "internal_transport_enforced": true,
+    "home_assistant_actions": 0,
+    "physical_ha_validated": false,
+    "source_overrides": false
+  },
+  "decision_startup_status": {
+    "version": "1.0.0",
+    "loaded": true,
+    "preload_ms": 5831.096715000058
+  },
+  "real_rust_general_requests": {
+    "real_rust_nlu": true,
+    "authorized_fixture_entities": 1,
+    "results": [
+      {
+        "text": "Conta uma piada curta",
+        "result": {
+          "version": 4,
+          "status": "no_match",
+          "reason": "no_match",
+          "timings": {
+            "normalization_ms": 0.003777,
+            "total_ms": 2.2221670000000002
+          }
+        }
+      },
+      {
+        "text": "Qual é a capital da França?",
+        "result": {
+          "version": 4,
+          "status": "no_match",
+          "reason": "no_match",
+          "timings": {
+            "normalization_ms": 0.002715,
+            "total_ms": 0.08021299999999999
+          }
+        }
+      },
+      {
+        "text": "O que é uma lâmpada?",
+        "result": {
+          "version": 4,
+          "status": "no_match",
+          "reason": "no_match",
+          "timings": {
+            "normalization_ms": 0.002785,
+            "total_ms": 0.039275
+          }
+        }
+      }
+    ]
+  },
+  "stt_default": {
+    "new_installations": "orukeet_int8",
+    "explicit_selections_preserved": true,
+    "legacy_without_model": "fastconformer"
+  },
+  "orukeet_ptbr_lock": {
+    "implemented": false,
+    "reason": "Current sherpa-onnx offline transducer API/decoder has no supported forced language input; language tokens in vocabulary do not provide this control.",
+    "weights_modified": false
+  },
+  "calibration": {
+    "scoring": "mean(target_cosine,intent_cosine)",
+    "version": "arandu-joint-v2",
+    "fingerprint_adapter": "embedding-v2",
+    "old_files_preserved": true,
+    "raw_cosine_is_probability": false
+  },
+  "new_weights_downloaded": [
+    "intfloat/multilingual-e5-small (pinned existing service revision)",
+    "2DTi/tucano2-0.5b-instruct-gguf (pinned existing service revision)"
+  ],
+  "new_weights_in_git_or_image": false,
+  "limitations": [
+    "Hardware is Ryzen 7 5700X / Docker Linux, not Intel i5-6500T.",
+    "Small fixture catalog; measurements are technical smoke, not end-to-end satellite benchmarks.",
+    "Real HA installation/microphone/household execution not validated.",
+    "Tucano 0.5B can make factual or language errors; no internet or live state access in speech-only mode.",
+    "Orukeet remains multilingual; no fictional PT-BR lock was shipped."
+  ]
+}

@@ -421,6 +421,13 @@ class ContextualRuntime:
                     nlu=nlu_summary(outcome))
                 self.validate_options(options)
                 self.last_intelligence = trace
+                reply = trace.get('llm', {}).get('response_text')
+                if trace.get('llm', {}).get('status') == 'conversation' and reply:
+                    await self.revalidate(identity, user_input, options)
+                    session.pending = None
+                    session.candidates = ()
+                    session.response = reply
+                    return self.result('query_success', user_input, speech=reply, reason='llm_conversation')
                 if proposed:
                     if origin_context(self.hass, user_input, options) != spatial_context:
                         raise ExecutionError("stale", "origin_area_changed")

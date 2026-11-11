@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arandu-llm"
-version = "0.2.3"
-description = "Resident LLM last fallback with compact NLU and Decision hints"
+version = "1.0.0"
+description = "Resident LLM with speech-only general conversation and grounded home automation"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"

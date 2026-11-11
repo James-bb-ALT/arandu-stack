@@ -60,6 +60,7 @@ async def main():
             assert '487 MB' in await field('inventory').inner_text()
             await field('file').set_input_files(str(audio))
             await field('player').evaluate('audio=>audio.play().then(()=>audio.pause())')
+            await field('model').select_option('whisper_base')
             await field('reference').fill('Liga a luz da sala')
             await field('entityReference').fill('luz da sala')
             await field('test').click()

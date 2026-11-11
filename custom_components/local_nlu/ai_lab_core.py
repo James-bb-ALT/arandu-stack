@@ -127,7 +127,7 @@ def validate_proposal(value, catalog, allowed=None):
     return value
 
 
-async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30):
+async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30, general=False):
     if type(text) is not str or not 1 <= len(text) <= 512 or any(ord(c) < 32 for c in text):
         raise ValueError("Comando deve ter 1–512 caracteres, em uma linha")
     if mode not in {"pipeline", "nlu", "decision", "llm"}:
@@ -164,14 +164,14 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30):
         result.update(proposal=nl, source="nlu")
     elif mode != "nlu":
         stages["decision"]["fallback_reason"] = (nl or {}).get("reason") or (nl or {}).get("status") or "isolated_mode"
-        de = await run("decision", decision, {"text": text, "nlu": nl}) if mode != "llm" else None
-        if mode != "llm" and de and de.get("decision_status") == "accepted" and de.get("proposal"):
+        de = await run("decision", decision, {"text": text, "nlu": nl}) if mode != "llm" and not (general and mode == "pipeline") else None
+        if mode != "llm" and de and de.get("decision_status") in {"accepted", "resolved", "confirmation_required"} and de.get("proposal"):
             result.update(proposal=de["proposal"], source="decision")
         elif mode != "decision":
             stages["llm"]["fallback_reason"] = (de or {}).get("reason") or "decision_unavailable"
             output = await run("llm", llm, {"text": text, "nlu": nl, "decision": de})
             if output:
-                result.update(proposal=output.get("proposal", output), source="llm", requires_review=True)
+                result.update(proposal=output.get("proposal", output), source="llm", response_text=output.get("response_text"), requires_review=not bool(output.get("response_text")))
     result["clarification_question"] = (result["proposal"] or {}).get("clarification_question") or (None if result["proposal"] else "Não entendi o que você deseja. Pode repetir dizendo o dispositivo e a ação?")
     result["total_ms"] = (time.perf_counter() - started) * 1000
     return result

@@ -1,3 +1,8 @@
+# 4.0.1 — 2026-11-11
+
+- Orukeet INT8 como padrão de instalações novas. Preserva seleção explícita e FastConformer legado sem campo stt_model.
+- Documenta ausência de controle de idioma no decoder transducer; não anuncia bloqueio PT-BR inexistente.
+
 # 4.0.0 — 2026-11-10
 
 - Oito modelos: adiciona Parakeet pt-BR 30s/TAGARELA, Orukeet transducer INT8 e Granite TurboCTC Q4 aos quatro existentes.

@@ -104,3 +104,13 @@ test('cached native panel remounts STT after reconnecting',()=>{
   assert.equal(panel.disconnected,false);
   assert.equal(mounted,1);
 });
+
+test('general LLM answer is displayed as speech without an execution claim',()=>{
+  const value=fixture();
+  value.source='llm';value.response_text='A capital da França é Paris.';
+  value.operations_validated=false;value.confirmation_required=false;value.sensitive=false;
+  value.proposal={intent:'conversation',target_entities:[],requires_clarification:false};
+  value.stages.llm={status:'executed',output:{proposal:value.proposal,response_text:value.response_text}};
+  const nodes=render(value);
+  assert.equal(nodes.answer.textContent,value.response_text);
+});

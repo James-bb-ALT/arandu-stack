@@ -153,3 +153,38 @@ def confirmation_question(action, row, catalog):
         label += " (" + area["names"][0] + ")"
     verb = {"turn_on": "ligar", "turn_off": "desligar", "query": "consultar o estado de"}[action]
     return f"Acho que você gostaria de {verb} {label}. É isso?"
+
+
+def conversation_allowed(text, catalog):
+    """Speech-only fallback is permitted only without a domestic command signal."""
+    words = set(normalized(text).split())
+    # Definitions/history about an appliance are general questions, not state/control requests.
+    general_subject = re.match(r'^(?:(?:me|voce pode|pode) )?(?:quem (?:inventou|foi|e)|como (?:funciona|surgiu)|o que (?:e|significa)|explique (?:como|o que|a teoria))\b', normalized(text))
+    imperatives = {'liga','ligue','desliga','desligue','acende','acenda','apaga','apague',
+                   'abre','abra','fecha','feche','ajusta','ajuste','aumenta','aumente','diminui','diminua'}
+    if general_subject and not words & imperatives:
+        return True
+    controls = ACTIONS['turn_on'] | ACTIONS['turn_off'] | {
+        'abre','abrir','abra','fecha','fechar','feche','aumenta','aumentar','diminui','diminuir',
+        'coloca','colocar','ajusta','ajustar','define','definir','destranca','tranca','toca','tocar',
+        'cancela','cancelar','apague','desarme','arme'}
+    if words & controls:
+        return False
+    # Explicit requests for content may mention a device as the subject of a joke/story.
+    if re.search(r'\b(?:piada|historia|poema|poesia|conto|traduz|traduza|traducao|resuma|resumo)\b', normalized(text)):
+        return True
+    domestic = {'luz','luzes','lampada','lampadas','ventilador','tomada','cortina','portao',
+                'temperatura','termostato','volume','bateria','dispositivo','quente','frio',
+                'agenda','alarme','musica','aquecedor','refrigeracao'}
+    if words & domestic or device_candidates(text, catalog):
+        return False
+    return bool(words)
+
+
+def clearly_conversational(text, catalog):
+    """Cheap, conservative bypass of semantic retrieval for obvious general requests."""
+    if not conversation_allowed(text, catalog):
+        return False
+    value = normalized(text)
+    return bool(re.match(r'^(?:(?:me|voce pode|pode) )?(?:conta|conte|explique|explica|escreva|escreve|traduza|traduz|resuma|fale|diga|calcule|resolva|crie|quem|qual|quais|quanto|como|por que|porque|o que)\b', value)
+                or value in {'oi','ola','bom dia','boa tarde','boa noite','obrigado','obrigada'})

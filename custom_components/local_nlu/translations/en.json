@@ -37,10 +37,10 @@
       },
       "intelligence": {
         "title": "Intelligence layers",
-        "description": "NLU first. Decision executes an inferred action with calibrated joint confidence of at least 80%, margin at least 0.08 and an unambiguous target, including mistranscribed verbs. Without valid calibration, similarity is not certainty. Negation, explicit conflicts and permissions remain enforced. LLM only runs when needed and retains confirmation for uncertain hypotheses. Start model processes separately in the app; changes apply to new requests.",
+        "description": "NLU first. Decision resolves an explicit action and unique target without embeddings; clear spelling hypotheses require confirmation. Automatic semantic acceptance requires calibrated joint confidence >=80% and margin. LLM handles general conversation in Brazilian Portuguese and assists home automation when needed. Negation, conflicts and permissions remain enforced. Start processes in the app; changes apply to new requests.",
         "data": {
           "decision_enabled": "Use Decision Engine",
-          "llm_enabled": "Use LLM as fallback"
+          "llm_enabled": "Use LLM for general conversation and fallback"
         }
       },
       "voice_output": {

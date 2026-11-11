@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "arandu-decision"
-version = "0.3.0"
-description = "Resident CPU Decision service with calibrated 80-percent automatic acceptance"
+version = "1.0.0"
+description = "Resident Decision with grounded fast paths and calibrated semantic acceptance"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"

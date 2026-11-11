@@ -29,7 +29,7 @@ async def main():
     async with ClientSession(timeout=ClientTimeout(total=780)) as session:
         async with session.get('http://127.0.0.1:8770/api/state') as response:
             state=await response.json()
-        assert state['version']=='4.0.0',state
+        assert state['version']=='5.0.0',state
         headers={'X-Arandu-CSRF':state['csrf']}
         async def request(path,body,expected=200):
             async with session.post('http://127.0.0.1:8770/api/'+path,json=body,headers=headers) as response:

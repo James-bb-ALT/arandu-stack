@@ -51,7 +51,7 @@ class TestNetworkIntegration(unittest.IsolatedAsyncioTestCase):
         try:
             await async_write_event(Describe().event(), writer)
             info = await asyncio.wait_for(async_read_event(reader), 3)
-            self.assertEqual(Info.from_event(info).asr[0].version, '4.0.0')
+            self.assertEqual(Info.from_event(info).asr[0].version, '4.0.1')
             await async_write_event(Transcribe().event(), writer)
             await async_write_event(AudioChunk(rate=16000, width=2, channels=1,
                                                audio=np.zeros(16000, dtype='<i2').tobytes()).event(), writer)

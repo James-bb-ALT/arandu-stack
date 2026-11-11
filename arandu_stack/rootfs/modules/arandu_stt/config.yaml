@@ -1,5 +1,5 @@
 name: Arandu STT
-version: "4.0.0"
+version: "4.0.1"
 slug: arandu_stt
 description: STT PT-BR local com oito modelos: FastConformer, Whisper, Parakeet, Orukeet e Granite, correção contextual e Wyoming
 arch:
@@ -20,7 +20,7 @@ backup_exclude:
   - "models*"
   - "hub*"
 options:
-  stt_model: fastconformer
+  stt_model: orukeet_int8
   whisper_profile: normalize_only
   auto_download: false
   model_variant: adapted

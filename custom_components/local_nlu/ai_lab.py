@@ -114,7 +114,7 @@ class Lab:
                     raise ValueError('Variante STT inválida')
                 return await local_request(session, stack_endpoint, '/api/stt/models?variant=' + variant)
             action = 'test' if command == 'transcribe' else command.removeprefix('stt_')
-            model = payload.get('stt_model', payload.get('model', 'fastconformer'))
+            model = payload.get('stt_model', payload.get('model', 'orukeet_int8'))
             variant = payload.get('variant', 'adapted')
             # Legacy selector remains compatible while the panel migrates.
             if model in ('original', 'adapted'):
@@ -241,6 +241,9 @@ class Lab:
                         top = response["ranking"][0]
                         if proposed["target_entities"] != [top["entity_id"]] or proposed["intent"] != top["intent"] or proposed["confidence"] != confidence:
                             raise ValueError("Proposta não corresponde ao ranking calibrado")
+                    if response.get('decision_status') in {'resolved', 'confirmation_required'}:
+                        from .intelligence import accepted_decision
+                        accepted_decision(response, catalog, text, semantic_context)
                     return response
                 async def llm(data):
                     # LLM service performs its own retrieval when Decision was not called.
@@ -249,7 +252,8 @@ class Lab:
                     proposal = validate_proposal(raw["proposal"], catalog, {r["entity_id"] for r in retrieval.get("ranking", [])})
                     proposal["confidence"] = None
                     return {**raw, "proposal": proposal}
-                result = await pipeline(text, nlu, decision, llm, mode=mode, timeout=95)
+                from .semantic_context import clearly_conversational
+                result = await pipeline(text, nlu, decision, llm, mode=mode, timeout=95, general=clearly_conversational(text, catalog))
                 result.update(dry_run=True, catalog_generation=catalog["generation"], model=model,
                               catalog=catalog, test_mode="independent", test_context=test_context,
                               production_policy={"nlu": True, "decision": options.get("decision_enabled", False), "llm": options.get("llm_enabled", False)})
@@ -259,7 +263,7 @@ class Lab:
                     from .semantic_context import clarification, confirmation_question
                     output = result["stages"][result["source"]].get("output") or {}
                     route = proposal_route(text, proposal, catalog, semantic_context, output.get("confirmation_required") is True,
-                        auto_decision=result['source'] == 'decision' and output.get('decision_status') == 'accepted')
+                        auto_decision=result['source'] == 'decision' and output.get('decision_status') in {'accepted', 'resolved'})
                     if route == "confirmation_required":
                         row = next(r for r in catalog["entities"] if r["entity_id"] == proposal["target_entities"][0])
                         question = confirmation_question(proposal["intent"], row, catalog)

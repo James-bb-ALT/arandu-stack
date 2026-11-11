@@ -15,7 +15,7 @@ from discovery import announce_stack
 from logs import LogStore, SOURCES, LOGGER
 from request_traces import TraceStore
 
-APP_VERSION = '4.0.0'
+APP_VERSION = '5.0.0'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""

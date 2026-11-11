@@ -71,7 +71,7 @@ class Configuration(unittest.IsolatedAsyncioTestCase):
             with patch.object(lab,'active',AsyncMock(return_value=None)),patch.object(lab,'worker',AsyncMock(return_value={'state':'ready'})):
                 with self.assertRaisesRegex(ValueError,'fixture'):
                     await lab.apply({'model':'whisper_base','confirm':True})
-            self.assertEqual(manager.config['stt']['stt_model'],'fastconformer')
+            self.assertEqual(manager.config['stt']['stt_model'],'orukeet_int8')
             self.assertTrue(manager.config['stt']['enabled'])
             self.assertEqual(manager.start.await_count,2)
 

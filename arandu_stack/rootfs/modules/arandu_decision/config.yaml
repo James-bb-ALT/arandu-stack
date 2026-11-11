@@ -1,7 +1,7 @@
 name: Arandu Decision
 slug: arandu_decision
-version: "0.3.0"
-description: E5 Small — execução automática com confiança conjunta calibrada de pelo menos 80%
+version: "1.0.0"
+description: Decision residente — resolução explícita rápida, confirmação de hipóteses e E5 calibrado
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
 startup: application

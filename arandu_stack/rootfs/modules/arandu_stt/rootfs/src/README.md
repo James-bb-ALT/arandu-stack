@@ -1,4 +1,4 @@
-# STT 4.0.0 — oito modelos locais
+# STT 4.0.1 — oito modelos locais
 
 FastConformer original/adaptado e Whisper Tiny/Base/Small são preservados. Novos IDs: `parakeet_ptbr_30s`, `parakeet_tagarela`, `orukeet_int8`, `granite_turboctc_q4`. CPU, duas threads por padrão, carga offline após instalação individual verificada. Sem pesos ou Torch no ambiente STT.
 
@@ -78,3 +78,5 @@ Os pesos derivados FP32 são distribuídos como assets da release 2.2.0, sob CC 
 
 Implementação 2.0 e build Docker verificados localmente; estágio experimental até validar fala real e instalação limpa no HAOS amd64.
 Os quatro datasets fornecidos estão empacotados, incluindo 569 registros de nomes, variantes e apelidos.
+
+Orukeet INT8 é o padrão em instalações novas; seleções existentes são preservadas. O checkpoint continua multilíngue: o decoder sherpa transducer não possui parâmetro suportado para forçar PT-BR. Não há filtro que prometa essa restrição.

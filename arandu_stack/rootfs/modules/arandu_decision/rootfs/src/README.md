@@ -1,6 +1,14 @@
+## Atualização 1.0.0
+
+Ação explícita + alvo único são resolvidos sem carregar E5, sem inventar confiança numérica. Erro de grafia inequívoco é hipótese que exige confirmação; nenhuma ação é enviada antes de “sim”. O HA revalida ação, alvo, catálogo e permissões. Empates genuínos continuam sem execução.
+
+O score semântico passou de mínimo para média dos cossenos, evitando platôs que empatavam intenções distintas. Usa um lote de até três consultas e cache limitado de 128 textos; descritores e modelo continuam residentes. Calibração anterior pertence a outro algoritmo e não autoriza execução: `arandu-joint-v2` / `embedding-v2` exigem nova calibração rotulada para aceitação semântica automática >=80%. Resolução explícita e confirmação funcionam sem essa calibração. Não há limiar reduzido nem confiança fabricada.
+
+Com pesos instalados, o serviço pré-carrega E5 antes de escutar HTTP e expõe `preload_ms`; importação/carga ainda têm custo no início do módulo. Resolução explícita não exige esse modelo. Veja medições e limites em `docs/INTELLIGENCE-v6.0.0.md` na raiz. Pesos não são incluídos no pacote.
+
 # Arandu Decision
 
-Pacote Python independente, versão 0.3.0. Não importa o NLU nem o outro pacote. Serviço passivo: recebe catálogo autorizado completo do Home Assistant e devolve proposta; credenciais, autorização e execução ficam na integração HA.
+Pacote Python independente, versão 1.0.0. Não importa o NLU nem o outro pacote. Serviço passivo: recebe catálogo autorizado completo do Home Assistant e devolve proposta; credenciais, autorização e execução ficam na integração HA.
 
 Modelo padrão: intfloat/multilingual-e5-small (MIT), CPU, vetores normalizados com prefixos query/passage. Downloads somente com comando explícito, revisão fixada no código. Pesos não acompanham o pacote.
 

@@ -37,10 +37,10 @@
       },
       "intelligence": {
         "title": "Camadas de inteligência",
-        "description": "NLU primeiro. Decision executa a ação inferida com confiança conjunta calibrada de pelo menos 80%, margem mínima 0,08 e alvo inequívoco, mesmo se o verbo foi mal transcrito. Sem calibração válida, similaridade não é certeza. Negação, conflito explícito e permissões continuam protegidos. O LLM só entra se necessário e mantém confirmação para hipóteses incertas. Processos são iniciados separadamente no app; alterações valem para novas requisições.",
+        "description": "NLU primeiro. Decision resolve ação explícita e alvo único sem embeddings; erros de grafia inequívocos pedem confirmação. Hipóteses semânticas automáticas exigem calibração conjunta >=80% e margem. O LLM responde conversa geral em PT-BR e auxilia na automação quando necessário. Negação, conflitos e permissões permanecem protegidos. Inicie os processos no app; alterações valem para novos pedidos.",
         "data": {
           "decision_enabled": "Usar Decision Engine",
-          "llm_enabled": "Usar LLM como fallback"
+          "llm_enabled": "Usar LLM para conversa geral e fallback"
         }
       },
       "voice_output": {

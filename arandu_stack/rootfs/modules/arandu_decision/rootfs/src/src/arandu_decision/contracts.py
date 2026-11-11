@@ -8,7 +8,7 @@ import math
 import time
 from collections import Counter
 
-VERSION = "arandu-joint-v1"
+VERSION = "arandu-joint-v2"
 ACTION_TEXT = {"turn_on": "Ligar acender ativar", "turn_off": "Desligar apagar desativar", "query": "Consultar qual é o estado a temperatura"}
 MODELS = {
     "e5-small": {"name": "Multilingual E5 Small", "repo": "intfloat/multilingual-e5-small", "license": "MIT", "runtime": "sentence-transformers / CPU; query/passsage prefixes", "kind": "decision"},

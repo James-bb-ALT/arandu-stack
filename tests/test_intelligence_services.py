@@ -106,7 +106,7 @@ class Readiness(unittest.TestCase):
             manifest={'revision':'fixture'}
             (root/'e5-small/arandu-model.json').write_text(json.dumps(manifest))
             calibration={'version':VERSION,'validated':True,'catalog':digest(catalog()),
-                         'model':digest({'key':'e5-small','adapter':'embedding-v1','manifest':manifest})}
+                         'model':digest({'key':'e5-small','adapter':'embedding-v2','manifest':manifest})}
             (root/'e5-small-calibration.json').write_text(json.dumps(calibration))
             encoder=Encoder(root)
             self.assertTrue(encoder.readiness(catalog())['calibration_valid'])

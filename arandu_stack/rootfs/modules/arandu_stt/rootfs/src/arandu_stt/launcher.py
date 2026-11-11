@@ -20,11 +20,14 @@ MODEL_DIR = DATA / "models" / "int8"
 
 
 def options() -> dict:
-    defaults = {"stt_model": "fastconformer", "auto_download": False, "whisper_profile": "normalize_only", "model_variant": "adapted", "threads": 2, "padding_ms": 0, "profile": "full", "debug_text": False, "refresh_inventory": True,
+    defaults = {"stt_model": "orukeet_int8", "auto_download": False, "whisper_profile": "normalize_only", "model_variant": "adapted", "threads": 2, "padding_ms": 0, "profile": "full", "debug_text": False, "refresh_inventory": True,
                 "lexical_enabled": True, "closed_vocabulary": True, "generic_weight": 7,
                 "home_assistant_weight": 10, "inventory_refresh_seconds": 60}
     if OPTIONS.is_file():
-        defaults.update(json.loads(OPTIONS.read_text(encoding="utf-8")))
+        stored = json.loads(OPTIONS.read_text(encoding="utf-8"))
+        defaults.update(stored)
+        if 'stt_model' not in stored:
+            defaults['stt_model'] = 'fastconformer'
     return defaults
 
 
@@ -55,7 +58,7 @@ def refresh_inventory(required: bool) -> None:
 def main() -> None:
     cfg = options()
     variant = str(cfg.get("model_variant", "adapted"))
-    model = cfg.get('stt_model', 'fastconformer')
+    model = cfg.get('stt_model', 'orukeet_int8')
     validate(model, variant)
     model_dir = location(DATA / 'models', model, variant)
     if cfg.get('auto_download', False):

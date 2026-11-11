@@ -7,7 +7,7 @@ import time
 
 from .ai_lab_core import digest, finite, validate_proposal
 from .contextual_protocol import Operation
-from .semantic_context import resolve_device, understood_action, hypothesis_allowed
+from .semantic_context import resolve_device, understood_action, hypothesis_allowed, conversation_allowed, clearly_conversational
 from .request_trace import CURRENT
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,7 +33,21 @@ def operations(proposal, snapshot, source):
                       evidence=("semantic_proposal",)),)
 
 
-def accepted_decision(response, catalog):
+def accepted_decision(response, catalog, text=None, context=None):
+    status = response.get('decision_status')
+    if status in {'resolved', 'confirmation_required'}:
+        if text is None or response.get('catalog_fingerprint') != digest(catalog):
+            raise ValueError('Decisão sem catálogo ou texto verificáveis')
+        proposal = validate_proposal(response.get('proposal'), catalog)
+        if not grounded_target(text, proposal, catalog, context) or not hypothesis_allowed(text):
+            raise ValueError('Decisão sem alvo inequívoco')
+        if status == 'resolved':
+            if (response.get('grounding') != 'deterministic-v1' or understood_action(text) != proposal['intent']
+                    or proposal['requires_clarification'] or proposal['confidence'] is not None):
+                raise ValueError('Resolução determinística inconsistente')
+        elif not proposal['requires_clarification'] or response.get('confirmation_required') is not True:
+            raise ValueError('Hipótese deve exigir confirmação')
+        return proposal
     if response.get("decision_status") != "accepted":
         return None
     confidence, margin = response.get("confidence"), response.get("margin")
@@ -68,6 +82,8 @@ def grounded_target(text, proposal, catalog, context=None):
 
 
 def proposal_route(text, proposal, catalog, context=None, force_review=False, auto_decision=False):
+    if proposal['intent'] == 'conversation' and conversation_allowed(text, catalog) and not proposal['requires_clarification']:
+        return 'conversation'
     if not grounded_target(text, proposal, catalog, context) or not hypothesis_allowed(text):
         return "clarification"
     known = understood_action(text)
@@ -98,6 +114,9 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
     trace = {}
     decision = None
     for source in ("decision", "llm"):
+        if source == 'decision' and options.get('llm_enabled') is True and clearly_conversational(text, snapshot.payload):
+            trace[source] = {'status': 'skipped', 'reason': 'general_conversation'}
+            continue
         if options.get(source + "_enabled", False) is not True:
             trace[source] = {"status": "disabled"}
             continue
@@ -120,20 +139,26 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
             trace[source] = {"status": "responded"}
             if source == "decision":
                 decision = response
-                proposal = accepted_decision(response, snapshot.payload)
+                proposal = accepted_decision(response, snapshot.payload, text, context)
                 trace[source]["status"] = response.get("decision_status", "rejected")
             else:
                 retrieval = response.get("retrieval") or decision or {}
                 allowed = {r["entity_id"] for r in retrieval.get("ranking", [])}
                 proposal = validate_proposal(response.get("proposal"), snapshot.payload, allowed)
+                reply = response.get('response_text')
+                if (proposal['intent'] == 'conversation' and not proposal['requires_clarification']
+                        and not proposal['target_entities'] and proposal['target_area'] is None
+                        and conversation_allowed(text, snapshot.payload) and type(reply) is str and 1 <= len(reply.strip()) <= 1000):
+                    trace[source].update(status='conversation', response_text=reply.strip())
+                    return (), trace
                 # A model's self-reported confidence is never an authorization signal.
                 proposal["confidence"] = None
             if proposal:
                 route = proposal_route(text, proposal, snapshot.payload, context, response.get("confirmation_required") is True,
-                                       auto_decision=source == 'decision')
+                                       auto_decision=source == 'decision' and response.get('decision_status') in {'accepted', 'resolved'})
                 trace[source]["status"] = route
                 if source == 'decision':
-                    trace[source].update(confidence=response['confidence'], auto_corrected=understood_action(text) is None)
+                    trace[source].update(confidence=response.get('confidence'), auto_corrected=understood_action(text) is None)
                 if route == "clarification":
                     continue
                 if route == "confirmation_required" or source == 'decision':
@@ -152,6 +177,6 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
             trace[source]["latency_ms"] = (time.perf_counter() - before) * 1000
             if recorder:
                 row = trace[source]
-                status = {'proposed': 'accepted', 'clarification': 'rejected', 'responded': 'rejected'}.get(row['status'], row['status'])
+                status = {'proposed': 'accepted', 'clarification': 'rejected', 'responded': 'rejected', 'conversation': 'completed'}.get(row['status'], row['status'])
                 recorder.end(source, status, row.get('error') or reason, confidence)
     return (), trace

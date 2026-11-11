@@ -1,3 +1,10 @@
+# App 5.0.0 / HACS 6.0.0 / Decision 1.0.0 / LLM 1.0.0 / STT 4.0.1
+
+- LLM responde pedidos gerais em PT-BR com geração de fala separada de propostas domésticas. Conversa não recebe catálogo/ferramentas nem produz operações; Assist e AI Lab exibem a resposta.
+- Decision resolve ação explícita/alvo único sem embeddings e pede confirmação para grafia inequívoca. Mantém validação independente no HA. Score semântico sem platô de mínimo, consultas em lote e cache limitado; nova versão de calibração não reutiliza confiança do algoritmo anterior.
+- Orukeet INT8 passa a padrão de instalações novas, preservando configurações salvas. Não há parâmetro suportado para limitar seu decoder atual a PT-BR; isso foi investigado e documentado, sem configuração fictícia.
+- Testes, medições reais e limitações em [INTELLIGENCE-v6.0.0](../docs/INTELLIGENCE-v6.0.0.md).
+
 # App 4.0.0 / STT 4.0.0 / HACS 5.0.0 — oito modelos STT
 
 - Adiciona Parakeet pt-BR 30s, Parakeet TAGARELA, Orukeet INT8 e Granite TurboCTC Q4 às interfaces/APIs existentes; preserva FastConformer e Whisper.

@@ -11,7 +11,7 @@ import time
 from .contracts import MODELS, candidates, digest
 from .adapter import Llama, LlmOutputError
 from .inference_slot import inference_slot
-from .semantic_context import resolve_device, decomposition
+from .semantic_context import resolve_device, decomposition, clearly_conversational
 
 KEY = "tucano"
 PORT = 11558
@@ -88,7 +88,7 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
     async def status(request):
         installed = (root / KEY / "arandu-model.json").is_file() and (root / KEY / MODELS[KEY]["file"]).is_file()
         available = installed and bool(executable and Path(executable).is_file())
-        return web.json_response({"package": "arandu-llm", "version": "0.2.3", "protocol": "arandu-inference-v1",
+        return web.json_response({"package": "arandu-llm", "version": "1.0.0", "protocol": "arandu-inference-v1",
             "models": [{"id": KEY, **MODELS[KEY], "installed": installed, "available": bool(available),
                 "reason": None if available else "Pesos ou runtime ausentes"}], "busy": lock.locked(), "threads": threads})
 
@@ -119,6 +119,11 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
                 if not isinstance(text, str) or not 1 <= len(text) <= 512 or any(ord(c) < 32 for c in text):
                     raise ValueError("Texto deve ter 1–512 caracteres em uma linha")
                 before = time.perf_counter()
+                if clearly_conversational(text, catalog):
+                    result = await adapter.infer({**body, 'llm_model': KEY, 'decision': {}}, catalog)
+                    result.update(retrieval={'ranking': [], 'retrieval': 'general_conversation'}, retrieval_ms=0,
+                                  catalog_fingerprint=digest(catalog), catalog_entities=len(catalog['entities']), service='arandu-llm')
+                    return result
                 external = body.get("decision") or {}
                 resolved = resolve_device(text, catalog, body.get("context"))
                 external_ids = {r["entity_id"] for r in external.get("ranking", [])}

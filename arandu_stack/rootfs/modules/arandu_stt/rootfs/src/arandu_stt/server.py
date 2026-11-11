@@ -37,7 +37,7 @@ NAME = 'arandu-fastconformer-ptbr-int8'  # Preserve Assist's existing selected m
 UPSTREAM = 'https://huggingface.co/nvidia/stt_pt_fastconformer_hybrid_large_pc'
 MAX_SECONDS = 35
 MAX_INPUT_BYTES = 2 * 16000 * MAX_SECONDS
-VERSION = '4.0.0'
+VERSION = '4.0.1'
 
 
 def pcm16_to_float32(pcm: bytes) -> np.ndarray:
@@ -301,10 +301,10 @@ class Handler(AsyncEventHandler):
 
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description='Arandu STT multimodelo - Wyoming + lexical resolver')
-    p.add_argument('--stt-model', choices=tuple(CATALOG), default='fastconformer')
+    p.add_argument('--stt-model', choices=tuple(CATALOG), default='orukeet_int8')
     p.add_argument('--model-variant', choices=('adapted','original'), default='adapted')
     p.add_argument('--diagnostics-port', type=int, default=11560)
-    p.add_argument('--model-dir', type=Path, default=Path('/data/models/int8'))
+    p.add_argument('--model-dir', type=Path, default=Path('/data/models/orukeet_int8'))
     p.add_argument('--inventory', type=Path, default=Path('/data/arandu_ha_inventory.json'))
     p.add_argument('--uri', default='tcp://0.0.0.0:10350')
     p.add_argument('--threads', type=int, default=2)

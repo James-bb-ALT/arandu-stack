@@ -15,7 +15,7 @@ from logs import LogStore
 DEFAULTS = {
     'nlu': {'enabled': True, 'custom_phrases_enabled': True, 'max_input_chars': 512, 'session_ttl': 60, 'low_battery_threshold': 20},
     'wake': {'enabled': False, 'wake_word': 'alexa', 'threshold': .5, 'trigger_level': 1, 'refractory_seconds': 2.0},
-    'stt': {'enabled': False, 'auto_download': False, 'stt_model': 'fastconformer', 'whisper_profile': 'normalize_only', 'model_variant': 'adapted', 'threads': 2,
+    'stt': {'enabled': False, 'auto_download': False, 'stt_model': 'orukeet_int8', 'whisper_profile': 'normalize_only', 'model_variant': 'adapted', 'threads': 2,
             'padding_ms': 0, 'profile': 'full', 'debug_text': False, 'refresh_inventory': False,
             'lexical_enabled': True, 'closed_vocabulary': True, 'generic_weight': 7,
             'home_assistant_weight': 10, 'inventory_refresh_seconds': 0},
@@ -96,6 +96,9 @@ class ModuleManager:
             if not isinstance(stored, dict) or set(stored) - set(DEFAULTS):
                 raise ValueError('Configuração de módulos inválida')
             for key, options in stored.items():
+                # Preserve pre-multimodel installations; only new installations change default.
+                if key == 'stt' and 'stt_model' not in options:
+                    options = {**options, 'stt_model': 'fastconformer'}
                 if migrated and key == 'tts' and options.get('voice') == 'pt_BR-faber-medium':
                     options = {**options, 'voice': 'pt_BR-arandu-medium'}
                 self.config[key] = validate_options(key, options, self.data)

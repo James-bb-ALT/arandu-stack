@@ -1,4 +1,4 @@
-# STT 4.0.0 — oito modelos locais
+# STT 4.0.1 — oito modelos locais
 
 FastConformer original/adaptado e Whisper Tiny/Base/Small são preservados. Novos IDs: `parakeet_ptbr_30s`, `parakeet_tagarela`, `orukeet_int8`, `granite_turboctc_q4`. CPU, duas threads por padrão, carga offline após instalação individual verificada. Sem pesos ou Torch no ambiente STT.
 
@@ -47,3 +47,5 @@ O App consulta localmente os registries de entidades, dispositivos e áreas do s
 Os pesos não são incluídos no Git. Na primeira inicialização, o App baixa o modelo adaptado da release 2.2.0. É um derivado do checkpoint `nvidia/stt_pt_fastconformer_hybrid_large_pc`, distribuído sob CC BY-NC 4.0 com atribuição NVIDIA e Arandu. A opção `original` baixa a conversão INT8 anterior.
 
 O checkpoint upstream é **CC BY-NC 4.0**. Portanto, o uso dos pesos possui restrições de uso comercial independentes da licença do código do Arandu.
+
+Orukeet INT8 é o padrão em instalações novas; seleções existentes são preservadas. O checkpoint continua multilíngue: o decoder sherpa transducer não possui parâmetro suportado para forçar PT-BR. Não há filtro que prometa essa restrição.

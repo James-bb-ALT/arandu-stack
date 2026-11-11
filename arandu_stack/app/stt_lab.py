@@ -160,7 +160,7 @@ class STTLab:
         return {'state': 'downloading', 'model': model}
 
     def parameters(self, body):
-        model, variant = body.get('model', 'fastconformer'), body.get('variant', 'adapted')
+        model, variant = body.get('model', self.manager.config['stt']['stt_model']), body.get('variant', 'adapted')
         validate(model, variant)
         threads = body.get('threads', self.manager.config['stt']['threads'])
         profile = body.get('profile')

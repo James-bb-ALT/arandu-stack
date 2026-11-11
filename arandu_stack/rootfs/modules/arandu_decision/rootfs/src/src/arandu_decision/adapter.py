@@ -9,7 +9,7 @@ from pathlib import Path
 import time
 
 from .contracts import ACTION_TEXT, VERSION, candidates, decision_policy, digest
-from .semantic_context import decomposition, understood_action, resolve_device, clarification, confirmation_question
+from .semantic_context import decomposition, understood_action, resolve_device, clarification, confirmation_question, hypothesis_allowed
 
 
 class Encoder:
@@ -18,6 +18,7 @@ class Encoder:
         self.model = None
         self.key = None
         self.cache = {}
+        self.query_cache = {}
         self.load_ms = 0
         self.phase = "loading"
         self._threads_configured = False
@@ -26,6 +27,7 @@ class Encoder:
         self.model = None
         self.key = None
         self.cache.clear()
+        self.query_cache.clear()
         gc.collect()
 
     def load(self, key):
@@ -34,7 +36,7 @@ class Encoder:
         directory = self.root / key
         if not (directory / "arandu-model.json").is_file():
             raise ValueError("Pesos não instalados; execute install --model " + key)
-        signature = digest({"key": key, "adapter": "embedding-v1", "manifest": json.loads((directory / "arandu-model.json").read_text())})
+        signature = digest({"key": key, "adapter": "embedding-v2", "manifest": json.loads((directory / "arandu-model.json").read_text())})
         self.load_ms = 0
         if self.key != signature:
             self.unload()
@@ -58,18 +60,47 @@ class Encoder:
         valid = False
         reason = "joint_calibration_missing"
         if manifest.is_file() and calibration_file.is_file():
-            signature = digest({"key": "e5-small", "adapter": "embedding-v1", "manifest": json.loads(manifest.read_text())})
+            signature = digest({"key": "e5-small", "adapter": "embedding-v2", "manifest": json.loads(manifest.read_text())})
             calibration = json.loads(calibration_file.read_text())
             valid = (calibration.get("version") == VERSION and calibration.get("model") == signature
                      and calibration.get("catalog") == digest(catalog) and calibration.get("validated") is True)
             reason = "joint_calibrated" if valid else "calibration_model_or_catalog_changed"
         return {"calibration_valid": valid, "can_accept": valid, "diagnostic_only": not valid,
-                "reason": reason, "loaded": self.model is not None,
-                "note": "Execução automática exige confiança conjunta calibrada >= 80% e margem suficiente."}
+                "reason": reason, "loaded": self.model is not None, "deterministic_available": True,
+                "note": "Ação explícita e alvo único usam resolução determinística; hipóteses exigem confirmação ou calibração conjunta >=80%."}
 
 
-    def infer(self, text, catalog, key, config, context=None):
+    def infer(self, text, catalog, key, config, context=None, *, semantic_only=False):
         total_started = time.perf_counter()
+        self.phase = "grounding"
+        known = understood_action(text)
+        row = resolve_device(text, catalog, context, action=known) if not semantic_only and known and hypothesis_allowed(text) else None
+        if row:
+            proposal = {'intent': known, 'target_entities': [row['entity_id']], 'target_area': None,
+                        'confidence': None, 'requires_clarification': False, 'clarification_question': None,
+                        'reason': 'explicit_action_and_unique_target'}
+            return {'decision_status': 'resolved', 'reason': proposal['reason'], 'proposal': proposal,
+                    'confidence': None, 'margin': None, 'raw_score': None, 'ranking': [],
+                    'grounding': 'deterministic-v1', 'catalog_fingerprint': digest(catalog), 'model': key,
+                    'load_ms': 0, 'inference_ms': 0, 'retrieval_ms': 0, 'analysis_ms': 0,
+                    'total_ms': (time.perf_counter()-total_started)*1000, 'embedding_used': False,
+                    'confirmation_required': False}
+        # Spelling evidence may ask for confirmation; it never grants automatic execution.
+        if not semantic_only and not known and hypothesis_allowed(text):
+            analysis = decomposition(text, catalog, context)
+            action_rows = analysis['action']['ranking']
+            if action_rows[0]['lexical_similarity'] >= .8 and action_rows[0]['lexical_similarity'] - action_rows[1]['lexical_similarity'] >= .15:
+                action = action_rows[0]['intent']
+                row = resolve_device(text, catalog, context, action=action)
+                if row:
+                    return {'decision_status': 'confirmation_required', 'reason': 'spelling_hypothesis',
+                        'proposal': {'intent': action, 'target_entities': [row['entity_id']], 'target_area': None,
+                            'confidence': None, 'requires_clarification': True,
+                            'clarification_question': confirmation_question(action, row, catalog), 'reason': 'spelling_hypothesis'},
+                        'confirmation_required': True, 'confidence': None, 'margin': None, 'raw_score': None,
+                        'ranking': [], 'analysis': analysis, 'embedding_used': False, 'model': key,
+                        'catalog_fingerprint': digest(catalog), 'load_ms': 0, 'inference_ms': 0,
+                        'retrieval_ms': 0, 'analysis_ms': 0, 'total_ms': (time.perf_counter()-total_started)*1000}
         self.phase = "loading"
         cpu_start = time.process_time()
         signature = self.load(key)
@@ -89,21 +120,29 @@ class Encoder:
         retrieval_ms = (time.perf_counter() - started) * 1000
         inference_started = time.perf_counter()
         self.phase = "inference"
-        query = encode([text], query=True)[0]
+        analysis = decomposition(text, catalog, context)
+        fragment = analysis['action']['text']
+        device_fragment = analysis['device']['name'] or text
+        analysis['device']['text'] = device_fragment
+        texts = [text, fragment or text, device_fragment]
+        unique = list(dict.fromkeys(texts))
+        if len(self.query_cache) + len(unique) > 128:
+            self.query_cache.clear()
+        absent = [value for value in unique if value not in self.query_cache]
+        if absent:
+            self.query_cache.update(zip(absent, encode(absent, query=True)))
+        queries = [self.query_cache[value] for value in texts]
+        query = queries[0]
         ranking = []
         for row in rows:
             target_score = float(np.dot(query, self.cache[row["description"]]))
             intent_score = float(np.dot(query, self.cache[ACTION_TEXT[row["intent"]]]))
-            ranking.append({**row, "raw_score": max(-1., min(1., min(target_score, intent_score))),
+            ranking.append({**row, "raw_score": max(-1., min(1., (target_score + intent_score) / 2)),
                             "target_score": target_score, "intent_score": intent_score,
-                            "reason": "minimum(intent cosine, device cosine); joint candidate"})
+                            "reason": "mean(intent cosine, device cosine); joint-v2 candidate"})
         result = self.finish(ranking, signature, catalog, key, config, inference_started, cpu_start)
         analysis_started = time.perf_counter()
-        analysis = decomposition(text, catalog, context)
-        fragment = analysis["action"]["text"]
-        device_fragment = analysis["device"]["name"] or text
-        analysis["device"]["text"] = device_fragment
-        part_queries = encode([fragment or text, device_fragment], query=True)
+        part_queries = queries[1:]
         if fragment:
             action_query = part_queries[0]
             for item in analysis["action"]["ranking"]:
@@ -117,6 +156,17 @@ class Encoder:
             for entity, score in sorted(devices.items(), key=lambda item: (-item[1], item[0]))[:5]]
         result["analysis"] = analysis
         result["analysis_ms"] = (time.perf_counter() - analysis_started) * 1000
+        if (result.get('decision_status') == 'uncalibrated' and result.get('ranking')
+                and result['raw_score'] >= .75 and result['margin'] >= config.get('min_margin', .08)):
+            top = result['ranking'][0]
+            grounded = resolve_device(text, catalog, context, action=top['intent'])
+            if grounded and grounded['entity_id'] == top['entity_id'] and hypothesis_allowed(text):
+                result.update(decision_status='confirmation_required', reason='uncalibrated_grounded_hypothesis',
+                    confirmation_required=True, proposal={'intent': top['intent'],
+                        'target_entities': [top['entity_id']], 'target_area': None, 'confidence': None,
+                        'requires_clarification': True,
+                        'clarification_question': confirmation_question(top['intent'], grounded, catalog),
+                        'reason': 'uncalibrated_grounded_hypothesis'})
         proposal = result.get("proposal")
         known = understood_action(text)
         automatic = (result.get('decision_status') == 'accepted'
@@ -169,7 +219,7 @@ class Encoder:
                 raise ValueError("Exemplo positivo exige intenção e alvo")
         bins = [{"n": 0, "correct": 0} for _ in range(5)]
         def measured(sample):
-            result = self.infer(sample["text"], catalog, key, {})
+            result = self.infer(sample["text"], catalog, key, {}, semantic_only=True)
             top = result["ranking"][0] if result["ranking"] else None
             correct = bool(top and sample.get("expected_intent") == top["intent"] and sample.get("expected_entities") == [top["entity_id"]] and sample.get("requires_clarification") is False)
             return min(4, max(0, int((top["raw_score"] if top else 0) * 5))), correct

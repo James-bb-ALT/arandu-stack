@@ -200,6 +200,21 @@ class LocalNluClient:
         self._last_interpret_protocol = 4
         return await self._async_json("POST", "/v4/interpret", payload)
 
+    async def async_v5_supported(self) -> bool:
+        try:
+            diag = await self.async_diagnostics()
+        except ClientError:
+            return False
+        protocols = diag.get("protocols") if isinstance(diag, dict) else None
+        return isinstance(protocols, list) and 5 in protocols
+
+    async def async_interpret_v5(self, payload: dict[str, Any]) -> Any:
+        self._last_interpret_protocol = 5
+        return await self._async_json("POST", "/v5/interpret", payload)
+
+    async def async_review_v5(self, payload: dict[str, Any]) -> Any:
+        return await self._async_json("POST", "/v5/review", payload)
+
     async def _async_json(
         self,
         method: str,

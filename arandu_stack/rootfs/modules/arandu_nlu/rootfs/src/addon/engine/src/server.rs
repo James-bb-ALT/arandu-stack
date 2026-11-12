@@ -30,6 +30,8 @@ enum Route {
     V3Interpret,
     V4Catalog,
     V4Interpret,
+    V5Interpret,
+    V5Review,
 }
 
 struct ConnectionGuard(Arc<AtomicUsize>);
@@ -82,6 +84,11 @@ fn route_error(stream: &mut TcpStream, route: Route, status: u16) -> std::io::Re
             stream,
             status,
             br#"{"status":"invalid_request","version":4}"#,
+        ),
+        Route::V5Interpret | Route::V5Review => write_raw(
+            stream,
+            status,
+            br#"{"status":"invalid_request","version":5}"#,
         ),
         Route::V1Interpret => write_response(
             stream,
@@ -146,7 +153,7 @@ fn handle_connection(stream: &mut TcpStream) -> std::io::Result<()> {
     if request_line == "GET /diagnostics HTTP/1.1" {
         let body = serde_json::to_vec(&serde_json::json!({
             "service_version": env!("CARGO_PKG_VERSION"),
-            "protocols": [1, 2, 3, 4],
+            "protocols": [1, 2, 3, 4, 5],
             "build_id": option_env!("ARANDU_BUILD_ID").unwrap_or("unknown"),
             "execution": "passive"
         }))
@@ -165,6 +172,10 @@ fn handle_connection(stream: &mut TcpStream) -> std::io::Result<()> {
         Route::V4Catalog
     } else if request_line == "POST /v4/interpret HTTP/1.1" {
         Route::V4Interpret
+    } else if request_line == "POST /v5/interpret HTTP/1.1" {
+        Route::V5Interpret
+    } else if request_line == "POST /v5/review HTTP/1.1" {
+        Route::V5Review
     } else {
         return write_response(
             stream,
@@ -244,6 +255,32 @@ fn handle_connection(stream: &mut TcpStream) -> std::io::Result<()> {
                 return route_error(stream, route, 400);
             };
             let response = crate::contextual::interpret(&request);
+            write_raw(
+                stream,
+                200,
+                &serde_json::to_vec(&response).map_err(std::io::Error::other)?,
+            )
+        }
+        Route::V5Interpret => {
+            let Ok(request) =
+                serde_json::from_slice::<crate::contextual::contract::PartialRequest>(&body)
+            else {
+                return route_error(stream, route, 400);
+            };
+            let response = crate::contextual::interpret_partial(&request);
+            write_raw(
+                stream,
+                200,
+                &serde_json::to_vec(&response).map_err(std::io::Error::other)?,
+            )
+        }
+        Route::V5Review => {
+            let Ok(request) =
+                serde_json::from_slice::<crate::contextual::contract::ReviewProposalRequest>(&body)
+            else {
+                return route_error(stream, route, 400);
+            };
+            let response = crate::contextual::review_proposal(&request);
             write_raw(
                 stream,
                 200,

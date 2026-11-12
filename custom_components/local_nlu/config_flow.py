@@ -121,7 +121,143 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return await self.async_step_settings(user_input)
         return self.async_show_menu(step_id='init', menu_options=[
-            'voice_output', 'identity_binding', 'intelligence', 'performance', 'settings'])
+            'voice_output', 'identity_binding', 'announcements', 'intelligence', 'performance', 'settings'])
+
+    async def async_step_announcements(self, user_input=None):
+        """Review and configure area and satellite announcement destinations."""
+        from homeassistant.helpers import entity_registry, area_registry
+        from .announcement_delivery import is_entity_exposed
+        from .announcement_options import (
+            CONF_ANNOUNCEMENTS_ENABLED,
+            CONF_ANNOUNCEMENTS_ALLOW_ALL,
+            CONF_ANNOUNCEMENTS_DESTINATIONS,
+            CONF_ANNOUNCEMENTS_TTS_ENTITY,
+            CONF_ANNOUNCEMENTS_CHIME,
+            CONF_ANNOUNCEMENTS_COOLDOWN_S,
+            CONF_ANNOUNCEMENTS_QUIET_HOURS,
+            MAX_AREAS,
+            MAX_ENTITIES_PER_AREA,
+        )
+
+        options = dict(getattr(self, "_announcements_options", self.config_entry.options))
+        destinations = dict(options.get(CONF_ANNOUNCEMENTS_DESTINATIONS, {}))
+        errors = {}
+
+        if user_input is not None:
+            enabled = user_input.get(CONF_ANNOUNCEMENTS_ENABLED, options.get(CONF_ANNOUNCEMENTS_ENABLED, False))
+            allow_all = user_input.get(CONF_ANNOUNCEMENTS_ALLOW_ALL, options.get(CONF_ANNOUNCEMENTS_ALLOW_ALL, False))
+            chime = user_input.get(CONF_ANNOUNCEMENTS_CHIME, options.get(CONF_ANNOUNCEMENTS_CHIME, True))
+            tts_entity = user_input.get(CONF_ANNOUNCEMENTS_TTS_ENTITY, options.get(CONF_ANNOUNCEMENTS_TTS_ENTITY, ""))
+            cooldown_s = user_input.get(CONF_ANNOUNCEMENTS_COOLDOWN_S, options.get(CONF_ANNOUNCEMENTS_COOLDOWN_S, 5))
+
+            q_start = user_input.get("quiet_hours_start", "").strip()
+            q_end = user_input.get("quiet_hours_end", "").strip()
+            quiet_hours = None
+            if q_start and q_end:
+                import re
+                if not re.fullmatch(r"([01]?\d|2[0-3]):[0-5]\d", q_start) or not re.fullmatch(r"([01]?\d|2[0-3]):[0-5]\d", q_end):
+                    errors["base"] = "invalid_quiet_hours"
+                else:
+                    quiet_hours = {"start": q_start, "end": q_end}
+
+            area_id = user_input.get("area_id")
+            satellite_id = user_input.get("satellite_id")
+            media_player_id = user_input.get("media_player_id")
+            existing_mapping = user_input.get("existing_mapping")
+            save_and_finish = user_input.get("save_and_finish", False)
+
+            if existing_mapping:
+                rem_area, _, rem_ent = existing_mapping.partition(":")
+                if rem_area in destinations:
+                    cur_list = [d for d in destinations[rem_area] if (d.get("entity_id") if isinstance(d, dict) else getattr(d, "entity_id", None)) != rem_ent]
+                    if cur_list:
+                        destinations[rem_area] = cur_list
+                    else:
+                        destinations.pop(rem_area, None)
+            elif satellite_id and media_player_id:
+                errors["base"] = "choose_one_announcement_target"
+            elif (satellite_id or media_player_id) and not area_id:
+                errors["base"] = "announcement_area_required"
+            elif satellite_id or media_player_id:
+                target_id = satellite_id or media_player_id
+                target_kind = "assist_satellite" if satellite_id else "media_player"
+                reg = entity_registry.async_get(self.hass)
+                entry = reg.entities.get(target_id)
+                if entry is None or getattr(entry, "disabled_by", None) is not None:
+                    errors["base"] = "invalid_announcement_origin"
+                elif not is_entity_exposed(self.hass, target_id):
+                    errors["base"] = "announcement_not_exposed"
+                else:
+                    cur_area_list = list(destinations.get(area_id, []))
+                    if len(destinations) >= MAX_AREAS and area_id not in destinations:
+                        errors["base"] = "announcement_limit_reached"
+                    elif len(cur_area_list) >= MAX_ENTITIES_PER_AREA:
+                        errors["base"] = "announcement_limit_reached"
+                    else:
+                        cur_area_list = [d for d in cur_area_list if (d.get("entity_id") if isinstance(d, dict) else getattr(d, "entity_id", None)) != target_id]
+                        cur_area_list.append({"kind": target_kind, "entity_id": target_id})
+                        destinations[area_id] = cur_area_list
+
+            if not errors:
+                options[CONF_ANNOUNCEMENTS_ENABLED] = enabled
+                options[CONF_ANNOUNCEMENTS_ALLOW_ALL] = allow_all
+                options[CONF_ANNOUNCEMENTS_CHIME] = chime
+                if tts_entity:
+                    options[CONF_ANNOUNCEMENTS_TTS_ENTITY] = tts_entity
+                else:
+                    options.pop(CONF_ANNOUNCEMENTS_TTS_ENTITY, None)
+                options[CONF_ANNOUNCEMENTS_COOLDOWN_S] = cooldown_s
+                if quiet_hours:
+                    options[CONF_ANNOUNCEMENTS_QUIET_HOURS] = quiet_hours
+                else:
+                    options.pop(CONF_ANNOUNCEMENTS_QUIET_HOURS, None)
+                options[CONF_ANNOUNCEMENTS_DESTINATIONS] = destinations
+                self._announcements_options = options
+
+                if save_and_finish or not any((existing_mapping, satellite_id, media_player_id)):
+                    from .announcement_router import get_session_store
+                    get_session_store(self.hass).clear()
+                    return self.async_create_entry(data=options)
+
+        reg = entity_registry.async_get(self.hass)
+        areas = area_registry.async_get(self.hass)
+        rows, choices = [], []
+        for a_id, ent_list in sorted(destinations.items()):
+            a_entry = areas.async_get_area(a_id) if hasattr(areas, "async_get_area") else None
+            a_name = getattr(a_entry, "name", a_id)
+            for ent_item in ent_list:
+                e_id = ent_item.get("entity_id") if isinstance(ent_item, dict) else getattr(ent_item, "entity_id", None)
+                k = ent_item.get("kind") if isinstance(ent_item, dict) else getattr(ent_item, "kind", None)
+                ent_entry = reg.entities.get(e_id)
+                e_name = getattr(ent_entry, "name", None) or getattr(ent_entry, "original_name", None) or e_id
+                label = f"{a_name} ({a_id}) -> {e_name} [{k}]"
+                rows.append(label)
+                choices.append({"value": f"{a_id}:{e_id}", "label": label})
+
+        fields = {
+            vol.Optional(CONF_ANNOUNCEMENTS_ENABLED, default=options.get(CONF_ANNOUNCEMENTS_ENABLED, False)): bool,
+            vol.Optional(CONF_ANNOUNCEMENTS_ALLOW_ALL, default=options.get(CONF_ANNOUNCEMENTS_ALLOW_ALL, False)): bool,
+            vol.Optional(CONF_ANNOUNCEMENTS_CHIME, default=options.get(CONF_ANNOUNCEMENTS_CHIME, True)): bool,
+            vol.Optional(CONF_ANNOUNCEMENTS_COOLDOWN_S, default=options.get(CONF_ANNOUNCEMENTS_COOLDOWN_S, 5)): vol.All(vol.Coerce(int), vol.Range(min=3, max=60)),
+            vol.Optional(CONF_ANNOUNCEMENTS_TTS_ENTITY, **({"default": options[CONF_ANNOUNCEMENTS_TTS_ENTITY]} if options.get(CONF_ANNOUNCEMENTS_TTS_ENTITY) else {})): selector.EntitySelector(selector.EntitySelectorConfig(domain="tts")),
+            vol.Optional("quiet_hours_start", default=options.get(CONF_ANNOUNCEMENTS_QUIET_HOURS, {}).get("start", "")): str,
+            vol.Optional("quiet_hours_end", default=options.get(CONF_ANNOUNCEMENTS_QUIET_HOURS, {}).get("end", "")): str,
+            vol.Optional("area_id"): selector.AreaSelector(),
+            vol.Optional("satellite_id"): selector.EntitySelector(selector.EntitySelectorConfig(domain="assist_satellite")),
+            vol.Optional("media_player_id"): selector.EntitySelector(selector.EntitySelectorConfig(domain="media_player")),
+            vol.Optional("save_and_finish", default=False): bool,
+        }
+        if choices:
+            fields[vol.Optional("existing_mapping")] = selector.SelectSelector(
+                selector.SelectSelectorConfig(options=choices, mode=selector.SelectSelectorMode.DROPDOWN)
+            )
+
+        return self.async_show_form(
+            step_id="announcements",
+            data_schema=vol.Schema(fields),
+            errors=errors,
+            description_placeholders={"destinations": self._overview(rows)},
+        )
 
     async def async_step_performance(self, user_input=None):
         limits = {'performance_concurrency':(4,1,8),'performance_waiting':(16,0,32),

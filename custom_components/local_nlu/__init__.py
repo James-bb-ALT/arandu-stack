@@ -82,6 +82,8 @@ async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> Non
     if runtime._contextual is not None:
         runtime._contextual.options_changed()
     runtime._pending.clear()
+    from .announcement_router import clear_session_store
+    clear_session_store(hass, entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -89,6 +91,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
+        from .announcement_router import clear_session_store
+        clear_session_store(hass, entry.entry_id)
         if publisher := getattr(entry.runtime_data, '_trace_publisher', None):
             publisher.close()
         if getattr(entry.runtime_data, "_contextual", None) is not None:

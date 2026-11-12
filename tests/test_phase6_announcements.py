@@ -796,6 +796,9 @@ class TestPhase6ConfigFlow(unittest.IsolatedAsyncioTestCase):
 
         self.assertIsNotNone(result)
         self.assertIsNotNone(result.response)
-        self.assertEqual(result.response.speech["plain"]["speech"], "Aviso enviado.")
+        self.assertEqual(
+            result.response.speech["plain"]["speech"],
+            "Aviso enviado ao Home Assistant para reprodução (reprodução audível não confirmada).",
+        )
         self.assertEqual(len(hass.services.calls), 1)
         mock_runtime.async_process.assert_not_called()

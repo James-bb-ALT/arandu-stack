@@ -245,6 +245,10 @@ class LocalNluRuntime:
         self._contextual_options = contextual_options or (lambda: {})
         self._contextual = None
 
+    def invalidate_pending(self, conversation_id: str | None) -> None:
+        if isinstance(conversation_id, str):
+            self._pending.pop(conversation_id, None)
+
     async def async_process(self, user_input: Any) -> RuntimeResult:
         routing = self._contextual_options()
         from .voice_controls import cancellation, volume

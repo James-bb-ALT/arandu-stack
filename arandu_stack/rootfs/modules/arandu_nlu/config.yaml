@@ -1,5 +1,5 @@
 name: ARANDU NLU
-version: 0.7.0
+version: 0.7.1
 slug: ptbr_nlu
 description: PT-BR determinístico com ações contextuais, automações, listas, timers e exclusões tipadas
 arch:

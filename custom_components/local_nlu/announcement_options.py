@@ -68,8 +68,12 @@ def _parse_time(t_str: str) -> time | None:
     return time(hour=int(match.group(1)), minute=int(match.group(2)))
 
 
-def is_in_quiet_hours(options: AnnouncementOptions, current_time: time | None = None) -> bool:
-    """Check if the given time falls within configured quiet hours."""
+def is_in_quiet_hours(
+    options: AnnouncementOptions,
+    current_time: time | None = None,
+    hass: Any | None = None,
+) -> bool:
+    """Check if the given time falls within configured quiet hours using HA timezone."""
     if not options.quiet_hours:
         return False
     start_str = options.quiet_hours.get("start")
@@ -83,12 +87,40 @@ def is_in_quiet_hours(options: AnnouncementOptions, current_time: time | None = 
         return False
 
     if current_time is None:
-        current_time = datetime.now().time()
+        current_time = _get_ha_local_time(hass)
 
     if start <= end:
         return start <= current_time <= end
     # Overnight range, e.g. 22:00 to 07:00
     return current_time >= start or current_time <= end
+
+
+def _get_ha_local_time(hass: Any | None = None) -> time:
+    """Resolve current local time in Home Assistant's configured timezone."""
+    try:
+        from homeassistant.util import dt as dt_util
+
+        tz_name = getattr(getattr(hass, "config", None), "time_zone", None) if hass is not None else None
+        if tz_name and hasattr(dt_util, "get_time_zone") and hasattr(dt_util, "utcnow"):
+            tz = dt_util.get_time_zone(tz_name)
+            if tz is not None:
+                return dt_util.utcnow().astimezone(tz).time()
+        if hasattr(dt_util, "now"):
+            return dt_util.now().time()
+        if hasattr(dt_util, "as_local") and hasattr(dt_util, "utcnow"):
+            return dt_util.as_local(dt_util.utcnow()).time()
+    except Exception:
+        pass
+
+    tz_name = getattr(getattr(hass, "config", None), "time_zone", None) if hass is not None else None
+    if tz_name:
+        try:
+            from zoneinfo import ZoneInfo
+
+            return datetime.now(ZoneInfo(tz_name)).time()
+        except Exception:
+            pass
+    return datetime.now().astimezone().time()
 
 
 def load_announcement_options(raw: dict[str, Any]) -> AnnouncementOptions:

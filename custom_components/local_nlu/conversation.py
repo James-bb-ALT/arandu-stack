@@ -66,6 +66,7 @@ class LocalNluConversationEntity(
                     hass=self.hass,
                     config_entry=self._entry,
                     user_input=prepared,
+                    runtime=self._runtime,
                 )
                 result = (
                     announcement_result

@@ -103,8 +103,10 @@ def normalize_syntax(text: str) -> str:
     return " ".join(stripped.split())
 
 
-def _validate_message(raw_msg: str) -> tuple[str | None, str | None]:
+def validate_announcement_message(raw_msg: str) -> tuple[str | None, str | None]:
     """Validate message safety and size. Returns (clean_message, error_reason)."""
+    if not isinstance(raw_msg, str):
+        return None, "invalid_message"
     msg = raw_msg.strip()
     if not msg:
         return None, None
@@ -123,6 +125,9 @@ def _validate_message(raw_msg: str) -> tuple[str | None, str | None]:
             return None, "injection_detected"
 
     return msg, None
+
+
+_validate_message = validate_announcement_message
 
 
 def parse_announcement(text: str) -> AnnounceIntent | None:
@@ -226,13 +231,13 @@ def parse_announcement(text: str) -> AnnounceIntent | None:
     # e.g. "avisa na cozinha que o almoço está pronto"
     # or "anuncia na sala: a reunião começou"
     pattern_with_sep = re.compile(
-        rf"^{verb_regex}\s+{prep_regex}\s+([^:]+?)(?:\s*(?:{sep_regex})|:)\s*(.*)$",
+        rf"^{verb_regex}\s+{prep_regex}\s+([^:]+?)(?:\s+(?:{sep_regex})\b|:)\s*(.*)$",
         re.DOTALL,
     )
 
     # Pattern B: Verb + Separator without Prep (e.g., "anuncia que vamos sair" -> broadcast candidate)
     pattern_direct_sep = re.compile(
-        rf"^{verb_regex}(?:\s*(?:{sep_regex})|:)\s*(.*)$",
+        rf"^{verb_regex}(?:\s+(?:{sep_regex})\b|:)\s*(.*)$",
         re.DOTALL,
     )
 
@@ -247,7 +252,7 @@ def parse_announcement(text: str) -> AnnounceIntent | None:
         dest_norm = match_a.group(1).strip()
         # Find exact separator in raw_text to extract raw destination and raw message
         raw_match = re.search(
-            rf"(?i)(?::|\s+(?:{sep_regex}))\s*",
+            rf"(?i)(?::|\s+(?:{sep_regex})\b)\s*",
             raw_text,
         )
         if raw_match:
@@ -380,7 +385,7 @@ def parse_announcement(text: str) -> AnnounceIntent | None:
     # If "avisa que...", no destination specified -> broadcast candidate with confirmation
     match_b = pattern_direct_sep.match(norm_text)
     if match_b:
-        raw_match = re.search(rf"(?i)\s*(?:{sep_regex}|\:)\s*", raw_text)
+        raw_match = re.search(rf"(?i)(?::|\s+(?:{sep_regex})\b)\s*", raw_text)
         raw_msg = raw_text[raw_match.end():].strip() if raw_match else ""
         clean_msg, err = _validate_message(raw_msg)
         if err:

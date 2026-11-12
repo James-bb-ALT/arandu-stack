@@ -50,7 +50,10 @@ def _fetch(hass,rows,start,end,energy,statistics=False):
     if energy or statistics:
         ids={r['entity_id'] for r in rows}
         metadata=get_metadata(hass,statistic_ids=ids,statistic_type='sum' if energy else 'mean')
-        if set(metadata)!=ids or any(pair[1].get('unit_of_measurement')!= ('kWh' if energy else rows[0]['attributes'].get('unit_of_measurement')) or pair[1].get('has_sum' if energy else 'has_mean') is not True for pair in metadata.values()):raise QueryError('history_units')
+        expected_unit = rows[0]['attributes'].get('unit_of_measurement')
+        if energy and expected_unit not in ('kWh', 'Wh'):
+            raise QueryError('history_units')
+        if set(metadata)!=ids or any(pair[1].get('unit_of_measurement')!=expected_unit or pair[1].get('has_sum' if energy else 'has_mean') is not True for pair in metadata.values()):raise QueryError('history_units')
         return statistics_during_period(hass,start-timedelta(hours=1) if energy else start,end,ids,'hour',None,{'sum'} if energy else {'mean','min','max'})
     result={};count=0
     for row in rows:
@@ -123,20 +126,37 @@ def evaluate(series,params,start,end,label,unit):
     return f'{label}: {decimal(values[0])} → {decimal(values[-1])} {unit}; '+('subiu' if change>0 else 'caiu' if change<0 else 'permaneceu igual')+'.'
 
 
-def energy_result(raw,rows,start,end):
+def energy_result(raw,rows,start,end,local_tz=None):
     if type(raw) is not dict or set(raw)!={r['entity_id'] for r in rows}:raise QueryError('insufficient_history')
+    tz=local_tz or start.tzinfo or timezone.utc
     answers=[]
     for row in rows:
         points=raw[row['entity_id']]
         if type(points) is not list or not 2<=len(points)<=170:raise QueryError('insufficient_history')
         if any(type(p) is not dict or type(p.get('start')) not in (int,float) or not math.isfinite(p['start']) or type(p.get('sum')) not in (int,float) or not math.isfinite(p['sum']) for p in points):raise QueryError('history_schema')
         points=sorted(points,key=lambda p:p['start'])
-        # Hourly sum describes the end of its hour. Require exact boundaries;
-        # partial hours and missing bins cannot silently become a full-day sum.
-        if abs(points[0]['start']+3600-start.timestamp())>1 or abs(points[-1]['start']+3600-end.timestamp())>1:
+        # Hourly sum describes the end of its hour.
+        # Exact full periods end at end.timestamp(); ongoing partial periods (e.g. today at 10:37)
+        # end at the latest completed hour (< 3600s before end.timestamp()) and report exact coverage.
+        first_end = points[0]['start'] + 3600
+        last_end = points[-1]['start'] + 3600
+        gap_to_end = end.timestamp() - last_end
+        if abs(first_end - start.timestamp()) > 1 or not (-1 <= gap_to_end < 3600):
             raise QueryError('insufficient_history')
         if any(abs(y['start']-x['start']-3600)>1 or y['sum']<x['sum'] for x,y in zip(points,points[1:])):raise QueryError('insufficient_history')
-        answers.append(f"{row['name']} consumiu {decimal(points[-1]['sum']-points[0]['sum'])} kWh no período.")
+        unit = row.get('attributes', {}).get('unit_of_measurement', 'kWh')
+        if unit not in ('kWh', 'Wh'):
+            raise QueryError('history_units')
+        total = decimal(points[-1]['sum'] - points[0]['sum'])
+        if gap_to_end > 1:
+            start_local = datetime.fromtimestamp(first_end, tz)
+            end_local = datetime.fromtimestamp(last_end, tz)
+            answers.append(
+                f"{row['name']} consumiu {total} {unit} no período parcial "
+                f"(dados de {start_local:%H:%M} até {end_local:%H:%M})."
+            )
+        else:
+            answers.append(f"{row['name']} consumiu {total} {unit} no período.")
     return ' '.join(answers)
 
 
@@ -161,6 +181,7 @@ def statistics_result(raw,row,params,start,end):
 
 
 async def query(hass,rows,params,authorize):
+    local_now = now(hass)
     start,end=window(hass,params.get('period'))
     energy=params.get('metric')=='energy'
     statistics=params.get('period')=='this_week' and not energy and params.get('metric')!='power_state'
@@ -170,10 +191,10 @@ async def query(hass,rows,params,authorize):
     await authorize()
     if energy:
         state=hass.states.get(rows[0]['entity_id'])
-        if state.attributes.get('unit_of_measurement')!='kWh' or state.attributes.get('state_class') not in ('total','total_increasing'):raise QueryError('history_units')
-        return energy_result(raw,rows,start,end)
+        if state.attributes.get('unit_of_measurement') not in ('kWh', 'Wh') or state.attributes.get('state_class') not in ('total','total_increasing'):raise QueryError('history_units')
+        return energy_result(raw,rows,start,end,local_tz=local_now.tzinfo)
     row=rows[0];state=hass.states.get(row['entity_id']);unit=state.attributes.get('unit_of_measurement','')
-    allowed={'temperature':{'°C','°F','K'},'humidity':{'%'},'power':{'W'},'power_state':{''}}
+    allowed={'temperature':{'°C','°F','K'},'humidity':{'%'},'power':{'W','kW'},'power_state':{''}}
     if unit not in allowed.get(params.get('metric'),set()):raise QueryError('history_units')
     if statistics:return statistics_result(raw,row,params,start,end)
     return evaluate(raw[row['entity_id']],params,start,end,row['name'],unit)

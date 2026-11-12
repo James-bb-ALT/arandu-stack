@@ -270,6 +270,40 @@ fn deterministic_phase5_matrix() {
     );
     let unicode = interpret(&request("Adiciona CAFÉ à lista de compras"));
     assert_eq!(unicode.operations[0].parameters.value, Some(json!("CAFÉ")));
+
+    let rename_cafe = interpret(&request("renomeia café por Café Especial"));
+    assert_eq!(rename_cafe.status, "plan");
+    assert_eq!(rename_cafe.operations[0].action, "todo_update");
+    assert_eq!(
+        rename_cafe.operations[0].parameters.old_item.as_deref(),
+        Some("café")
+    );
+    assert_eq!(
+        rename_cafe.operations[0].parameters.new_item.as_deref(),
+        Some("Café Especial")
+    );
+
+    let swap_sugar = interpret(&request(
+        "troca açúcar por Açúcar Mascavo na lista de compras",
+    ));
+    assert_eq!(swap_sugar.status, "plan");
+    assert_eq!(swap_sugar.operations[0].action, "todo_update");
+    assert_eq!(
+        swap_sugar.operations[0].parameters.old_item.as_deref(),
+        Some("açúcar")
+    );
+    assert_eq!(
+        swap_sugar.operations[0].parameters.new_item.as_deref(),
+        Some("Açúcar Mascavo")
+    );
+
+    let remove_cafe = interpret(&request("remove café da lista de compras"));
+    assert_eq!(remove_cafe.status, "plan");
+    assert_eq!(remove_cafe.operations[0].action, "todo_remove");
+    assert_eq!(
+        remove_cafe.operations[0].parameters.value,
+        Some(json!("café"))
+    );
     for text in [
         "Boa noite",
         "Modo desconhecido",

@@ -58,6 +58,14 @@ class Session:
     selection: dict | None = None
     dialogue: Any = None
     todo_confirmation: dict = field(default_factory=dict)
+    temporal_clarification: dict | None = None
+
+
+class TemporalClarificationRequired(Exception):
+    def __init__(self, speech: str, payload: dict) -> None:
+        super().__init__(speech)
+        self.speech = speech
+        self.payload = payload
 
 
 @dataclass(frozen=True)
@@ -148,6 +156,19 @@ class ContextualRuntime:
         self.options_revision += 1
         self.sessions.clear()
         self.catalog.invalidate()
+
+    def invalidate_scope(self, user_id: str, origin_id: str, conversation_id: str | None) -> None:
+        """Invalidate pending confirmations, selections, and dialogue in this exact scope."""
+        for key in list(self.sessions):
+            if key[0] == user_id and key[1] == origin_id and (key[2] or "") == (conversation_id or ""):
+                session = self.sessions[key]
+                session.pending = None
+                session.selection = None
+                session.confirmation = ()
+                session.candidates = ()
+                session.todo_confirmation = {}
+                session.dialogue = None
+                session.temporal_clarification = None
 
     def result(self, code: str, user_input: Any, *, speech: str | None = None, count: int = 0, followup: bool = False, reason: str | None = None, timings: dict | None = None) -> Any:
         from .runtime import RuntimeResult
@@ -437,7 +458,7 @@ class ContextualRuntime:
                 session = self.sessions[key]
                 if not independent:
                     return self.result("stale", user_input, reason="identity_changed")
-            if not independent and (session.selection or session.pending or session.confirmation) and text not in ("sim", "não", "nao", "confirmo", "pode", "pode confirmar", "isso"):
+            if not independent and (session.selection or session.pending or session.confirmation or session.temporal_clarification) and text not in ("sim", "não", "nao", "confirmo", "pode", "pode confirmar", "isso"):
                 # Rust remains the grammar authority for command families without verbs.
                 # This probe has no effects and never renders a catalog or candidates.
                 from .contextual_catalog import build
@@ -452,6 +473,9 @@ class ContextualRuntime:
                 session.pending = None
                 session.candidates = ()
                 session.confirmation = ()
+                session.temporal_clarification = None
+            elif session.temporal_clarification is not None:
+                return await self._resolve_temporal_clarification(text, user_input, session, identity)
             elif session.selection is not None:
                 return await self.choose_set(text, user_input, session, identity, options)
             if text in ("cancela", "cancela isso", "nao", "nao pode", "esquece", "deixa pra la"):
@@ -1069,7 +1093,17 @@ class ContextualRuntime:
                 action = item.operation.action
                 from .capabilities import TEMPORAL_ACTIONS
                 if action in TEMPORAL_ACTIONS or (action.startswith("timer_") and not item.calls):
-                    responses.append(await self.handle_temporal(item, snapshot, user_input, user, options))
+                    try:
+                        responses.append(await self.handle_temporal(item, snapshot, user_input, user, options, session=session))
+                    except TemporalClarificationRequired as clar:
+                        session.temporal_clarification = clar.payload
+                        return self.result(
+                            "missing_slot",
+                            user_input,
+                            speech=clar.speech,
+                            followup=True,
+                            reason="ambiguous_temporal_target",
+                        )
                     completed += 1
                     continue
                 if action in READ_ACTIONS:
@@ -1406,10 +1440,134 @@ class ContextualRuntime:
                     blocking=True, context=context, target={'entity_id':[call['entity_id']]})
             return True
 
-    async def handle_temporal(self, item: Prepared, snapshot: Snapshot, user_input: Any, user: Any, options: dict) -> str:
+    @staticmethod
+    def _format_temporal_candidates(candidates: list[Any]) -> str:
+        labels = []
+        for j in candidates[:5]:
+            label = j.name or j.title or j.target_action
+            if j.due_iso and len(j.due_iso) >= 16:
+                label = f"{label} ({j.due_iso[11:16]})" if label else j.due_iso[11:16]
+            labels.append(label or j.id)
+        return ", ".join(labels)
+
+    async def _resolve_temporal_clarification(
+        self, text: str, user_input: Any, session: Session, identity: ResolvedIdentity
+    ) -> Any:
+        clar = session.temporal_clarification or {}
+        if text in ("cancela", "cancela isso", "nao", "nao pode", "esquece", "deixa pra la"):
+            session.temporal_clarification = None
+            return self.result("cancelled", user_input, speech="Cancelado.")
+
+        action = clar.get("action")
+        job_type = clar.get("job_type", "job")
+        candidates = clar.get("candidates", [])
+        params = clar.get("params", {})
+        user_id = getattr(identity, "user_id", None) or getattr(user_input.context, "user_id", None)
+
+        if text in ("todos", "todas", "todos eles", "todas elas") and action in (
+            "clock_alarm_cancel", "reminder_cancel", "timer_cancel", "scheduled_action_cancel"
+        ):
+            session.temporal_clarification = None
+            cancelled = await self.scheduler.async_cancel_jobs(
+                job_type=job_type,
+                user_id=user_id,
+                all_of_type=True,
+            )
+            n = len(cancelled)
+            return self.result("success", user_input, count=n, speech=f"{n} agendamento(s) cancelado(s)." if n else "Nenhum encontrado.")
+
+        # Match text deterministically against candidate name, title, targets, time, or index
+        norm_q = normalize(text)
+        matched = []
+        for idx, cand in enumerate(candidates, start=1):
+            label = normalize(str(cand.get("label") or ""))
+            name = normalize(str(cand.get("name") or ""))
+            title = normalize(str(cand.get("title") or ""))
+            hhmm = str(cand.get("hhmm") or "")
+            dur_min = str(cand.get("dur_min") or "")
+            if (
+                (name and name in norm_q)
+                or (title and title in norm_q)
+                or (label and label in norm_q)
+                or (hhmm and hhmm in norm_q)
+                or (dur_min and f"{dur_min} min" in norm_q)
+                or norm_q in (str(idx), f"o {idx}", f"numero {idx}")
+            ):
+                matched.append(cand)
+
+        if len(matched) != 1:
+            names = ", ".join(str(c.get("label") or c.get("hhmm") or c["id"]) for c in candidates[:5])
+            return self.result(
+                "missing_slot",
+                user_input,
+                followup=True,
+                reason="ambiguous_temporal_target",
+                speech=f"Não ficou claro qual você quer: {names}.",
+            )
+
+        chosen_id = matched[0]["id"]
+        session.temporal_clarification = None
+
+        if action in ("clock_alarm_cancel", "reminder_cancel", "timer_cancel", "scheduled_action_cancel"):
+            cancelled = await self.scheduler.async_cancel_jobs(job_id=chosen_id, user_id=user_id)
+            return self.result(
+                "success" if cancelled else "no_match",
+                user_input,
+                count=len(cancelled),
+                speech=f"Cancelado ({len(cancelled)})." if cancelled else "O agendamento já foi concluído ou não existe mais.",
+            )
+        if action == "timer_change":
+            job = await self.scheduler.async_change_timer(
+                job_id=chosen_id, delta_seconds=params.get("relative", 0.0), user_id=user_id
+            )
+            return self.result("success" if job else "no_match", user_input, count=1 if job else 0, speech="Tempo do timer ajustado." if job else "Timer não encontrado.")
+        if action == "timer_query":
+            jobs = [j for j in self.scheduler.list_jobs(job_type="timer", user_id=user_id) if j.id == chosen_id]
+            if not jobs:
+                return self.result("no_match", user_input, speech="Timer não encontrado.")
+            rem = max(0, int(jobs[0].due_timestamp - time.time()))
+            m, s = divmod(rem, 60)
+            time_str = f"{m} minutos e {s} segundos" if m else f"{s} segundos"
+            return self.result("query_success", user_input, speech=f"Faltam {time_str} no timer.")
+        if action == "clock_alarm_snooze":
+            dur = params.get("duration", 600.0)
+            job = await self.scheduler.async_snooze_job(job_type="alarm", job_id=chosen_id, duration_seconds=dur, user_id=user_id)
+            mins = int(dur // 60)
+            return self.result("success" if job else "no_match", user_input, count=1 if job else 0, speech=f"Despertador adiado por {mins} minutos." if job else "Não há despertador elegível para adiar.")
+        if action == "clock_alarm_dismiss":
+            job = await self.scheduler.async_dismiss_job(job_type="alarm", job_id=chosen_id, user_id=user_id)
+            return self.result("success" if job else "no_match", user_input, count=1 if job else 0, speech="Despertador desligado." if job else "Não há despertador tocando.")
+        return self.result("no_match", user_input, speech="Ação temporal não reconhecida.")
+
+    async def handle_temporal(self, item: Prepared, snapshot: Snapshot, user_input: Any, user: Any, options: dict, *, session: Session | None = None) -> str:
+        from .scheduled_jobs import AmbiguousJobError
+
         op = item.operation
         action = op.action
         params = op.parameters
+        user_id = getattr(user_input.context, "user_id", None)
+        base_authority = {"user_id": user_id}
+
+        def _raise_clarification(candidates: list[Any], job_type: str, prompt: str) -> None:
+            now_ts = time.time()
+            payload = {
+                "action": action,
+                "job_type": job_type,
+                "params": dict(params),
+                "candidates": [
+                    {
+                        "id": j.id,
+                        "name": j.name,
+                        "title": j.title,
+                        "label": j.name or j.title or j.target_action,
+                        "hhmm": j.due_iso[11:16] if j.due_iso and len(j.due_iso) >= 16 else "",
+                        "dur_min": max(1, int(round((j.due_timestamp - now_ts) / 60))) if j.job_type == "timer" else "",
+                    }
+                    for j in candidates
+                ],
+            }
+            raise TemporalClarificationRequired(prompt, payload)
+
         if action == "clock_alarm_create":
             job = await self.scheduler.async_add_job(
                 job_type="alarm",
@@ -1418,33 +1576,45 @@ class ContextualRuntime:
                 date_str=params.get("date"),
                 recurrence=params.get("recurrence"),
                 name=params.get("name"),
+                authority=base_authority,
             )
             time_display = params.get("time", "")
             return f"Despertador definido para as {time_display}." if time_display else "Despertador configurado."
 
         if action == "clock_alarm_list":
-            jobs = self.scheduler.list_jobs(job_type="alarm")
+            jobs = self.scheduler.list_jobs(job_type="alarm", user_id=user_id)
             if not jobs:
                 return "Você não tem despertadores ativos."
             details = [f"{j.due_iso[11:16]}" + (f" ({j.name})" if j.name else "") for j in jobs]
             return f"Você tem {len(jobs)} despertador{'es' if len(jobs) > 1 else ''} ativo{'s' if len(jobs) > 1 else ''}: " + ", ".join(details) + "."
 
         if action == "clock_alarm_cancel":
-            cancelled = await self.scheduler.async_cancel_jobs(
-                job_type="alarm",
-                name=params.get("name"),
-                time_str=params.get("time"),
-            )
-            return "Despertador cancelado." if cancelled else "Nenhum despertador correspondente encontrado."
+            try:
+                cancelled = await self.scheduler.async_cancel_jobs(
+                    job_type="alarm",
+                    name=params.get("name"),
+                    time_str=params.get("time"),
+                    user_id=user_id,
+                    all_of_type=bool(params.get("all")),
+                )
+            except AmbiguousJobError as err:
+                _raise_clarification(err.candidates, "alarm", f"Há mais de um despertador ativo ({self._format_temporal_candidates(err.candidates)}). Qual você quer cancelar?")
+            return f"Despertador cancelado ({len(cancelled)})." if cancelled else "Nenhum despertador correspondente encontrado."
 
         if action == "clock_alarm_snooze":
             dur = params.get("duration", 600.0)
-            job = await self.scheduler.async_snooze_job(job_type="alarm", duration_seconds=dur)
+            try:
+                job = await self.scheduler.async_snooze_job(job_type="alarm", name=params.get("name"), duration_seconds=dur, user_id=user_id)
+            except AmbiguousJobError as err:
+                _raise_clarification(err.candidates, "alarm", f"Há mais de um despertador tocando ({self._format_temporal_candidates(err.candidates)}). Qual você quer adiar?")
             mins = int(dur // 60)
             return f"Despertador adiado por {mins} minutos." if job else "Não há despertador tocando para adiar."
 
         if action == "clock_alarm_dismiss":
-            job = await self.scheduler.async_dismiss_job(job_type="alarm")
+            try:
+                job = await self.scheduler.async_dismiss_job(job_type="alarm", name=params.get("name"), user_id=user_id)
+            except AmbiguousJobError as err:
+                _raise_clarification(err.candidates, "alarm", f"Há mais de um despertador ativo ({self._format_temporal_candidates(err.candidates)}). Qual você quer desligar?")
             return "Despertador desligado." if job else "Não há despertador tocando."
 
         if action == "reminder_create":
@@ -1456,22 +1626,28 @@ class ContextualRuntime:
                 time_str=params.get("time"),
                 date_str=params.get("date"),
                 title=title,
+                authority=base_authority,
             )
             return f"Lembrete criado: {title}."
 
         if action == "reminder_list":
-            jobs = self.scheduler.list_jobs(job_type="reminder")
+            jobs = self.scheduler.list_jobs(job_type="reminder", user_id=user_id)
             if not jobs:
                 return "Você não tem lembretes pendentes."
             titles = [j.title or "sem título" for j in jobs]
             return f"Você tem {len(jobs)} lembrete{'s' if len(jobs) > 1 else ''}: " + ", ".join(titles) + "."
 
         if action == "reminder_cancel":
-            cancelled = await self.scheduler.async_cancel_jobs(
-                job_type="reminder",
-                name=params.get("title"),
-            )
-            return "Lembrete cancelado." if cancelled else "Nenhum lembrete correspondente encontrado."
+            try:
+                cancelled = await self.scheduler.async_cancel_jobs(
+                    job_type="reminder",
+                    name=params.get("title"),
+                    user_id=user_id,
+                    all_of_type=bool(params.get("all")),
+                )
+            except AmbiguousJobError as err:
+                _raise_clarification(err.candidates, "reminder", f"Há mais de um lembrete ativo ({self._format_temporal_candidates(err.candidates)}). Qual você quer cancelar?")
+            return f"Lembrete cancelado ({len(cancelled)})." if cancelled else "Nenhum lembrete correspondente encontrado."
 
         if action == "timer_start":
             dur = params.get("duration") or params.get("value") or 0.0
@@ -1480,6 +1656,7 @@ class ContextualRuntime:
                 target_action="timer",
                 delay_seconds=dur,
                 name=params.get("name"),
+                authority=base_authority,
             )
             mins = int(dur // 60) if dur >= 60 else int(dur)
             unit = "minutos" if dur >= 60 else "segundos"
@@ -1487,7 +1664,7 @@ class ContextualRuntime:
             return f"Timer de {mins} {unit}{name_str} iniciado."
 
         if action == "timer_list":
-            jobs = self.scheduler.list_jobs(job_type="timer")
+            jobs = self.scheduler.list_jobs(job_type="timer", user_id=user_id)
             if not jobs:
                 return "Não há timers ativos no momento."
             now_ts = time.time()
@@ -1500,12 +1677,14 @@ class ContextualRuntime:
             return "Timers ativos: " + ", ".join(details) + "."
 
         if action == "timer_query":
-            jobs = self.scheduler.list_jobs(job_type="timer")
+            jobs = self.scheduler.list_jobs(job_type="timer", user_id=user_id)
             name = params.get("name")
             if name:
                 jobs = [j for j in jobs if j.name and j.name.lower() == name.lower()]
             if not jobs:
                 return "Não há nenhum timer ativo no momento."
+            if len(jobs) > 1:
+                _raise_clarification(jobs, "timer", f"Há mais de um timer ativo ({self._format_temporal_candidates(jobs)}). De qual deles você quer saber o tempo?")
             rem = max(0, int(jobs[0].due_timestamp - time.time()))
             m, s = divmod(rem, 60)
             time_str = f"{m} minutos e {s} segundos" if m else f"{s} segundos"
@@ -1513,25 +1692,31 @@ class ContextualRuntime:
 
         if action == "timer_change":
             delta = params.get("relative", 0.0)
-            job = await self.scheduler.async_change_timer(name=params.get("name"), delta_seconds=delta)
+            try:
+                job = await self.scheduler.async_change_timer(name=params.get("name"), delta_seconds=delta, user_id=user_id)
+            except AmbiguousJobError as err:
+                _raise_clarification(err.candidates, "timer", f"Há mais de um timer ativo ({self._format_temporal_candidates(err.candidates)}). Qual você quer alterar?")
             if job:
                 return "Tempo do timer ajustado."
             return "Nenhum timer correspondente encontrado para alterar."
 
         if action == "timer_cancel":
-            all_timers = op.intent == "timer.cancel_all"
-            cancelled = await self.scheduler.async_cancel_jobs(
-                job_type="timer",
-                name=params.get("name"),
-                all_of_type=all_timers,
-            )
-            return "Timer cancelado." if cancelled else "Nenhum timer ativo para cancelar."
+            all_timers = op.intent == "timer.cancel_all" or bool(params.get("all"))
+            try:
+                cancelled = await self.scheduler.async_cancel_jobs(
+                    job_type="timer",
+                    name=params.get("name"),
+                    user_id=user_id,
+                    all_of_type=all_timers,
+                )
+            except AmbiguousJobError as err:
+                _raise_clarification(err.candidates, "timer", f"Há mais de um timer ativo ({self._format_temporal_candidates(err.candidates)}). Qual você quer cancelar?")
+            return f"Timer cancelado ({len(cancelled)})." if cancelled else "Nenhum timer ativo para cancelar."
 
         if action == "schedule_action":
             target_action = params.get("target_action", "turn_on")
             targets = [row["entity_id"] for row in item.rows]
-            user_id = user_input.context.user_id
-            session = self.sessions.get((user_id, request_origin(user_input), user_input.conversation_id))
+            sess = session or self.sessions.get((user_id, request_origin(user_input), user_input.conversation_id))
             job = await self.scheduler.async_add_job(
                 job_type="action",
                 target_action=target_action,
@@ -1539,26 +1724,36 @@ class ContextualRuntime:
                 delay_seconds=params.get("delay"),
                 time_str=params.get("time"),
                 date_str=params.get("date"),
+                name=params.get("name"),
                 parameters=params,
-                authority={'user_id': user_id, 'identity_source': session.identity_source if session else 'context',
-                    'conversation_id': user_input.conversation_id, 'satellite_id':getattr(user_input,'satellite_id',None),
-                    'device_id':getattr(user_input,'device_id',None), 'options':_schedule_options_hash(options),
-                    'origin':list(origin_context(self.hass,user_input,options)), 'registry_ids':[row['registry_id'] for row in item.rows]},
+                authority={'user_id': user_id, 'identity_source': sess.identity_source if sess else 'context',
+                    'conversation_id': user_input.conversation_id, 'satellite_id': getattr(user_input, 'satellite_id', None),
+                    'device_id': getattr(user_input, 'device_id', None), 'options': _schedule_options_hash(options),
+                    'origin': list(origin_context(self.hass, user_input, options)), 'registry_ids': [row['registry_id'] for row in item.rows]},
             )
             return "Ação agendada com sucesso."
 
         if action == "scheduled_action_list":
-            jobs = self.scheduler.list_jobs(job_type="action")
+            jobs = self.scheduler.list_jobs(job_type="action", user_id=user_id)
             if not jobs:
                 return "Não há tarefas agendadas."
             return f"Você tem {len(jobs)} ação{'ões' if len(jobs) > 1 else ''} agendada{'s' if len(jobs) > 1 else ''}."
 
         if action == "scheduled_action_cancel":
-            cancelled = await self.scheduler.async_cancel_jobs(
-                job_type="action",
-                name=params.get("target_action"),
-            )
-            return "Agendamento cancelado." if cancelled else "Nenhuma tarefa agendada correspondente encontrada."
+            target_entities = [row["entity_id"] for row in item.rows] if item.rows else None
+            target_act = params.get("target_action")
+            try:
+                cancelled = await self.scheduler.async_cancel_jobs(
+                    job_type="action",
+                    name=params.get("name"),
+                    target_action=target_act,
+                    targets=target_entities,
+                    user_id=user_id,
+                    all_of_type=bool(params.get("all")),
+                )
+            except AmbiguousJobError as err:
+                _raise_clarification(err.candidates, "action", f"Há mais de um agendamento compatível ({self._format_temporal_candidates(err.candidates)}). Qual você quer cancelar?")
+            return f"Agendamento cancelado ({len(cancelled)})." if cancelled else "Nenhuma tarefa agendada correspondente encontrada."
 
         return "Comando temporal concluído."
 

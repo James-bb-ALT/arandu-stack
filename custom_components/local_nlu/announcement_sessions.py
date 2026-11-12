@@ -50,16 +50,36 @@ class ReplySession:
     expires_at: float
 
 
-class AnnouncementSessionStore:
-    """In-memory bounded session store scoped by user and origin."""
+class GlobalConcurrencyGate:
+    """Global concurrency gate shared across all config entries on a Home Assistant instance."""
 
-    def __init__(self) -> None:
+    def __init__(self, max_concurrent: int = MAX_GLOBAL_CONCURRENT) -> None:
+        self._max_concurrent = max_concurrent
+        self._active_calls = 0
+        self._lock = asyncio.Lock()
+
+    async def acquire(self) -> bool:
+        async with self._lock:
+            if self._active_calls >= self._max_concurrent:
+                return False
+            self._active_calls += 1
+            return True
+
+    async def release(self) -> None:
+        async with self._lock:
+            if self._active_calls > 0:
+                self._active_calls -= 1
+
+
+class AnnouncementSessionStore:
+    """In-memory bounded session store scoped by user, origin, and entry."""
+
+    def __init__(self, gate: GlobalConcurrencyGate | None = None) -> None:
         self._sessions: dict[str, ClarifyMessageSession | ConfirmationSession] = {}
         self._reply_sessions: dict[str, ReplySession] = {}
         self._cooldowns: dict[str, float] = {}
         self._dedup_cache: dict[str, float] = {}
-        self._active_calls: int = 0
-        self._lock = asyncio.Lock()
+        self._gate = gate or GlobalConcurrencyGate()
 
     def _session_key(self, origin: SessionOrigin) -> str:
         return f"{origin.user_id}:{origin.origin_kind}:{origin.origin_id}:{origin.conversation_id or ''}"
@@ -102,6 +122,21 @@ class AnnouncementSessionStore:
         self.clean_expired()
         key = self._session_key(origin)
         return self._sessions.pop(key, None)
+
+    def clear_scope(self, user_id: str, origin_id: str, conversation_id: str | None) -> int:
+        """Invalidate all announcement sessions matching the exact scope."""
+        self.clean_expired()
+        conv = conversation_id or ""
+        to_remove = [
+            k
+            for k, sess in self._sessions.items()
+            if sess.origin.user_id == user_id
+            and sess.origin.origin_id == origin_id
+            and (sess.origin.conversation_id or "") == conv
+        ]
+        for k in to_remove:
+            self._sessions.pop(k, None)
+        return len(to_remove)
 
     def set_clarify_session(
         self,
@@ -202,16 +237,10 @@ class AnnouncementSessionStore:
 
     async def acquire_slot(self) -> bool:
         """Acquire one of the MAX_GLOBAL_CONCURRENT delivery slots."""
-        async with self._lock:
-            if self._active_calls >= MAX_GLOBAL_CONCURRENT:
-                return False
-            self._active_calls += 1
-            return True
+        return await self._gate.acquire()
 
     async def release_slot(self) -> None:
-        async with self._lock:
-            if self._active_calls > 0:
-                self._active_calls -= 1
+        await self._gate.release()
 
 
 def compute_fingerprint(
@@ -220,7 +249,10 @@ def compute_fingerprint(
     user_id: str,
     origin_id: str,
     dest_config_hash: str,
+    conversation_id: str = "",
 ) -> str:
     """Compute an immutable fingerprint for broadcast confirmation."""
-    data = f"{sorted(targets)}|{message}|{user_id}|{origin_id}|{dest_config_hash}".encode("utf-8")
+    data = (
+        f"{sorted(targets)}|{message}|{user_id}|{origin_id}|{conversation_id}|{dest_config_hash}"
+    ).encode("utf-8")
     return hashlib.sha256(data).hexdigest()

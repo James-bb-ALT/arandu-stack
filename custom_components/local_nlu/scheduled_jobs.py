@@ -56,7 +56,7 @@ class ScheduledJob:
     name: str | None = None
     title: str | None = None
     parameters: dict = field(default_factory=dict)
-    status: str = "pending"  # "pending", "completed", "cancelled", "missed", "ringing", "snoozed"
+    status: str = "pending"  # "pending", "dispatching", "ringing", "snoozed", "completed", "cancelled", "failed", "missed", "interrupted"
     created_at: float = field(default_factory=time.time)
     origin_area: str | None = None
     authority: dict | None = None
@@ -65,6 +65,7 @@ class ScheduledJob:
     delivery_ms: float | None = None
     notification_status: str | None = None
     tts_status: str | None = None
+    recurrence_scheduled: bool = False
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -81,6 +82,15 @@ class ScheduledJob:
         if type(data.get('targets',[])) is not list or len(data.get('targets',[]))>64 or any(type(target) is not str or not re.fullmatch(r'[a-z0-9_]+\.[a-z0-9_]+',target) for target in data.get('targets',[])):
             raise ValueError('invalid_job_targets')
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+
+class AmbiguousJobError(ValueError):
+    """Raised when a temporal cancel/edit/query/snooze/dismiss matches multiple jobs without explicit disambiguation."""
+
+    def __init__(self, candidates: list[ScheduledJob], job_type: str) -> None:
+        super().__init__(f"ambiguous_{job_type}")
+        self.candidates = list(candidates)
+        self.job_type = job_type
 
 
 class ScheduledJobManager:
@@ -115,18 +125,25 @@ class ScheduledJobManager:
                 for job_dict in data["jobs"]:
                     try:
                         job = ScheduledJob.from_dict(job_dict)
-                        if job.delivery_status == 'dispatching':
-                            # An effect may have happened before the crash. Never replay it.
+                        # Migrate interrupted/saturated/dispatching jobs honestly without replaying uncertain effects
+                        if job.delivery_status == 'dispatching' or job.status == 'dispatching':
                             job.delivery_status = 'interrupted'
-                            if job.status == 'dispatching':
-                                job.status = 'interrupted'
+                            job.status = 'interrupted'
+                        elif job.status == 'ringing' and job.delivery_status == 'saturated':
+                            job.status = 'failed'
+                        elif job.status == 'ringing' and job.job_type in ('reminder', 'timer'):
+                            # Legacy v11 reminders/timers left in ringing after delivery
+                            job.status = 'completed' if job.delivery_status == 'delivered' else 'interrupted'
                         # Honest bookkeeping: mark past pending jobs as missed if HA was offline
                         if job.status == "pending" and job.due_timestamp < now_ts - 60:
                             if job.recurrence:
-                                # Re-schedule next occurrence
                                 cur_dt = datetime.fromtimestamp(job.due_timestamp, tz=timezone.utc)
                                 nxt = next_recurrence_datetime(cur_dt, job.recurrence)
-                                if nxt:
+                                steps = 0
+                                while nxt is not None and nxt.timestamp() < now_ts - 60 and steps < 366:
+                                    nxt = next_recurrence_datetime(nxt, job.recurrence)
+                                    steps += 1
+                                if nxt and nxt.timestamp() >= now_ts - 60:
                                     job.due_timestamp = nxt.timestamp()
                                     job.due_iso = nxt.isoformat()
                                     self._jobs[job.id] = job
@@ -212,58 +229,146 @@ class ScheduledJobManager:
             self._arm_next_timer()
         return job
 
+    @staticmethod
+    def _authorized_for_user(job: ScheduledJob, user_id: str | None) -> bool:
+        if user_id is None:
+            return True
+        if not isinstance(job.authority, dict):
+            return True
+        job_user = job.authority.get("user_id")
+        return job_user is None or job_user == user_id
+
+    def _schedule_next_recurrence(self, job: ScheduledJob) -> ScheduledJob | None:
+        """Idempotently schedule the next occurrence of a recurring job under lock."""
+        if not job.recurrence or job.recurrence_scheduled:
+            return None
+        for existing in self._jobs.values():
+            if (
+                existing.status in ("pending", "snoozed")
+                and isinstance(existing.parameters, dict)
+                and existing.parameters.get("_recurrence_parent") == job.id
+            ):
+                job.recurrence_scheduled = True
+                return None
+
+        cur_dt = datetime.fromtimestamp(job.due_timestamp, tz=timezone.utc)
+        nxt = next_recurrence_datetime(cur_dt, job.recurrence)
+        if not nxt:
+            return None
+        params = dict(job.parameters or {})
+        params["_recurrence_parent"] = job.id
+        next_job = ScheduledJob(
+            id=str(uuid.uuid4())[:8],
+            job_type=job.job_type,
+            target_action=job.target_action,
+            targets=list(job.targets),
+            due_timestamp=nxt.timestamp(),
+            due_iso=nxt.isoformat(),
+            recurrence=job.recurrence,
+            name=job.name,
+            title=job.title,
+            parameters=params,
+            status="pending",
+            created_at=time.time(),
+            origin_area=job.origin_area,
+            authority=dict(job.authority) if isinstance(job.authority, dict) else None,
+        )
+        self._jobs[next_job.id] = next_job
+        job.recurrence_scheduled = True
+        return next_job
+
     async def async_cancel_jobs(
         self,
         *,
         job_type: str | None = None,
+        job_id: str | None = None,
         name: str | None = None,
         time_str: str | None = None,
+        target_action: str | None = None,
+        targets: list[str] | None = None,
+        user_id: str | None = None,
         all_of_type: bool = False,
     ) -> list[ScheduledJob]:
         await self.async_load()
-        cancelled: list[ScheduledJob] = []
         async with self._lock:
+            matches: list[ScheduledJob] = []
             for job in self._jobs.values():
                 if job.status not in ("pending", "ringing", "snoozed", "dispatching"):
                     continue
+                if not self._authorized_for_user(job, user_id):
+                    continue
+                if job_id and job.id != job_id:
+                    continue
                 if job_type and job.job_type != job_type:
                     continue
-                candidate = job.title if job.job_type == 'reminder' else job.name
+                candidate = job.title if job.job_type == "reminder" else job.name
                 if name and (not candidate or candidate.lower() != name.lower()):
                     continue
                 if time_str and time_str not in job.due_iso:
                     continue
-                job.status = "cancelled"
-                cancelled.append(job)
-                if not all_of_type and (name or time_str):
-                    break
-            if cancelled:
-                await self.async_save()
-                self._arm_next_timer()
-        return cancelled
+                if target_action and job.target_action != target_action:
+                    continue
+                if targets:
+                    if not set(targets).intersection(job.targets):
+                        continue
+                matches.append(job)
 
-    def list_jobs(self, job_type: str | None = None) -> list[ScheduledJob]:
+            if not matches:
+                return []
+            if not all_of_type and len(matches) > 1:
+                raise AmbiguousJobError(matches, job_type or "job")
+
+            for job in matches:
+                job.status = "cancelled"
+            await self.async_save()
+            self._arm_next_timer()
+            return matches
+
+    def list_jobs(self, job_type: str | None = None, user_id: str | None = None) -> list[ScheduledJob]:
         active = [
             j for j in self._jobs.values()
             if j.status in ("pending", "ringing", "snoozed", "dispatching")
             and (job_type is None or j.job_type == job_type)
+            and self._authorized_for_user(j, user_id)
         ]
         active.sort(key=lambda j: j.due_timestamp)
         return active
 
-    async def async_snooze_job(self, *, job_type: str = "alarm", duration_seconds: float = 600.0) -> ScheduledJob | None:
+    def list_recent_history(self, job_type: str | None = None) -> list[ScheduledJob]:
+        recent = [
+            j for j in self._jobs.values()
+            if j.status in ("completed", "cancelled", "failed", "missed", "interrupted")
+            and (job_type is None or j.job_type == job_type)
+        ]
+        recent.sort(key=lambda j: j.due_timestamp, reverse=True)
+        return recent
+
+    async def async_snooze_job(
+        self,
+        *,
+        job_type: str = "alarm",
+        job_id: str | None = None,
+        name: str | None = None,
+        duration_seconds: float = 600.0,
+        user_id: str | None = None,
+    ) -> ScheduledJob | None:
         await self.async_load()
+        now_ts = time.time()
         async with self._lock:
-            # Look for currently ringing or imminent job of this type
             active = [
                 j for j in self._jobs.values()
-                if j.job_type == job_type and j.status in ("ringing", "pending")
+                if j.job_type == job_type
+                and self._authorized_for_user(j, user_id)
+                and (job_id is None or j.id == job_id)
+                and (name is None or (j.name and j.name.lower() == name.lower()))
+                and (j.status == "ringing" or (j.status == "pending" and j.due_timestamp <= now_ts + 5.0))
             ]
             if not active:
                 return None
-            active.sort(key=lambda j: j.due_timestamp)
+            if len(active) > 1:
+                raise AmbiguousJobError(active, job_type)
             target_job = active[0]
-            new_due = time.time() + duration_seconds
+            new_due = now_ts + duration_seconds
             target_job.due_timestamp = new_due
             target_job.due_iso = datetime.fromtimestamp(new_due, tz=timezone.utc).isoformat()
             target_job.status = "snoozed"
@@ -271,54 +376,58 @@ class ScheduledJobManager:
             self._arm_next_timer()
             return target_job
 
-    async def async_dismiss_job(self, *, job_type: str = "alarm") -> ScheduledJob | None:
+    async def async_dismiss_job(
+        self,
+        *,
+        job_type: str = "alarm",
+        job_id: str | None = None,
+        name: str | None = None,
+        user_id: str | None = None,
+    ) -> ScheduledJob | None:
         await self.async_load()
+        now_ts = time.time()
         async with self._lock:
             active = [
                 j for j in self._jobs.values()
-                if j.job_type == job_type and j.status in ("ringing", "pending", "snoozed")
+                if j.job_type == job_type
+                and self._authorized_for_user(j, user_id)
+                and (job_id is None or j.id == job_id)
+                and (name is None or (j.name and j.name.lower() == name.lower()))
+                and (j.status in ("ringing", "snoozed") or (j.status == "pending" and j.due_timestamp <= now_ts + 5.0))
             ]
             if not active:
                 return None
-            active.sort(key=lambda j: j.due_timestamp)
+            if len(active) > 1:
+                raise AmbiguousJobError(active, job_type)
             target_job = active[0]
             target_job.status = "completed"
-            if target_job.recurrence:
-                # Schedule next recurrence
-                cur_dt = datetime.fromtimestamp(target_job.due_timestamp, tz=timezone.utc)
-                nxt = next_recurrence_datetime(cur_dt, target_job.recurrence)
-                if nxt:
-                    next_job = ScheduledJob(
-                        id=str(uuid.uuid4())[:8],
-                        job_type=target_job.job_type,
-                        target_action=target_job.target_action,
-                        targets=list(target_job.targets),
-                        due_timestamp=nxt.timestamp(),
-                        due_iso=nxt.isoformat(),
-                        recurrence=target_job.recurrence,
-                        name=target_job.name,
-                        title=target_job.title,
-                        parameters=dict(target_job.parameters),
-                        status="pending",
-                        created_at=time.time(),
-                        origin_area=target_job.origin_area,
-                    )
-                    self._jobs[next_job.id] = next_job
+            self._schedule_next_recurrence(target_job)
             await self.async_save()
             self._arm_next_timer()
             return target_job
 
-    async def async_change_timer(self, *, name: str | None = None, delta_seconds: float = 0.0) -> ScheduledJob | None:
+    async def async_change_timer(
+        self,
+        *,
+        job_id: str | None = None,
+        name: str | None = None,
+        delta_seconds: float = 0.0,
+        user_id: str | None = None,
+    ) -> ScheduledJob | None:
         await self.async_load()
         async with self._lock:
             timers = [
                 j for j in self._jobs.values()
-                if j.job_type == "timer" and j.status == "pending"
+                if j.job_type == "timer"
+                and j.status == "pending"
+                and self._authorized_for_user(j, user_id)
+                and (job_id is None or j.id == job_id)
                 and (name is None or (j.name and j.name.lower() == name.lower()))
             ]
             if not timers:
                 return None
-            timers.sort(key=lambda j: j.due_timestamp)
+            if len(timers) > 1:
+                raise AmbiguousJobError(timers, "timer")
             target = timers[0]
             target.due_timestamp = max(time.time() + 1.0, target.due_timestamp + delta_seconds)
             target.due_iso = datetime.fromtimestamp(target.due_timestamp, tz=timezone.utc).isoformat()
@@ -362,22 +471,28 @@ class ScheduledJobManager:
                 j for j in self._jobs.values()
                 if j.status in ("pending", "snoozed") and j.due_timestamp <= now_ts + 1.0
             ]
-            available = max(0, self.max_active-len(self._tasks))
+            available = max(0, self.max_active - len(self._tasks))
             for index, job in enumerate(due_jobs):
-                job.status = 'ringing' if job.job_type in ('alarm','reminder','timer') else 'dispatching'
-                job.dispatch_delay_ms = max(0, (now_ts-job.due_timestamp)*1000)
-                job.delivery_status = 'dispatching' if index < available else 'saturated'
+                job.dispatch_delay_ms = max(0, (now_ts - job.due_timestamp) * 1000)
+                if index < available:
+                    job.status = "dispatching"
+                    job.delivery_status = "dispatching"
+                else:
+                    # Saturated beyond capacity: mark terminal so no orphan ringing slot remains
+                    job.status = "failed"
+                    job.delivery_status = "saturated"
+                    self._schedule_next_recurrence(job)
             try:
                 # Durable claim BEFORE spawning any side effect; no retry on failure.
                 await self.async_save()
             except Exception:
                 for job in due_jobs:
-                    job.delivery_status = 'storage_error'
+                    job.delivery_status = "storage_error"
                 self._arm_next_timer()
                 raise
             for job in due_jobs:
-                if job.delivery_status == 'dispatching':
-                    task = self.hass.async_create_task(self._dispatch(job,job.due_timestamp))
+                if job.delivery_status == "dispatching":
+                    task = self.hass.async_create_task(self._dispatch(job, job.due_timestamp))
                     self._tasks.add(task)
                     task.add_done_callback(self._tasks.discard)
             self._arm_next_timer()
@@ -385,39 +500,55 @@ class ScheduledJobManager:
     async def _dispatch(self, job, due_timestamp):
         started = time.monotonic()
         trace = RequestTrace(self._publish_trace)
-        trace.data.update(job_ref=hashlib.sha256(job.id.encode()).hexdigest()[:32],job_kind=job.job_type,scheduled_at=job.due_iso)
-        trace.start('queue')
+        trace.data.update(job_ref=hashlib.sha256(job.id.encode()).hexdigest()[:32], job_kind=job.job_type, scheduled_at=job.due_iso)
+        trace.start("queue")
         try:
             async with asyncio.timeout(self.deadline), self._delivery_slots:
-                trace.end('queue','completed')
-                trace.start('scheduler')
-                if self._closed or job.status in ('cancelled','snoozed','completed') or job.due_timestamp != due_timestamp:
-                    job.delivery_status = 'cancelled'
+                trace.end("queue", "completed")
+                trace.start("scheduler")
+                if self._closed or job.status in ("cancelled", "snoozed", "completed") or job.due_timestamp != due_timestamp:
+                    job.delivery_status = "cancelled"
                     return
-                handler = self._execution_handler if job.job_type == 'action' else self._delivery_handler
+                handler = self._execution_handler if job.job_type == "action" else self._delivery_handler
                 if handler is None:
-                    job.delivery_status = 'unavailable'
-                elif job.job_type == 'action':
+                    job.delivery_status = "unavailable"
+                    if job.status != "cancelled":
+                        job.status = "failed"
+                elif job.job_type == "action":
                     ok = await handler.async_execute_scheduled_action(job)
-                    job.delivery_status = 'delivered' if ok else 'rejected'
-                    if job.status != 'cancelled':
-                        job.status = 'completed' if ok else 'failed'
+                    job.delivery_status = "delivered" if ok else "rejected"
+                    if job.status != "cancelled":
+                        job.status = "completed" if ok else "failed"
                 else:
                     delivered = await handler.async_deliver_notification(job)
-                    job.delivery_status = 'error' if delivered is False else 'delivered'
+                    if delivered is False:
+                        job.delivery_status = "error"
+                        if job.status != "cancelled":
+                            job.status = "failed"
+                    else:
+                        job.delivery_status = (
+                            "visual_only"
+                            if getattr(job, "tts_status", None) in ("delivery_error", "error", "disabled", "unavailable")
+                            else "delivered"
+                        )
+                        if job.status != "cancelled":
+                            job.status = "ringing" if job.job_type == "alarm" else "completed"
+                if job.recurrence:
+                    async with self._lock:
+                        self._schedule_next_recurrence(job)
         except asyncio.CancelledError:
-            job.delivery_status = 'cancelled'
+            job.delivery_status = "cancelled"
             raise
         except TimeoutError:
-            job.delivery_status = 'timeout'
+            job.delivery_status = "timeout"
         except Exception:
-            job.delivery_status = 'error'
-            _LOGGER.warning('Scheduled delivery failed; no automatic retry')
+            job.delivery_status = "error"
+            _LOGGER.warning("Scheduled delivery failed; no automatic retry")
         finally:
-            if job.job_type == 'action' and job.status == 'dispatching':
+            if job.status == "dispatching":
                 # An uncertain/failed effect is terminal; never retain a quota slot
                 # forever and never make it eligible for an automatic replay.
-                job.status = 'interrupted' if job.delivery_status == 'cancelled' else 'failed'
+                job.status = "interrupted" if job.delivery_status == "cancelled" else "failed"
             job.delivery_ms = (time.monotonic()-started)*1000
             if not self._closed:
                 async with self._lock:

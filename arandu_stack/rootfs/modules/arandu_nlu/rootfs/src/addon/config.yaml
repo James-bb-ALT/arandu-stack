@@ -1,5 +1,5 @@
 name: ARANDU NLU
-version: 0.7.0
+version: 0.7.1
 slug: ptbr_nlu
 description: Deterministic Brazilian Portuguese with contextual actions, automations, lists and typed exclusions
 arch:

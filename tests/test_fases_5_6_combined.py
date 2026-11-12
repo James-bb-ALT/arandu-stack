@@ -292,6 +292,9 @@ class TestFases5And6Combined(unittest.IsolatedAsyncioTestCase):
         result = await entity.async_process(user_input)
 
         self.assertIsNotNone(result)
-        self.assertEqual(result.response.speech["plain"]["speech"], "Aviso enviado.")
+        self.assertEqual(
+            result.response.speech["plain"]["speech"],
+            "Aviso enviado ao Home Assistant para reprodução (reprodução audível não confirmada).",
+        )
         self.assertEqual(len(self.hass.services.calls), 1)
         mock_runtime.async_process.assert_not_called()

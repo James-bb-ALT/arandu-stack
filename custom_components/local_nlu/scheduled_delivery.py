@@ -20,10 +20,11 @@ class ScheduledDeliveryHandler:
 
         message = self._compose_message(job)
         title = self._compose_title(job)
-        acknowledged = False
-        job.notification_status,job.tts_status = 'unavailable','disabled'
+        notification_ok = False
+        tts_ok = False
+        job.notification_status, job.tts_status = "unavailable", "disabled"
 
-        # 1. Persistent notification fallback (always guarantees visible delivery)
+        # 1. Persistent notification fallback (visible delivery only; never proves audible playback)
         try:
             await self.hass.services.async_call(
                 "persistent_notification",
@@ -35,11 +36,11 @@ class ScheduledDeliveryHandler:
                 },
                 blocking=True,
             )
-            acknowledged = True
-            job.notification_status = 'accepted'
-        except Exception as err:
-            job.notification_status = 'error'
-            _LOGGER.warning('Scheduled notification failed')
+            notification_ok = True
+            job.notification_status = "notification_accepted"
+        except Exception:
+            job.notification_status = "delivery_error"
+            _LOGGER.warning("Scheduled notification failed")
 
         # 2. TTS Voice announcement on configured/available media player
         if target_player and target_tts and self.hass.states.get(target_player):
@@ -56,12 +57,17 @@ class ScheduledDeliveryHandler:
                         },
                         blocking=False,
                     )
-                    acknowledged = True
-                    job.tts_status = 'accepted_not_observed'
-            except Exception as err:
-                job.tts_status = 'error'
-                _LOGGER.warning('Scheduled TTS delivery failed')
-        return acknowledged
+                    tts_ok = True
+                    job.tts_status = "tts_service_accepted"
+                else:
+                    job.tts_status = "unavailable"
+            except Exception:
+                job.tts_status = "delivery_error"
+                _LOGGER.warning("Scheduled TTS delivery failed")
+        elif target_player or target_tts:
+            job.tts_status = "unavailable"
+
+        return notification_ok or tts_ok
 
     def _compose_title(self, job: Any) -> str:
         if job.job_type == "alarm":

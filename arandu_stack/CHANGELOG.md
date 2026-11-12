@@ -1,3 +1,19 @@
+# 11.0.1 — Correção de consistência do NLU pós-merge 5+6 (2026-11-12)
+
+- **Anúncios e Intercom (P0):**
+  - Caminho único `_prepare_announcement` garante confirmação explícita obrigatória para broadcast inclusive após esclarecimento de dois turnos (`ClarifyMessageSession`); mudanças de política/opções/horário silencioso invalidam confirmações pendentes sem atualizar fingerprint.
+  - Verificações *fail-closed* em `is_entity_exposed` e `check_user_permission` com revalidação antes de cada alvo; parada imediata e resultado parcial honesto (`accepted_by_ha` vs `partial`, nunca afirmando reprodução audível confirmada).
+  - Remoção de truncamento silencioso por `max_targets` (recusa com `too_many_targets`), remoção de matching por substring, bloqueio de `assist_satellite.*` como `media_player_entity_id` em `tts.speak` e separador `que` com limite de palavra no parser.
+  - Horário silencioso no fuso do Home Assistant (`homeassistant.util.dt`), lojas de sessão isoladas por `entry_id` e invalidação cruzada entre sessões da Fase 5 e Fase 6 via `DialogueCoordinator`.
+- **Ciclo de vida temporal (P1):**
+  - Máquina de estados unificada em `scheduled_jobs.py`: timers e lembretes concluem (`completed`) após entrega e liberam cota; apenas alarmes permanecem `ringing`; saturação marca `failed`/`saturated`; migração segura no reinício sem replay; recorrência idempotente gerada no disparo.
+  - Desambiguação obrigatória em `async_cancel_jobs`, `async_change_timer`, `async_snooze_job`, `async_dismiss_job` e `timer_query` via `AmbiguousJobError` + esclarecimento determinístico sem fallback neural; `scheduled_action_cancel` filtra por `target_action` e `targets`.
+  - Separação explícita entre `notification_accepted`, `tts_service_accepted` e `delivery_error` em `scheduled_delivery.py`.
+- **Fidelidade de listas e histórico parcial (P1):**
+  - Preservação de acentos e maiúsculas em `todo_update` validada no Rust (`0.7.1`) e no vinculador `todo_actions.py`.
+  - Suporte a períodos parciais de energia em `advanced_queries.py` (`today`, `this_week`) reportando cobertura exata (`dados de HH:MM até HH:MM`) sem extrapolar horas incompletas.
+- **Versões:** App `11.0.1` / HACS `11.0.1` / NLU `0.7.1`. Decision (`3.0.0`), LLM (`2.0.0`), STT (`4.0.2`) e TTS (`0.2.2`) preservados. Detalhes em `docs/NLU-POSTMERGE-v11.0.1.md`.
+
 # 11.0.0 — Fases 5 e 6 Integradas: NLU Avançado & Intercom / Anúncios Determinísticos (2026-11-12)
 
 - **Fase 5 (NLU Avançado: Ações Contextuais, Automações e Listas):**

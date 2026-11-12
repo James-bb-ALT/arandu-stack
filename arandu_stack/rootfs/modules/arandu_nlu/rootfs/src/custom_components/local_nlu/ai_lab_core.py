@@ -11,11 +11,14 @@ from collections import Counter
 VERSION = "arandu-joint-v1"
 ACTION_TEXT = {"turn_on": "Ligar acender ativar", "turn_off": "Desligar apagar desativar", "query": "Consultar qual é o estado a temperatura"}
 MODELS = {
+    'minilm-multilingual':{'name':'Multilingual MiniLM L12','repo':'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2','license':'Apache-2.0','kind':'decision','runtime':'CPU / OpenVINO Intel GPU'},
+    'e5-base':{'name':'Multilingual E5 Base','repo':'intfloat/multilingual-e5-base','license':'MIT','kind':'decision','runtime':'CPU / OpenVINO Intel GPU'},
+    'qwen3': {'name':'Qwen3 0.6B Q8_0 · experimental','repo':'Qwen/Qwen3-0.6B-GGUF','license':'Apache-2.0','kind':'llm','runtime':'llama.cpp / CPU'},
     "brazembed": {"name": "BrazEmbed PT-BR 110M", "repo": "tardellirs/brazembed-pt-br", "license": "MIT", "runtime": "sentence-transformers / CPU", "kind": "decision"},
     "e5-small": {"name": "Multilingual E5 Small", "repo": "intfloat/multilingual-e5-small", "license": "MIT", "runtime": "sentence-transformers / CPU; query/passsage prefixes", "kind": "decision"},
     "saracura": {"name": "Saracura PT-BR 322M", "repo": "felhen-ai/saracura-ptbr-v0", "license": "Apache-2.0", "kind": "decision", "runtime": "Laya / CPU", "github": "https://github.com/felhen-ai/saracura"},
     "jatoba": {"name": "JATOBÁ Decision 169M · não comercial", "repo": "leoabreu288/jatoba-decision", "license": "CC-BY-NC-SA-4.0 (pesos); Apache-2.0 (código)", "kind": "decision", "runtime": "jatoba / CPU", "github": "https://github.com/LeonardoVilela/jatoba-decision", "noncommercial": True},
-    "qwen": {"name": "Qwen3.5 0.8B Q4_0", "repo": "ggml-org/Qwen3.5-0.8B-GGUF", "license": "Apache-2.0", "kind": "llm", "file": "Qwen3.5-0.8B-Q4_0.gguf", "runtime": "llama.cpp / CPU"},
+    "qwen": {"name": "Qwen3.5 0.8B Q4_0 · catálogo PC", "repo": "ggml-org/Qwen3.5-0.8B-GGUF", "license": "Apache-2.0", "kind": "llm", "file": "Qwen3.5-0.8B-Q4_0.gguf", "runtime": "llama.cpp / CPU", 'unavailable':'Catálogo histórico do Lab PC; não validado pelo backend deste app nesta release.'},
     "tucano": {"name": "Tucano 2 Qwen 0.5B Instruct Q4_K_M", "repo": "2DTi/tucano2-0.5b-instruct-gguf", "source_repo": "Polygl0t/Tucano2-qwen-0.5B-Instruct", "license": "Apache-2.0", "kind": "llm", "file": "tucano2-0.5b-instruct-Q4_K_M.gguf", "runtime": "llama.cpp / CPU", "github": "https://github.com/Polygl0t/llm-foundry"},
 }
 
@@ -26,6 +29,54 @@ def digest(value):
 
 def finite(value):
     return type(value) in (int, float) and math.isfinite(value)
+
+
+def decision_matrix(rows,examples,catalog):
+    """Labelled diagnostics only. Warm-ups excluded; no cosine-as-confidence."""
+    import statistics
+    metrics={};by_entity={e['entity_id']:e for e in catalog['entities']}
+    for row in rows:
+        key=row['combination']
+        cell=metrics.setdefault(key,{'samples':0,'labelled':0,'plan_labelled':0,'correct_plan':0,'intent_correct':0,'entity_correct':0,
+            'intent_labelled':0,'entity_labelled':0,'area_labelled':0,'abstention_labelled':0,
+            'area_correct':0,'abstention_correct':0,'false_activations':0,'confirmations':0,'errors':0,'latencies':[],
+            'embedding_requests':0,'deterministic_requests':0,'stage_values':{},
+            'peak_rss_bytes':None,'status':'pass','cold_start_ms':None})
+        if finite(row.get('cold_start_ms')):cell['cold_start_ms']=max(cell['cold_start_ms'] or 0,row['cold_start_ms'])
+        if row.get('warmup'):continue
+        if row.get('decision_status') in {'unsupported','error'}:
+            cell.update(status=row['decision_status'],reason=row.get('reason'));cell['errors']+=1;continue
+        cell['samples']+=1;cell['latencies'].append(row.get('wall_ms',row.get('total_ms',0)))
+        cell['embedding_requests']+=int(row.get('embedding_used') is True)
+        cell['deterministic_requests']+=int(row.get('embedding_used') is False)
+        for name in ['tokenization_ms','embedding_ms','ranking_ms','cpu_ms','retrieval_ms']:
+            if finite(row.get(name)):cell['stage_values'].setdefault(name,[]).append(row[name])
+        if isinstance(row.get('memory_bytes'),int):cell['peak_rss_bytes']=max(cell['peak_rss_bytes'] or 0,row['memory_bytes'])
+        label=examples[row['case']].get('expected');p=row.get('proposal') or {};targets=p.get('target_entities',[])
+        areas={by_entity[e].get('area_id') for e in targets if e in by_entity}
+        actual={'intent':p.get('intent'),'target_entities':targets,'target_area':next(iter(areas)) if len(areas)==1 else None,
+            'requires_clarification':not bool(p) or p.get('requires_clarification') is True}
+        cell['confirmations']+=int(row.get('confirmation_required') is True)
+        if label is not None:
+            cell['labelled']+=1
+            whole=set(label)>={'intent','target_entities','target_area','requires_clarification'} or label.get('requires_clarification') is True
+            cell['plan_labelled']+=int(whole)
+            cell['correct_plan']+=int(whole and all(actual[k]==v for k,v in label.items()) and (label.get('requires_clarification') is not True or not targets))
+            for field,score in [('intent','intent_correct'),('target_entities','entity_correct'),('target_area','area_correct')]:
+                if field in label:
+                    cell[score]+=int(actual[field]==label[field]);cell[score.replace('_correct','_labelled')]+=1
+            cell['abstention_labelled']+=int(label.get('requires_clarification') is True)
+            cell['abstention_correct']+=int(label.get('requires_clarification') is True and actual['requires_clarification'])
+            cell['false_activations']+=int(label.get('requires_clarification') is True and bool(targets) and not actual['requires_clarification'])
+    for cell in metrics.values():
+        latencies=sorted(cell.pop('latencies'))
+        cell['latency_ms']={f'p{p}':latencies[min(len(latencies)-1,round((len(latencies)-1)*p/100))] for p in [50,95,99]} if latencies else {}
+        cell['stage_latency']={name:{'samples':len(values),**{f'p{p}':sorted(values)[min(len(values)-1,round((len(values)-1)*p/100))] for p in [50,95,99]}}
+            for name,values in cell.pop('stage_values').items()}
+        cell['throughput_per_second']=1000*len(latencies)/sum(latencies) if latencies and sum(latencies)>0 else None
+        cell['rss_measurement']='maximum post-request process RSS sample; not instantaneous peak'
+        cell['gpu_utilization']=None
+    return metrics
 
 
 def settings(value):
@@ -118,16 +169,16 @@ def validate_proposal(value, catalog, allowed=None):
         row = rows.get(entity_id)
         if row is None or (allowed is not None and entity_id not in allowed) or row.get("attributes", {}).get("available") is not True:
             raise ValueError("Alvo inexistente, indisponível ou fora dos candidatos")
-        if value["intent"] not in row["actions"] or (area is not None and row.get("area_id") != area):
+        if (value["intent"] is not None and value["intent"] not in row["actions"]) or (area is not None and row.get("area_id") != area):
             raise ValueError("Ação incompatível")
     if not value["requires_clarification"] and value["intent"] not in (None, "conversation") and not ids:
         raise ValueError("Ação sem alvo")
-    if value["intent"] in (None, "conversation") and ids:
+    if (value["intent"] == "conversation" or (value["intent"] is None and not value["requires_clarification"])) and ids:
         raise ValueError("Conversa não pode conter ação")
     return value
 
 
-async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30):
+async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30, general=False):
     if type(text) is not str or not 1 <= len(text) <= 512 or any(ord(c) < 32 for c in text):
         raise ValueError("Comando deve ter 1–512 caracteres, em uma linha")
     if mode not in {"pipeline", "nlu", "decision", "llm"}:
@@ -143,14 +194,17 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30):
                 output = await fn(payload)
             stages[name].update(status="executed", input=payload, output=output)
             if type(output) is dict:
-                for metric in ("model", "load_ms", "inference_ms", "cpu_ms", "memory_bytes"):
+                for metric in ("model", "algorithm", "load_ms", "preparation_ms", "retrieval_ms", "inference_ms", "validation_ms", "queue_ms", "analysis_ms", "cache", "cpu_ms", "memory_bytes"):
                     if metric in output:
                         stages[name][metric] = output[metric]
             return output
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            stages[name].update(status="error", error=type(exc).__name__, reason=str(exc)[:256])
+            stages[name].update(status="error", error=type(exc).__name__,
+                                error_code=getattr(exc, "code", type(exc).__name__),
+                                phase=getattr(exc, "phase", "timeout" if isinstance(exc, TimeoutError) else "validation"),
+                                reason=str(exc)[:256])
             return None
         finally:
             stages[name]["latency_ms"] = (time.perf_counter() - before) * 1000
@@ -159,17 +213,47 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30):
     nl = await run("nlu", nlu, text) if mode in ("pipeline", "nlu") else None
     if nl and nl.get("status") == "plan":
         result.update(proposal=nl, source="nlu")
+    elif mode == 'pipeline' and nl and (nl.get('status') not in {'no_match','clarification'}
+            or (nl.get('status') == 'no_match' and nl.get('reason') not in (None,'no_match','unsupported_intent','unknown_intent'))
+            or (nl.get('status') == 'clarification' and (nl.get('reason') != 'target_not_found' or nl.get('candidates') or nl.get('options')))):
+        stages['decision']['reason'] = 'nlu_safety_or_dialogue_refusal'
+        stages['llm']['reason'] = 'nlu_safety_or_dialogue_refusal'
     elif mode != "nlu":
         stages["decision"]["fallback_reason"] = (nl or {}).get("reason") or (nl or {}).get("status") or "isolated_mode"
-        de = await run("decision", decision, {"text": text, "nlu": nl})
-        if mode != "llm" and de and de.get("decision_status") == "accepted" and de.get("proposal"):
+        de = await run("decision", decision, {"text": text, "nlu": nl}) if mode != "llm" and not (general and mode == "pipeline") else None
+        if mode != "llm" and de and de.get("decision_status") in {"accepted", "resolved", "confirmation_required"} and de.get("proposal"):
             result.update(proposal=de["proposal"], source="decision")
+        elif de and de.get('algorithm') == 'structured-v3' and de.get('decision_status') == 'ambiguous' and (de.get('analysis') or {}).get('device',{}).get('candidate_count',0) > 1:
+            stages['llm']['reason'] = 'true_entity_ambiguity'
         elif mode != "decision":
             stages["llm"]["fallback_reason"] = (de or {}).get("reason") or "decision_unavailable"
             output = await run("llm", llm, {"text": text, "nlu": nl, "decision": de})
             if output:
-                result.update(proposal=output.get("proposal", output), source="llm", requires_review=True)
-    result["clarification_question"] = (result["proposal"] or {}).get("clarification_question") or (None if result["proposal"] else "Qual dispositivo e ação você deseja?")
+                typed=output.get('contract_version')==2 and 'plan' in output
+                kind=output.get('kind')
+                if kind=='conversation':
+                    reply=output.get('response_text')
+                    valid_reply=isinstance(reply,str) and 1<=len(reply.strip())<=1000
+                    result.update(
+                        proposal=None if typed else output.get("proposal"),
+                        plan=output.get('plan'),
+                        kind='conversation',
+                        source="llm",
+                        response_text=reply.strip() if valid_reply else None,
+                        requires_review=not valid_reply,
+                        final_kind='conversation_response' if valid_reply else 'error',
+                        clarification_question=None,
+                    )
+                    if not valid_reply:
+                        result.update(status='error',reason='llm_conversation_empty')
+                        result['stages']['llm']={**result['stages'].get('llm',{}),'status':'error','reason':'llm_conversation_empty'}
+                else:
+                    result.update(proposal=None if typed else output.get("proposal", output),plan=output.get('plan'),kind=kind,
+                        source="llm", response_text=output.get("response_text"), requires_review=not bool(output.get("response_text")))
+    if result.get("kind") != "conversation":
+        result["clarification_question"] = ((result.get('plan') or {}).get('question') or
+            (result["proposal"] or {}).get("clarification_question") or
+            (None if result["proposal"] or (result.get('plan') or {}).get('type')=='automation' else "Não entendi o que você deseja. Pode repetir dizendo o dispositivo e a ação?"))
     result["total_ms"] = (time.perf_counter() - started) * 1000
     return result
 

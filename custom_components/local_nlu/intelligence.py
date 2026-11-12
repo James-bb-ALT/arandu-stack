@@ -203,6 +203,27 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
                     trace['llm'] = {'status':'skipped','reason':'true_entity_ambiguity'}
                     return (), trace
             else:
+                if response.get('kind') == 'conversation':
+                    reply = response.get('response_text')
+                    plan = response.get('plan') if isinstance(response.get('plan'), dict) else {}
+                    prop = response.get('proposal') if isinstance(response.get('proposal'), dict) else {}
+                    has_contradiction = bool(
+                        response.get('operations')
+                        or plan.get('operations')
+                        or prop.get('target_entities')
+                        or (prop.get('intent') not in (None, 'conversation'))
+                    )
+                    if has_contradiction:
+                        trace[source].update(status='error', reason='llm_conversation_contradiction', contract_version=response.get('contract_version', 1))
+                        return (), trace
+                    if not isinstance(reply, str) or not (1 <= len(reply.strip()) <= 1000):
+                        trace[source].update(status='error', reason='llm_conversation_empty', contract_version=response.get('contract_version', 1))
+                        return (), trace
+                    if not conversation_allowed(text, snapshot.payload):
+                        trace[source].update(status='skipped', reason='conversation_not_allowed', contract_version=response.get('contract_version', 1))
+                        return (), trace
+                    trace[source].update(status='conversation', response_text=reply.strip(), contract_version=response.get('contract_version', 1))
+                    return (), trace
                 if response.get('contract_version') == 2 and response.get('kind') in {'automation','clarification'}:
                     proposed=typed_operations(response,text,snapshot,context) if response.get('kind')=='automation' else ()
                     trace[source].update(status='proposed' if proposed else 'clarification',

@@ -21,7 +21,7 @@ DEFAULTS = {
             'lexical_enabled': True, 'closed_vocabulary': True, 'generic_weight': 7,
             'home_assistant_weight': 10, 'inventory_refresh_seconds': 0},
     'decision': {'enabled': False, 'auto_download': False, 'threads': 2, 'threshold': .8, 'min_margin': .08, 'algorithm': 'structured-v3', 'model':'e5-small', 'backend':'cpu', 'resident_policy': 'RESIDENT', 'auto_resolve_level': 'conservative'},
-    'llm': {'enabled': False, 'auto_download': False, 'threads': 2, 'context_size': 4096, 'max_tokens': 384, 'temperature': 0.0, 'llm_model':'tucano', 'contract_version':2},
+    'llm': {'enabled': False, 'auto_download': False, 'threads': 2, 'context_size': 4096, 'max_tokens': 384, 'temperature': 0.0, 'llm_model':'tucano', 'contract_version':2, 'resident_policy': 'LAZY'},
     'tts': {'enabled': False, 'voice': 'pt_BR-arandu-medium', 'auto_download': False, 'max_chars': 3000,
             'preload': True, 'cpu_threads': 2, 'pocket_enabled': False, 'pocket_preload': False,
             'pocket_threads': 2, 'pocket_fallback': False, 'fallback_voice': 'pt_BR-faber-medium',
@@ -55,6 +55,8 @@ def validate_options(key, options, data=Path('/data')):
     merged = {**DEFAULTS[key], **options}
     if key=='llm' and merged['contract_version']==1 and merged['llm_model']!='tucano':
         raise ValueError('Contrato legado exige Tucano')
+    if key == 'llm' and merged.get('resident_policy') not in {'RESIDENT', 'LAZY', 'OFF'}:
+        raise ValueError('Política de RAM do LLM inválida')
     for row in schema(key, merged, data):
         value = merged[row['id']]
         if row['type'] == 'number' and (value < row['min'] or value > row['max']):
@@ -253,6 +255,8 @@ class ModuleManager:
                                OMP_WAIT_POLICY='PASSIVE', KMP_BLOCKTIME='0')
         if key == 'decision':
             environment['ARANDU_DECISION_RESIDENCY'] = str(self.config['decision'].get('resident_policy', 'RESIDENT'))
+        if key == 'llm':
+            environment['ARANDU_LLM_RESIDENCY'] = str(self.config['llm'].get('resident_policy', 'LAZY'))
         if key == 'stt':
             environment.update(OMP_NUM_THREADS=str(self.config[key]['threads']), MKL_NUM_THREADS=str(self.config[key]['threads']), OMP_WAIT_POLICY='PASSIVE')
         if key == 'stt' and self.config[key].get('refresh_inventory') and os.environ.get('SUPERVISOR_TOKEN'):

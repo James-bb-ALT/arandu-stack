@@ -289,12 +289,14 @@ def create_app(data_dir, local=False):
     async def llm_control(request):
         action=request.match_info['action']
         if action=='models':
+            configured_policy=manager.config['llm'].get('resident_policy','LAZY')
             try:result=await model_request('llm','/status')
             except Exception:
                 result={'models':[{'id':k,'name':name,'installed':None,'available':False,'loaded':False,
                     'reason':'Serviço parado ou indisponível; instalação explícita inicia o módulo.'} for k,name in
-                    [('tucano','Tucano 2 0.5B Q4_K_M'),('qwen3','Qwen3 0.6B Q8_0 experimental')]]}
-            return web.json_response({**result,'profiles':manager.llm_profiles,'configured_model':manager.config['llm']['llm_model']})
+                    [('tucano','Tucano 2 0.5B Q4_K_M'),('qwen3','Qwen3 0.6B Q8_0 experimental')]],
+                    'resident_policy':configured_policy,'is_model_loaded':False,'model_ready':False,'load_state':'stopped'}
+            return web.json_response({'resident_policy':configured_policy,**result,'profiles':manager.llm_profiles,'configured_model':manager.config['llm']['llm_model']})
         if action not in {'install','apply'}:raise ValueError('Ação LLM inválida')
         if request.method!='POST':raise web.HTTPMethodNotAllowed(request.method,['POST'])
         body=await request.json()
@@ -319,11 +321,18 @@ def create_app(data_dir, local=False):
             if candidate['contract_version']==1 and model!='tucano':raise ValueError('Contrato legado exige Tucano')
             generation={k:candidate[k] for k in ('threads','context_size','max_tokens','temperature')}
             try:
-                result=await model_request('llm','/infer',{'action':'apply','llm_model':model,'generation':generation,'contract_version':candidate['contract_version']})
-                if result.get('loaded') is not True or result.get('model')!=model or result.get('integrity_verified') is not True:
-                    raise ValueError('O serviço não confirmou carga, identidade e integridade do modelo solicitado')
+                policy=candidate.get('resident_policy','LAZY')
+                result=await model_request('llm','/infer',{'action':'apply','llm_model':model,'generation':generation,'contract_version':candidate['contract_version'],'resident_policy':policy})
+                if result.get('model')!=model:
+                    raise ValueError('O serviço não confirmou a identidade do modelo solicitado')
+                if policy=='RESIDENT' and (result.get('loaded') is not True or result.get('integrity_verified') is not True):
+                    raise ValueError(result.get('error') or 'O serviço não confirmou carga residente e integridade do modelo solicitado')
+                if policy=='LAZY' and result.get('integrity_verified') is not True:
+                    raise ValueError(result.get('error') or 'O serviço não confirmou integridade do modelo solicitado')
+                if policy=='OFF' and result.get('loaded') is True:
+                    raise ValueError('O serviço manteve o modelo carregado apesar da política OFF')
                 await manager.configure('llm',candidate)
-                return web.json_response({**result,'applied':True})
+                return web.json_response({**result,'applied':True,'resident_policy':policy})
             except BaseException:
                 manager.config['llm']=old
                 manager.llm_profiles=old_profiles

@@ -263,8 +263,7 @@ class LLMModelManager:
                         except Exception as exc:
                             _LOGGER.warning("Falha no pré-carregamento de %s: %s", model_id, exc)
                     else:
-                        self.memory.register_loaded(model_id)
-                        loaded.append(model_id)
+                        _LOGGER.warning("Pré-carregamento de %s recusado: loader_callback real ausente", model_id)
                 else:
                     _LOGGER.warning("Sem headroom de memória para pré-carregar %s", model_id)
         return loaded

@@ -140,7 +140,7 @@ async function saveSettings(restart){
       if(!confirm('Aplicar '+options.stt_model+' no Assist? Somente o STT será reiniciado.'))return;
       await api('stt/apply',{model:options.stt_model,variant:options.model_variant||editing.options.model_variant,options,confirm:true});
       }else if(editing.id==='llm'&&restart){
-        if(!confirm('Aplicar '+options.llm_model+' no Assist após verificar a carga?'))return;
+        if(!confirm('Aplicar '+options.llm_model+' (política '+(options.resident_policy||'LAZY')+') no Assist?'))return;
         await api('llm/apply',{model:options.llm_model,options,confirm:true});
     }else{
       await api('modules/'+editing.id+'/options',{options});
@@ -249,7 +249,11 @@ async function renderLlmManager(){
   async function update(){
     try{
       const result=await api('llm/models');profiles=result.profiles||{};
-      status.textContent='Configurado: '+result.configured_model+'. Residente: '+(result.active_model||'nenhum confirmado')+'. A instalação não muda a seleção.';
+      const policy=result.resident_policy||'LAZY';
+      const inRam=result.is_model_loaded===true?'Sim':'Não';
+      const rss=typeof result.process_rss_mb==='number'?' | RSS: '+Math.round(result.process_rss_mb)+' MiB':'';
+      const state=result.load_state?' ('+result.load_state+')':'';
+      status.textContent='Configurado: '+result.configured_model+' | Política: '+policy+' | Modelo ativo: '+(result.active_model||'nenhum')+' | Em RAM: '+inRam+state+rss+'.';
       list.replaceChildren();
       for(const model of result.models){
         const row=el('div',undefined,'setting-row');row.append(el('span',model.name+' · '+(model.loaded?('carregado'+(model.integrity_verified?' e verificado':' · integridade não verificada')):model.installed===true?'instalado':model.installed===false?'não instalado':'instalação não verificada')));

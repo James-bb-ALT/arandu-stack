@@ -247,7 +247,14 @@ class AranduAILab extends HTMLElement {
   }
   async speak() {
     try {
-      const text = this.last?.execution?.response_text || this.last?.response_text || this.last?.clarification_question || this.last?.proposal?.reason || 'Ação interpretada em modo de simulação.';
+      const isConv = this.last?.kind === 'conversation' || this.last?.final_kind === 'conversation_response';
+      const convText = this.last?.execution?.response_text || this.last?.response_text;
+      if (isConv && (!convText || !String(convText).trim())) {
+        throw new Error('Resposta conversacional do LLM vazia (llm_conversation_empty).');
+      }
+      const text = isConv
+        ? convText
+        : (this.last?.execution?.response_text || this.last?.response_text || this.last?.clarification_question || this.last?.proposal?.reason || 'Ação interpretada em modo de simulação.');
       const r = await this.call('tts', {text, tts_model:this.$('tts').value});
       if (this.audioUrl) URL.revokeObjectURL(this.audioUrl);
       this.audioUrl = URL.createObjectURL(new Blob([Uint8Array.from(atob(r.audio), c=>c.charCodeAt(0))], {type:'audio/wav'}));
@@ -493,7 +500,7 @@ class AranduAILab extends HTMLElement {
       summary.textContent=(stageNames[name] || name)+' · '+status+(stage.latency_ms!=null?` · ${this.duration(stage.latency_ms)}`:'');
       const detail=document.createElement('pre');detail.textContent=JSON.stringify(stage,null,2);node.append(summary,detail);this.$('stages').append(node);
     }
-    this.$('answer').textContent = result.execution?.response_text || result.response_text || (result.confirmation_required ? result.clarification_question+' Hipótese aguardando confirmação; nenhuma ação enviada.' : result.operations_validated ? 'A proposta passou pela validação inicial do Home Assistant. '+(result.sensitive?'Exige confirmação de segurança; execução bloqueada no laboratório.':'Não será executada enquanto a simulação estiver ativa.') : result.clarification_question || 'Nenhuma ação autorizada. Tente reformular o comando.');
+    this.$('answer').textContent = result.execution?.response_text || result.response_text || (result.kind === 'conversation' ? 'Erro: o LLM retornou resposta conversacional vazia (llm_conversation_empty).' : result.confirmation_required ? result.clarification_question+' Hipótese aguardando confirmação; nenhuma ação enviada.' : result.operations_validated ? 'A proposta passou pela validação inicial do Home Assistant. '+(result.sensitive?'Exige confirmação de segurança; execução bloqueada no laboratório.':'Não será executada enquanto a simulação estiver ativa.') : result.clarification_question || 'Nenhuma ação autorizada. Tente reformular o comando.');
     const final=this.$('finalAction');final.replaceChildren();
     const proposal=result.plan || result.proposal || {};
     const ids=result.target_entities || proposal.target_entities || [];

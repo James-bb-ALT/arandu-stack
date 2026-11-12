@@ -87,6 +87,8 @@
           "excluded_from_bulk_actions": "Excluir de ações coletivas",
           "low_battery_threshold": "Limite de bateria baixa (%)",
           "fallback_user_id": "Usuário para pipelines sem identidade",
+          "delivery_media_player": "Reprodutor de áudio para alarmes e lembretes (opcional)",
+          "delivery_tts_engine": "Entidade TTS para avisos por voz (opcional)",
           "endpoint": "Endpoint NLU (vazio para detectar automaticamente)"
         },
         "data_description": {

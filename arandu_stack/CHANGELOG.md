@@ -1,11 +1,15 @@
-# Proposta da Fase 3.1 — Decision 3.0.0 (sem release global)
+# 9.0.0 — Fase 3 Integrada: Decision 3.0.0 (3.1) & NLU 0.6.4 Temporal (3.2) (2026-11-12)
 
-- Três modelos individuais pinados/verificados: E5 Small (default preservado), MiniLM Multilingual e E5 Base; prefixos, tokenizer/pooling e dimensões próprios.
-- Interface de embeddings CPU/SentenceTransformer e GPU Intel/OpenVINO 2024.6 explícita. Exportação IR offline separada; detecção, compilação GPU e smoke numérico obrigatórios, sem fallback silencioso. Drivers são somente do container; não muda kernel/driver HAOS.
-- Seleção verificada, status efetivo, instalação em staging, perfis persistidos separadamente e rollback. Cache/calibração isolados por modelo/runtime/backend/precisão/conversor/algoritmo; mantém structured-v3 e gates >=0,80 e >=0,08.
-- Dashboard e AI Lab nativo com matriz de até seis combinações, repetições/warm-up, métricas e exports sem falas/IDs residenciais. Comparação passiva, sem operações HA.
-- Esta branch não altera gramática, scheduler, executor, protocolos NLU ou versão global. PR e release combinada seguem o protocolo de integração com a Fase 3.2.
-- Evidências, limitações e superfícies compartilhadas em `docs/PHASE-3.1-DECISION-MULTIMODEL.md`.
+- **Fase 3.1 (Decision Multimodelo CPU/GPU & AI Lab):**
+  - Três modelos pinados/verificados: E5 Small (padrão preservado), MiniLM Multilingual e E5 Base; prefixos, tokenizers e dimensões dinâmicas próprias.
+  - Backends CPU (SentenceTransformers) e GPU Intel (OpenVINO 2024.6) explícitos; compilação de grafo, smoke numérico obrigatório e recusa explícita sem fallback silencioso para CPU.
+  - Painel de comparação no AI Lab com matriz de até 6 combinações A/B, medições reais de latência/RAM e isolamento total sem envio de IDs residenciais.
+- **Fase 3.2 (NLU Temporal Determinístico, Alarmes, Lembretes, Timers & Exclusões):**
+  - NLU contextual em Rust (v0.6.4) com Wire Protocol v4 aditivo: agendamentos pontuais seguros ("desliga o ar daqui a 30 minutos", "liga o ventilador às 18:00"), despertadores ("acorda às 7 da manhã", soneca), lembretes ("me lembra de tomar o remédio às 15h"), timers nomeados ("timer para pizza de 15 minutos", acréscimo de tempo e consultas) e léxico doméstico coloquial de aspirador de pó.
+  - Exclusões coletivas seguras ("desliga tudo, menos a TV") com mapeamento físico cruzado por `device_id` e resolução de cômodo.
+  - Gerenciador monotônico local com Store persistente (`local_nlu_scheduled_jobs`), quota de 50 jobs, recuperação segura de downtime/reinicialização (marcação de `missed` sem disparos atrasados indesejados) e entrega confiável via notificação persistente e TTS falado.
+  - Independência total: agendamentos e exclusões são 100% determinísticos em Rust e não utilizam Decision nem LLM neural. Condições contínuas de sensores e rotinas por voz permanecem bloqueadas com recusa fail-closed.
+- **Versões dos Componentes Integrados:** App 7.0.0 / HACS 8.0.0 / NLU 0.6.4 / Decision 3.0.0 / LLM 2.0.0 / STT 4.0.1 / TTS 0.2.1. Relatórios detalhados em `docs/PHASE-3.1-DECISION-MULTIMODEL.md` e `docs/FASE-3.2-NLU-TEMPORAL.md`.
 
 # 8.0.0 — LLM 2.0 (2026-11-11)
 

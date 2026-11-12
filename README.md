@@ -1,6 +1,6 @@
 # Arandu Assistant
 
-Fase 3.1 nesta branch: Decision com E5 Small, MiniLM Multilingual e E5 Base, seleção CPU/GPU Intel explícita e matriz A/B no AI Lab. E5 Small/CPU continua padrão. GPU exige validação real do runtime; a HD 530 não foi validada fisicamente. [Relatório e contrato de integração](docs/PHASE-3.1-DECISION-MULTIMODEL.md). Versão global/release serão reconciliadas após integrar as fases 3.1 e 3.2.
+Fase 3 Integrada: Decision 3.0.0 com seleção CPU/GPU Intel explícita e AI Lab nativo (Fase 3.1) somado ao NLU 0.6.4 determinístico com agendamentos pontuais, alarmes, lembretes, timers, exclusões bulk e léxico de aspirador (Fase 3.2). Relatórios em [Decision Multimodelo](docs/PHASE-3.1-DECISION-MULTIMODEL.md) e [NLU Temporal](docs/FASE-3.2-NLU-TEMPORAL.md).
 
 Um único app para Home Assistant com **Wake, STT, NLU, Decision, LLM e TTS**.
 Todos os motores estão incluídos na mesma instalação. Você ativa, desativa e
@@ -16,7 +16,7 @@ Decision 2.0: [algoritmo, validação A/B e limites](docs/DECISION-v2.0.0.md).
 
 LLM 2.0: [planos tipados, modelos, comparação real e limites](docs/LLM-v2.0.0.md).
 
-**Nesta branch: base app 7.0.0 / HACS 8.0.0 / STT 4.0.1 / NLU 0.6.3 / Decision 3.0.0 (proposto) / LLM 2.0.0 / TTS 0.2.1.** Versões globais finais dependem da integração com a Fase 3.2.
+**Versão integrada: app 7.0.0 / HACS 8.0.0 / STT 4.0.1 / NLU 0.6.4 / Decision 3.0.0 / LLM 2.0.0 / TTS 0.2.1.** Consolidação unificada das Fases 3.1 e 3.2.
 
 HACS 3.0.1: pedidos não compreendidos em origens ReSpeaker recebem apenas
 “Não entendi.” e encerram o diálogo. Identificação pelo dispositivo registrado

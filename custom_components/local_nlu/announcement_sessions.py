@@ -179,8 +179,20 @@ class AnnouncementSessionStore:
     def update_cooldown(self, origin_key: str) -> None:
         self._cooldowns[origin_key] = time.monotonic()
 
+    def is_duplicate(self, dedup_key: str) -> bool:
+        """Returns True if key is currently in dedup cache, False otherwise."""
+        now = time.monotonic()
+        self.clean_expired()
+        return dedup_key in self._dedup_cache and self._dedup_cache[dedup_key] > now
+
+    def record_dedup(self, dedup_key: str, ttl_s: int = 5) -> None:
+        """Record key into dedup cache with specified TTL."""
+        now = time.monotonic()
+        self.clean_expired()
+        self._dedup_cache[dedup_key] = now + ttl_s
+
     def check_and_record_dedup(self, dedup_key: str, ttl_s: int = 5) -> bool:
-        """Returns True if duplicate (within TTL), False if unique."""
+        """Returns True if duplicate (within TTL), False if unique and records it."""
         now = time.monotonic()
         self.clean_expired()
         if dedup_key in self._dedup_cache and self._dedup_cache[dedup_key] > now:

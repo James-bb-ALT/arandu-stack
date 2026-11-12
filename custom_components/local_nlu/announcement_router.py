@@ -176,6 +176,7 @@ async def async_maybe_handle_announcement(
                     targets=targets,
                     message=active_session.message,
                     origin_key=f"{session_origin.user_id}:{session_origin.origin_id}",
+                    destination="all",
                 )
 
             # Any reply other than affirmative cancels broadcast
@@ -248,8 +249,20 @@ async def async_maybe_handle_announcement(
             reason="quiet_hours",
         )
 
-    # 5. Check Cooldown
+    # 5. Check deduplication for retries and reconnects before cooldown
     origin_key = f"{session_origin.user_id}:{session_origin.origin_id}"
+    if intent.message:
+        dest_str = intent.destination or ("all" if intent.kind == "all" else "")
+        dedup_key = f"{origin_key}:{dest_str}:{intent.message}"
+        if store.is_duplicate(dedup_key):
+            return RuntimeResult(
+                code="success",
+                response_text="Aviso já enviado.",
+                provider="deterministic_announcement",
+                operation_count=1,
+            )
+
+    # 6. Check Cooldown
     if store.check_cooldown(origin_key, options.cooldown_s):
         return RuntimeResult(
             code="unavailable",
@@ -418,17 +431,6 @@ async def _execute_delivery(
     origin_id = request_origin(user_input)
     origin_key = f"{identity.user_id}:{origin_id}"
 
-    # Deduplication check
-    dest_str = destination or ""
-    dedup_key = f"{origin_key}:{dest_str}:{message}"
-    if store.check_and_record_dedup(dedup_key, ttl_s=5):
-        return RuntimeResult(
-            code="success",
-            response_text="Aviso já enviado.",
-            provider="deterministic_announcement",
-            operation_count=1,
-        )
-
     return await _deliver_to_targets(
         hass=hass,
         options=options,
@@ -438,6 +440,7 @@ async def _execute_delivery(
         targets=targets,
         message=message,
         origin_key=origin_key,
+        destination=destination,
     )
 
 
@@ -450,6 +453,7 @@ async def _deliver_to_targets(
     targets: tuple[DestinationEntity, ...],
     message: str,
     origin_key: str,
+    destination: str | None = None,
 ) -> RuntimeResult:
     """Acquire concurrency slot and call delivery engine."""
     if not await store.acquire_slot():
@@ -494,6 +498,8 @@ async def _deliver_to_targets(
         )
 
     store.update_cooldown(origin_key)
+    dest_str = destination or ""
+    store.record_dedup(f"{origin_key}:{dest_str}:{message}", ttl_s=5)
 
     # Register reply windows for recipients pointing back to sender
     sender_origin = getattr(user_input, "satellite_id", None) or origin_key

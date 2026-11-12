@@ -1,8 +1,8 @@
 # Arandu Assistant
 
-Fase 4: filas limitadas, pedidos independentes concorrentes e commit serializado por dispositivo, sem retirar validações de segurança. Agendamentos têm entrega independente dos modelos. O Fluxo mostra filas, percentis e etapas observadas; áudio e reprodução físicos continuam explicitamente não observados quando não há identificação pública confiável. [Medições, configuração e limites](docs/PHASE-4-PERFORMANCE.md).
+**Fases 5 e 6 Integradas:** NLU avançado com ações contextuais, automações estritas (`skip_condition: false`), gerenciamento de listas de afazeres (`todo.*`), consultas e histórico agregados sem sobreposição ([Documentação da Fase 5](docs/PHASE-5-IMPLEMENTATION.md)); e sistema de Intercom e anúncios domésticos determinísticos unidirecionais por área e satélite via `assist_satellite.announce` e fallback `tts.speak`, com confirmação de transmissão geral e zero chamadas neurais ([Documentação da Fase 6](docs/PHASE-6-ANNOUNCEMENTS.md)).
 
-Preserva a Fase 3 integrada: [Decision multimodelo CPU/GPU Intel](docs/PHASE-3.1-DECISION-MULTIMODEL.md), LLM 2.0 e [NLU temporal](docs/FASE-3.2-NLU-TEMPORAL.md), com alarmes, lembretes, timers e exclusões coletivas.
+Preserva a [Fase 4 de concorrência e observabilidade](docs/PHASE-4-PERFORMANCE.md) e a Fase 3 integrada ([Decision multimodelo CPU/GPU Intel](docs/PHASE-3.1-DECISION-MULTIMODEL.md), LLM 2.0 e [NLU temporal](docs/FASE-3.2-NLU-TEMPORAL.md), com alarmes, lembretes, timers e exclusões coletivas).
 
 Um único app para Home Assistant com **Wake, STT, NLU, Decision, LLM e TTS**.
 Todos os motores estão incluídos na mesma instalação. Você ativa, desativa e
@@ -18,7 +18,7 @@ Decision 2.0: [algoritmo, validação A/B e limites](docs/DECISION-v2.0.0.md).
 
 LLM 2.0: [planos tipados, modelos, comparação real e limites](docs/LLM-v2.0.0.md).
 
-**Versões: app 10.0.0 / HACS 10.0.0 / STT 4.0.2 / NLU 0.6.5 / Decision 3.0.0 / LLM 2.0.0 / TTS 0.2.2.** Fase 4 publicada como pré-release com validação local; homologação física HAOS/i5 e playback pendentes. Modelos, voz e seleções existentes são preservados. [Notas e limites da versão](docs/RELEASE-v10.0.0.md).
+**Versões: app 11.0.0 / HACS 11.0.0 / NLU 0.7.0 / Decision 3.0.0 / LLM 2.0.0 / STT 4.0.2 / TTS 0.2.2.** Modelos, voz e seleções existentes são preservados. [Notas e limites da versão](docs/RELEASE-v11.0.0.md).
 
 HACS 3.0.1: pedidos não compreendidos em origens ReSpeaker recebem apenas
 “Não entendi.” e encerram o diálogo. Identificação pelo dispositivo registrado

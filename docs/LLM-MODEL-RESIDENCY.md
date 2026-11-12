@@ -109,3 +109,18 @@ Estes componentes foram desenvolvidos de forma 100% isolada e sem tocar nos arqu
 - `tests/test_model_memory.py`: 5 testes aprovados (100%).
 - `tests/test_llm_model_manager.py`: 6 testes aprovados (100%).
 - Suíte completa de regressão do Arandu: **302 testes aprovados, 22 skipped, 0 falhas**.
+
+
+---
+
+## 6. Integração Real de Residência em RAM (`v11.1.2`)
+
+A partir da versão `11.1.2`, a política de residência em RAM do LLM foi conectada ao runtime real:
+- **Configuração (`modules.py` / `settings.py`):** campo `resident_policy` em `DEFAULTS['llm']` (padrão `'LAZY'`, opções `'RESIDENT'`, `'LAZY'`, `'OFF'`), validado estritamente e propagado via `ARANDU_LLM_RESIDENCY` e `runtime_settings`.
+- **Ciclo de vida real (`arandu_llm/service.py`):**
+  - `RESIDENT`: pré-carrega o modelo configurado no hook `on_startup` (`warm`) após checar headroom mínimo de `512 MiB` (`MIN_HEADROOM_MB`), expondo `load_state='degraded'` e `load_error_code='memory_pressure'` se não houver RAM suficiente.
+  - `LAZY`: inicia descarregado (`load_state='unloaded'`), carregando sob demanda na primeira inferência e mantendo o processo aquecido para reutilização.
+  - `OFF`: mantém o modelo descarregado (`load_state='off'`) e recusa inferências com erro explícito (`code='llm_disabled_by_residency'`, HTTP 422).
+- **Telemetria honesta (`/status`, `server.py`, `app.js`):** expõe `resident_policy`, `configured_model`, `is_model_loaded`, `model_ready`, `load_state`, `load_error_code`, `loaded_since`, `last_load_ms`, `process_rss_mb`, `available_memory_mb`, `preload_attempted`, `preload_success`, `recoveries_count` e `cold_start_last_request`.
+- **Falso positivo corrigido (`llm_lab.py`):** `preload_resident_models()` sem `loader_callback` real não registra mais o modelo como carregado.
+- **Testes:** coberto por `tests/test_llm_residency_integration.py` (usando `TestServer`/`TestClient` com adaptador simulado, sem execução física em HAOS).

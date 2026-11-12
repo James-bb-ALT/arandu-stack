@@ -230,11 +230,30 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30, gen
             output = await run("llm", llm, {"text": text, "nlu": nl, "decision": de})
             if output:
                 typed=output.get('contract_version')==2 and 'plan' in output
-                result.update(proposal=None if typed else output.get("proposal", output),plan=output.get('plan'),kind=output.get('kind'),
-                    source="llm", response_text=output.get("response_text"), requires_review=not bool(output.get("response_text")))
-    result["clarification_question"] = ((result.get('plan') or {}).get('question') or
-        (result["proposal"] or {}).get("clarification_question") or
-        (None if result["proposal"] or (result.get('plan') or {}).get('type')=='automation' else "Não entendi o que você deseja. Pode repetir dizendo o dispositivo e a ação?"))
+                kind=output.get('kind')
+                if kind=='conversation':
+                    reply=output.get('response_text')
+                    valid_reply=isinstance(reply,str) and 1<=len(reply.strip())<=1000
+                    result.update(
+                        proposal=None if typed else output.get("proposal"),
+                        plan=output.get('plan'),
+                        kind='conversation',
+                        source="llm",
+                        response_text=reply.strip() if valid_reply else None,
+                        requires_review=not valid_reply,
+                        final_kind='conversation_response' if valid_reply else 'error',
+                        clarification_question=None,
+                    )
+                    if not valid_reply:
+                        result.update(status='error',reason='llm_conversation_empty')
+                        result['stages']['llm']={**result['stages'].get('llm',{}),'status':'error','reason':'llm_conversation_empty'}
+                else:
+                    result.update(proposal=None if typed else output.get("proposal", output),plan=output.get('plan'),kind=kind,
+                        source="llm", response_text=output.get("response_text"), requires_review=not bool(output.get("response_text")))
+    if result.get("kind") != "conversation":
+        result["clarification_question"] = ((result.get('plan') or {}).get('question') or
+            (result["proposal"] or {}).get("clarification_question") or
+            (None if result["proposal"] or (result.get('plan') or {}).get('type')=='automation' else "Não entendi o que você deseja. Pode repetir dizendo o dispositivo e a ação?"))
     result["total_ms"] = (time.perf_counter() - started) * 1000
     return result
 

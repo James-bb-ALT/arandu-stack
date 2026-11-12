@@ -368,7 +368,7 @@ class Lab:
                     from .intelligence import llm_hint
                     data = {**data,'decision':llm_hint(data.get('decision'))}
                     raw = await local_request(session, options.get('stack_endpoint') or worker, "/infer", payload={**data, "action": "llm", "catalog": catalog, "context": semantic_context, "llm_model": payload.get("llm_model", "tucano"),'contract_version':payload.get('llm_contract',2)})
-                    if raw.get('contract_version')==2 and raw.get('kind') in {'automation','clarification'}:
+                    if raw.get('contract_version')==2 and raw.get('kind') in {'automation','clarification','conversation'}:
                         if raw['kind']=='automation':
                             from .intelligence import typed_operations
                             typed_operations(raw,text,snapshot,semantic_context)
@@ -383,7 +383,7 @@ class Lab:
                               catalog=catalog, test_mode="independent", test_context=test_context,
                               production_policy={"nlu": True, "decision": options.get("decision_enabled", False), "llm": options.get("llm_enabled", False)})
                 proposal = result["proposal"]
-                if proposal and result["source"] != "nlu":
+                if proposal and result["source"] != "nlu" and result.get("kind") != "conversation":
                     from .intelligence import proposal_route
                     from .semantic_context import clarification, confirmation_question
                     output = result["stages"][result["source"]].get("output") or {}
@@ -424,8 +424,14 @@ class Lab:
                         operations = ()
                     result["stages"]["validation"]["latency_ms"] = (time.perf_counter() - validation_started) * 1000
                 else:
-                    result["stages"]["validation"] = {"status": "skipped", "reason": "Nenhuma operação proposta"}
-                result["stages"]["response"] = {"status": "executed", "reason": result["clarification_question"] or "Diagnóstico concluído"}
+                    result["stages"]["validation"] = {"status": "skipped", "reason": "Nenhuma ação HA proposta" if result.get("kind") == "conversation" else "Nenhuma operação proposta"}
+                if result.get("kind") == "conversation":
+                    if result.get("response_text"):
+                        result["stages"]["response"] = {"status": "executed", "reason": "Resposta gerada pelo LLM"}
+                    else:
+                        result["stages"]["response"] = {"status": "error", "reason": result.get("reason") or "llm_conversation_empty"}
+                else:
+                    result["stages"]["response"] = {"status": "executed", "reason": result["clarification_question"] or "Diagnóstico concluído"}
                 result["stages"] = {name: result["stages"][name] for name in ("vad", "stt", "nlu", "decision", "llm", "validation", "ha", "response", "tts")}
                 result["operations_validated"] = bool(operations)
                 return result, operations

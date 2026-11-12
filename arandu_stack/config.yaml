@@ -1,7 +1,7 @@
 name: Arandu Assistant
 slug: arandu_stack
-version: "10.0.0"
-description: Assist local PT-BR com filas limitadas, execução concorrente segura, agendamentos e métricas de voz
+version: "11.0.0"
+description: Assist local PT-BR com intercom/anúncios determinísticos, listas e automações contextuais, filas e concorrência segura
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
 startup: application

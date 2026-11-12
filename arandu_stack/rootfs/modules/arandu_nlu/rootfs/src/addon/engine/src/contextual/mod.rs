@@ -39,6 +39,7 @@ pub fn register_catalog(catalog: Catalog) -> Response {
     cache.insert(generation.clone(), Arc::new(index));
     let mut response = Response::status("catalog_ready");
     response.generation = Some(generation);
+    response.reason = Some("phase5_supported".into());
     response
 }
 
@@ -74,7 +75,9 @@ fn interpret_index(text: &str, request: &ContextRequest, index: &Index) -> Respo
     if matches!(text, "nao" | "nao cancela" | "nao pode") {
         return Response::status("cancel");
     }
-    if let Some(reason) = safety::refusal(text, &index.catalog) {
+    if let Some(reason) = safety::refusal(text, &index.catalog)
+        && grammar::parse_todo_command(text).is_none()
+    {
         return Response::failure(
             if reason == "semantic_negation" {
                 "cancel"
@@ -84,6 +87,9 @@ fn interpret_index(text: &str, request: &ContextRequest, index: &Index) -> Respo
             "semantic_policy",
             reason,
         );
+    }
+    if let Some(response) = phase5(text, request, index) {
+        return response;
     }
     if matches!(text, "sim" | "confirmo" | "pode confirmar" | "isso") {
         return Response::status("confirm");
@@ -402,4 +408,269 @@ fn property(action: &str) -> &str {
         "shuffle_on" | "shuffle_off" => "shuffle",
         _ => action,
     }
+}
+
+fn phase5(text: &str, request: &ContextRequest, index: &Index) -> Option<Response> {
+    let quoted = request
+        .text
+        .trim_start()
+        .starts_with(['\'', '"', '“', '‘', '`', '«']);
+    if let Some(command) = grammar::parse_phase5(text) {
+        if quoted
+            && !matches!(
+                command.action.as_str(),
+                "query" | "todo_list" | "history_query"
+            )
+        {
+            return Some(Response::failure(
+                "unavailable",
+                &command.intent,
+                "semantic_quoted_command",
+            ));
+        }
+        if command.parameters.aggregate.as_deref() == Some("ambiguous") {
+            return Some(Response::failure(
+                "clarification",
+                &command.intent,
+                "power_or_energy",
+            ));
+        }
+        let targets = match index.resolve_phase5(&command, request) {
+            Ok(targets) => targets,
+            Err(reason) => {
+                return Some(Response::failure("clarification", &command.intent, reason));
+            }
+        };
+        let mut parameters = command.parameters;
+        let first_slot = after_word(&request.text, 0);
+        let mut cursor = first_slot;
+        for value in [&mut parameters.old_item, &mut parameters.new_item] {
+            if let Some(normal) = value.as_deref() {
+                if let Some((original, end)) =
+                    slots::original_slot_after(&request.text, normal, cursor)
+                {
+                    *value = Some(original);
+                    cursor = after_word(&request.text, end);
+                } else {
+                    *value = None;
+                }
+            }
+        }
+        if let Some(value_text) = parameters
+            .value
+            .as_ref()
+            .and_then(serde_json::Value::as_str)
+            && let Some((original, _)) =
+                slots::original_slot_after(&request.text, value_text, first_slot)
+        {
+            parameters.value = Some(serde_json::Value::String(original));
+        }
+        return Some(single_phase5(
+            command.intent,
+            command.action,
+            targets,
+            parameters,
+        ));
+    }
+    if let Some(command) = parse_context_ellipsis(text, request, index) {
+        if quoted {
+            return Some(Response::failure(
+                "unavailable",
+                "context.ellipsis",
+                "semantic_quoted_command",
+            ));
+        }
+        return Some(command);
+    }
+    if quoted
+        && (text.starts_with("modo ") || matches!(text, "boa noite" | "bom dia" | "hora de dormir"))
+    {
+        return Some(Response::failure(
+            "no_match",
+            "scene.invoke_exact",
+            "semantic_quoted_command",
+        ));
+    }
+    parse_scene_command(text, index)
+}
+
+fn after_word(source: &str, start: usize) -> usize {
+    source
+        .char_indices()
+        .filter(|(i, _)| *i >= start)
+        .skip_while(|(_, ch)| ch.is_whitespace())
+        .find(|(_, ch)| ch.is_whitespace())
+        .map_or(source.len(), |(i, ch)| i + ch.len_utf8())
+}
+
+fn single_phase5(
+    intent: String,
+    action: String,
+    targets: Vec<String>,
+    parameters: contract::Parameters,
+) -> Response {
+    let mut response = Response::status("plan");
+    response.operations.push(Operation {
+        intent,
+        action,
+        targets,
+        parameters,
+        evidence: vec!["phase5_exact".into()],
+        depends_on: vec![],
+    });
+    response
+}
+
+fn parse_scene_command(text: &str, index: &Index) -> Option<Response> {
+    if !(text.starts_with("modo ") || matches!(text, "boa noite" | "bom dia" | "hora de dormir")) {
+        return None;
+    }
+    let label = text.strip_prefix("modo ").unwrap_or(text);
+    let mut targets: Vec<_> = index
+        .catalog
+        .entities
+        .iter()
+        .filter(|row| {
+            row.domain == "scene"
+                && row.actions.iter().any(|a| a == "activate")
+                && std::iter::once(&row.name)
+                    .chain(&row.aliases)
+                    .any(|name| slots::normalize(name) == label || slots::normalize(name) == text)
+        })
+        .map(|row| row.registry_id.clone())
+        .collect();
+    targets.sort();
+    if targets.len() != 1 {
+        return Some(Response::failure(
+            if targets.is_empty() {
+                "no_match"
+            } else {
+                "clarification"
+            },
+            "phase5.scene",
+            "scene_not_unique",
+        ));
+    }
+    Some(single_phase5(
+        "scene.invoke_exact".into(),
+        "activate".into(),
+        targets,
+        contract::Parameters::default(),
+    ))
+}
+
+fn context_area(text: &str) -> Option<&str> {
+    [
+        "agora a da ",
+        "agora a do ",
+        "agora o da ",
+        "agora o do ",
+        "a da ",
+        "a do ",
+        "o do ",
+        "o da ",
+        "faz igual no ",
+        "faz igual na ",
+    ]
+    .iter()
+    .find_map(|prefix| text.strip_prefix(prefix))
+    .map(|s| s.trim_end_matches(" tambem"))
+}
+
+fn parse_context_ellipsis(text: &str, request: &ContextRequest, index: &Index) -> Option<Response> {
+    if request.pending.is_some() {
+        return None;
+    }
+    let undo = matches!(
+        text,
+        "volta como estava"
+            | "volte como estava"
+            | "desfaz"
+            | "desfaz a ultima mudanca"
+            | "desfaca"
+            | "desfaca a ultima mudanca"
+    );
+    let other = text == "o outro tambem" || text == "a outra tambem";
+    let area_text = context_area(text);
+    if !undo && !other && area_text.is_none() {
+        if matches!(
+            text,
+            "faz igual" | "o outro" | "a outra" | "agora a" | "agora o"
+        ) || text.starts_with("faz igual ")
+            || text.starts_with("o outro ")
+            || text.starts_with("a outra ")
+        {
+            return Some(Response::failure(
+                "clarification",
+                "context.ellipsis",
+                "context_insufficient",
+            ));
+        }
+        return None;
+    }
+    let fail = || Response::failure("clarification", "phase5.context", "context_insufficient");
+    let Some(prior) = request.antecedent.as_ref() else {
+        return Some(fail());
+    };
+    let Some(source) = index
+        .catalog
+        .entities
+        .iter()
+        .find(|row| prior.targets.contains(&row.registry_id))
+    else {
+        return Some(fail());
+    };
+    if !matches!(
+        source.domain.as_str(),
+        "light" | "fan" | "media_player" | "climate" | "switch" | "input_boolean"
+    ) {
+        return Some(fail());
+    }
+    if undo {
+        return Some(single_phase5(
+            "context.undo".into(),
+            "contextual_undo".into(),
+            prior.targets.clone(),
+            contract::Parameters::default(),
+        ));
+    }
+    let areas: Vec<_> = index
+        .catalog
+        .areas
+        .iter()
+        .filter(|area| {
+            area.names
+                .iter()
+                .any(|n| Some(slots::normalize(n)).as_deref() == area_text)
+        })
+        .map(|a| a.area_id.as_str())
+        .collect();
+    if !other && areas.len() != 1 {
+        return Some(fail());
+    }
+    let mut targets: Vec<_> = index
+        .catalog
+        .entities
+        .iter()
+        .filter(|row| {
+            row.domain == source.domain
+                && row.actions.contains(&prior.action)
+                && if other {
+                    row.area_id == source.area_id && row.registry_id != source.registry_id
+                } else {
+                    row.area_id.as_deref() == areas.first().copied()
+                }
+        })
+        .map(|r| r.registry_id.clone())
+        .collect();
+    targets.sort();
+    if targets.len() != 1 {
+        return Some(fail());
+    }
+    Some(single_phase5(
+        "context.ellipsis".into(),
+        prior.action.clone(),
+        targets,
+        prior.parameters.clone(),
+    ))
 }

@@ -31,9 +31,28 @@
         "menu_options": {
           "voice_output": "Saídas de áudio — ver e editar associações",
           "identity_binding": "Identidade de voz — usuários e associações",
+          "announcements": "Avisos por voz (Intercom) — áreas e satélites",
           "intelligence": "Camadas de inteligência",
           "settings": "Outras configurações",
           "performance": "Filas e limites"
+        }
+      },
+      "announcements": {
+        "title": "Avisos por voz (Intercom)",
+        "description": "**Destinos de aviso configurados**\n\n{destinations}\n\nEscolha uma área e associe um satélite Assist OU media player para receber anúncios dirigidos. Para remover, selecione um destino existente. Mensagens para toda a casa requerem confirmação de uso único.",
+        "data": {
+          "announcements_enabled": "Ativar avisos por voz direcionados",
+          "announcements_allow_all": "Permitir avisos para toda a casa (transmissão geral)",
+          "announcements_chime": "Tocar sinal sonoro antes do anúncio",
+          "announcements_cooldown_s": "Intervalo mínimo entre anúncios da mesma origem (segundos)",
+          "announcements_tts_entity": "Entidade TTS para media players",
+          "quiet_hours_start": "Início do horário silencioso (HH:MM, opcional)",
+          "quiet_hours_end": "Fim do horário silencioso (HH:MM, opcional)",
+          "area_id": "Área de destino",
+          "satellite_id": "Satélite Assist",
+          "media_player_id": "Media Player de destino",
+          "save_and_finish": "Salvar e concluir",
+          "existing_mapping": "Destino existente a remover"
         }
       },
       "intelligence": {
@@ -119,7 +138,13 @@
       "invalid_voice_output": "Escolha um media player disponível; são permitidas até 128 associações de saída.",
       "voice_output_unavailable": "A saída está indisponível, foi removida ou está desativada.",
       "voice_output_not_exposed": "Exponha a saída ao Assist em Configurações → Assistentes de voz → Expor entidades e tente novamente.",
-      "voice_output_no_volume": "Este media player não oferece controle de volume no Home Assistant."
+      "voice_output_no_volume": "Este media player não oferece controle de volume no Home Assistant.",
+      "invalid_announcement_origin": "O dispositivo selecionado não está disponível ou foi desativado.",
+      "announcement_not_exposed": "A entidade selecionada não está exposta ao Assist.",
+      "choose_one_announcement_target": "Escolha apenas um satélite ou um media player por vez.",
+      "announcement_area_required": "Selecione uma área para associar o dispositivo de aviso.",
+      "announcement_limit_reached": "Limite de destinos atingido (máximo de 32 áreas e 2 entidades por área).",
+      "invalid_quiet_hours": "Horário silencioso inválido (use o formato HH:MM)."
     }
   },
   "title": "Arandu Assistant"

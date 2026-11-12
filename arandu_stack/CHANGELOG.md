@@ -1,3 +1,20 @@
+# 11.0.0 — Fases 5 e 6 Integradas: NLU Avançado & Intercom / Anúncios Determinísticos (2026-11-12)
+
+- **Fase 5 (NLU Avançado: Ações Contextuais, Automações e Listas):**
+  - Gramática e engine Rust (v0.7.0): suporte a ações contextuais com troca de antecedente ("agora a da cozinha"), elipses e desfazimento (*undo*) com comparação de estado atual.
+  - Automações seguras: "ativa/desativa automação" altera o estado sem disparar execução; "executa automação" aplica estritamente `skip_condition: false` para avaliar todas as condições do Home Assistant.
+  - Gerenciamento de listas de afazeres (`todo.*`): adicionar, remover, concluir e atualizar itens com vinculação por UID, preservação de contexto e confirmação de uso único para limpeza de concluídos.
+  - Consultas avançadas e histórico: medições binárias agregadas por intervalo, consumo e energia sem sobreposição, e consultas limitadas e autorizadas com revalidação pós-I/O.
+  - Proteção de segurança: conteúdo literal citado em listas ou automações nunca gera comandos para dispositivos físicos; zero fallback neural indevido.
+- **Fase 6 (Intercom e Anúncios Domésticos Determinísticos):**
+  - Fast-path determinístico 100% Python no agente de conversação (`conversation.py`), antes de qualquer invocação ao runtime ou modelos neurais.
+  - Entrega prioritária via `assist_satellite.announce` com chime nativo nos satélites Assist, e fallback via `tts.speak` com `cache=False` para media players associados.
+  - Prevenção contra injeção e execução: frases citando comandos ("fala na sala que desliga a luz") entregam apenas áudio falado, com zero efeitos colaterais em dispositivos físicos.
+  - Transmissão geral (*broadcast*): exige opt-in explícito nas configurações e confirmação de uso único via fingerprint imutável.
+  - Diálogo multi-turno (solicitação de mensagem pendente), janela de resposta (*reply window*) de 30s de volta ao satélite remetente, controle de flood/cooldown por origem e limite global de 2 anúncios concorrentes.
+  - Configuração nativa no Home Assistant (`config_flow.py` step `announcements`) com seletores de Área, Satélite Assist, Media Player e TTS.
+- **Versões dos Componentes Integrados:** App 11.0.0 / HACS 11.0.0 / NLU 0.7.0 / Decision 3.0.0 / LLM 2.0.0 / STT 4.0.2 / TTS 0.2.2. Decision, LLM, STT e TTS preservados. Documentação completa em `docs/PHASE-5-IMPLEMENTATION.md`, `docs/PHASE-6-ANNOUNCEMENTS.md` e `docs/RELEASE-v11.0.0.md`.
+
 # 10.0.0 — Fase 4: concorrência, filas e observabilidade (2026-11-12)
 
 - App/HACS 10.0.0, NLU 0.6.5, STT 4.0.2 e TTS 0.2.2. Decision, LLM, Wake, modelos, thresholds e voz selecionada preservados.

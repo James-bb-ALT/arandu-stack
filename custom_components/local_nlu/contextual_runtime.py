@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
 import hashlib
 import json
@@ -18,9 +19,10 @@ from .client import ClientError
 from .contextual_catalog import CatalogCache, Snapshot, exposed, origin_area, origin_context
 from .contextual_protocol import Operation, Outcome, normalize, parse
 from .protocol import ProtocolError
-from .request_trace import CURRENT, observe, observe_execution
+from .request_trace import CURRENT, observe, observe_execution, TracePublisher
 from .queries import QueryError, calendar_response, calendar_parameters, date_window, now, read, render
 from .identity import IDENTITY_OPTIONS, IdentityError, ResolvedIdentity, effective_input, identity_diagnostics, request_origin, resolve_request_identity, revalidate_identity, validate_binding_origin
+from .workload import Admission, ResourceLocks, Saturated, Circuit, bounded, observed_wait
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -71,27 +73,72 @@ class ContextualRuntime:
         self.catalog = CatalogCache(hass)
         self.sessions: dict[tuple[str, str, str], Session] = {}
         self.sent_generations: set[str] = set()
-        self.lock = asyncio.Lock()
+        self.session_locks = ResourceLocks()
+        self.resource_locks = ResourceLocks()
+        limits = dict(self.options())
+        concurrent = bounded(limits,'performance_concurrency',4,1,8)
+        waiting = bounded(limits,'performance_waiting',16,0,32)
+        # Total requests are bounded, but neural waits never occupy NLU slots.
+        self.admission = Admission(concurrent+waiting,0)
+        self.nlu_admission = Admission(concurrent,waiting)
+        self.model_admission = Admission(1, bounded(limits,'performance_model_waiting',4,0,8))
+        self.circuits = {name: Circuit() for name in ('decision','llm')}
+        self.total_timeout = bounded(limits,'performance_timeout',45,5,90)
+        self._stage = ContextVar('arandu_stage', default='normalization')
+        self._revision = ContextVar('arandu_options_revision', default=0)
         self.identity_source: str | None = None
         self.origin_binding_configured = False
         self.identity_options: str | None = None
         self.options_revision = 0
         self.request_revision = 0
-        self.active_request = None
+        self.active_requests = {}
         self.cancelled_tasks = set()
         self.queued_requests = {}
         from .scheduled_delivery import ScheduledDeliveryHandler
         from .scheduled_execution import ScheduledExecutionHandler
         from .scheduled_jobs import ScheduledJobManager
         self.delivery_handler = ScheduledDeliveryHandler(hass, options)
-        self.execution_handler = ScheduledExecutionHandler(hass, options)
-        self.scheduler = ScheduledJobManager(hass, self.delivery_handler, self.execution_handler)
+        self.execution_handler = ScheduledExecutionHandler(hass, options, self._execute_scheduled)
+        endpoint=limits.get('stack_endpoint','')
+        self._scheduler_publisher=TracePublisher(hass,endpoint) if endpoint else None
+        self.scheduler = ScheduledJobManager(hass, self.delivery_handler, self.execution_handler,
+            self._scheduler_publisher.submit if self._scheduler_publisher else None,
+            concurrency=bounded(limits,'performance_scheduler_concurrency',2,1,4),
+            deadline=bounded(limits,'performance_scheduler_timeout',20,5,60),
+            max_active=bounded(limits,'performance_scheduler_jobs',50,1,50))
 
     def close(self) -> None:
+        self.options_revision += 1
+        for task in set(self.active_requests) | set(self.queued_requests):
+            task.cancel()
         self.catalog.close()
         self.sessions.clear()
         if hasattr(self, "scheduler"):
             self.scheduler.close()
+        if self._scheduler_publisher:
+            self._scheduler_publisher.close()
+
+    async def async_close(self):
+        tasks = set(self.active_requests) | set(self.queued_requests) | set(self.scheduler._tasks)
+        self.close()
+        if tasks:
+            await asyncio.gather(*tasks,return_exceptions=True)
+
+    @property
+    def stage(self):
+        return self._stage.get()
+
+    @stage.setter
+    def stage(self, value):
+        self._stage.set(value)
+
+    @property
+    def request_revision(self):
+        return self._revision.get()
+
+    @request_revision.setter
+    def request_revision(self, value):
+        self._revision.set(value)
 
     def options_changed(self) -> None:
         self.options_revision += 1
@@ -134,7 +181,9 @@ class ContextualRuntime:
                 "contextual_enabled": True, "route": "/v4/interpret",
                 "compatible": 4 in service["protocols"],
                 "identity": self.identity_diagnostics(),
-                "last_outcome": getattr(self, "last_outcome", None)}
+                "last_outcome": getattr(self, "last_outcome", None),
+                "workload": self.admission.status(), 'nlu_queue':self.nlu_admission.status(),
+                'model_queue':self.model_admission.status(), 'scheduler':self.scheduler.diagnostics()}
 
     def identity_diagnostics(self) -> dict:
         return identity_diagnostics(dict(self.options()), self.identity_source, binding=self.origin_binding_configured)
@@ -161,9 +210,16 @@ class ContextualRuntime:
         conversation_id = getattr(user_input, 'conversation_id', None)
         if conversation_id is not None and (type(conversation_id) is not str or not 1 <= len(conversation_id) <= 128):
             return self.result('invalid_request', user_input)
+        if conversation_id is None:
+            conversation_id = uuid.uuid4().hex
+            user_input = replace(user_input, conversation_id=conversation_id) if hasattr(user_input,'__dataclass_fields__') else _input_with_id(user_input,conversation_id)
         try:
             options = self.current_options()
+            if normalization_trace := CURRENT.get():
+                normalization_trace.start('normalization')
             cleaned = without_wake_word(user_input, options, origin_context(self.hass, user_input, options)[1] in ('satellite', 'device'))
+            if normalization_trace:
+                normalization_trace.end('normalization', 'completed')
             identity = await observe('authorization', resolve_request_identity(self.hass, cleaned, options))
         except (ExecutionError, ValueError, TypeError):
             return self.result('invalid_request', user_input)
@@ -171,21 +227,23 @@ class ContextualRuntime:
             return self.result('denied', user_input, reason='permission_denied')
         if cancellation(cleaned.text):
             return await self.cancel_request(cleaned, options)
-        owner = (identity.user_id, request_origin(effective_input(cleaned, identity)))
+        owner = (identity.user_id, request_origin(effective_input(cleaned, identity)), conversation_id)
         cancelled = asyncio.Event()
         request_task = asyncio.current_task()
         self.queued_requests[request_task] = (owner, cancelled)
-        # Serializes this agent's live relative updates and retry/confirmation decisions.
+        # Identity/session order covers dialogue state, never unrelated conversations.
+        # Resource locks are acquired only after resolution, inside execute().
         try:
             if trace := CURRENT.get():
                 trace.start('queue')
-            async with self.lock:
+            async with asyncio.timeout(self.total_timeout), self.admission.enter(), self.session_locks.hold([owner]):
                 if trace:
                     trace.end('queue', 'completed')
                 if cancelled.is_set():
                     from .runtime import RuntimeResult
                     return RuntimeResult(code='cancelled', response_text='', conversation_id=getattr(user_input, 'conversation_id', None))
                 task = asyncio.create_task(self._process(user_input))
+                self.active_requests[task] = owner
                 try:
                     return await task
                 except asyncio.CancelledError:
@@ -195,10 +253,20 @@ class ContextualRuntime:
                     return RuntimeResult(code='cancelled', response_text='', conversation_id=getattr(user_input, 'conversation_id', None))
                 finally:
                     self.cancelled_tasks.discard(task)
-                    if self.active_request and self.active_request[0] is task:
-                        self.active_request = None
+                    self.active_requests.pop(task, None)
+        except Saturated:
+            return self.result('unavailable', user_input, reason='queue_saturated', speech='Estou ocupado. Tente novamente em instantes.')
+        except TimeoutError:
+            return self.result('unavailable', user_input, reason='request_timeout')
+        except asyncio.CancelledError:
+            if request_task not in self.cancelled_tasks:
+                raise
+            self.cancelled_tasks.discard(request_task)
+            from .runtime import RuntimeResult
+            return RuntimeResult(code='cancelled', response_text='', conversation_id=conversation_id)
         finally:
             self.queued_requests.pop(request_task, None)
+            self.cancelled_tasks.discard(request_task)
 
     async def cancel_request(self, user_input, options):
         """Cancellation bypasses the inference queue, scoped to identity and origin."""
@@ -210,15 +278,18 @@ class ContextualRuntime:
             origin = request_origin(user_input)
             if self.current_options() != options:
                 raise IdentityError('identity_changed')
-            for owner, cancelled in self.queued_requests.values():
-                if owner == (identity.user_id, origin):
+            owner_key = (identity.user_id, origin, getattr(user_input, 'conversation_id', None))
+            for queued_task, (owner, cancelled) in tuple(self.queued_requests.items()):
+                if owner == owner_key:
                     cancelled.set()
-            active = self.active_request
-            if active and active[1:] == (identity.user_id, origin):
-                self.cancelled_tasks.add(active[0])
-                active[0].cancel()
+                    self.cancelled_tasks.add(queued_task)
+                    queued_task.cancel()
+            for task, owner in tuple(self.active_requests.items()):
+                if owner == owner_key:
+                    self.cancelled_tasks.add(task)
+                    task.cancel()
             for key in list(self.sessions):
-                if key[:2] == (identity.user_id, origin):
+                if key == owner_key:
                     self.sessions.pop(key)
             # Output stop must not wait behind inference on another satellite.
             # Reuse the HA executor's permission/capability checks without its queue.
@@ -263,13 +334,16 @@ class ContextualRuntime:
         return json.loads(encoded)
 
     def validate_options(self, expected: dict) -> None:
+        if (task := asyncio.current_task()) is not None and task.cancelling():
+            raise ExecutionError('cancelled','request_cancelled')
         if self.options_revision != self.request_revision or self.current_options() != expected:
             raise ExecutionError("stale", "options_changed")
 
     async def _interpret(self, payload):
         async def interpret():
             return parse(await self.client.async_interpret_v4(payload))
-        return await observe('nlu', interpret())
+        async with observed_wait('nlu_queue', self.nlu_admission.enter()):
+            return await observe('nlu', interpret())
 
     async def _process(self, user_input: Any) -> Any:
         started = time.perf_counter()
@@ -310,15 +384,18 @@ class ContextualRuntime:
                 raise ExecutionError("invalid_request", "wake_word_configuration") from None
             user_id, user = identity.user_id, identity.user
             origin = request_origin(user_input)
-            self.active_request = (asyncio.current_task(), user_id, origin)
             key = (user_id, origin, conversation_id)
             current_time = time.monotonic()
             expired = key in self.sessions and self.sessions[key].expires < current_time
-            for stale_key in [item for item, session in self.sessions.items() if session.expires < current_time]:
+            protected = set(self.active_requests.values())
+            for stale_key in [item for item, session in self.sessions.items() if session.expires < current_time and item not in protected]:
                 self.sessions.pop(stale_key)
             if key not in self.sessions:
                 if len(self.sessions) >= 128:
-                    self.sessions.pop(next(iter(self.sessions)))
+                    oldest = next((item for item in self.sessions if item not in protected),None)
+                    if oldest is None:
+                        raise Saturated('session_saturated')
+                    self.sessions.pop(oldest)
                 self.sessions[key] = Session(current_time + _ttl(options), identity_source=identity.source)
             session = self.sessions[key]
             text = normalize(user_input.text)
@@ -408,13 +485,6 @@ class ContextualRuntime:
             session.history_origin = spatial_context
             from .semantic_context import semantic_refusal
             refusal = semantic_refusal(user_input.text, snapshot.payload)
-            if refusal:
-                session.pending = None
-                session.selection = None
-                session.confirmation = ()
-                session.candidates = ()
-                return self.result('cancelled' if refusal == 'semantic_negation' else 'unavailable', user_input, reason=refusal,
-                                   speech='Não executei: o pedido contém uma restrição que não consigo aplicar com segurança.')
             pending = session.pending
             if pending is not None and (generation != session.pending_generation or area != session.pending_origin or _options_hash(options) != session.pending_options):
                 session.pending = None
@@ -433,6 +503,13 @@ class ContextualRuntime:
                 await self._send(snapshot)
                 outcome = await self._interpret(payload)
             self.validate_options(options)
+            if refusal:
+                from .typed_constraints import operational_refusal
+                remaining = operational_refusal(user_input.text,snapshot.payload,outcome.operations) if outcome.status=='plan' else refusal
+                if remaining:
+                    session.pending,session.selection,session.confirmation,session.candidates=None,None,(),()
+                    return self.result('cancelled' if remaining=='semantic_negation' else 'unavailable',user_input,reason=remaining,
+                        speech='Não executei: o pedido contém uma restrição que não consigo aplicar com segurança.')
             from .intelligence import eligible, fallback, nlu_summary
             if (options.get("decision_enabled") is True or options.get("llm_enabled") is True) and eligible(outcome, pending=pending is not None or bool(session.candidates)):
                 from .ai_lab import local_request
@@ -441,13 +518,19 @@ class ContextualRuntime:
                 async def infer(body):
                     if not endpoint:
                         raise ValueError("Endpoint Arandu Stack ausente")
-                    return await local_request(async_get_clientsession(self.hass), endpoint, "/infer", payload=body, timeout=30)
+                    source = body['action']
+                    timeout = 10 if source == 'decision' else 30
+                    async with observed_wait('model_queue', self.model_admission.enter()):
+                        async with self.circuits[source].call(), asyncio.timeout(timeout):
+                            return await local_request(async_get_clientsession(self.hass), endpoint, "/infer", payload=body, timeout=timeout)
                 proposed, trace = await fallback(user_input.text, snapshot, options, infer,
                     {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets), "last_action":session.last_action,
                      'temperature_unit':getattr(getattr(getattr(self.hass,'config',None),'units',None),'temperature_unit',None)},
                     nlu=nlu_summary(outcome))
                 self.validate_options(options)
                 self.last_intelligence = trace
+                if any(row.get('reason') == 'queue_saturated' for row in trace.values()):
+                    raise Saturated('queue_saturated')
                 reply = trace.get('llm', {}).get('response_text')
                 if trace.get('llm', {}).get('status') == 'conversation' and reply:
                     await self.revalidate(identity, user_input, options)
@@ -573,6 +656,8 @@ class ContextualRuntime:
         except (CatalogError, ProtocolError, CapabilityError):
             return self.result("unavailable", user_input, reason="invalid_request")
         except asyncio.CancelledError:
+            raise
+        except Saturated:
             raise
         except Exception:
             # Exception messages can include user data or authenticated URLs.
@@ -834,9 +919,22 @@ class ContextualRuntime:
 
     @observe_execution
     async def execute(self, operations: tuple[Operation, ...], snapshot: Snapshot, user_input: Any, session: Session, options: dict, identity: ResolvedIdentity, *, confirmed: bool = False) -> Any:
+        # Resolve physical targets/backends before locking. Preparation here is
+        # passive; repeat all live validation and relative reads under the locks.
+        user = await self.revalidate(identity, user_input, options)
+        tentative = tuple(self.prepare(op, snapshot, user, options) for op in operations)
+        resources = {row['entity_id'] for item in tentative for row in item.rows}
+        resources.update('device:'+row['device_id'] for item in tentative for row in item.rows if row.get('device_id'))
+        resources.update(call['entity_id'] for item in tentative for call in item.calls)
+        resources.update('device:'+call['backend_row']['device_id'] for item in tentative for call in item.calls if call.get('backend_row',{}).get('device_id'))
+        async with observed_wait('resource_queue', self.resource_locks.hold(resources)):
+            return await self._execute_locked(operations, snapshot, user_input, session, options, identity, confirmed=confirmed)
+
+    async def _execute_locked(self, operations, snapshot, user_input, session, options, identity, *, confirmed=False):
         validation_start = time.perf_counter()
-        from .semantic_context import semantic_refusal, read_only_question, clearly_conversational, speech_only_request
-        refusal = semantic_refusal(user_input.text, snapshot.payload)
+        from .typed_constraints import operational_refusal
+        from .semantic_context import read_only_question, clearly_conversational, speech_only_request
+        refusal = operational_refusal(user_input.text, snapshot.payload, operations)
         if not refusal and (read_only_question(user_input.text) or clearly_conversational(user_input.text, snapshot.payload)) and any(op.action not in READ_ACTIONS for op in operations):
             refusal = 'semantic_non_effect_request'
         if speech_only_request(user_input.text):
@@ -1130,6 +1228,59 @@ class ContextualRuntime:
             self.live(source, "transfer", current_user, options)
         await self.hass.services.async_call("music_assistant", service, data, blocking=True, context=user_input.context, target={"entity_id": [row["entity_id"]]})
 
+    async def _execute_scheduled(self, job):
+        """No neural queue, no retry; revalidate persisted authority at commit."""
+        from types import SimpleNamespace
+        from .contextual_catalog import build
+        authority = getattr(job, 'authority', None)
+        if type(authority) is not dict or job.target_action not in ('turn_on','turn_off','pause'):
+            return False
+        options = self.current_options()
+        self.request_revision = self.options_revision
+        if authority.get('options') != _schedule_options_hash(options):
+            return False
+        try:
+            from homeassistant.core import Context
+            context = Context(user_id=authority['user_id'] if authority.get('identity_source') == 'context' else None)
+        except ImportError:
+            context = SimpleNamespace(user_id=authority['user_id'])
+        user_input = SimpleNamespace(context=context, conversation_id=authority['conversation_id'],
+            satellite_id=authority.get('satellite_id'), device_id=authority.get('device_id'), text='', language='pt-BR')
+        identity = await resolve_request_identity(self.hass, user_input, options)
+        if identity.source != authority.get('identity_source') or identity.user_id != authority.get('user_id'):
+            return False
+        user_input = effective_input(user_input, identity)
+        context = user_input.context
+        preliminary = build(self.hass,identity.user,options)
+        devices = {row['entity_id']:row.get('device_id') for row in preliminary.by_id.values() if row['entity_id'] in job.targets}
+        resources=set(job.targets)|{'device:'+device for device in devices.values() if device}
+        async with self.resource_locks.hold(resources):
+            user = await self.revalidate(identity, user_input, options)
+            snapshot = build(self.hass, user, options)
+            if list(origin_context(self.hass, user_input, options)) != authority.get('origin'):
+                return False
+            by_entity = {row['entity_id']: row for row in snapshot.by_id.values()}
+            rows = [by_entity.get(entity) for entity in job.targets]
+            if any(row is None for row in rows) or [row['registry_id'] for row in rows] != authority.get('registry_ids'):
+                return False
+            if any(row.get('device_id') != devices.get(row['entity_id']) for row in rows):
+                return False
+            operation = Operation('scheduled.action', job.target_action, tuple(row['registry_id'] for row in rows), {})
+            # All targets validated before any effect, with the same adapters as speech.
+            prepared = self.prepare(operation, snapshot, user, options)
+            if prepared.needs_confirmation:
+                return False
+            for call in prepared.calls:
+                user = await self.revalidate(identity, user_input, options)
+                if job.status == 'cancelled':
+                    return False
+                fresh = build(self.hass, user, options)
+                if self.prepare(operation, fresh, user, options).calls != prepared.calls:
+                    return False
+                await self.hass.services.async_call(call['domain'], call['service'], call['data'],
+                    blocking=True, context=context, target={'entity_id':[call['entity_id']]})
+            return True
+
     async def handle_temporal(self, item: Prepared, snapshot: Snapshot, user_input: Any, user: Any, options: dict) -> str:
         op = item.operation
         action = op.action
@@ -1254,6 +1405,8 @@ class ContextualRuntime:
         if action == "schedule_action":
             target_action = params.get("target_action", "turn_on")
             targets = [row["entity_id"] for row in item.rows]
+            user_id = user_input.context.user_id
+            session = self.sessions.get((user_id, request_origin(user_input), user_input.conversation_id))
             job = await self.scheduler.async_add_job(
                 job_type="action",
                 target_action=target_action,
@@ -1262,6 +1415,10 @@ class ContextualRuntime:
                 time_str=params.get("time"),
                 date_str=params.get("date"),
                 parameters=params,
+                authority={'user_id': user_id, 'identity_source': session.identity_source if session else 'context',
+                    'conversation_id': user_input.conversation_id, 'satellite_id':getattr(user_input,'satellite_id',None),
+                    'device_id':getattr(user_input,'device_id',None), 'options':_schedule_options_hash(options),
+                    'origin':list(origin_context(self.hass,user_input,options)), 'registry_ids':[row['registry_id'] for row in item.rows]},
             )
             return "Ação agendada com sucesso."
 
@@ -1283,6 +1440,12 @@ class ContextualRuntime:
 
 def _options_hash(options: dict) -> str:
     return hashlib.sha256(json.dumps(options, sort_keys=True, allow_nan=False).encode()).hexdigest()
+
+
+def _schedule_options_hash(options):
+    limits={'performance_concurrency','performance_waiting','performance_model_waiting','performance_timeout',
+            'performance_scheduler_concurrency','performance_scheduler_timeout','performance_scheduler_jobs'}
+    return _options_hash({key:value for key,value in options.items() if key not in limits})
 
 
 def _independent_command(text: str) -> bool:

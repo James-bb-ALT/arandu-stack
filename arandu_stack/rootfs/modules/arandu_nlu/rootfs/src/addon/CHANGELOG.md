@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.5
+
+- Preserva nomes em timers naturais (`timer para pizza de 15 minutos`, incluindo nomes compostos).
+- Sincroniza a versão do pacote nos lockfiles para builds offline/locked reproduzíveis; mantém o contrato temporal e as exclusões tipadas.
+
 ## 0.4.5
 
 - Execute collective room/category actions on all available authorized devices, skipping offline members from the initial snapshot.

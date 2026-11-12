@@ -17,6 +17,8 @@ def read_options(path: Path = Path("/data/options.json")) -> dict:
 
 
 def configure(options: dict) -> None:
+    os.environ['ARANDU_QUEUE_LIMIT'] = str(options.get('queue_limit', 4))
+    os.environ['ARANDU_PIPER_THREAD_BUDGET'] = '1' if options.get('piper_thread_budget', False) else '0'
     os.environ["ARANDU_URI"] = "tcp://0.0.0.0:10212"
     os.environ["ARANDU_VOICES_DIR"] = "/share/arandu_tts/voices"
     os.environ["ARANDU_DEFAULT_VOICE"] = str(options.get("voice", "pt_BR-faber-medium"))

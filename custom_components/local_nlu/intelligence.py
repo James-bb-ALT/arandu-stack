@@ -9,6 +9,7 @@ from .ai_lab_core import digest, finite, validate_proposal
 from .contextual_protocol import Operation
 from .semantic_context import resolve_device, understood_action, hypothesis_allowed, conversation_allowed, clearly_conversational, semantic_refusal, read_only_question, speech_only_request
 from .request_trace import CURRENT
+from .workload import Saturated
 
 _LOGGER = logging.getLogger(__name__)
 TIMEOUT = 30
@@ -186,8 +187,10 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
                 body.update(config={"threshold": .8, "min_margin": .08})
             else:
                 body.update(decision=llm_hint(decision), nlu=nlu or {}, accept_contracts=[1,2])
-            async with asyncio.timeout(TIMEOUT):
+            async with asyncio.timeout(min(TIMEOUT,10) if source=='decision' else TIMEOUT):
                 response = await request(body)
+            if recorder:
+                recorder.model(source,response)
             reason = response.get('reason')
             confidence = response.get('confidence') if source == 'decision' else None
             trace[source] = {"status": "responded"}
@@ -229,10 +232,18 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
                 proposed = operations(proposal, snapshot, source)
                 if proposed:
                     return proposed, trace
+        except Saturated:
+            reason = 'queue_saturated'
+            trace[source] = {'status':'error','reason':'queue_saturated'}
+            return (), trace
         except asyncio.CancelledError:
             trace[source] = {'status': 'cancelled'}
             raise
         except Exception as exc:
+            if getattr(exc, 'code', None) in {'http_429', 'queue_saturated'}:
+                reason = 'queue_saturated'
+                trace[source] = {'status':'error','reason':reason}
+                return (), trace
             confidence = None
             trace[source] = {"status": "error", "error": type(exc).__name__}
             _LOGGER.warning("ARANDU fallback stage=%s error=%s", source, type(exc).__name__)

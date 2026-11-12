@@ -1,7 +1,7 @@
 name: "Arandu TTS"
 slug: "arandu_tts"
-version: "0.2.1"
-description: "Wyoming com fala completa para satélites, Piper, Pocket e laboratório de vozes"
+version: "0.2.2"
+description: "Wyoming com fala completa, filas e buffers limitados, Piper e Pocket"
 url: "https://github.com/kyutai-labs/pocket-tts"
 startup: services
 init: false
@@ -22,6 +22,8 @@ options:
   auto_download: true
   preload: true
   cpu_threads: 2
+  queue_limit: 4
+  piper_thread_budget: false
   pocket_enabled: true
   pocket_preload: false
   pocket_threads: 2
@@ -37,6 +39,8 @@ schema:
   auto_download: bool
   preload: bool
   cpu_threads: int(1,8)
+  queue_limit: int(0,16)
+  piper_thread_budget: bool
   pocket_enabled: bool
   pocket_preload: bool
   pocket_threads: int(1,8)

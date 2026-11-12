@@ -11,6 +11,7 @@ def field(name, label, kind, section='Geral', **extra):
 
 DOWNLOAD = field('auto_download', 'Baixar modelos e vozes automaticamente', 'switch', help='Quando ativado, o módulo pode baixar arquivos ao iniciar. Desative para usar somente arquivos locais.')
 THREADS = field('threads', 'Threads de CPU', 'number', 'Desempenho', min=1, max=4, step=1)
+WAITING = field('queue_limit', 'Pedidos em espera', 'number', 'Desempenho', min=0, max=16, step=1, help='Uma inferência ativa por motor. Pedidos acima da fila são recusados explicitamente.')
 FIELDS = {
  'wake': [field('wake_word', 'Palavra de ativação', 'select', choices=WAKE_WORDS, help='Esta seleção vale para todas as conexões do serviço interno. Recarregue o motor Wake no Assist após mudar.'),
           field('threshold', 'Sensibilidade (threshold)', 'number', min=.01, max=.99, step=.01, help='Valores menores detectam com mais facilidade, mas podem gerar falsos positivos.'),
@@ -20,13 +21,13 @@ FIELDS = {
          field('max_input_chars', 'Limite de caracteres por comando', 'number', min=64, max=512, step=1),
          field('session_ttl', 'Duração do contexto da conversa (segundos)', 'number', min=1, max=600, step=1),
          field('low_battery_threshold', 'Aviso de bateria baixa (%)', 'number', min=0, max=100, step=1)],
- 'decision': [DOWNLOAD, THREADS,
+ 'decision': [DOWNLOAD, THREADS, WAITING,
               field('model','Modelo Decision','select',choices=[('e5-small','E5 Small · padrão'),('minilm-multilingual','MiniLM Multilingual L12'),('e5-base','E5 Base')]),
               field('backend','Processador Decision','select',choices=[('cpu','CPU · PyTorch'),('gpu_intel','GPU Intel · requer validação OpenVINO')],help='GPU explícita indisponível falha sem trocar para CPU. Prepare o modelo e confirme a carga antes de aplicar.'),
               field('algorithm', 'Algoritmo de interpretação', 'select', 'Decisão', choices=[('structured-v3','Decision 2.0 · intenção, alvo e área'),('baseline-v2','Compatibilidade · Decision 1.0')], help='Calibrações são separadas por algoritmo. Comparação no AI Lab nunca executa ações.'),
               field('threshold', 'Confiança mínima calibrada', 'number', 'Decisão', min=.5, max=1, step=.01, help='Aceitação semântica automática exige confiança conjunta calibrada >=80% e margem. Similaridade não é certeza. Ação explícita/alvo único usam validação determinística; hipóteses não calibradas exigem confirmação.'),
               field('min_margin', 'Margem mínima entre candidatos', 'number', 'Decisão', min=.001, max=1, step=.001)],
- 'llm': [DOWNLOAD, THREADS,
+ 'llm': [DOWNLOAD, THREADS, WAITING,
          field('llm_model','Modelo LLM','select',choices=[('tucano','Tucano 2 0.5B · Q4_K_M'),('qwen3','Qwen3 0.6B · Q8_0 experimental')],help='Instale os pesos individualmente. Aplicação verifica a carga e restaura o modelo anterior em falha.'),
          field('contract_version','Contrato de automação','select',choices=[(2,'LLM 2.0 · operações e parâmetros tipados'),(1,'Compatibilidade · LLM 1.0 / Tucano')]),
          field('context_size', 'Janela de contexto (tokens)', 'select', 'Geração', choices=[(2048,'2.048'),(4096,'4.096'),(8192,'8.192')]),
@@ -36,6 +37,7 @@ FIELDS = {
          field('whisper_profile', 'Correção dos motores de vocabulário aberto', 'select', choices=[('normalize_only','Somente normalização'),('raw','Sem correção'),('full','Completo · vocabulário aberto')]),
          field('model_variant', 'Variante do FastConformer', 'select', choices=[('adapted','Arandu adaptado'),('original','FastConformer original')]),
          DOWNLOAD, THREADS,
+         field('max_clients', 'Conexões de áudio simultâneas', 'number', 'Desempenho', min=1, max=32, step=1, help='Limita capturas e conexões ociosas. A inferência STT continua serializada.'),
          field('padding_ms', 'Áudio adicional nas bordas', 'select', 'Áudio', choices=[(0,'Sem padding'),(100,'100 ms'),(200,'200 ms'),(300,'300 ms')]),
          field('profile', 'Correção do FastConformer', 'select', 'Reconhecimento', choices=[('full','Completo'),('raw','Sem correção'),('normalize_only','Somente normalização'),('acoustic_only','Somente acústico'),('fuzzy_only','Somente aproximação'),('inventory_only','Somente inventário'),('legacy_full','Completo legado')]),
          field('lexical_enabled', 'Usar correção lexical', 'switch', 'Reconhecimento'),
@@ -46,9 +48,10 @@ FIELDS = {
          field('inventory_refresh_seconds', 'Intervalo de atualização do inventário (segundos)', 'number', 'Contexto', min=0,max=86400,step=1, help='Zero desativa a atualização periódica.'),
          field('debug_text', 'Registrar textos reconhecidos para diagnóstico', 'switch', 'Diagnóstico', help='Os textos ficam nos logs do módulo; mantenha desligado no uso normal.')],
  'tts': [field('voice', 'Voz principal', 'select', help='Arandu e Faber Medium já acompanham o app. Define o padrão do serviço; uma voz escolhida explicitamente no Assist tem prioridade.'),
-         DOWNLOAD,
+         DOWNLOAD, WAITING,
          field('preload', 'Pré-carregar voz ao iniciar', 'switch', 'Desempenho'),
-         field('cpu_threads', 'Threads de CPU do Piper', 'number', 'Desempenho', min=1,max=4,step=1),
+         field('piper_thread_budget', 'Limitar threads do Piper (experimental)', 'switch', 'Desempenho', help='Pode reduzir uso de CPU e aumentar a latência. Desligado mantém o gerenciamento de threads original do Piper.'),
+         field('cpu_threads', 'Limite experimental de threads do Piper', 'number', 'Desempenho', min=1,max=4,step=1, depends_on='piper_thread_budget'),
          field('max_chars', 'Limite de caracteres por fala', 'number', 'Síntese', min=64,max=10000,step=1),
          field('fallback_voice', 'Voz Piper de reserva', 'select', 'Fallback'),
          field('pocket_enabled', 'Habilitar Pocket TTS', 'switch', 'Pocket TTS'),

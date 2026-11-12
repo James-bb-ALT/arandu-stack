@@ -102,7 +102,8 @@ async def main():
     data=catalog();cases=CASES[:2] if os.environ.get('ARANDU_LLM_QUICK') else CASES
     output={'representative':False,'provenance':'Approved Phase 3 examples / FIXTURE_TECNICA',
         'hardware':'Ryzen 7 5700X / Docker Linux, not i5-6500T','threads':2,
-        'source_overrides':os.environ.get('ARANDU_SOURCE_OVERRIDES')=='1','ha_actions':0,'runs':{}}
+        'source_overrides':os.environ.get('ARANDU_SOURCE_OVERRIDES')=='1','ha_actions':0,'runs':{},
+        'process_environment':{k:os.environ.get(k) for k in ('OMP_NUM_THREADS','OPENBLAS_NUM_THREADS','MKL_NUM_THREADS','OMP_WAIT_POLICY','KMP_BLOCKTIME','NUMEXPR_NUM_THREADS','TOKENIZERS_PARALLELISM')}}
     for key,version in [('tucano',1),('tucano',2),('qwen3',2)]:
         adapter=Llama(Path(os.environ['ARANDU_LLM_MODELS']),'/usr/local/bin/llama-server',2,
             settings={'context_size':4096,'max_tokens':384,'temperature':0,'llm_model':key,'contract_version':version})

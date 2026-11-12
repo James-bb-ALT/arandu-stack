@@ -57,6 +57,7 @@ async def test_fake_piper_stream(monkeypatch, tmp_path):
                                         sample_rate=22050, sample_width=2, sample_channels=1)
 
     monkeypatch.setitem(sys.modules, "piper", types.SimpleNamespace(PiperVoice=FakePiper))
+    monkeypatch.setattr('arandu_tts.engine.load_piper',lambda voice,threads:FakePiper.load(voice.model,use_cuda=False))
     spec = VoiceSpec("test", "pt_BR", "piper", tmp_path / "test.onnx")
     engine = SpeechEngine(Config(voices_dir=tmp_path))
     chunks = [chunk async for chunk in engine.stream("Luz acesa.", spec)]

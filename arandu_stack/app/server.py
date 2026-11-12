@@ -14,8 +14,9 @@ from wyoming_gateway import WyomingGateway
 from discovery import announce_stack
 from logs import LogStore, SOURCES, LOGGER
 from request_traces import TraceStore
+from admission import Gate, Busy
 
-APP_VERSION = '7.0.0'
+APP_VERSION = '10.0.0'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""
@@ -73,9 +74,10 @@ def create_app(data_dir, local=False):
         raise
     reference[0] = manager
     stt_lab = STTLab(manager)
+    gates = {key: Gate() for key in ('decision','llm','tts')}
     phrases_file = data_dir / 'phrases.json'
     csrf = secrets.token_urlsafe(32)
-    lock = asyncio.Lock()
+    lock = manager.lock
     def phrases():
         return validate_phrases(json.loads(phrases_file.read_text(encoding='utf-8'))) if phrases_file.exists() else []
 
@@ -187,7 +189,7 @@ def create_app(data_dir, local=False):
         raw = await read_limited(request.content, 32768)
         return web.json_response({'accepted': traces.ingest(json.loads(raw))})
     async def trace_list(request):
-        return web.json_response(traces.view())
+        return web.json_response({**traces.view(), 'queues':{key:gate.status() for key,gate in gates.items()}})
     async def trace_options(request):
         body = await request.json()
         if type(body) is not dict or set(body) != {'include_text'}:
@@ -224,6 +226,14 @@ def create_app(data_dir, local=False):
                         'phase': phase, 'message': 'GPU Intel indisponível. Verifique o estado do runtime, acesso ao dispositivo e preparação IR; a seleção anterior foi preservada.' if code=='backend_unavailable' else 'Módulo recusou a solicitação; consulte os logs do módulo.'}), content_type='application/json')
                 return json.loads(raw)
     async def synthesize(request):
+        try:
+            gates['tts'].waiting = manager.config['tts']['queue_limit']
+            async with gates['tts'].enter(timeout=60):
+                return await _synthesize(request)
+        except Busy:
+            raise web.HTTPTooManyRequests(text='TTS ocupado', headers={'Retry-After':'1'}) from None
+
+    async def _synthesize(request):
         body = await request.json()
         if (type(body) is not dict or type(body.get('text')) is not str or not 1 <= len(body['text']) <= 512
                 or body.get('engine') not in {'piper', 'pocket'}):
@@ -267,7 +277,12 @@ def create_app(data_dir, local=False):
                 raise ValueError('Este módulo Decision usa E5 Small; outros modelos pertencem ao Lab experimental no PC')
             key = 'decision'
         policy = json.dumps(manager.config[key], sort_keys=True)
-        result = await model_request(key, '/infer', payload)
+        try:
+            gates[key].waiting = manager.config[key]['queue_limit']
+            async with gates[key].enter(timeout=45):
+                result = await model_request(key, '/infer', payload)
+        except Busy:
+            raise web.HTTPTooManyRequests(text=json.dumps({'code':'queue_saturated','stage':key}), content_type='application/json',headers={'Retry-After':'1'}) from None
         if policy != json.dumps(manager.config[key], sort_keys=True):
             raise ValueError('Política de inferência mudou durante a solicitação; resultado descartado')
         return web.json_response(result)

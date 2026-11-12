@@ -1,3 +1,9 @@
+## 0.2.2
+
+- Fila ajustável e buffer PCM limitado com backpressure, ordem preservada e cancelamento sem misturar vozes.
+- Limite manual de threads ONNX Runtime disponível como opção experimental desligada por padrão: reduziu CPU, mas piorou a latência de frases longas no Ryzen. Primeira saída do protocolo é medida separadamente de playback físico, que não é observado.
+- Mantém síntese integral no Assist; não anuncia streaming físico validado nem correção comprovada de cortes no satélite.
+
 ## 0.2.1
 
 - Home Assistant recebe a fala completa antes da reprodução. Desativa o anúncio de entrada incremental para evitar que a geração das próximas frases esvazie o buffer do satélite. O protocolo incremental continua aceito por clientes existentes.

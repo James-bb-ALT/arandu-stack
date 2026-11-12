@@ -10,6 +10,7 @@ from custom_components.local_nlu.intelligence import eligible
 from custom_components.local_nlu.contextual_protocol import parse
 from custom_components.local_nlu.contextual_catalog import build
 from test_semantic_safety import UNSAFE
+from custom_components.local_nlu.semantic_context import semantic_refusal
 
 
 @unittest.skipUnless(os.environ.get('ARANDU_NLU_ENDPOINT'), 'Opt-in real Rust HTTP endpoint')
@@ -38,11 +39,22 @@ class Integrated(contextual.EndToEndTests):
                 result = parse(await client.async_interpret_v4({
                     'version': 4, 'text': text, 'generation': snapshot.payload['generation'],
                     'origin_area': 'area_quarto', 'origin_area_source': 'default'}))
-                self.assertFalse(result.operations)
-                self.assertFalse(eligible(result))
-                self.assertTrue(result.reason.startswith('semantic_'))
-                await runtime.process(fixtures.input_(text=text, conversation_id=text))
+                typed = text in {'Liga o ventilador às 18 horas','Liga o ventilador daqui 10 minutos','Liga o ventilador às 18:00'}
+                if typed:
+                    # Fase 3.2 adds deferred typed effects; never an immediate call.
+                    self.assertEqual(len(result.operations),1)
+                    self.assertEqual(result.operations[0].action,'schedule_action')
+                    self.assertEqual(result.operations[0].parameters['target_action'],'turn_on')
+                    self.assertFalse(eligible(result))
+                else:
+                    self.assertFalse(result.operations)
+                    # Eligibility alone is not the routing policy: semantic guards
+                    # still reject unknown exclusions before any neural request.
+                    self.assertFalse(eligible(result) and semantic_refusal(text,snapshot.payload) is None)
+                executed=await runtime.process(fixtures.input_(text=text, conversation_id=text))
+                self.assertEqual(executed.code,'success' if typed else 'cancelled' if semantic_refusal(text,snapshot.payload)=='semantic_negation' else 'unavailable')
                 self.assertEqual(hass.services.calls, [])
+                self.assertFalse(hasattr(runtime,'last_intelligence'))
 
     async def test_natural_forms_and_recent_pronoun(self):
         hass = fixtures.hass_()

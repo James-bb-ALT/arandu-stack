@@ -13,7 +13,8 @@ def main():
     engine=Encoder(Path(os.environ['ARANDU_DECISION_MODELS']),2);data=catalog()
     output={'representative':False,'label_source':'Approved Phase 2 examples / FIXTURE_TECNICA; not representative speech gold',
         'hardware':'Ryzen 7 5700X / Docker Linux; not i5-6500T','threads':2,'repetitions':3,'warmup':1,
-        'gpu_probe':gpu_probe(),'source_overrides':os.environ.get('ARANDU_SOURCE_OVERRIDES')=='1','physical_actions':0,'combinations':{}}
+        'gpu_probe':gpu_probe(),'source_overrides':os.environ.get('ARANDU_SOURCE_OVERRIDES')=='1','physical_actions':0,'combinations':{},
+        'process_environment':{k:os.environ.get(k) for k in ('OMP_NUM_THREADS','OPENBLAS_NUM_THREADS','MKL_NUM_THREADS','OMP_WAIT_POLICY','KMP_BLOCKTIME','NUMEXPR_NUM_THREADS','TOKENIZERS_PARALLELISM')}}
     for key in MODELS:
         for backend in ['cpu','gpu_intel']:
             combo=key+':'+backend

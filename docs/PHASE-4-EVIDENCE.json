@@ -1,0 +1,1768 @@
+{
+  "date": "2026-11-12",
+  "status": "experimental_local_validation",
+  "baseline": "1832469",
+  "baseline_build_override": "Only stale local Cargo.lock package version 0.6.3 -> 0.6.4, no optimization sources",
+  "merged_commit": "549dc61fbcc26d636cde6f2ea9fda3f19be94698",
+  "hardware": "Ryzen 7 5700X, shared Windows host and Docker Linux; NOT i5/HAOS",
+  "physical_ha_actions": 0,
+  "physical_playback": "not_observed",
+  "intel_gpu": "unsupported_not_run",
+  "versions": {
+    "app": "10.0.0",
+    "hacs": "10.0.0",
+    "nlu": "0.6.5",
+    "stt": "4.0.2",
+    "tts": "0.2.2",
+    "decision": "3.0.0",
+    "llm": "2.0.0"
+  },
+  "tests": {
+    "root": "346 passed, 4 skipped, 8 warnings, 200 subtests passed in 71.39s (0:01:11)",
+    "rust_windows": 103,
+    "rust_linux": 103,
+    "tts": 29,
+    "native_stt_wyoming_admission": 4,
+    "javascript": 15,
+    "legacy_nlu_baseline_and_after": {
+      "passed": 153,
+      "skipped": 68,
+      "subtests": 65,
+      "failed_unchanged": 4,
+      "ruby_packaging_validators": "not_run"
+    },
+    "initial_attempts": "First final suite started before Decision readiness (3 connection failures). Earlier PASSIVE policy regression fixed; no result hidden as a success."
+  },
+  "orchestration": {
+    "baseline": {
+      "kind": "HA_SIMULATED",
+      "model_inference": "not_run",
+      "audio": "not_observed",
+      "nlu_delay_ms": 30,
+      "requests": 40,
+      "concurrency": 8,
+      "batches": 5,
+      "p50_ms": 167.67404999700375,
+      "p95_ms": 290.8129999996163,
+      "p99_ms": 336.76180001930334,
+      "throughput_rps": 28.026318675070662,
+      "successes": 40,
+      "cpu_process_ms": 62.5,
+      "rss_max_sampled_mb": 36.25,
+      "rss_mean_sampled_mb": 36.03372395833333,
+      "memory_sampling_ms": 5,
+      "physical_ha": false,
+      "effects": 40,
+      "unexpected_effects": 0
+    },
+    "after": {
+      "kind": "HA_SIMULATED",
+      "model_inference": "not_run",
+      "audio": "not_observed",
+      "nlu_delay_ms": 30,
+      "requests": 40,
+      "concurrency": 8,
+      "batches": 5,
+      "p50_ms": 65.39790000533685,
+      "p95_ms": 93.14290000475012,
+      "p99_ms": 93.19480002159253,
+      "throughput_rps": 87.3840959151147,
+      "successes": 40,
+      "cpu_process_ms": 62.5,
+      "rss_max_sampled_mb": 34.328125,
+      "rss_mean_sampled_mb": 34.3001708984375,
+      "memory_sampling_ms": 5,
+      "physical_ha": false,
+      "effects": 40,
+      "unexpected_effects": 0
+    }
+  },
+  "rust_scenarios": {
+    "baseline": {
+      "kind": "REAL_RUST_SIMULATED_HA",
+      "physical_actions": 0,
+      "model_inference": "disabled",
+      "cases": [
+        {
+          "scenario": "light",
+          "expected": "success",
+          "results": [
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 2.648800000315532,
+          "p95_ms": 28.34459999576211,
+          "p99_ms": 28.34459999576211,
+          "pass": true
+        },
+        {
+          "scenario": "sensor",
+          "expected": "query_success",
+          "results": [
+            {
+              "code": "query_success",
+              "reason": null
+            },
+            {
+              "code": "query_success",
+              "reason": null
+            },
+            {
+              "code": "query_success",
+              "reason": null
+            },
+            {
+              "code": "query_success",
+              "reason": null
+            },
+            {
+              "code": "query_success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 2.3648000205866992,
+          "p95_ms": 2.962800004752353,
+          "p99_ms": 2.962800004752353,
+          "pass": true
+        },
+        {
+          "scenario": "schedule",
+          "expected": "success",
+          "results": [
+            {
+              "code": "unavailable",
+              "reason": "semantic_condition"
+            },
+            {
+              "code": "unavailable",
+              "reason": "semantic_condition"
+            },
+            {
+              "code": "unavailable",
+              "reason": "semantic_condition"
+            },
+            {
+              "code": "unavailable",
+              "reason": "semantic_condition"
+            },
+            {
+              "code": "unavailable",
+              "reason": "semantic_condition"
+            }
+          ],
+          "p50_ms": 0.19640001119114459,
+          "p95_ms": 0.5192000244278461,
+          "p99_ms": 0.5192000244278461,
+          "pass": false
+        },
+        {
+          "scenario": "timer_pizza",
+          "expected": "success",
+          "results": [
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 3.0786999850533903,
+          "p95_ms": 3.5709000076167285,
+          "p99_ms": 3.5709000076167285,
+          "pass": true
+        },
+        {
+          "scenario": "timer_bolo",
+          "expected": "success",
+          "results": [
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 2.4545000051148236,
+          "p95_ms": 2.9636999825015664,
+          "p99_ms": 2.9636999825015664,
+          "pass": true
+        },
+        {
+          "scenario": "alarm",
+          "expected": "success",
+          "results": [
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 2.49499999335967,
+          "p95_ms": 2.788600017083809,
+          "p99_ms": 2.788600017083809,
+          "pass": true
+        },
+        {
+          "scenario": "reminder",
+          "expected": "success",
+          "results": [
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 2.960000012535602,
+          "p95_ms": 3.129500022623688,
+          "p99_ms": 3.129500022623688,
+          "pass": true
+        },
+        {
+          "scenario": "exclusion",
+          "expected": "success",
+          "results": [
+            {
+              "code": "unavailable",
+              "reason": "semantic_exclusion"
+            },
+            {
+              "code": "unavailable",
+              "reason": "semantic_exclusion"
+            },
+            {
+              "code": "unavailable",
+              "reason": "semantic_exclusion"
+            },
+            {
+              "code": "unavailable",
+              "reason": "semantic_exclusion"
+            },
+            {
+              "code": "unavailable",
+              "reason": "semantic_exclusion"
+            }
+          ],
+          "p50_ms": 0.1933000166900456,
+          "p95_ms": 0.2736999886110425,
+          "p99_ms": 0.2736999886110425,
+          "pass": false
+        },
+        {
+          "scenario": "negation",
+          "expected": "cancelled",
+          "results": [
+            {
+              "code": "cancelled",
+              "reason": "semantic_negation"
+            },
+            {
+              "code": "cancelled",
+              "reason": "semantic_negation"
+            },
+            {
+              "code": "cancelled",
+              "reason": "semantic_negation"
+            },
+            {
+              "code": "cancelled",
+              "reason": "semantic_negation"
+            },
+            {
+              "code": "cancelled",
+              "reason": "semantic_negation"
+            }
+          ],
+          "p50_ms": 0.1720000000204891,
+          "p95_ms": 0.18060000729747117,
+          "p99_ms": 0.18060000729747117,
+          "pass": true
+        }
+      ],
+      "excluded_tv_effects": 0,
+      "timer_names": [
+        null
+      ],
+      "success_scenarios": 7
+    },
+    "after": {
+      "kind": "REAL_RUST_SIMULATED_HA",
+      "physical_actions": 0,
+      "model_inference": "disabled",
+      "cases": [
+        {
+          "scenario": "light",
+          "expected": "success",
+          "results": [
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 2.6932999899145216,
+          "p95_ms": 14.158900012262166,
+          "p99_ms": 14.158900012262166,
+          "pass": true
+        },
+        {
+          "scenario": "sensor",
+          "expected": "query_success",
+          "results": [
+            {
+              "code": "query_success",
+              "reason": null
+            },
+            {
+              "code": "query_success",
+              "reason": null
+            },
+            {
+              "code": "query_success",
+              "reason": null
+            },
+            {
+              "code": "query_success",
+              "reason": null
+            },
+            {
+              "code": "query_success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 2.2646999859716743,
+          "p95_ms": 2.7985000051558018,
+          "p99_ms": 2.7985000051558018,
+          "pass": true
+        },
+        {
+          "scenario": "schedule",
+          "expected": "success",
+          "results": [
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 2.955899981316179,
+          "p95_ms": 3.4238000225741416,
+          "p99_ms": 3.4238000225741416,
+          "pass": true
+        },
+        {
+          "scenario": "timer_pizza",
+          "expected": "success",
+          "results": [
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 2.9494000191334635,
+          "p95_ms": 3.702400019392371,
+          "p99_ms": 3.702400019392371,
+          "pass": true
+        },
+        {
+          "scenario": "timer_bolo",
+          "expected": "success",
+          "results": [
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 3.164399997331202,
+          "p95_ms": 3.3327999990433455,
+          "p99_ms": 3.3327999990433455,
+          "pass": true
+        },
+        {
+          "scenario": "alarm",
+          "expected": "success",
+          "results": [
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 2.9150000191293657,
+          "p95_ms": 3.3010999904945493,
+          "p99_ms": 3.3010999904945493,
+          "pass": true
+        },
+        {
+          "scenario": "reminder",
+          "expected": "success",
+          "results": [
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 3.89069999800995,
+          "p95_ms": 4.644500004360452,
+          "p99_ms": 4.644500004360452,
+          "pass": true
+        },
+        {
+          "scenario": "exclusion",
+          "expected": "success",
+          "results": [
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            },
+            {
+              "code": "success",
+              "reason": null
+            }
+          ],
+          "p50_ms": 4.361500003142282,
+          "p95_ms": 5.338999995728955,
+          "p99_ms": 5.338999995728955,
+          "pass": true
+        },
+        {
+          "scenario": "negation",
+          "expected": "cancelled",
+          "results": [
+            {
+              "code": "cancelled",
+              "reason": "semantic_negation"
+            },
+            {
+              "code": "cancelled",
+              "reason": "semantic_negation"
+            },
+            {
+              "code": "cancelled",
+              "reason": "semantic_negation"
+            },
+            {
+              "code": "cancelled",
+              "reason": "semantic_negation"
+            },
+            {
+              "code": "cancelled",
+              "reason": "semantic_negation"
+            }
+          ],
+          "p50_ms": 2.1351999894250184,
+          "p95_ms": 2.8893000271636993,
+          "p99_ms": 2.8893000271636993,
+          "pass": true
+        }
+      ],
+      "excluded_tv_effects": 0,
+      "timer_names": [
+        "bolo",
+        "pizza"
+      ],
+      "success_scenarios": 9
+    }
+  },
+  "audio": {
+    "baseline": {
+      "kind": "REAL_MODELS_SYNTHETIC_SPEECH",
+      "ort": {
+        "intra_threads": 0,
+        "inter_threads": 0,
+        "process_threads_delta": 11,
+        "providers": [
+          "CPUExecutionProvider"
+        ]
+      },
+      "stt_load_ms": 1972.2806999925524,
+      "stt_latency": {
+        "p50_ms": 128.2111999753397,
+        "p95_ms": 422.56819998146966,
+        "p99_ms": 461.19280002312735
+      },
+      "stt_median_ms": 124.69559999590274,
+      "stt_max_sampled_rss_mb": 1064.1796875,
+      "tts_max_sampled_rss_mb": 246.640625,
+      "tts_cold_first_total_ms": 3258.302800008096,
+      "tts_short_warm_total_ms": 24.453199992422014,
+      "tts_long_warm_total_ms": 209.43015000375453,
+      "tts_long_cpu_ms": 1671.875,
+      "stt_cases": [
+        {
+          "case": 0,
+          "audio_sha256": "4d9eb8d86ce38c206f8cfb8397a90c288d0421a1660362cbad9f6e5047334a4c",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 1.0,
+            "cer_raw": 0.5,
+            "negation_preserved_raw": true,
+            "action_correct_raw": null,
+            "wer_final": 1.0,
+            "cer_final": 0.5,
+            "negation_preserved_final": true,
+            "action_correct_final": null,
+            "action_correct": null,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 1,
+          "audio_sha256": "e9ea6c94f42938c6d42abab6a9d01b31495d2466b7ae5538fac3feec2d5b68d7",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.16666666666666666,
+            "cer_raw": 0.045454545454545456,
+            "negation_preserved_raw": true,
+            "action_correct_raw": true,
+            "wer_final": 0.16666666666666666,
+            "cer_final": 0.045454545454545456,
+            "negation_preserved_final": true,
+            "action_correct_final": true,
+            "action_correct": true,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 2,
+          "audio_sha256": "4db7880ba2e6381a8cc5164e43e078d069136a91e1d4494e036fccbff8f0e015",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.0,
+            "cer_raw": 0.0,
+            "negation_preserved_raw": true,
+            "action_correct_raw": true,
+            "wer_final": 0.0,
+            "cer_final": 0.0,
+            "negation_preserved_final": true,
+            "action_correct_final": true,
+            "action_correct": true,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 3,
+          "audio_sha256": "dbc73bb9059916eec480f3308bc4411ba9e76d13ae79c52d85c149bfa18c2553",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.42857142857142855,
+            "cer_raw": 0.3611111111111111,
+            "negation_preserved_raw": true,
+            "action_correct_raw": null,
+            "wer_final": 0.42857142857142855,
+            "cer_final": 0.3611111111111111,
+            "negation_preserved_final": true,
+            "action_correct_final": null,
+            "action_correct": null,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 4,
+          "audio_sha256": "cda9d77fdf3c6f1e0be3fa42c0bacae2df6af09362e8213c91d62b23ca85218d",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.16666666666666666,
+            "cer_raw": 0.029411764705882353,
+            "negation_preserved_raw": true,
+            "action_correct_raw": null,
+            "wer_final": 0.16666666666666666,
+            "cer_final": 0.029411764705882353,
+            "negation_preserved_final": true,
+            "action_correct_final": null,
+            "action_correct": null,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 5,
+          "audio_sha256": "59ee7042d886d511822b390b6c5b1294c19f840a56df611eb0f9a9febb9ff8ea",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.4,
+            "cer_raw": 0.21739130434782608,
+            "negation_preserved_raw": true,
+            "action_correct_raw": null,
+            "wer_final": 0.4,
+            "cer_final": 0.21739130434782608,
+            "negation_preserved_final": true,
+            "action_correct_final": null,
+            "action_correct": null,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 6,
+          "audio_sha256": "25b35c3568715cbe39a2e95655253403b055f52ac3b9948f0eb95cd487105569",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.2,
+            "cer_raw": 0.045454545454545456,
+            "negation_preserved_raw": true,
+            "action_correct_raw": null,
+            "wer_final": 0.2,
+            "cer_final": 0.045454545454545456,
+            "negation_preserved_final": true,
+            "action_correct_final": null,
+            "action_correct": null,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 7,
+          "audio_sha256": "49e920c0157aa2e4e10511b6a2566c3c84f276caa2f782c124aac13c776ad817",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.21739130434782608,
+            "cer_raw": 0.1322314049586777,
+            "negation_preserved_raw": true,
+            "action_correct_raw": true,
+            "wer_final": 0.21739130434782608,
+            "cer_final": 0.1322314049586777,
+            "negation_preserved_final": true,
+            "action_correct_final": true,
+            "action_correct": true,
+            "negation_preserved": true
+          }
+        }
+      ]
+    },
+    "after": {
+      "kind": "REAL_MODELS_SYNTHETIC_SPEECH",
+      "ort": {
+        "intra_threads": 0,
+        "inter_threads": 0,
+        "process_threads_delta": 11,
+        "providers": [
+          "CPUExecutionProvider"
+        ]
+      },
+      "stt_load_ms": 1940.4150000191294,
+      "stt_latency": {
+        "p50_ms": 128.01570000010543,
+        "p95_ms": 424.9009000195656,
+        "p99_ms": 449.39350002096035
+      },
+      "stt_median_ms": 122.280800002045,
+      "stt_max_sampled_rss_mb": 891.0234375,
+      "tts_max_sampled_rss_mb": 281.98046875,
+      "tts_cold_first_total_ms": 3135.8322000014596,
+      "tts_short_warm_total_ms": 23.746699996991083,
+      "tts_long_warm_total_ms": 222.46595000615343,
+      "tts_long_cpu_ms": 1796.875,
+      "stt_cases": [
+        {
+          "case": 0,
+          "audio_sha256": "4d9eb8d86ce38c206f8cfb8397a90c288d0421a1660362cbad9f6e5047334a4c",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 1.0,
+            "cer_raw": 0.5,
+            "negation_preserved_raw": true,
+            "action_correct_raw": null,
+            "wer_final": 1.0,
+            "cer_final": 0.5,
+            "negation_preserved_final": true,
+            "action_correct_final": null,
+            "action_correct": null,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 1,
+          "audio_sha256": "e9ea6c94f42938c6d42abab6a9d01b31495d2466b7ae5538fac3feec2d5b68d7",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.16666666666666666,
+            "cer_raw": 0.045454545454545456,
+            "negation_preserved_raw": true,
+            "action_correct_raw": true,
+            "wer_final": 0.16666666666666666,
+            "cer_final": 0.045454545454545456,
+            "negation_preserved_final": true,
+            "action_correct_final": true,
+            "action_correct": true,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 2,
+          "audio_sha256": "4db7880ba2e6381a8cc5164e43e078d069136a91e1d4494e036fccbff8f0e015",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.0,
+            "cer_raw": 0.0,
+            "negation_preserved_raw": true,
+            "action_correct_raw": true,
+            "wer_final": 0.0,
+            "cer_final": 0.0,
+            "negation_preserved_final": true,
+            "action_correct_final": true,
+            "action_correct": true,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 3,
+          "audio_sha256": "dbc73bb9059916eec480f3308bc4411ba9e76d13ae79c52d85c149bfa18c2553",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.42857142857142855,
+            "cer_raw": 0.3611111111111111,
+            "negation_preserved_raw": true,
+            "action_correct_raw": null,
+            "wer_final": 0.42857142857142855,
+            "cer_final": 0.3611111111111111,
+            "negation_preserved_final": true,
+            "action_correct_final": null,
+            "action_correct": null,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 4,
+          "audio_sha256": "cda9d77fdf3c6f1e0be3fa42c0bacae2df6af09362e8213c91d62b23ca85218d",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.16666666666666666,
+            "cer_raw": 0.029411764705882353,
+            "negation_preserved_raw": true,
+            "action_correct_raw": null,
+            "wer_final": 0.16666666666666666,
+            "cer_final": 0.029411764705882353,
+            "negation_preserved_final": true,
+            "action_correct_final": null,
+            "action_correct": null,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 5,
+          "audio_sha256": "59ee7042d886d511822b390b6c5b1294c19f840a56df611eb0f9a9febb9ff8ea",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.4,
+            "cer_raw": 0.21739130434782608,
+            "negation_preserved_raw": true,
+            "action_correct_raw": null,
+            "wer_final": 0.4,
+            "cer_final": 0.21739130434782608,
+            "negation_preserved_final": true,
+            "action_correct_final": null,
+            "action_correct": null,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 6,
+          "audio_sha256": "25b35c3568715cbe39a2e95655253403b055f52ac3b9948f0eb95cd487105569",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.2,
+            "cer_raw": 0.045454545454545456,
+            "negation_preserved_raw": true,
+            "action_correct_raw": null,
+            "wer_final": 0.2,
+            "cer_final": 0.045454545454545456,
+            "negation_preserved_final": true,
+            "action_correct_final": null,
+            "action_correct": null,
+            "negation_preserved": true
+          }
+        },
+        {
+          "case": 7,
+          "audio_sha256": "49e920c0157aa2e4e10511b6a2566c3c84f276caa2f782c124aac13c776ad817",
+          "metrics": {
+            "evaluated": true,
+            "entity_correct": null,
+            "entity_note": "Não avaliado: exige anotação de entidade; STT não executa NLU",
+            "wer_raw": 0.21739130434782608,
+            "cer_raw": 0.1322314049586777,
+            "negation_preserved_raw": true,
+            "action_correct_raw": true,
+            "wer_final": 0.21739130434782608,
+            "cer_final": 0.1322314049586777,
+            "negation_preserved_final": true,
+            "action_correct_final": true,
+            "action_correct": true,
+            "negation_preserved": true
+          }
+        }
+      ]
+    },
+    "paired_inputs_equal": true,
+    "raw_identical_cases": 8,
+    "notes": "Synthetic project-authored WAVs, known recognition errors retained; stochastic Piper PCM not byte-identical; no acoustic quality claim"
+  },
+  "decision": {
+    "baseline": {
+      "representative": false,
+      "label_source": "Approved Phase 2 examples / FIXTURE_TECNICA; not representative speech gold",
+      "hardware": "Ryzen 7 5700X / Docker Linux; not i5-6500T",
+      "threads": 2,
+      "repetitions": 3,
+      "warmup": 1,
+      "gpu_probe": {
+        "id": "gpu_intel",
+        "available": false,
+        "validated": false,
+        "status": "unsupported",
+        "devices": [],
+        "render_nodes": [],
+        "runtime": "2024.6.0",
+        "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado"
+      },
+      "source_overrides": false,
+      "physical_actions": 0,
+      "combinations": {
+        "e5-small:cpu": {
+          "status": "pass",
+          "dimension": 384,
+          "cold_start_ms": 10788.8196649983,
+          "cpu_reference_equivalence": {
+            "passed": true,
+            "max_abs_error": 0.0,
+            "reference": "SentenceTransformer.encode same pinned weights/template"
+          },
+          "policy_cases": 29,
+          "policy_correct": 29,
+          "false_activations": 0,
+          "policy_latency": {
+            "p50_ms": 0.5173229983483907,
+            "p95_ms": 1.0462220016052015,
+            "p99_ms": 1.1716199987859
+          },
+          "semantic_warm_latency": {
+            "p50_ms": 1.3434150023385882,
+            "p95_ms": 28.722289000143064,
+            "p99_ms": 37.189635000686394
+          },
+          "semantic_query_miss_latency": {
+            "p50_ms": 23.23650000107591,
+            "p95_ms": 32.30938100023195,
+            "p99_ms": 47.73574199862196
+          },
+          "semantic_query_hit_latency": {
+            "p50_ms": 0.9134719985013362,
+            "p95_ms": 1.1958350005443208,
+            "p99_ms": 1.3434150023385882
+          },
+          "semantic_intent_correct": 90,
+          "semantic_entity_correct": 90,
+          "semantic_area_correct": 90,
+          "semantic_samples": 90,
+          "max_sampled_rss_bytes": 869822464
+        },
+        "e5-small:gpu_intel": {
+          "status": "unsupported",
+          "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado",
+          "gpu_inference": "not_run"
+        },
+        "minilm-multilingual:cpu": {
+          "status": "pass",
+          "dimension": 384,
+          "cold_start_ms": 9523.406830998283,
+          "cpu_reference_equivalence": {
+            "passed": true,
+            "max_abs_error": 0.0,
+            "reference": "SentenceTransformer.encode same pinned weights/template"
+          },
+          "policy_cases": 29,
+          "policy_correct": 29,
+          "false_activations": 0,
+          "policy_latency": {
+            "p50_ms": 0.5313490000844467,
+            "p95_ms": 1.0529829996812623,
+            "p99_ms": 1.2445719985407777
+          },
+          "semantic_warm_latency": {
+            "p50_ms": 1.3521599976229481,
+            "p95_ms": 25.002043999847956,
+            "p99_ms": 25.467039999057306
+          },
+          "semantic_query_miss_latency": {
+            "p50_ms": 22.27743599723908,
+            "p95_ms": 25.29836200119462,
+            "p99_ms": 25.82657899984042
+          },
+          "semantic_query_hit_latency": {
+            "p50_ms": 0.8998129997053184,
+            "p95_ms": 1.1838840000564232,
+            "p99_ms": 1.3521599976229481
+          },
+          "semantic_intent_correct": 84,
+          "semantic_entity_correct": 90,
+          "semantic_area_correct": 90,
+          "semantic_samples": 90,
+          "max_sampled_rss_bytes": 886263808
+        },
+        "minilm-multilingual:gpu_intel": {
+          "status": "unsupported",
+          "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado",
+          "gpu_inference": "not_run"
+        },
+        "e5-base:cpu": {
+          "status": "pass",
+          "dimension": 768,
+          "cold_start_ms": 12832.474306000222,
+          "cpu_reference_equivalence": {
+            "passed": true,
+            "max_abs_error": 0.0,
+            "reference": "SentenceTransformer.encode same pinned weights/template"
+          },
+          "policy_cases": 29,
+          "policy_correct": 29,
+          "false_activations": 0,
+          "policy_latency": {
+            "p50_ms": 0.5596240007434972,
+            "p95_ms": 1.2472859998524655,
+            "p99_ms": 1.3283020016388036
+          },
+          "semantic_warm_latency": {
+            "p50_ms": 3.3080209977924824,
+            "p95_ms": 67.1931550023146,
+            "p99_ms": 69.08228199972655
+          },
+          "semantic_query_miss_latency": {
+            "p50_ms": 57.9751449986361,
+            "p95_ms": 67.7435460020206,
+            "p99_ms": 69.84117399770184
+          },
+          "semantic_query_hit_latency": {
+            "p50_ms": 0.9770390024641529,
+            "p95_ms": 1.4027420002094004,
+            "p99_ms": 3.3080209977924824
+          },
+          "semantic_intent_correct": 90,
+          "semantic_entity_correct": 90,
+          "semantic_area_correct": 90,
+          "semantic_samples": 90,
+          "max_sampled_rss_bytes": 1149239296
+        },
+        "e5-base:gpu_intel": {
+          "status": "unsupported",
+          "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado",
+          "gpu_inference": "not_run"
+        }
+      },
+      "process_environment": {
+        "OMP_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "2",
+        "MKL_NUM_THREADS": "2",
+        "OMP_WAIT_POLICY": "PASSIVE",
+        "KMP_BLOCKTIME": "0",
+        "NUMEXPR_NUM_THREADS": null,
+        "TOKENIZERS_PARALLELISM": null
+      }
+    },
+    "after": {
+      "representative": false,
+      "label_source": "Approved Phase 2 examples / FIXTURE_TECNICA; not representative speech gold",
+      "hardware": "Ryzen 7 5700X / Docker Linux; not i5-6500T",
+      "threads": 2,
+      "repetitions": 3,
+      "warmup": 1,
+      "gpu_probe": {
+        "id": "gpu_intel",
+        "available": false,
+        "validated": false,
+        "status": "unsupported",
+        "devices": [],
+        "render_nodes": [],
+        "runtime": "2024.6.0",
+        "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado"
+      },
+      "source_overrides": false,
+      "physical_actions": 0,
+      "combinations": {
+        "e5-small:cpu": {
+          "status": "pass",
+          "dimension": 384,
+          "cold_start_ms": 10509.084026998607,
+          "cpu_reference_equivalence": {
+            "passed": true,
+            "max_abs_error": 0.0,
+            "reference": "SentenceTransformer.encode same pinned weights/template"
+          },
+          "policy_cases": 29,
+          "policy_correct": 29,
+          "false_activations": 0,
+          "policy_latency": {
+            "p50_ms": 0.5710010009352118,
+            "p95_ms": 1.055206001183251,
+            "p99_ms": 1.2840849994972814
+          },
+          "semantic_warm_latency": {
+            "p50_ms": 1.3122410018695518,
+            "p95_ms": 24.288765001983847,
+            "p99_ms": 25.781476997508435
+          },
+          "semantic_query_miss_latency": {
+            "p50_ms": 22.715881998010445,
+            "p95_ms": 25.1776350014552,
+            "p99_ms": 27.520628002093872
+          },
+          "semantic_query_hit_latency": {
+            "p50_ms": 0.940467001782963,
+            "p95_ms": 1.1599760000535753,
+            "p99_ms": 1.3122410018695518
+          },
+          "semantic_intent_correct": 90,
+          "semantic_entity_correct": 90,
+          "semantic_area_correct": 90,
+          "semantic_samples": 90,
+          "max_sampled_rss_bytes": 869933056
+        },
+        "e5-small:gpu_intel": {
+          "status": "unsupported",
+          "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado",
+          "gpu_inference": "not_run"
+        },
+        "minilm-multilingual:cpu": {
+          "status": "pass",
+          "dimension": 384,
+          "cold_start_ms": 9280.993673000921,
+          "cpu_reference_equivalence": {
+            "passed": true,
+            "max_abs_error": 0.0,
+            "reference": "SentenceTransformer.encode same pinned weights/template"
+          },
+          "policy_cases": 29,
+          "policy_correct": 29,
+          "false_activations": 0,
+          "policy_latency": {
+            "p50_ms": 0.5349059974832926,
+            "p95_ms": 1.1136030007037334,
+            "p99_ms": 1.1813089986389969
+          },
+          "semantic_warm_latency": {
+            "p50_ms": 1.3640180004586,
+            "p95_ms": 30.13904199906392,
+            "p99_ms": 32.09396500096773
+          },
+          "semantic_query_miss_latency": {
+            "p50_ms": 24.736403000133578,
+            "p95_ms": 30.344285998580744,
+            "p99_ms": 32.41650200288859
+          },
+          "semantic_query_hit_latency": {
+            "p50_ms": 0.9916819981299341,
+            "p95_ms": 1.2434450000000652,
+            "p99_ms": 1.3640180004586
+          },
+          "semantic_intent_correct": 84,
+          "semantic_entity_correct": 90,
+          "semantic_area_correct": 90,
+          "semantic_samples": 90,
+          "max_sampled_rss_bytes": 886157312
+        },
+        "minilm-multilingual:gpu_intel": {
+          "status": "unsupported",
+          "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado",
+          "gpu_inference": "not_run"
+        },
+        "e5-base:cpu": {
+          "status": "pass",
+          "dimension": 768,
+          "cold_start_ms": 12695.063328999822,
+          "cpu_reference_equivalence": {
+            "passed": true,
+            "max_abs_error": 0.0,
+            "reference": "SentenceTransformer.encode same pinned weights/template"
+          },
+          "policy_cases": 29,
+          "policy_correct": 29,
+          "false_activations": 0,
+          "policy_latency": {
+            "p50_ms": 0.5352129992388655,
+            "p95_ms": 1.073391002137214,
+            "p99_ms": 1.4097120001679286
+          },
+          "semantic_warm_latency": {
+            "p50_ms": 1.1764310002035927,
+            "p95_ms": 66.99312099954113,
+            "p99_ms": 71.23887299894704
+          },
+          "semantic_query_miss_latency": {
+            "p50_ms": 57.10973500026739,
+            "p95_ms": 70.41634899724158,
+            "p99_ms": 76.51937300033751
+          },
+          "semantic_query_hit_latency": {
+            "p50_ms": 0.9490729971730616,
+            "p95_ms": 1.1115349989267997,
+            "p99_ms": 1.1764310002035927
+          },
+          "semantic_intent_correct": 90,
+          "semantic_entity_correct": 90,
+          "semantic_area_correct": 90,
+          "semantic_samples": 90,
+          "max_sampled_rss_bytes": 1151811584
+        },
+        "e5-base:gpu_intel": {
+          "status": "unsupported",
+          "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado",
+          "gpu_inference": "not_run"
+        }
+      },
+      "process_environment": {
+        "OMP_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "2",
+        "MKL_NUM_THREADS": "2",
+        "OMP_WAIT_POLICY": "PASSIVE",
+        "KMP_BLOCKTIME": "0",
+        "NUMEXPR_NUM_THREADS": "1",
+        "TOKENIZERS_PARALLELISM": "false"
+      }
+    }
+  },
+  "llm": {
+    "baseline": {
+      "representative": false,
+      "provenance": "Approved Phase 3 examples / FIXTURE_TECNICA",
+      "hardware": "Ryzen 7 5700X / Docker Linux, not i5-6500T",
+      "threads": 2,
+      "source_overrides": false,
+      "ha_actions": 0,
+      "process_environment": {
+        "OMP_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "2",
+        "MKL_NUM_THREADS": "2",
+        "OMP_WAIT_POLICY": "PASSIVE",
+        "KMP_BLOCKTIME": "0",
+        "NUMEXPR_NUM_THREADS": null,
+        "TOKENIZERS_PARALLELISM": null
+      },
+      "runs": {
+        "tucano-v1": {
+          "samples": 37,
+          "correct": 12,
+          "false_activations": 0,
+          "errors": 0,
+          "wall_latency": {
+            "p50_ms": 1828.5221080004703,
+            "p95_ms": 2601.9107499996608,
+            "p99_ms": 6021.9412759979605
+          },
+          "warm_generation_samples": 28,
+          "warm_generation_latency": {
+            "p50_ms": 1976.4592020001146,
+            "p95_ms": 2600.2599979983643,
+            "p99_ms": 3961.7728910016012
+          },
+          "peak_rss_bytes": 1289773056,
+          "quality": {
+            "intent": {
+              "correct": 0,
+              "total": 25
+            },
+            "entity": {
+              "correct": 0,
+              "total": 25
+            },
+            "parameters": {
+              "correct": 0,
+              "total": 25
+            },
+            "correct_abstention": {
+              "correct": 10,
+              "total": 10
+            },
+            "llm_generated_requests": 29,
+            "early_refusals": 8,
+            "confirmations": 0,
+            "generated_responses_accepted": 29
+          },
+          "cpu_ms_semantics": "process_lifetime_cumulative",
+          "cold_load_ms": 2428.530834000412,
+          "warm_cpu_ms_median": 64265.00000000001,
+          "warm_tokens_per_second_median": 38.525701351080144
+        },
+        "tucano-v2": {
+          "samples": 37,
+          "correct": 37,
+          "false_activations": 0,
+          "errors": 0,
+          "wall_latency": {
+            "p50_ms": 2949.606471996958,
+            "p95_ms": 4282.849957002327,
+            "p99_ms": 10950.674380001146
+          },
+          "warm_generation_samples": 26,
+          "warm_generation_latency": {
+            "p50_ms": 3005.408418001025,
+            "p95_ms": 4280.852396997943,
+            "p99_ms": 4412.693909998779
+          },
+          "peak_rss_bytes": 1950109696,
+          "quality": {
+            "intent": {
+              "correct": 25,
+              "total": 25
+            },
+            "entity": {
+              "correct": 25,
+              "total": 25
+            },
+            "parameters": {
+              "correct": 25,
+              "total": 25
+            },
+            "correct_abstention": {
+              "correct": 10,
+              "total": 10
+            },
+            "llm_generated_requests": 27,
+            "early_refusals": 10,
+            "confirmations": 0,
+            "generated_responses_accepted": 27
+          },
+          "cpu_ms_semantics": "per_request_delta",
+          "cold_load_ms": 7911.649956000474,
+          "warm_cpu_ms_median": 5850.000000000002,
+          "warm_tokens_per_second_median": 34.05870972351792
+        },
+        "qwen3-v2": {
+          "samples": 37,
+          "correct": 37,
+          "false_activations": 0,
+          "errors": 0,
+          "wall_latency": {
+            "p50_ms": 3881.4716649976617,
+            "p95_ms": 5262.834333003411,
+            "p99_ms": 23634.843408999586
+          },
+          "warm_generation_samples": 26,
+          "warm_generation_latency": {
+            "p50_ms": 4090.5795879989455,
+            "p95_ms": 5260.668805000023,
+            "p99_ms": 5641.702127002645
+          },
+          "peak_rss_bytes": 2078146560,
+          "quality": {
+            "intent": {
+              "correct": 25,
+              "total": 25
+            },
+            "entity": {
+              "correct": 25,
+              "total": 25
+            },
+            "parameters": {
+              "correct": 25,
+              "total": 25
+            },
+            "correct_abstention": {
+              "correct": 10,
+              "total": 10
+            },
+            "llm_generated_requests": 27,
+            "early_refusals": 10,
+            "confirmations": 0,
+            "generated_responses_accepted": 27
+          },
+          "cpu_ms_semantics": "per_request_delta",
+          "cold_load_ms": 19608.969043998513,
+          "warm_cpu_ms_median": 7885.000000000011,
+          "warm_tokens_per_second_median": 21.669312063904336
+        }
+      }
+    },
+    "after": {
+      "representative": false,
+      "provenance": "Approved Phase 3 examples / FIXTURE_TECNICA",
+      "hardware": "Ryzen 7 5700X / Docker Linux, not i5-6500T",
+      "threads": 2,
+      "source_overrides": false,
+      "ha_actions": 0,
+      "process_environment": {
+        "OMP_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "2",
+        "MKL_NUM_THREADS": "2",
+        "OMP_WAIT_POLICY": "PASSIVE",
+        "KMP_BLOCKTIME": "0",
+        "NUMEXPR_NUM_THREADS": "1",
+        "TOKENIZERS_PARALLELISM": "false"
+      },
+      "runs": {
+        "tucano-v1": {
+          "samples": 37,
+          "correct": 12,
+          "false_activations": 0,
+          "errors": 0,
+          "wall_latency": {
+            "p50_ms": 1731.5660550011671,
+            "p95_ms": 2450.2112249974743,
+            "p99_ms": 4980.907204000687
+          },
+          "warm_generation_samples": 28,
+          "warm_generation_latency": {
+            "p50_ms": 1814.4065880005655,
+            "p95_ms": 2448.617216999992,
+            "p99_ms": 3823.1151760010107
+          },
+          "peak_rss_bytes": 1289617408,
+          "quality": {
+            "intent": {
+              "correct": 0,
+              "total": 25
+            },
+            "entity": {
+              "correct": 0,
+              "total": 25
+            },
+            "parameters": {
+              "correct": 0,
+              "total": 25
+            },
+            "correct_abstention": {
+              "correct": 10,
+              "total": 10
+            },
+            "llm_generated_requests": 29,
+            "early_refusals": 8,
+            "confirmations": 0,
+            "generated_responses_accepted": 29
+          },
+          "cpu_ms_semantics": "process_lifetime_cumulative",
+          "cold_load_ms": 1722.3030759996618,
+          "warm_cpu_ms_median": 59540.0,
+          "warm_tokens_per_second_median": 40.26828033760946
+        },
+        "tucano-v2": {
+          "samples": 37,
+          "correct": 37,
+          "false_activations": 0,
+          "errors": 0,
+          "wall_latency": {
+            "p50_ms": 2950.0846240007377,
+            "p95_ms": 4204.280422996817,
+            "p99_ms": 5766.915994001465
+          },
+          "warm_generation_samples": 26,
+          "warm_generation_latency": {
+            "p50_ms": 2988.1440620010835,
+            "p95_ms": 4202.347344002192,
+            "p99_ms": 4392.206423999596
+          },
+          "peak_rss_bytes": 1948942336,
+          "quality": {
+            "intent": {
+              "correct": 25,
+              "total": 25
+            },
+            "entity": {
+              "correct": 25,
+              "total": 25
+            },
+            "parameters": {
+              "correct": 25,
+              "total": 25
+            },
+            "correct_abstention": {
+              "correct": 10,
+              "total": 10
+            },
+            "llm_generated_requests": 27,
+            "early_refusals": 10,
+            "confirmations": 0,
+            "generated_responses_accepted": 27
+          },
+          "cpu_ms_semantics": "per_request_delta",
+          "cold_load_ms": 2636.8346029994427,
+          "warm_cpu_ms_median": 5829.999999999998,
+          "warm_tokens_per_second_median": 34.62056050103688
+        },
+        "qwen3-v2": {
+          "samples": 37,
+          "correct": 37,
+          "false_activations": 0,
+          "errors": 0,
+          "wall_latency": {
+            "p50_ms": 4129.942925999785,
+            "p95_ms": 5526.179583997873,
+            "p99_ms": 17798.505915001442
+          },
+          "warm_generation_samples": 26,
+          "warm_generation_latency": {
+            "p50_ms": 4331.047319999925,
+            "p95_ms": 5524.495510002453,
+            "p99_ms": 5727.719418999186
+          },
+          "peak_rss_bytes": 2077454336,
+          "quality": {
+            "intent": {
+              "correct": 25,
+              "total": 25
+            },
+            "entity": {
+              "correct": 25,
+              "total": 25
+            },
+            "parameters": {
+              "correct": 25,
+              "total": 25
+            },
+            "correct_abstention": {
+              "correct": 10,
+              "total": 10
+            },
+            "llm_generated_requests": 27,
+            "early_refusals": 10,
+            "confirmations": 0,
+            "generated_responses_accepted": 27
+          },
+          "cpu_ms_semantics": "per_request_delta",
+          "cold_load_ms": 13305.830618999607,
+          "warm_cpu_ms_median": 8400.000000000018,
+          "warm_tokens_per_second_median": 20.326982071270702
+        }
+      }
+    }
+  },
+  "wyoming": {
+    "kind": "REAL_MODELS_ISOLATED_WYOMING",
+    "physical_ha_actions": 0,
+    "input_sha256": "e9ea6c94f42938c6d42abab6a9d01b31495d2466b7ae5538fac3feec2d5b68d7",
+    "active_stt": {
+      "model": "orukeet_int8",
+      "backend": "sherpa-onnx",
+      "compute": "int8",
+      "public_service_id": "arandu-fastconformer-ptbr-int8"
+    },
+    "stt": [
+      {
+        "port": 10354,
+        "public_id": "arandu-fastconformer-ptbr-int8",
+        "transcript": "Não ligar a luz da sala.",
+        "wall_ms": 205.77610001782887
+      },
+      {
+        "port": 10244,
+        "public_id": "arandu-fastconformer-ptbr-int8",
+        "transcript": "Não ligar a luz da sala.",
+        "wall_ms": 136.01750001544133
+      }
+    ],
+    "tts": [
+      {
+        "port": 10244,
+        "chunks": 6,
+        "samples": 11776,
+        "rate": 22050,
+        "first_protocol_chunk_ms": 2115.6937000050675,
+        "wall_ms": 2121.4234000071883,
+        "clipped_fraction": 8.491847826086956e-05,
+        "pcm_sha256": "1b957dc03d08b4c3e6163f90218126c75a611037668a8a07cc33b19e733a14df",
+        "complete": true,
+        "physical_playback": "not_observed"
+      },
+      {
+        "port": 10244,
+        "chunks": 61,
+        "samples": 121856,
+        "rate": 22050,
+        "first_protocol_chunk_ms": 131.08649998321198,
+        "wall_ms": 273.2153999968432,
+        "clipped_fraction": 2.461922268907563e-05,
+        "pcm_sha256": "6badfb30b66d6aff3c1e71843d3253ebc7e4d11b2ac668282cc2edca47c4377a",
+        "complete": true,
+        "physical_playback": "not_observed"
+      }
+    ]
+  },
+  "live": {
+    "kind": "REAL_RUST_REAL_LLM_SIMULATED_HA",
+    "physical_actions": 0,
+    "physical_playback": "not_observed",
+    "two_timers_ms": 9.487800009083003,
+    "llm_pending_after_timers": true,
+    "deliveries_while_llm_pending": true,
+    "simulated_deliveries": 4,
+    "joke_code": "query_success",
+    "joke_reply": "Por que os cientistas não confiam nos átomos? Porque eles compõem tudo!",
+    "llm_total_ms": 670.9330000157934,
+    "sleep_cancelled": true,
+    "unexpected_simulated_effects": 0
+  },
+  "browser": {
+    "kind": "REAL_BROWSER_ISOLATED_STACK",
+    "physical_actions": 0,
+    "tts_budget_default_off": true,
+    "tts_queue_saved_and_restored": true,
+    "stt_clients_applied_and_restored": true,
+    "actual_llm_trace": "tucano",
+    "safe_json_csv_exports": true,
+    "page_errors": []
+  },
+  "browser_decision": {
+    "browser": "Chromium headless, new isolated context",
+    "selected_and_loaded": "minilm-multilingual:cpu",
+    "gpu_error_visible": true,
+    "rollback_preserved": true,
+    "page_errors": [],
+    "physical_actions": 0
+  },
+  "recovery": {
+    "physical_actions": 0,
+    "wall_ms": 16841.805,
+    "final_health": "ready",
+    "recovered": true,
+    "attempts": 1,
+    "kind": "REAL_ISOLATED_PROCESS_FAILURE",
+    "other_modules": [
+      {
+        "state": "started",
+        "id": "stt"
+      },
+      {
+        "state": "started",
+        "id": "nlu"
+      },
+      {
+        "state": "started",
+        "id": "llm"
+      },
+      {
+        "state": "started",
+        "id": "tts"
+      }
+    ]
+  },
+  "not_run": [
+    "HAOS physical integration",
+    "i5-6500T/HD530",
+    "audible playback and cancellation",
+    "physical satellites",
+    "LFM2.5/LFM3/Qwen3-1.7B inference"
+  ],
+  "docker_image_id": "sha256:428e91d02ae32a2b59ee27e803ce480d2bb56fbbd0035fc730b57de4191cb23c",
+  "report_sha256": {
+    "audio-baseline-controlled/report.json": "f8dfaae1fd6781d76ba1140fcf96667e3c87bb01c7f096e1af3a09db9df0613b",
+    "audio-after-controlled/report.json": "25a287bc8b16cf01f7b1fe427c4e20c83c1ba873a6baf2834d02346dc837385b",
+    "baseline-final.json": "c931970e7ac3e7afeef6ac295f587b35d734005c3940f2f340cbfad011b4e0cc",
+    "after-final.json": "0a9832da51ac7f82ca80cbd2576aed70bed476065fc90718744ac6a94fb482dd",
+    "scenarios-baseline-final.json": "de94737ad3e348a0e6e4fd63f15924293ecdc8c9f81fa9c26923ffbf2e36c856",
+    "scenarios-after-final.json": "622c85d1aa96932627d1b8d794cbc82464c735bcd583c624bf84a11e28acd145",
+    "real-bench/decision-baseline.json": "ce52434b547ccdbc987030db66146c6c74c3307376e6ed3bc1d1b14b8f0bfdbd",
+    "real-bench/decision-after.json": "fcbb88dc817dce231fc4ec2ea5a6bd00e19f980817e2f23dec47f41787566144",
+    "real-bench/llm-baseline.json": "583bbc104c5df4bef30ef9a19a377693cc4c97738b72f9f7094a2b796414f94b",
+    "real-bench/llm-after.json": "d1ccc4fb6dc34e2f20ffe8bf29e70824a557e61b3cac32ab396e4bf9068efbe2",
+    "wyoming-final/report.json": "bbac2a74dd86baefe03cbc52e95bcda221c72272db888c55b56fdcfbaa744b3a",
+    "real-bench/live-concurrency.json": "a7dde0b1b9b4cf6de617e45347c858d55c3fc9cc3216f15a405a70b3c4a4fcc4",
+    "browser-final/report.json": "1d9690cb44099b4df02dce7522af7a145ac7613821dd17ed44f7a3846d12be0b",
+    "browser-final/decision.json": "af45b5db0fc9594b94aec9855606fded6297b86cd2ca2ec302c83eb3d83b3310",
+    "recovery-final.json": "acad4b006038338dcf2fe2ddb92b480e4f91ad4998d6169fb2c9e8f31cc40ac3"
+  }
+}

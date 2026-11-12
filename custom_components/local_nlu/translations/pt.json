@@ -32,7 +32,8 @@
           "voice_output": "Saídas de áudio — ver e editar associações",
           "identity_binding": "Identidade de voz — usuários e associações",
           "intelligence": "Camadas de inteligência",
-          "settings": "Outras configurações"
+          "settings": "Outras configurações",
+          "performance": "Filas e limites"
         }
       },
       "intelligence": {
@@ -93,6 +94,19 @@
         },
         "data_description": {
           "fallback_user_id": "Usuário cujas permissões serão utilizadas quando o Home Assistant não informar a identidade da pipeline de voz. Selecione — para desativar."
+        }
+      },
+      "performance": {
+        "title": "Filas e limites",
+        "description": "Limites conservadores. Inferência não ocupa os slots NLU. Alterar limites recarrega a integração e cancela requisições ativas; agendamentos persistem. Nenhuma ação HA é repetida automaticamente.",
+        "data": {
+          "performance_concurrency": "Interpretações NLU simultâneas (1–8)",
+          "performance_waiting": "Pedidos adicionais admitidos (0–32)",
+          "performance_model_waiting": "Fila de modelo (0–8)",
+          "performance_timeout": "Orçamento total em segundos (5–90)",
+          "performance_scheduler_concurrency": "Entregas agendadas simultâneas",
+          "performance_scheduler_timeout": "Prazo de entrega agendada (segundos)",
+          "performance_scheduler_jobs": "Máximo de agendamentos ativos"
         }
       }
     },

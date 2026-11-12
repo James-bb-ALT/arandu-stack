@@ -1,3 +1,13 @@
+# 10.0.0 — Fase 4: concorrência, filas e observabilidade (2026-11-12)
+
+- App/HACS 10.0.0, NLU 0.6.5, STT 4.0.2 e TTS 0.2.2. Decision, LLM, Wake, modelos, thresholds e voz selecionada preservados.
+- Pedidos independentes concorrentes, locks por sessão e recurso físico, nova leitura de estado relativo e autorização no commit. Cancelamento isolado e filas limitadas; nenhum retry de efeitos HA.
+- Entrega agendada independente da fila neural, claim persistente antes do efeito, revalidação de autoridade e recuperação sem replay de disparos interrompidos. Limites ajustáveis na integração.
+- Saturação HTTP 429 não encaminha carga para outro modelo. Ações agendadas com timeout encerram a vaga sem repetir efeitos incertos.
+- Dashboard com estado de saúde, RSS/CPU, filas, janela de percentis e exportação JSON/CSV. Etapas de áudio sem observação confiável são declaradas, sem correlação inventada.
+- STT limita capturas inclusive na porta direta; TTS aplica backpressure em oito chunks PCM e fila ajustável. O limite ORT manual é experimental e desligado por padrão após o comparativo. Assist mantém síntese integral antes do playback.
+- Corrige binding temporal/exclusões e nomes de timers encontrados na integração do baseline. Relatório, comparação reproduzível e gates em `docs/PHASE-4-PERFORMANCE.md`.
+
 # 9.0.0 — Fase 3 Integrada: Decision 3.0.0 (3.1) & NLU 0.6.4 Temporal (3.2) (2026-11-12)
 
 - **Fase 3.1 (Decision Multimodelo CPU/GPU & AI Lab):**

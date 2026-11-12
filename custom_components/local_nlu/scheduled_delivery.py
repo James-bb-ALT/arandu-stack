@@ -12,7 +12,7 @@ class ScheduledDeliveryHandler:
         self.hass = hass
         self._options = options if options is not None else lambda: {}
 
-    async def async_deliver_notification(self, job: Any) -> None:
+    async def async_deliver_notification(self, job: Any) -> bool:
         """Deliver alarm, reminder, or timer notification honestly and reliably."""
         opts = self._options() if callable(self._options) else self._options
         target_player = opts.get("delivery_media_player")
@@ -20,6 +20,8 @@ class ScheduledDeliveryHandler:
 
         message = self._compose_message(job)
         title = self._compose_title(job)
+        acknowledged = False
+        job.notification_status,job.tts_status = 'unavailable','disabled'
 
         # 1. Persistent notification fallback (always guarantees visible delivery)
         try:
@@ -33,13 +35,16 @@ class ScheduledDeliveryHandler:
                 },
                 blocking=True,
             )
+            acknowledged = True
+            job.notification_status = 'accepted'
         except Exception as err:
-            _LOGGER.warning("Could not create persistent notification for job %s: %s", job.id, err)
+            job.notification_status = 'error'
+            _LOGGER.warning('Scheduled notification failed')
 
         # 2. TTS Voice announcement on configured/available media player
-        if target_player and self.hass.states.get(target_player):
+        if target_player and target_tts and self.hass.states.get(target_player):
             try:
-                tts_engine = target_tts or "tts.speak"
+                tts_engine = target_tts
                 if self.hass.services.has_service("tts", "speak"):
                     await self.hass.services.async_call(
                         "tts",
@@ -51,18 +56,12 @@ class ScheduledDeliveryHandler:
                         },
                         blocking=False,
                     )
-                elif self.hass.services.has_service("tts", "google_translate_say"):
-                    await self.hass.services.async_call(
-                        "tts",
-                        "google_translate_say",
-                        {
-                            "entity_id": target_player,
-                            "message": message,
-                        },
-                        blocking=False,
-                    )
+                    acknowledged = True
+                    job.tts_status = 'accepted_not_observed'
             except Exception as err:
-                _LOGGER.warning("TTS delivery failed for job %s: %s", job.id, err)
+                job.tts_status = 'error'
+                _LOGGER.warning('Scheduled TTS delivery failed')
+        return acknowledged
 
     def _compose_title(self, job: Any) -> str:
         if job.job_type == "alarm":

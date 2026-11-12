@@ -32,7 +32,8 @@
           "voice_output": "Audio outputs — review and edit bindings",
           "identity_binding": "Voice identity — users and bindings",
           "intelligence": "Intelligence layers",
-          "settings": "Other settings"
+          "settings": "Other settings",
+          "performance": "Queues and limits"
         }
       },
       "intelligence": {
@@ -93,6 +94,19 @@
         },
         "data_description": {
           "fallback_user_id": "User whose permissions are used when Home Assistant does not provide the voice pipeline identity. Select — to disable."
+        }
+      },
+      "performance": {
+        "title": "Queues and limits",
+        "description": "Conservative limits. Inference does not occupy NLU slots. Changing limits reloads the integration and cancels active requests; schedules persist. HA effects are never automatically retried.",
+        "data": {
+          "performance_concurrency": "Concurrent NLU interpretations (1–8)",
+          "performance_waiting": "Additional admitted requests (0–32)",
+          "performance_model_waiting": "Model waiters (0–8)",
+          "performance_timeout": "Total budget in seconds (5–90)",
+          "performance_scheduler_concurrency": "Concurrent scheduled deliveries",
+          "performance_scheduler_timeout": "Scheduled delivery deadline (seconds)",
+          "performance_scheduler_jobs": "Maximum active scheduled jobs"
         }
       }
     },

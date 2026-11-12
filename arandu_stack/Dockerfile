@@ -17,7 +17,7 @@ RUN mkdir -p /runtime/lib /runtime/wheels && find /transcribe/build -name '*.so*
 
 FROM python:3.12-slim-bookworm
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libstdc++6 ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libstdc++6 ca-certificates ocl-icd-libopencl1 intel-opencl-icd clinfo && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir aiohttp==3.13.3 && pip install --no-cache-dir torch==2.9.1 --index-url https://download.pytorch.org/whl/cpu
 COPY --from=nlu_builder /build/engine/target/release/local-nlu /usr/bin/local-nlu
 COPY --from=llama /llama/build/bin/llama-server /usr/local/bin/llama-server
@@ -25,7 +25,7 @@ COPY --from=transcribe_builder /runtime/lib/ /usr/local/lib/
 COPY --from=transcribe_builder /runtime/wheels/ /opt/transcribe-wheels/
 RUN ldconfig
 COPY rootfs/modules /opt/modules
-RUN python -m venv --system-site-packages /opt/venvs/decision && /opt/venvs/decision/bin/pip install --no-cache-dir /opt/modules/arandu_decision/rootfs/src
+RUN python -m venv --system-site-packages /opt/venvs/decision && /opt/venvs/decision/bin/pip install --no-cache-dir '/opt/modules/arandu_decision/rootfs/src[gpu]'
 RUN python -m venv --system-site-packages /opt/venvs/llm && /opt/venvs/llm/bin/pip install --no-cache-dir /opt/modules/arandu_llm/rootfs/src
 RUN python -m venv /opt/venvs/stt && /opt/venvs/stt/bin/pip install --no-deps /opt/transcribe-wheels/*.whl && /opt/venvs/stt/bin/pip install --no-cache-dir -r /opt/modules/arandu_stt/rootfs/src/arandu_stt/requirements.txt
 RUN python -m venv --system-site-packages /opt/venvs/tts && /opt/venvs/tts/bin/pip install --no-cache-dir '/opt/modules/arandu_tts/rootfs/src[pocket]'

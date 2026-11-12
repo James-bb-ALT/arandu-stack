@@ -179,7 +179,7 @@ class DecisionParts(unittest.TestCase):
         value=catalog()
         ranking=[{'entity_id':'fan.fixture','intent':'turn_on','raw_score':.99}]
         cell={'n':10,'correct':8}
-        calibration={'version':VERSION,'model':'fixture','catalog':digest(value),'validated':True,
+        calibration={'version':VERSION,'model':'fixture','catalog':digest(value),'validated':True,'provenance':{'representative':True},
             'bins':[dict(cell) for _ in range(5)],'validation_bins':[dict(cell) for _ in range(5)]}
         result=decision_policy(ranking,'fixture',value,{},calibration)
         self.assertEqual(result['decision_status'],'accepted')
@@ -196,6 +196,7 @@ class DecisionParts(unittest.TestCase):
             encoder=Encoder(Path(directory))
             encoder.load=Mock(return_value='FIXTURE_TECNICA')
             encoder.model=SimpleNamespace(encode=lambda texts,**kwargs:[[1.,0.,0.] for _ in texts])
+            encoder.encode=lambda texts,query=False:encoder.model.encode(texts) # Contract fixture; numeric backend tested separately.
             proposal={**proposed(),'confidence':.9}
             encoder.finish=Mock(return_value={'decision_status':'accepted','proposal':proposal,'confidence':.9})
             with patch.dict(sys.modules,{'numpy':SimpleNamespace(dot=lambda a,b:sum(x*y for x,y in zip(a,b)))}):
@@ -211,6 +212,7 @@ class DecisionParts(unittest.TestCase):
             encoder=Encoder(Path(directory))
             encoder.load=Mock(return_value='FIXTURE_TECNICA')
             encoder.model=SimpleNamespace(encode=lambda texts,**kwargs:[[1.,0.,0.] for _ in texts])
+            encoder.encode=lambda texts,query=False:encoder.model.encode(texts) # Contract fixture; numeric backend tested separately.
             numpy=SimpleNamespace(dot=lambda a,b:sum(x*y for x,y in zip(a,b)))
             with patch.dict(sys.modules,{'numpy':numpy}):
                 result=encoder.infer('leva o ventilador',catalog(),'e5-small',{},context={'origin_area':'office'})

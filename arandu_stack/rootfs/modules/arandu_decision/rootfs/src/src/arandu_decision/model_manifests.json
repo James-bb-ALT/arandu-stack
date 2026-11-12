@@ -1,0 +1,168 @@
+{
+  "e5-small": {
+    "name": "Multilingual E5 Small",
+    "repo": "intfloat/multilingual-e5-small",
+    "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+    "license": "mit",
+    "kind": "decision",
+    "dimension": 384,
+    "max_length": 256,
+    "prefixes": {
+      "query": "query: ",
+      "passage": "passage: "
+    },
+    "pooling": "attention-mask-mean",
+    "runtime": "sentence-transformers CPU / OpenVINO Intel GPU",
+    "files": {
+      "1_Pooling/config.json": {
+        "size": 200,
+        "sha256": "987f7a67a38fa564c849bb5d277c52ab9088a84368fc0be31a354125aebb12a0"
+      },
+      "README.md": {
+        "size": 497538,
+        "sha256": "0038de97aee16258cecbad7ffda4b4febd6953e747a00e0ddbc8e6ed241e9c1c"
+      },
+      "config.json": {
+        "size": 655,
+        "sha256": "69137736cab8b8903a07fe8afaafdda25aac55415a12a55d1bffa9f581abf959"
+      },
+      "model.safetensors": {
+        "size": 470641600,
+        "sha256": "1a55775f53449dac10a2bcbc312469fac40b96d53198c407081a831f81c98477"
+      },
+      "modules.json": {
+        "size": 387,
+        "sha256": "c6e29747481e8b5dd2b58401966aeac910de39092f90cda9a704b1545f902b04"
+      },
+      "sentence_bert_config.json": {
+        "size": 57,
+        "sha256": "948201d8329907aae938fa62f9ceeed53f5694dacc2b87b9f3b78b37ee986529"
+      },
+      "special_tokens_map.json": {
+        "size": 167,
+        "sha256": "d05497f1da52c5e09554c0cd874037a083e1dc1b9cfd48034d1c717f1afc07a7"
+      },
+      "tokenizer.json": {
+        "size": 17082730,
+        "sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39"
+      },
+      "tokenizer_config.json": {
+        "size": 443,
+        "sha256": "a1d6bc8734a6f635dc158508bef000f8e2e5a759c7d92f984b2c86e5ff53425b"
+      }
+    },
+    "disk_bytes": 488223777
+  },
+  "minilm-multilingual": {
+    "name": "Multilingual MiniLM L12",
+    "repo": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+    "license": "apache-2.0",
+    "kind": "decision",
+    "dimension": 384,
+    "max_length": 128,
+    "prefixes": {
+      "query": "",
+      "passage": ""
+    },
+    "pooling": "attention-mask-mean",
+    "runtime": "sentence-transformers CPU / OpenVINO Intel GPU",
+    "files": {
+      "1_Pooling/config.json": {
+        "size": 190,
+        "sha256": "4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23"
+      },
+      "README.md": {
+        "size": 3888,
+        "sha256": "1e98ea05b0de579fcaad3d625b62ea55647142ed674d5f5ebf1440e4bbbb6f23"
+      },
+      "config.json": {
+        "size": 645,
+        "sha256": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e"
+      },
+      "config_sentence_transformers.json": {
+        "size": 122,
+        "sha256": "b8c64b5cece00d8424b4896ea75b512b6008576088497609dfeb6bd63e6d36b8"
+      },
+      "model.safetensors": {
+        "size": 470641600,
+        "sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b"
+      },
+      "modules.json": {
+        "size": 229,
+        "sha256": "8f4b264b80206c830bebbdcae377e137925650a433b689343a63bdc9b3145460"
+      },
+      "sentence_bert_config.json": {
+        "size": 53,
+        "sha256": "70f4448f31320443fe3557cacea5abf2dcc4915dda8c80646bec9f3bb0aa5a1f"
+      },
+      "special_tokens_map.json": {
+        "size": 239,
+        "sha256": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+      },
+      "tokenizer.json": {
+        "size": 9081518,
+        "sha256": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8"
+      },
+      "tokenizer_config.json": {
+        "size": 526,
+        "sha256": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b"
+      }
+    },
+    "disk_bytes": 479729010
+  },
+  "e5-base": {
+    "name": "Multilingual E5 Base",
+    "repo": "intfloat/multilingual-e5-base",
+    "revision": "d128750597153bb5987e10b1c3493a34e5a4502a",
+    "license": "mit",
+    "kind": "decision",
+    "dimension": 768,
+    "max_length": 256,
+    "prefixes": {
+      "query": "query: ",
+      "passage": "passage: "
+    },
+    "pooling": "attention-mask-mean",
+    "runtime": "sentence-transformers CPU / OpenVINO Intel GPU",
+    "files": {
+      "1_Pooling/config.json": {
+        "size": 200,
+        "sha256": "f586ab6c734af7b8d14d898bfa7faa886f23b46f86dd1730514309893af13d75"
+      },
+      "README.md": {
+        "size": 179345,
+        "sha256": "9d129cb0b912b55c7b5378f976a9c35ae4796c80466b659ad63930d8ca090fca"
+      },
+      "config.json": {
+        "size": 694,
+        "sha256": "9dab198f24c8c0879e481cf7822005d5ecbceedbacb390ffafa594e28d31bac4"
+      },
+      "model.safetensors": {
+        "size": 1112201288,
+        "sha256": "a18a44fad1d0b46ded15928144138cff1135d5cc8233bdd90be5f18822de09a7"
+      },
+      "modules.json": {
+        "size": 387,
+        "sha256": "c6e29747481e8b5dd2b58401966aeac910de39092f90cda9a704b1545f902b04"
+      },
+      "sentence_bert_config.json": {
+        "size": 57,
+        "sha256": "948201d8329907aae938fa62f9ceeed53f5694dacc2b87b9f3b78b37ee986529"
+      },
+      "special_tokens_map.json": {
+        "size": 280,
+        "sha256": "06e405a36dfe4b9604f484f6a1e619af1a7f7d09e34a8555eb0b77b66318067f"
+      },
+      "tokenizer.json": {
+        "size": 17082660,
+        "sha256": "62c24cdc13d4c9952d63718d6c9fa4c287974249e16b7ade6d5a85e7bbb75626"
+      },
+      "tokenizer_config.json": {
+        "size": 418,
+        "sha256": "efb5c0d09722e5fe59a462cd2a9976ee216d55b037597d997cd3fe833216da15"
+      }
+    },
+    "disk_bytes": 1129465329
+  }
+}

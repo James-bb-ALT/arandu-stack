@@ -1,0 +1,1857 @@
+{
+  "base_main": "46da3b4d911bba384c375dfca539ff0e5c132364",
+  "reference_decision_2": "ca4e67d55d5f7b54c181057f4187432fc2d83cc7",
+  "branch": "feat/arandu-fase-3-1-decision-multimodel",
+  "component_version_proposed": "3.0.0",
+  "global_versions_deferred": true,
+  "representative": false,
+  "source_overrides": false,
+  "hardware": "Ryzen 7 5700X / Docker Linux; not i5-6500T",
+  "threads": 2,
+  "physical_actions": 0,
+  "label_source": "Approved Phase 2 examples / FIXTURE_TECNICA; not representative speech gold",
+  "repetitions": 3,
+  "warmup_per_case": 1,
+  "environment": {
+    "versions": {
+      "arandu-decision": "3.0.0",
+      "torch": "2.9.1+cpu",
+      "sentence-transformers": "5.2.0",
+      "transformers": "4.57.3",
+      "tokenizers": "0.22.2",
+      "openvino": "2024.6.0",
+      "onnx": "1.17.0",
+      "numpy": "2.1.3"
+    },
+    "kernel": "6.18.33.2-microsoft-standard-WSL2",
+    "devices": [
+      "CPU"
+    ],
+    "gpu": {
+      "id": "gpu_intel",
+      "available": false,
+      "validated": false,
+      "status": "unsupported",
+      "devices": [],
+      "render_nodes": [],
+      "runtime": "2024.6.0",
+      "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado"
+    },
+    "driver_packages": "intel-opencl-icd\t22.43.24595.41-1\nocl-icd-libopencl1:amd64\t2.3.1-1",
+    "image_id": "sha256:b5060637f369dcece19aee2554a093cf4b647f92a14b0384c3714f3ca04d6658"
+  },
+  "baseline": {
+    "hardware": "Ryzen 7 5700X, Docker Linux, not i5-6500T",
+    "threads": 2,
+    "cold_load_ms": 15126.107007999963,
+    "real_e5": true,
+    "algorithms": {
+      "baseline-v2": {
+        "n": 29,
+        "correct_joint_or_abstention": 23,
+        "false_activations": 0,
+        "resolved": 7,
+        "abstentions": 20,
+        "positive_ranking_correct": 10,
+        "positive_n": 15,
+        "warm_latency": {
+          "p50_ms": 3.2814669998515456,
+          "p95_ms": 5.485106999913114,
+          "p99_ms": 5.802841999866359
+        }
+      },
+      "structured-v3": {
+        "n": 29,
+        "correct_joint_or_abstention": 29,
+        "false_activations": 0,
+        "resolved": 12,
+        "abstentions": 14,
+        "positive_ranking_correct": 15,
+        "positive_n": 15,
+        "warm_latency": {
+          "p50_ms": 0.561846999971749,
+          "p95_ms": 3.3586340000510972,
+          "p99_ms": 3.872815000022456
+        }
+      }
+    }
+  },
+  "combinations": {
+    "e5-small:cpu": {
+      "status": "pass",
+      "dimension": 384,
+      "cold_start_ms": 8948.048820000622,
+      "cpu_reference_equivalence": {
+        "passed": true,
+        "max_abs_error": 0.0,
+        "reference": "SentenceTransformer.encode same pinned weights/template"
+      },
+      "policy_cases": 29,
+      "policy_correct": 29,
+      "false_activations": 0,
+      "policy_latency": {
+        "p50_ms": 0.5486800000653602,
+        "p95_ms": 1.134750999881362,
+        "p99_ms": 1.2020809999739868
+      },
+      "semantic_warm_latency": {
+        "p50_ms": 1.4817479996054317,
+        "p95_ms": 19.67657200020767,
+        "p99_ms": 20.70325899967429
+      },
+      "semantic_query_miss_latency": {
+        "p50_ms": 17.04554299976735,
+        "p95_ms": 20.508544000222173,
+        "p99_ms": 22.136683999633533
+      },
+      "semantic_query_hit_latency": {
+        "p50_ms": 0.9585320003679954,
+        "p95_ms": 1.342686000498361,
+        "p99_ms": 1.4817479996054317
+      },
+      "semantic_intent_correct": 90,
+      "semantic_entity_correct": 90,
+      "semantic_area_correct": 90,
+      "semantic_samples": 90,
+      "max_sampled_rss_bytes": 874606592,
+      "stage_median_query_miss_ms": {
+        "tokenization_ms": 0.6539539999721455,
+        "embedding_ms": 14.96872000006988,
+        "ranking_ms": 0.02748299993982073,
+        "cpu_ms": 34.56639700000075
+      },
+      "sequential_query_miss_per_second": 56.89643035818986,
+      "unique_positive_labels": 15,
+      "unique_intent_correct": 15,
+      "unique_entity_correct": 15,
+      "unique_area_correct": 15,
+      "diagnostic_unique_cases": [
+        {
+          "text": "Liga o ventilador da sala",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.880932629108429,
+            "intent_score": 0.837219774723053,
+            "target_score": 0.9246454834938049,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Apaga a luz da cozinha",
+          "top": {
+            "entity_id": "light.cozinha",
+            "intent": "turn_off",
+            "area_id": "cozinha",
+            "raw_score": 0.8537037968635559,
+            "intent_score": 0.8206278085708618,
+            "target_score": 0.88677978515625,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Desliga a TV do quarto",
+          "top": {
+            "entity_id": "switch.tv",
+            "intent": "turn_off",
+            "area_id": "quarto",
+            "raw_score": 0.8617099523544312,
+            "intent_score": 0.8479580879211426,
+            "target_score": 0.8754618167877197,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Acende a iluminação daqui",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.8895958065986633,
+            "intent_score": 0.8466746807098389,
+            "target_score": 0.9325169324874878,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Coloca o ventilador pra funcionar",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.9057343304157257,
+            "intent_score": 0.8868230581283569,
+            "target_score": 0.9246456027030945,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Quero a luz da sala acesa",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.8785278797149658,
+            "intent_score": 0.8702759742736816,
+            "target_score": 0.88677978515625,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Dá pra apagar a luz",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_off",
+            "area_id": "sala",
+            "raw_score": 0.8746196627616882,
+            "intent_score": 0.8624595403671265,
+            "target_score": 0.88677978515625,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Deixa a TV ligada",
+          "top": {
+            "entity_id": "switch.tv_sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.8754445910453796,
+            "intent_score": 0.8754273653030396,
+            "target_score": 0.8754618167877197,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Dá uma ligada no ventilador aqui",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.8978666365146637,
+            "intent_score": 0.8710877895355225,
+            "target_score": 0.9246454834938049,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Acnde o ventilador",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.861195981502533,
+            "intent_score": 0.8306452035903931,
+            "target_score": 0.8917467594146729,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Deslga a luz",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_off",
+            "area_id": "sala",
+            "raw_score": 0.8440951406955719,
+            "intent_score": 0.8260197043418884,
+            "target_score": 0.8621705770492554,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Liga o ventilado do quarto",
+          "top": {
+            "entity_id": "fan.quarto",
+            "intent": "turn_on",
+            "area_id": "quarto",
+            "raw_score": 0.8763467073440552,
+            "intent_score": 0.8381104469299316,
+            "target_score": 0.9145829677581787,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Desliga a televisão da sala",
+          "top": {
+            "entity_id": "switch.tv_sala",
+            "intent": "turn_off",
+            "area_id": "sala",
+            "raw_score": 0.8821352124214172,
+            "intent_score": 0.8479580879211426,
+            "target_score": 0.9163123369216919,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Liga o ventilador aqui",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.8935444951057434,
+            "intent_score": 0.8624435067176819,
+            "target_score": 0.9246454834938049,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Apaga a luz desse cômodo",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_off",
+            "area_id": "sala",
+            "raw_score": 0.8893366456031799,
+            "intent_score": 0.8898555636405945,
+            "target_score": 0.8888177275657654,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        }
+      ],
+      "policy_cases_detail": [
+        {
+          "text": "Liga o ventilador da sala",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Apaga a luz da cozinha",
+          "expected_intent": "turn_off",
+          "expected_entity": "light.cozinha",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Desliga a TV do quarto",
+          "expected_intent": "turn_off",
+          "expected_entity": "switch.tv",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Acende a iluminação daqui",
+          "expected_intent": "turn_on",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Coloca o ventilador pra funcionar",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Quero a luz da sala acesa",
+          "expected_intent": "turn_on",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Dá pra apagar a luz",
+          "expected_intent": "turn_off",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Deixa a TV ligada",
+          "expected_intent": "turn_on",
+          "expected_entity": "switch.tv_sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Dá uma ligada no ventilador aqui",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Acnde o ventilador",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "confirmation_required"
+        },
+        {
+          "text": "Deslga a luz",
+          "expected_intent": "turn_off",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "confirmation_required"
+        },
+        {
+          "text": "Liga o ventilado do quarto",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.quarto",
+          "correct": true,
+          "false_activation": false,
+          "status": "confirmation_required"
+        },
+        {
+          "text": "Desliga a televisão da sala",
+          "expected_intent": "turn_off",
+          "expected_entity": "switch.tv_sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Liga o ventilador aqui",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Apaga a luz desse cômodo",
+          "expected_intent": "turn_off",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Liga a luz de lá",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Liga o ventilador",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "ambiguous"
+        },
+        {
+          "text": "Liga a sala",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Liga aquilo",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Desliga o aparelho",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Não liga o ventilador",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Jamais desligue a luz",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Liga tudo, menos a TV",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Se estiver quente, liga o ar",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Deixa a sala mais clara",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Diminui um pouco o ventilador",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Coloca a temperatura em 23 graus",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Fecha a cortina até a metade",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Apaga as luzes da sala e da cozinha",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        }
+      ],
+      "manifest": {
+        "repo": "intfloat/multilingual-e5-small",
+        "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+        "license": "mit",
+        "dimension": 384,
+        "max_length": 256,
+        "disk_bytes": 488223777,
+        "prefixes": {
+          "query": "query: ",
+          "passage": "passage: "
+        },
+        "pooling": "attention-mask-mean"
+      },
+      "weights_sha256": "1a55775f53449dac10a2bcbc312469fac40b96d53198c407081a831f81c98477"
+    },
+    "e5-small:gpu_intel": {
+      "status": "unsupported",
+      "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado",
+      "gpu_inference": "not_run"
+    },
+    "minilm-multilingual:cpu": {
+      "status": "pass",
+      "dimension": 384,
+      "cold_start_ms": 5504.851532999965,
+      "cpu_reference_equivalence": {
+        "passed": true,
+        "max_abs_error": 0.0,
+        "reference": "SentenceTransformer.encode same pinned weights/template"
+      },
+      "policy_cases": 29,
+      "policy_correct": 29,
+      "false_activations": 0,
+      "policy_latency": {
+        "p50_ms": 0.5721780007661437,
+        "p95_ms": 1.1723199995685718,
+        "p99_ms": 1.3345950001166784
+      },
+      "semantic_warm_latency": {
+        "p50_ms": 1.4549070001521613,
+        "p95_ms": 18.539315000452916,
+        "p99_ms": 18.97655599987047
+      },
+      "semantic_query_miss_latency": {
+        "p50_ms": 15.965714000230946,
+        "p95_ms": 18.83153000017046,
+        "p99_ms": 20.2844820005339
+      },
+      "semantic_query_hit_latency": {
+        "p50_ms": 0.9934429999702843,
+        "p95_ms": 1.268256999537698,
+        "p99_ms": 1.4549070001521613
+      },
+      "semantic_intent_correct": 84,
+      "semantic_entity_correct": 90,
+      "semantic_area_correct": 90,
+      "semantic_samples": 90,
+      "max_sampled_rss_bytes": 891396096,
+      "stage_median_query_miss_ms": {
+        "tokenization_ms": 0.6530150003527524,
+        "embedding_ms": 13.881459000003815,
+        "ranking_ms": 0.027864000003319234,
+        "cpu_ms": 32.215015000000236
+      },
+      "sequential_query_miss_per_second": 61.395577552547564,
+      "unique_positive_labels": 15,
+      "unique_intent_correct": 14,
+      "unique_entity_correct": 15,
+      "unique_area_correct": 15,
+      "diagnostic_unique_cases": [
+        {
+          "text": "Liga o ventilador da sala",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.42969807982444763,
+            "intent_score": 0.14241600036621094,
+            "target_score": 0.7169801592826843,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Apaga a luz da cozinha",
+          "top": {
+            "entity_id": "light.cozinha",
+            "intent": "turn_off",
+            "area_id": "cozinha",
+            "raw_score": 0.7430002093315125,
+            "intent_score": 0.5461090207099915,
+            "target_score": 0.9398913979530334,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Desliga a TV do quarto",
+          "top": {
+            "entity_id": "switch.tv",
+            "intent": "turn_off",
+            "area_id": "quarto",
+            "raw_score": 0.778051108121872,
+            "intent_score": 0.7060064673423767,
+            "target_score": 0.8500957489013672,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Acende a iluminação daqui",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.5948796570301056,
+            "intent_score": 0.30996400117874146,
+            "target_score": 0.8797953128814697,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Coloca o ventilador pra funcionar",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.6115434765815735,
+            "intent_score": 0.5061068534851074,
+            "target_score": 0.7169800996780396,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Quero a luz da sala acesa",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.6035039126873016,
+            "intent_score": 0.2671164274215698,
+            "target_score": 0.9398913979530334,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Dá pra apagar a luz",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_off",
+            "area_id": "sala",
+            "raw_score": 0.8423788249492645,
+            "intent_score": 0.7448662519454956,
+            "target_score": 0.9398913979530334,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Deixa a TV ligada",
+          "top": {
+            "entity_id": "switch.tv_sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.6948403120040894,
+            "intent_score": 0.5395848751068115,
+            "target_score": 0.8500957489013672,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Dá uma ligada no ventilador aqui",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.5439720898866653,
+            "intent_score": 0.37096402049064636,
+            "target_score": 0.7169801592826843,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Acnde o ventilador",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_off",
+            "area_id": "sala",
+            "raw_score": 0.4479238986968994,
+            "intent_score": 0.2810751795768738,
+            "target_score": 0.614772617816925,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": false,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Deslga a luz",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_off",
+            "area_id": "sala",
+            "raw_score": 0.6827202439308167,
+            "intent_score": 0.5444921255111694,
+            "target_score": 0.8209483623504639,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Liga o ventilado do quarto",
+          "top": {
+            "entity_id": "fan.quarto",
+            "intent": "turn_on",
+            "area_id": "quarto",
+            "raw_score": 0.41497182846069336,
+            "intent_score": 0.26250123977661133,
+            "target_score": 0.5674424171447754,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Desliga a televisão da sala",
+          "top": {
+            "entity_id": "switch.tv_sala",
+            "intent": "turn_off",
+            "area_id": "sala",
+            "raw_score": 0.7837315797805786,
+            "intent_score": 0.7060064673423767,
+            "target_score": 0.8614566922187805,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Liga o ventilador aqui",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.4646199643611908,
+            "intent_score": 0.21225976943969727,
+            "target_score": 0.7169801592826843,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Apaga a luz desse cômodo",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_off",
+            "area_id": "sala",
+            "raw_score": 0.8199794888496399,
+            "intent_score": 0.7270591259002686,
+            "target_score": 0.9128998517990112,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        }
+      ],
+      "policy_cases_detail": [
+        {
+          "text": "Liga o ventilador da sala",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Apaga a luz da cozinha",
+          "expected_intent": "turn_off",
+          "expected_entity": "light.cozinha",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Desliga a TV do quarto",
+          "expected_intent": "turn_off",
+          "expected_entity": "switch.tv",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Acende a iluminação daqui",
+          "expected_intent": "turn_on",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Coloca o ventilador pra funcionar",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Quero a luz da sala acesa",
+          "expected_intent": "turn_on",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Dá pra apagar a luz",
+          "expected_intent": "turn_off",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Deixa a TV ligada",
+          "expected_intent": "turn_on",
+          "expected_entity": "switch.tv_sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Dá uma ligada no ventilador aqui",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Acnde o ventilador",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "confirmation_required"
+        },
+        {
+          "text": "Deslga a luz",
+          "expected_intent": "turn_off",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "confirmation_required"
+        },
+        {
+          "text": "Liga o ventilado do quarto",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.quarto",
+          "correct": true,
+          "false_activation": false,
+          "status": "confirmation_required"
+        },
+        {
+          "text": "Desliga a televisão da sala",
+          "expected_intent": "turn_off",
+          "expected_entity": "switch.tv_sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Liga o ventilador aqui",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Apaga a luz desse cômodo",
+          "expected_intent": "turn_off",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Liga a luz de lá",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Liga o ventilador",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "ambiguous"
+        },
+        {
+          "text": "Liga a sala",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Liga aquilo",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Desliga o aparelho",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Não liga o ventilador",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Jamais desligue a luz",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Liga tudo, menos a TV",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Se estiver quente, liga o ar",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Deixa a sala mais clara",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Diminui um pouco o ventilador",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Coloca a temperatura em 23 graus",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Fecha a cortina até a metade",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Apaga as luzes da sala e da cozinha",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        }
+      ],
+      "manifest": {
+        "repo": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "revision": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+        "license": "apache-2.0",
+        "dimension": 384,
+        "max_length": 128,
+        "disk_bytes": 479729010,
+        "prefixes": {
+          "query": "",
+          "passage": ""
+        },
+        "pooling": "attention-mask-mean"
+      },
+      "weights_sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b"
+    },
+    "minilm-multilingual:gpu_intel": {
+      "status": "unsupported",
+      "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado",
+      "gpu_inference": "not_run"
+    },
+    "e5-base:cpu": {
+      "status": "pass",
+      "dimension": 768,
+      "cold_start_ms": 7031.592197000464,
+      "cpu_reference_equivalence": {
+        "passed": true,
+        "max_abs_error": 0.0,
+        "reference": "SentenceTransformer.encode same pinned weights/template"
+      },
+      "policy_cases": 29,
+      "policy_correct": 29,
+      "false_activations": 0,
+      "policy_latency": {
+        "p50_ms": 0.5376379995141178,
+        "p95_ms": 1.1879939993377775,
+        "p99_ms": 1.4335939995362423
+      },
+      "semantic_warm_latency": {
+        "p50_ms": 1.7468790001657908,
+        "p95_ms": 64.53988000066602,
+        "p99_ms": 67.18700599958538
+      },
+      "semantic_query_miss_latency": {
+        "p50_ms": 55.248873999516945,
+        "p95_ms": 65.2362129994799,
+        "p99_ms": 76.16924000012659
+      },
+      "semantic_query_hit_latency": {
+        "p50_ms": 0.9678639999037841,
+        "p95_ms": 1.3045370005784207,
+        "p99_ms": 1.7468790001657908
+      },
+      "semantic_intent_correct": 90,
+      "semantic_entity_correct": 90,
+      "semantic_area_correct": 90,
+      "semantic_samples": 90,
+      "max_sampled_rss_bytes": 1156435968,
+      "stage_median_query_miss_ms": {
+        "tokenization_ms": 0.6483019997176598,
+        "embedding_ms": 53.07006100065337,
+        "ranking_ms": 0.02847500036295969,
+        "cpu_ms": 110.74683899999727
+      },
+      "sequential_query_miss_per_second": 17.764074074537657,
+      "unique_positive_labels": 15,
+      "unique_intent_correct": 15,
+      "unique_entity_correct": 15,
+      "unique_area_correct": 15,
+      "diagnostic_unique_cases": [
+        {
+          "text": "Liga o ventilador da sala",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.841577559709549,
+            "intent_score": 0.7851043343544006,
+            "target_score": 0.8980507850646973,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Apaga a luz da cozinha",
+          "top": {
+            "entity_id": "light.cozinha",
+            "intent": "turn_off",
+            "area_id": "cozinha",
+            "raw_score": 0.8130021691322327,
+            "intent_score": 0.7813537120819092,
+            "target_score": 0.8446506261825562,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Desliga a TV do quarto",
+          "top": {
+            "entity_id": "switch.tv",
+            "intent": "turn_off",
+            "area_id": "quarto",
+            "raw_score": 0.8416900634765625,
+            "intent_score": 0.8288547396659851,
+            "target_score": 0.8545253872871399,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Acende a iluminação daqui",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.849166750907898,
+            "intent_score": 0.8195867538452148,
+            "target_score": 0.878746747970581,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Coloca o ventilador pra funcionar",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.8871228396892548,
+            "intent_score": 0.876194953918457,
+            "target_score": 0.8980507254600525,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Quero a luz da sala acesa",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.8341456651687622,
+            "intent_score": 0.8236407041549683,
+            "target_score": 0.8446506261825562,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Dá pra apagar a luz",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_off",
+            "area_id": "sala",
+            "raw_score": 0.8416061103343964,
+            "intent_score": 0.8385615944862366,
+            "target_score": 0.8446506261825562,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Deixa a TV ligada",
+          "top": {
+            "entity_id": "switch.tv_sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.8501085042953491,
+            "intent_score": 0.8456916213035583,
+            "target_score": 0.8545253872871399,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Dá uma ligada no ventilador aqui",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.8706339001655579,
+            "intent_score": 0.8432170152664185,
+            "target_score": 0.8980507850646973,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Acnde o ventilador",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.8103781640529633,
+            "intent_score": 0.7685753107070923,
+            "target_score": 0.8521810173988342,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Deslga a luz",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_off",
+            "area_id": "sala",
+            "raw_score": 0.8198830485343933,
+            "intent_score": 0.7938729524612427,
+            "target_score": 0.845893144607544,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Liga o ventilado do quarto",
+          "top": {
+            "entity_id": "fan.quarto",
+            "intent": "turn_on",
+            "area_id": "quarto",
+            "raw_score": 0.8469258844852448,
+            "intent_score": 0.8160465955734253,
+            "target_score": 0.8778051733970642,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Desliga a televisão da sala",
+          "top": {
+            "entity_id": "switch.tv_sala",
+            "intent": "turn_off",
+            "area_id": "sala",
+            "raw_score": 0.8588493764400482,
+            "intent_score": 0.8288547396659851,
+            "target_score": 0.8888440132141113,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Liga o ventilador aqui",
+          "top": {
+            "entity_id": "fan.sala",
+            "intent": "turn_on",
+            "area_id": "sala",
+            "raw_score": 0.8621081709861755,
+            "intent_score": 0.8261655569076538,
+            "target_score": 0.8980507850646973,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        },
+        {
+          "text": "Apaga a luz desse cômodo",
+          "top": {
+            "entity_id": "light.sala",
+            "intent": "turn_off",
+            "area_id": "sala",
+            "raw_score": 0.8589505851268768,
+            "intent_score": 0.8522793650627136,
+            "target_score": 0.86562180519104,
+            "reason": "mean of separate intent and entity cosine fields"
+          },
+          "intent_correct": true,
+          "entity_correct": true,
+          "area_correct": true,
+          "confidence": null
+        }
+      ],
+      "policy_cases_detail": [
+        {
+          "text": "Liga o ventilador da sala",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Apaga a luz da cozinha",
+          "expected_intent": "turn_off",
+          "expected_entity": "light.cozinha",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Desliga a TV do quarto",
+          "expected_intent": "turn_off",
+          "expected_entity": "switch.tv",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Acende a iluminação daqui",
+          "expected_intent": "turn_on",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Coloca o ventilador pra funcionar",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Quero a luz da sala acesa",
+          "expected_intent": "turn_on",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Dá pra apagar a luz",
+          "expected_intent": "turn_off",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Deixa a TV ligada",
+          "expected_intent": "turn_on",
+          "expected_entity": "switch.tv_sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Dá uma ligada no ventilador aqui",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Acnde o ventilador",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "confirmation_required"
+        },
+        {
+          "text": "Deslga a luz",
+          "expected_intent": "turn_off",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "confirmation_required"
+        },
+        {
+          "text": "Liga o ventilado do quarto",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.quarto",
+          "correct": true,
+          "false_activation": false,
+          "status": "confirmation_required"
+        },
+        {
+          "text": "Desliga a televisão da sala",
+          "expected_intent": "turn_off",
+          "expected_entity": "switch.tv_sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Liga o ventilador aqui",
+          "expected_intent": "turn_on",
+          "expected_entity": "fan.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Apaga a luz desse cômodo",
+          "expected_intent": "turn_off",
+          "expected_entity": "light.sala",
+          "correct": true,
+          "false_activation": false,
+          "status": "resolved"
+        },
+        {
+          "text": "Liga a luz de lá",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Liga o ventilador",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "ambiguous"
+        },
+        {
+          "text": "Liga a sala",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Liga aquilo",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Desliga o aparelho",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Não liga o ventilador",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Jamais desligue a luz",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Liga tudo, menos a TV",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Se estiver quente, liga o ar",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Deixa a sala mais clara",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Diminui um pouco o ventilador",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Coloca a temperatura em 23 graus",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Fecha a cortina até a metade",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        },
+        {
+          "text": "Apaga as luzes da sala e da cozinha",
+          "expected_intent": null,
+          "expected_entity": null,
+          "correct": true,
+          "false_activation": false,
+          "status": "rejected"
+        }
+      ],
+      "manifest": {
+        "repo": "intfloat/multilingual-e5-base",
+        "revision": "d128750597153bb5987e10b1c3493a34e5a4502a",
+        "license": "mit",
+        "dimension": 768,
+        "max_length": 256,
+        "disk_bytes": 1129465329,
+        "prefixes": {
+          "query": "query: ",
+          "passage": "passage: "
+        },
+        "pooling": "attention-mask-mean"
+      },
+      "weights_sha256": "a18a44fad1d0b46ded15928144138cff1135d5cc8233bdd90be5f18822de09a7"
+    },
+    "e5-base:gpu_intel": {
+      "status": "unsupported",
+      "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado",
+      "gpu_inference": "not_run"
+    }
+  },
+  "verification": {
+    "pytest": {
+      "passed": 281,
+      "skipped": 3,
+      "warnings": 7,
+      "subtests_passed": 200
+    },
+    "javascript": {
+      "passed": 15
+    },
+    "gpu_physical": "not_tested; HD 530 not exposed",
+    "ha_physical": "not_run; no authenticated shared instance used; no physical actions authorized for these tests",
+    "gateway": {
+      "physical_actions": 0,
+      "source_overrides": false,
+      "models": {
+        "e5-small": {
+          "passed": true,
+          "dimension": 384,
+          "calibrated_acceptance": false
+        },
+        "minilm-multilingual": {
+          "passed": true,
+          "dimension": 384,
+          "calibrated_acceptance": false
+        },
+        "e5-base": {
+          "passed": true,
+          "dimension": 768,
+          "calibrated_acceptance": false
+        }
+      },
+      "explicit_http_install_verify": true,
+      "live_algorithm_threshold_margin_applied": true,
+      "gpu_failure_rollback": true,
+      "gpu": {
+        "id": "gpu_intel",
+        "available": false,
+        "validated": false,
+        "status": "unsupported",
+        "devices": [],
+        "render_nodes": [],
+        "runtime": "2024.6.0",
+        "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado"
+      },
+      "switch_during_inference_rejected": true,
+      "transport_and_csrf": true
+    },
+    "dashboard": {
+      "browser": "Chromium headless, new isolated context",
+      "selected_and_loaded": "minilm-multilingual:cpu",
+      "gpu_error_visible": true,
+      "rollback_preserved": true,
+      "page_errors": [],
+      "physical_actions": 0
+    },
+    "restart": {
+      "persisted_model": "minilm-multilingual",
+      "selected_backend": "cpu",
+      "loaded_and_verified": true,
+      "post_restart_inference": true,
+      "requested_model_omitted": true,
+      "physical_actions": 0
+    },
+    "openvino_ir": {
+      "prepared": true,
+      "converter": "torch-onnx14-eager-mean-pooling-v1",
+      "model": "e5-small",
+      "numeric_cpu_equivalence": true,
+      "max_abs_error": 6.705522537231445e-08,
+      "execution_devices": [
+        "CPU"
+      ],
+      "gpu_probe": {
+        "id": "gpu_intel",
+        "available": false,
+        "validated": false,
+        "status": "unsupported",
+        "devices": [],
+        "render_nodes": [],
+        "runtime": "2024.6.0",
+        "reason": "OpenVINO não detectou GPU Intel: verifique dispositivo, permissões e OpenCL legado; nenhum driver do host será alterado"
+      },
+      "gpu_execution_validated": false,
+      "source_overrides": false
+    },
+    "contention": {
+      "representative": false,
+      "warmup": 1,
+      "repetitions": 3,
+      "decision_model": "e5-small",
+      "llm_model": "tucano",
+      "decision_alone_cached": {
+        "p50_ms": 6.439999997382984,
+        "p95_ms": 7.409700003336184,
+        "p99_ms": 7.409700003336184
+      },
+      "decision_contended_cached": {
+        "p50_ms": 660.0222999986727,
+        "p95_ms": 660.616499997559,
+        "p99_ms": 660.616499997559
+      },
+      "mixed_requests_per_second": 2.9110105529200445,
+      "rows": [
+        {
+          "decision_wall_ms": 660.616499997559,
+          "decision_queue_ms": 654.7724779998134,
+          "llm_inference_ms": 649.16700699996,
+          "llm_tokens": 16,
+          "mixed_wall_ms": 692.2170000034384,
+          "physical_actions": 0
+        },
+        {
+          "decision_wall_ms": 660.0222999986727,
+          "decision_queue_ms": 654.1577019997931,
+          "llm_inference_ms": 649.2089660000602,
+          "llm_tokens": 16,
+          "mixed_wall_ms": 683.7321000057273,
+          "physical_actions": 0
+        },
+        {
+          "decision_wall_ms": 659.6605999948224,
+          "decision_queue_ms": 654.1163209999468,
+          "llm_inference_ms": 632.0613709999634,
+          "llm_tokens": 16,
+          "mixed_wall_ms": 685.1908000098774,
+          "physical_actions": 0
+        }
+      ],
+      "stt_contention": "not_run; no isolated STT model/audio reference provisioned",
+      "gpu_contention": "not_run; no Intel GPU exposed",
+      "source_overrides": false,
+      "physical_actions": 0
+    }
+  },
+  "verified_package_hashes": {
+    "adapter.py": "e2f0c808495fd1e6eed52a4ab3a6e8ed9594c4ceca2ad9ac3fd412b43223f0a1",
+    "backends.py": "7611f4501f108a5ed7c817ed14ac32b25f4294a8bca49c5047f9b57eb258f559",
+    "service.py": "ce4ed6e09dfe6912ca741269bfeb946467d1953cdcc4d0e105921c30e647f463",
+    "structured.py": "06edec772c33e3182f2c45891aacc1d476bebbc4d42e39a40f41eaaf3407e439",
+    "contracts.py": "b7e3199dc62efa64e632a47fbc53584358d5e39b192c53046d28ba1f2e8f2a58",
+    "installation.py": "72c7663110712d90f51d300f164cb2df7cae190031e0c27f154741cdf06902b8",
+    "model_manifests.json": "4f9696cd1ee0588b0a9ac66092d2d8362a4f1914eeeeaf6bd74207d900d6aeab"
+  }
+}

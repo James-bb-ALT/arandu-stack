@@ -37,7 +37,7 @@
       },
       "intelligence": {
         "title": "Camadas de inteligência",
-        "description": "NLU primeiro. Decision resolve ação explícita e alvo único sem embeddings; erros de grafia inequívocos pedem confirmação. Hipóteses semânticas automáticas exigem calibração conjunta >=80% e margem. O LLM responde conversa geral em PT-BR e auxilia na automação quando necessário. Negação, conflitos e permissões permanecem protegidos. Inicie os processos no app; alterações valem para novos pedidos.",
+        "description": "NLU primeiro. Decision resolve ação explícita e alvo único sem embeddings; erros de grafia inequívocos pedem confirmação. Hipóteses semânticas automáticas exigem calibração conjunta >=80% e margem. O LLM responde conversa geral em PT-BR e auxilia na automação quando necessário. Negação, conflitos e permissões permanecem protegidos. Inicie os processos no app; alterações valem para novos pedidos. Selecione modelo e CPU/GPU Intel no app. GPU exige inferência verificada pelo runtime e não troca silenciosamente para CPU.",
         "data": {
           "decision_enabled": "Usar Decision Engine",
           "llm_enabled": "Usar LLM para conversa geral e fallback"

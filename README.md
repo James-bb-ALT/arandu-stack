@@ -1,5 +1,7 @@
 # Arandu Assistant
 
+Fase 3.1 nesta branch: Decision com E5 Small, MiniLM Multilingual e E5 Base, seleção CPU/GPU Intel explícita e matriz A/B no AI Lab. E5 Small/CPU continua padrão. GPU exige validação real do runtime; a HD 530 não foi validada fisicamente. [Relatório e contrato de integração](docs/PHASE-3.1-DECISION-MULTIMODEL.md). Versão global/release serão reconciliadas após integrar as fases 3.1 e 3.2.
+
 Um único app para Home Assistant com **Wake, STT, NLU, Decision, LLM e TTS**.
 Todos os motores estão incluídos na mesma instalação. Você ativa, desativa e
 configura cada módulo pela WebUI, sem instalar seis apps separados.
@@ -14,7 +16,7 @@ Decision 2.0: [algoritmo, validação A/B e limites](docs/DECISION-v2.0.0.md).
 
 LLM 2.0: [planos tipados, modelos, comparação real e limites](docs/LLM-v2.0.0.md).
 
-**Atual: app 7.0.0 / HACS 8.0.0 / STT 4.0.1 / NLU 0.6.3 / Decision 2.0.0 / LLM 2.0.0 / TTS 0.2.1.**
+**Nesta branch: base app 7.0.0 / HACS 8.0.0 / STT 4.0.1 / NLU 0.6.3 / Decision 3.0.0 (proposto) / LLM 2.0.0 / TTS 0.2.1.** Versões globais finais dependem da integração com a Fase 3.2.
 
 HACS 3.0.1: pedidos não compreendidos em origens ReSpeaker recebem apenas
 “Não entendi.” e encerram o diálogo. Identificação pelo dispositivo registrado
@@ -134,7 +136,7 @@ A integração mantém o domínio técnico `local_nlu` para compatibilidade.
 | NLU | Interpretador contextual Rust | 11555 | Ativado |
 | Wake | Wyoming openWakeWord | 10212 conjunta; 10400 direta | Desativado |
 | STT | FastConformer, Whisper, Parakeet, Orukeet, Granite | 10212 conjunta; 10350 direta | Desativado |
-| Decision | Multilingual E5 Small, CPU | 11557, somente loopback | Desativado |
+| Decision | E5 Small (padrão), MiniLM Multilingual, E5 Base; CPU / GPU Intel explícita | 11557, somente loopback | Desativado |
 | LLM | Tucano 2 Qwen 0.5B Instruct, GGUF comunitário Q4_K_M | 11558, somente loopback | Desativado |
 | TTS | Piper / Pocket | 10212 | Desativado |
 
@@ -155,7 +157,7 @@ módulo, ou use **Salvar e reiniciar** quando ele estiver ativo.
 | Wake | Alexa, Hey Jarvis, Hey Mycroft, Hey Rhasspy ou Okay Nabu; threshold; trigger level; intervalo entre detecções |
 | STT | Oito modelos, instalação individual, variante FastConformer, perfil, threads, padding, léxico e contexto |
 | NLU | Frases personalizadas, limite do comando, duração do contexto e aviso de bateria |
-| Decision | Download, threads, confiança calibrada e margem mínima |
+| Decision | Modelo, processador, instalação/preparação, threads, confiança calibrada e margem mínima |
 | LLM | Download, threads, contexto, limite de tokens e temperatura |
 | TTS | Voz, pré-carga, threads, limite da fala, reserva, Pocket e servidor remoto |
 

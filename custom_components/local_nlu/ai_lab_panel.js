@@ -15,6 +15,7 @@ class AranduAILab extends HTMLElement {
       entry_id: this.$('entry').value || undefined,
       tts_endpoint: this.$('ttsEndpoint').value, tts_token: this.$('ttsToken').value,
       model: this.$('decision').value, mode: this.$('mode').value, llm_model:this.$('llm').value || 'tucano',
+      backend:this.$('decisionBackend')?.value||'cpu',
       algorithm: this.$('decisionAlgorithm')?.value || 'structured-v3',
       llm_contract:Number(this.$('llmContract')?.value || '2'),
       test_area_id: this.$('testArea').value,
@@ -62,6 +63,8 @@ class AranduAILab extends HTMLElement {
         <p id="testAreaStatus" class="muted" role="status">Carregando áreas do catálogo…</p>
         <p class="muted"><small>Texto digitado não traz um satélite. Escolha um cômodo para testar essa origem. Esta seleção não altera a pipeline real.</small></p>
         <label for="decision">Decision Engine</label><select id="decision"><option value="e5-small">Arandu Decision · E5 Small · verificar serviço</option></select>
+        <label for="decisionBackend">Processador Decision</label><select id="decisionBackend"><option value="cpu">CPU</option><option value="gpu_intel">GPU Intel · requer validação</option></select>
+        <button id="decisionApply">Aplicar modelo/processador ao Decision…</button><button id="decisionPrepare">Preparar IR para GPU</button><p id="decisionBackendStatus" role="status" class="muted"></p>
         <label for="llm">LLM local</label><select id="llm"><option value="tucano">Tucano 2 Qwen 0.5B Q4_K_M</option><option value="qwen3">Qwen3 0.6B Q8_0 · experimental</option></select><button id="llmApply">Aplicar LLM no Assist…</button>
         <label for="llmContract">Contrato do teste LLM</label><select id="llmContract"><option value="2">LLM 2.0 · plano tipado</option><option value="1">Baseline 1.0 · somente Tucano</option></select>
         <label for="threshold">Confiança calibrada mínima (80% ou mais)</label><input id="threshold" type="number" min="0.8" max="1" step="0.01" value="0.8">
@@ -69,7 +72,7 @@ class AranduAILab extends HTMLElement {
         <p class="muted"><small>Cosine similarity não é probabilidade. Sem calibração válida, o motor encaminha ao próximo nível.</small></p>
         <label for="tts">TTS existente</label><select id="tts"><option value="piper">Piper PT-BR</option><option value="pocket">Pocket TTS</option></select>
         <button id="refresh">Verificar modelos</button><button id="load">Pré-carregar encoder</button><button id="unload">Descarregar modelos</button>
-        <label for="installModel">Instalação sob demanda (download no worker)</label><select id="installModel"><option value="brazembed">BrazEmbed · MIT</option><option value="e5-small">E5 Small · MIT</option><option value="saracura">Saracura · Apache-2.0</option><option value="jatoba">JATOBÁ · pesos não comerciais</option><option value="qwen3">Qwen3 0.6B Q8_0 · experimental</option><option value="tucano">Tucano 2 Q4 · Apache-2.0</option></select><button id="install">Baixar pesos selecionados</button>
+        <label for="installModel">Instalação sob demanda (download no worker)</label><select id="installModel"><option value="brazembed">BrazEmbed · MIT</option><option value="e5-small">E5 Small · MIT</option><option value="minilm-multilingual">MiniLM Multilingual · Apache-2.0</option><option value="e5-base">E5 Base · MIT</option><option value="saracura">Saracura · Apache-2.0</option><option value="jatoba">JATOBÁ · pesos não comerciais</option><option value="qwen3">Qwen3 0.6B Q8_0 · experimental</option><option value="tucano">Tucano 2 Q4 · Apache-2.0</option></select><button id="install">Baixar pesos selecionados</button>
       </section>
       <details class="card"><summary>Conexões locais</summary>
         <label for="worker">Worker de inferência (opcional)</label><input id="worker" value="" placeholder="Automático pelo endpoint Arandu Stack">
@@ -98,6 +101,18 @@ class AranduAILab extends HTMLElement {
       <section class="card"><h2>Suíte de comandos e benchmark</h2><p class="muted">Edite o JSON. Exemplos sem rótulo não entram na acurácia. Informe entidades reais; nunca use resultados do modelo como gabarito.</p>
         <label for="examples">Exemplos editáveis (máximo 20 por lote)</label><textarea id="examples" spellcheck="false" style="min-height:220px"></textarea>
         <label for="compareModels">Motores para comparar</label><select id="compareModels" multiple aria-label="Motores para comparação"></select>
+        <fieldset><legend>Decision A/B — CPU e GPU Intel</legend>
+          <label for="matrixModels">Modelos (até três)</label><select id="matrixModels" multiple><option value="e5-small" selected>E5 Small</option><option value="minilm-multilingual" selected>MiniLM Multilingual</option><option value="e5-base" selected>E5 Base</option></select>
+          <label><input id="matrixCpu" type="checkbox" checked> CPU</label><label><input id="matrixGpu" type="checkbox"> GPU Intel (só quando detectada; inferência ainda precisa validar)</label>
+          <label for="matrixRepeats">Repetições (1–5)</label><input id="matrixRepeats" type="number" min="1" max="5" value="3">
+          <label for="matrixWarmup">Warm-up (0–2)</label><input id="matrixWarmup" type="number" min="0" max="2" value="1">
+          <label for="matrixLabelSource">Fonte dos rótulos</label><select id="matrixLabelSource"><option value="administrator_supplied">Administrador · proveniência não verificada</option><option value="approved_technical_fixtures">Fixtures técnicas aprovadas · não representativas</option></select>
+          <p class="muted">Mesmas frases/rótulos, sequencial e sem ações. Até 60 medições por combinação. Sem rótulo não há acurácia; fixtures não representam fala humana.</p>
+          <p class="muted">Para medir o plano completo, rotule intent, target_entities, target_area e requires_clarification. Rótulos parciais medem apenas os campos fornecidos; uma recusa rotulada exige ausência de alvos no plano.</p>
+          <button id="matrixRun">Comparar Decision · sem ações</button>
+          <label for="matrixSort">Ordenar</label><select id="matrixSort"><option value="quality">Qualidade</option><option value="latency">Latência p95</option><option value="memory">RAM amostrada</option></select>
+          <button id="matrixJson">Exportar métricas JSON</button><button id="matrixCsv">Exportar métricas CSV</button><div id="matrixOutput" class="scroll"></div>
+        </fieldset>
         <label for="compareLlms">Modelos LLM para comparar</label><select id="compareLlms" multiple aria-label="Modelos LLM"><option value="tucano" selected>Tucano 2 Q4_K_M</option><option value="qwen3" selected>Qwen3 Q8_0 experimental</option></select>
         <p class="muted">Para LLM, use expected_plan com type e operations (action, entity_id, parameters). A comparação não gera token de execução. Exportações LLM omitem comandos, nomes e IDs residenciais.</p>
         <div class="row"><button id="llmCompare">Comparar LLMs · sem ações</button><button id="llmJson">Exportar métricas LLM JSON</button><button id="llmCsv">Exportar métricas LLM CSV</button></div>
@@ -163,6 +178,17 @@ class AranduAILab extends HTMLElement {
       const model=this.$('llm').value;if(!confirm('Aplicar '+model+' ao fallback do Assist após verificar a carga?'))return;
       this.$('advancedOutput').textContent=JSON.stringify(await this.call('llm_apply',{llm_model:model,confirm:true}),null,2);
     });
+    this.$('decisionApply').onclick=()=>this.task(async()=>{
+      if(!confirm('Verificar e aplicar '+this.$('decision').value+' / '+this.$('decisionBackend').value+' ao Decision do Assist?'))return;
+      this.$('advancedOutput').textContent=JSON.stringify(await this.call('decision_apply',{confirm:true}),null,2);
+    });
+    this.$('decisionPrepare').onclick=()=>this.task(async()=>{this.$('advancedOutput').textContent=JSON.stringify(await this.call('decision_prepare'),null,2);});
+    this.$('matrixRun').onclick=()=>this.task(async()=>{
+      const combinations=[];for(const model of [...this.$('matrixModels').selectedOptions].map(o=>o.value))for(const [id,backend] of [['matrixCpu','cpu'],['matrixGpu','gpu_intel']])if(this.$(id).checked)combinations.push({model,backend});
+      this.decisionMatrix=await this.call('decision_matrix',{examples:JSON.parse(this.$('examples').value),combinations,
+        repetitions:Number(this.$('matrixRepeats').value),warmup:Number(this.$('matrixWarmup').value),label_source:this.$('matrixLabelSource').value});this.renderDecisionMatrix();
+    });
+    this.$('matrixSort').onchange=()=>this.renderDecisionMatrix();this.$('matrixJson').onclick=()=>this.exportDecisionMatrix('json');this.$('matrixCsv').onclick=()=>this.exportDecisionMatrix('csv');
     this.$('llmCompare').onclick=()=>this.task(async()=>{
       this.llmComparison=await this.call('llm_compare',{examples:JSON.parse(this.$('examples').value),models:[...this.$('compareLlms').selectedOptions].map(o=>o.value)});
       this.$('batchOutput').textContent=JSON.stringify(this.llmComparison,null,2);
@@ -274,6 +300,12 @@ class AranduAILab extends HTMLElement {
       if([...this.$(id).options].some(o=>o.value===previous&&!o.disabled))this.$(id).value=previous;
     };
     fill('decision','decision'); fill('compareModels','decision'); fill('llm','llm');fill('compareLlms','llm');
+    const gpu=(result.decision_backends||[]).find(b=>b.id==='gpu_intel');
+    this.$('matrixGpu').disabled=!gpu?.available;
+    if(!gpu?.available)this.$('matrixGpu').checked=false;
+    const gpuOption=[...this.$('decisionBackend').options].find(o=>o.value==='gpu_intel');if(gpuOption)gpuOption.disabled=!gpu?.available;
+    if(!gpu?.available&&this.$('decisionBackend').value==='gpu_intel')this.$('decisionBackend').value='cpu';
+    this.$('decisionBackendStatus').textContent='GPU Intel: '+(gpu?.status||'não verificada')+' · '+(gpu?.reason||'Consulte o estado do runtime');
     if (result.error) this.$('batchOutput').textContent = result.error;
     try{this.demoData=await this.call('demo_suite');this.$('demoDataset').textContent=JSON.stringify(this.demoData,null,2);this.demoPreview();this.renderDemo();}
     catch(error){this.$('demoStatus').textContent='Suíte indisponível: '+(error.message||error);}
@@ -344,6 +376,38 @@ class AranduAILab extends HTMLElement {
     }
     const url=URL.createObjectURL(new Blob([text],{type:format==='csv'?'text/csv;charset=utf-8':'application/json'}));const link=document.createElement('a');link.href=url;link.download=name+'.'+format;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
+  decisionMatrixData(){
+    if(!this.decisionMatrix)return null;
+    const allowed=['samples','labelled','plan_labelled','correct_plan','intent_correct','intent_labelled','entity_correct','entity_labelled','area_correct','area_labelled','abstention_correct','abstention_labelled','false_activations','confirmations','errors','peak_rss_bytes','cold_start_ms','throughput_per_second','embedding_requests','deterministic_requests'];
+    return {dry_run:true,home_assistant_actions:0,repetitions:this.decisionMatrix.repetitions,warmup:this.decisionMatrix.warmup,
+      label_source:['administrator_supplied','approved_technical_fixtures'].includes(this.decisionMatrix.label_source)?this.decisionMatrix.label_source:'administrator_supplied',representative:false,
+      rows:Object.entries(this.decisionMatrix.metrics).map(([combination,m])=>{
+        const row={combination,status:m.status,p50_ms:m.latency_ms?.p50,p95_ms:m.latency_ms?.p95,p99_ms:m.latency_ms?.p99,
+          repetitions:this.decisionMatrix.repetitions,warmup:this.decisionMatrix.warmup,
+          label_source:['administrator_supplied','approved_technical_fixtures'].includes(this.decisionMatrix.label_source)?this.decisionMatrix.label_source:'administrator_supplied',representative:false};
+        for(const key of allowed)row[key]=m[key];
+        for(const stage of ['tokenization_ms','embedding_ms','ranking_ms','cpu_ms','retrieval_ms'])for(const p of ['p50','p95','p99'])row[stage+'_'+p]=m.stage_latency?.[stage]?.[p];return row;
+      })};
+  }
+  renderDecisionMatrix(){
+    const data=this.decisionMatrixData();if(!data)return;
+    const mode=this.$('matrixSort').value,rows=[...data.rows];
+    rows.sort((a,b)=>mode==='memory'?(a.peak_rss_bytes??Infinity)-(b.peak_rss_bytes??Infinity):mode==='latency'?(a.p95_ms??Infinity)-(b.p95_ms??Infinity):
+      (b.plan_labelled?b.correct_plan/b.plan_labelled:-1)-(a.plan_labelled?a.correct_plan/a.plan_labelled:-1));
+    const table=document.createElement('table'),head=document.createElement('tr');
+    for(const name of ['Combinação','Estado','Plano correto','p50 / p95 / p99 ms','Carga ms','RSS amostrado MiB','Falsas ativações','Pedidos com embeddings']){const c=document.createElement('th');c.textContent=name;head.append(c);}table.append(head);
+    for(const row of rows){const line=document.createElement('tr');for(const value of [row.combination,row.status,row.plan_labelled?row.correct_plan+'/'+row.plan_labelled:'sem rótulo completo',
+      [row.p50_ms,row.p95_ms,row.p99_ms].map(v=>Number.isFinite(v)?Math.round(v):'—').join(' / '),Number.isFinite(row.cold_start_ms)?Math.round(row.cold_start_ms):'não medido',row.peak_rss_bytes?Math.round(row.peak_rss_bytes/1048576):'não medido',row.false_activations,row.embedding_requests??'não medido']){
+      const c=document.createElement('td');c.textContent=String(value);line.append(c);
+    }table.append(line);}this.$('matrixOutput').replaceChildren(table);
+  }
+  exportDecisionMatrix(format){
+    const data=this.decisionMatrixData();if(!data)return;
+    let text=JSON.stringify(data,null,2);
+    if(format==='csv'&&data.rows.length){const keys=Object.keys(data.rows[0]),cell=v=>'"'+String(v??'').replaceAll('"','""').replace(/^[=+@-]/,"'$&")+'"';text=[keys.join(','),...data.rows.map(r=>keys.map(k=>cell(r[k])).join(','))].join('\r\n');}
+    const url=URL.createObjectURL(new Blob([text],{type:format==='csv'?'text/csv;charset=utf-8':'application/json'}));
+    const a=document.createElement('a');a.href=url;a.download='arandu-decision-matriz.'+format;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
   llmExportData(){
     if(!this.llmComparison)return null;
     return {dry_run:true,metrics:this.llmComparison.metrics,rows:this.llmComparison.rows.map(row=>{
@@ -405,6 +469,8 @@ class AranduAILab extends HTMLElement {
       }
       if(name==='decision'&&output.analysis){
         const a=output.analysis,actionTop=a.action?.ranking?.[0];
+        if(output.backend)paragraph(interpretation,'Modelo e processador',`${output.model} · solicitado: ${output.backend}; usado: ${output.backend_used||'nenhum (resolução determinística)'} · ${output.dimension??'—'} dimensões. Embeddings: ${output.embedding_used?'sim':'não utilizados; isto não valida GPU'}.`);
+        if(output.embedding_used)paragraph(interpretation,'Etapas de embedding',`Tokenização ${this.duration(output.tokenization_ms)}, embeddings ${this.duration(output.embedding_ms)}, CPU ${this.duration(output.cpu_ms)}. RSS amostrado: ${Number.isFinite(output.memory_bytes)?Math.round(output.memory_bytes/1048576)+' MiB':'não medido'}.`);
         paragraph(interpretation,'Ação analisada',`${a.action?.text || 'não identificada'} · hipótese: ${labels[a.action?.exact || actionTop?.intent] || a.action?.exact || actionTop?.intent || 'nenhuma'}${Number.isFinite(actionTop?.semantic_similarity)?' · similaridade '+actionTop.semantic_similarity.toFixed(4):''} · evidência: ${a.action?.evidence || 'ranking diagnóstico'}`);
         const candidates=a.device?.candidates || [];
         paragraph(interpretation,'Dispositivo analisado',a.device?.name || (candidates.length?'Ambíguo: '+candidates.map(c=>(c.name || c.entity_id)+' · '+(areas.get(c.area_id) || 'sem cômodo')).join('; '):'nenhum candidato inequívoco'));

@@ -19,7 +19,7 @@ DEFAULTS = {
             'padding_ms': 0, 'profile': 'full', 'debug_text': False, 'refresh_inventory': False,
             'lexical_enabled': True, 'closed_vocabulary': True, 'generic_weight': 7,
             'home_assistant_weight': 10, 'inventory_refresh_seconds': 0},
-    'decision': {'enabled': False, 'auto_download': False, 'threads': 2, 'threshold': .8, 'min_margin': .08, 'algorithm': 'structured-v3'},
+    'decision': {'enabled': False, 'auto_download': False, 'threads': 2, 'threshold': .8, 'min_margin': .08, 'algorithm': 'structured-v3', 'model':'e5-small', 'backend':'cpu'},
     'llm': {'enabled': False, 'auto_download': False, 'threads': 2, 'context_size': 4096, 'max_tokens': 384, 'temperature': 0.0, 'llm_model':'tucano', 'contract_version':2},
     'tts': {'enabled': False, 'voice': 'pt_BR-arandu-medium', 'auto_download': False, 'max_chars': 3000,
             'preload': True, 'cpu_threads': 2, 'pocket_enabled': False, 'pocket_preload': False,
@@ -91,6 +91,7 @@ class ModuleManager:
         self.lock = asyncio.Lock()
         self.llm_policy_file=data/'llm-policy.json'
         self.llm_profiles={}
+        self.decision_model_file=data/"decision-model-policy.json"
         needs_save=False
         self.decision_policy_file = data/'decision-policy.json'
         decision_algorithm = None
@@ -127,6 +128,14 @@ class ModuleManager:
                 needs_save=True
         if decision_algorithm:
             self.config['decision']['algorithm'] = decision_algorithm
+        if self.decision_model_file.exists():
+            try:
+                policy=json.loads(self.decision_model_file.read_text(encoding='utf-8'))
+                if type(policy) is not dict or policy.get('version')!=1 or set(policy)!={'version','model','backend'}:raise ValueError('Política Decision inválida')
+                self.config['decision']=validate_options('decision',{**self.config['decision'],**{k:policy[k] for k in ('model','backend')}},data)
+            except (ValueError,TypeError,OSError):
+                self.config['decision'].update(model='e5-small',backend='cpu')
+                self.failures['decision']='Seleção Decision inválida; E5 Small/CPU recuperado. Salve para recuperar.'
         if self.llm_policy_file.exists():
             try:
                 policy=json.loads(self.llm_policy_file.read_text(encoding='utf-8'))
@@ -159,6 +168,10 @@ class ModuleManager:
         llm_temp=self.llm_policy_file.with_suffix('.tmp')
         llm_temp.write_text(json.dumps({'version':1,'llm_model':model,'contract_version':version,'profiles':self.llm_profiles})+'\n',encoding='utf-8')
         llm_temp.replace(self.llm_policy_file)
+        decision_model=compatible['decision'].pop('model');decision_backend=compatible['decision'].pop('backend')
+        decision_temp=self.decision_model_file.with_suffix('.tmp')
+        decision_temp.write_text(json.dumps({'version':1,'model':decision_model,'backend':decision_backend})+'\n',encoding='utf-8')
+        decision_temp.replace(self.decision_model_file)
         algorithm = compatible['decision'].pop('algorithm')
         policy_temp = self.decision_policy_file.with_suffix('.tmp')
         policy_temp.write_text(json.dumps({'version':1,'algorithm':algorithm})+'\n',encoding='utf-8')

@@ -8,13 +8,13 @@ from pathlib import Path
 import shutil
 import sys
 import time
-from .contracts import MODELS, candidates, digest, settings
+from .contracts import MODELS, selection, candidates, digest, settings
+from .installation import install, installed
+from .backends import gpu_probe, BackendUnavailable
 from .adapter import Encoder
 from .inference_slot import inference_slot
 
-KEY = "e5-small"
 PORT = 11557
-REVISION = "614241f622f53c4eeff9890bdc4f31cfecc418b3"
 
 def validate_catalog(catalog):
     if not isinstance(catalog, dict) or not isinstance(catalog.get("entities"), list) or not isinstance(catalog.get("areas"), list):
@@ -68,6 +68,12 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
     os.environ.update(OMP_NUM_THREADS=str(threads), OPENBLAS_NUM_THREADS=str(threads),
                       MKL_NUM_THREADS=str(threads), OMP_WAIT_POLICY='PASSIVE', KMP_BLOCKTIME='0')
     adapter = Encoder(root, threads)
+    active=dict(runtime_settings or {})
+    active.setdefault("model","e5-small");active.setdefault("backend","cpu")
+    active.setdefault('algorithm','baseline-v2')
+    active['threshold'],active['min_margin']=settings(active)
+    selection(active["model"],active["backend"])
+    adapter.model_key=active["model"];adapter.backend_name=active["backend"]
     lock, tasks = asyncio.Lock(), set()
 
     @web.middleware
@@ -79,6 +85,8 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
             raise web.HTTPForbidden()
         try:
             return await handler(request)
+        except BackendUnavailable as exc:
+            return web.json_response({"error":str(exc),"code":"backend_unavailable","phase":"loading","decision_status":"error","proposal":None},status=422)
         except (ValueError, KeyError, TypeError, OSError) as exc:
             import logging
             logging.getLogger('arandu.decision').exception('Falha na solicitação de inferência/configuração')
@@ -89,67 +97,159 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
     preload_ms = 0.0
     async def warm(app):
         nonlocal preload_ms
-        if (root / KEY / 'arandu-model.json').is_file() and (root / KEY / 'model.safetensors').is_file():
+        if installed(root,active['model']):
             try:
                 async with inference_slot():
-                    await asyncio.to_thread(adapter.load, KEY)
-                    preload_ms = adapter.load_ms
-                    adapter.phase = 'ready'
+                    await asyncio.to_thread(adapter.load,active['model'],active['backend'])
+                    preload_ms=adapter.load_ms;adapter.phase='ready'
             except Exception:
                 import logging
-                logging.getLogger('arandu.decision').exception('Pré-carga indisponível; resoluções explícitas permanecem disponíveis')
+                logging.getLogger('arandu.decision').exception('Pré-carga indisponível; fast-path permanece independente')
     app.on_startup.append(warm)
     async def status(request):
-        installed = (root / KEY / "arandu-model.json").is_file() and (root / KEY / "model.safetensors").is_file()
-        available = installed and True
-        return web.json_response({"package": "arandu-decision", "version": "2.0.0", "protocol": "arandu-inference-v1",
-            "models": [{"id": KEY, **MODELS[KEY], "installed": installed, "available": bool(available),
-                "reason": None if available else "Pesos ou runtime ausentes"}], "busy": lock.locked(), "threads": threads, "loaded": adapter.model is not None, "preload_ms": preload_ms, "deterministic_available": True})
+        gpu=await asyncio.to_thread(gpu_probe)
+        rows=[]
+        for key,info in MODELS.items():
+            present=installed(root,key)
+            loaded=adapter.model is not None and getattr(adapter,'active_model_key',None)==key
+            rows.append({'id':key,**{k:v for k,v in info.items() if k!='files'},'installed':present,
+                'available':present,'loaded':loaded,'selected':active['model']==key,
+                'integrity_verified':loaded,'backend_used':adapter.active_backend if loaded else None,
+                'reason':None if present else 'Pesos ausentes; instalação explícita necessária'})
+        if adapter.model is not None and adapter.active_backend=='gpu_intel':
+            gpu.update(validated=True,status='ready',execution_devices=getattr(adapter.model,'devices',[]))
+        return web.json_response({'package':'arandu-decision','version':'3.0.0','protocol':'arandu-inference-v1',
+            'models':rows,'backends':[{'id':'cpu','available':True,'status':'available','precision':'fp32'},gpu],
+            'selected_model':active['model'],'selected_backend':active['backend'],
+            'active_model':getattr(adapter,'active_model_key',None) if adapter.model is not None else None,
+            'backend_used':adapter.active_backend,'loaded':adapter.model is not None,'busy':lock.locked() or bool(tasks),
+            'config':{k:active[k] for k in ('algorithm','threshold','min_margin')},
+            'threads':adapter.threads,'preload_ms':preload_ms,'deterministic_available':True})
 
     async def infer(request):
         received = time.perf_counter()
         body = await request.json()
         if not isinstance(body, dict):
             raise ValueError("Objeto JSON obrigatório")
-        action = body.get("action", "decision")
-        if body.get("model", KEY) != KEY and action != "llm":
-            raise ValueError("Modelo não pertence a este pacote")
+        action = "install" if request.path=="/install" else body.get("action", "decision")
+        key,backend=selection(body.get("model",active["model"]),body.get("backend",active["backend"]))
+        enqueued=time.perf_counter()
         if lock.locked() or tasks:
             return web.json_response({"error": "Serviço ocupado"}, status=429)
         async def work():
-            async with lock, inference_slot():
+            async with lock:
+                if action=="install":return await asyncio.to_thread(install,root,key)
+                return await compute()
+        async def compute():
+            async with inference_slot():
+                acquired=time.perf_counter()
+                adapter.model_key=key;adapter.backend_name=backend
                 if action == "unload":
                     adapter.unload()
                     return {"unloaded": True}
-                if action not in {"decision", "load", "calibrate", "readiness"}:
+                if action not in {"decision", "load", "apply", "prepare", "compare", "calibrate", "readiness"}:
                     raise ValueError("Ação indisponível neste pacote")
-                if action == "load":
-                    return {"model_fingerprint": await asyncio.to_thread(adapter.load, KEY), "load_ms": adapter.load_ms}
+                if action in {'load','apply'}:
+                    previous=dict(active);old_threads=adapter.threads
+                    previous_binding=(getattr(adapter,'active_model_key',None),adapter.active_backend) if adapter.model is not None else None
+                    try:
+                        proposed=body.get('config',{})
+                        if type(proposed) is not dict or set(proposed)-{'algorithm','threshold','min_margin'}:raise ValueError('Política Decision inválida')
+                        policy={**{k:active[k] for k in ('algorithm','threshold','min_margin')},**proposed}
+                        if policy['algorithm'] not in {'baseline-v2','structured-v3'}:raise ValueError('Algoritmo Decision inválido')
+                        policy['threshold'],policy['min_margin']=settings(policy)
+                        value=body.get('threads',adapter.threads)
+                        if type(value) is not int or not 1<=value<=4:raise ValueError('Threads inválidas')
+                        if value!=adapter.threads:adapter.unload()
+                        adapter.threads=value
+                        bound=await asyncio.to_thread(adapter.load,key,backend)
+                        if action=='apply':active.update(model=key,backend=backend,threads=value,**policy)
+                        return {'model':key,'backend':backend,'backend_used':adapter.active_backend,'model_fingerprint':bound,
+                            'loaded':True,'integrity_verified':True,'dimension':MODELS[key]['dimension'],'load_ms':adapter.load_ms,
+                            'applied_config':{k:active[k] for k in ('algorithm','threshold','min_margin')}}
+                    except BaseException:
+                        adapter.threads=old_threads;active.clear();active.update(previous)
+                        adapter.model_key=previous['model'];adapter.backend_name=previous['backend']
+                        if previous_binding:
+                            try:await asyncio.to_thread(adapter.load,*previous_binding)
+                            except Exception:pass
+                        raise
+                if action=='prepare':
+                    from .backends import prepare_ir
+                    previous=(getattr(adapter,'active_model_key',None),adapter.active_backend)
+                    adapter.unload()
+                    try:return await asyncio.to_thread(prepare_ir,root,key)
+                    finally:
+                        if previous[0]:
+                            try:await asyncio.to_thread(adapter.load,*previous)
+                            except Exception:pass
+                if action=='compare':
+                    combos=body.get('combinations')
+                    if type(combos) is not list or not 1<=len(combos)<=6:raise ValueError('Use 1–6 combinações')
+                    pairs=[selection(c['model'],c['backend']) for c in combos if type(c) is dict]
+                    if len(pairs)!=len(combos) or len(set(pairs))!=len(pairs):raise ValueError('Combinações inválidas/repetidas')
+                    catalog=validate_catalog(body.get('catalog'))
+                    examples=body.get('examples',[{'text':body.get('text')}]);repeats=body.get('repetitions',1);warmup=body.get('warmup',0)
+                    if type(examples) is not list or not 1<=len(examples)<=20 or type(repeats) is not int or not 1<=repeats<=5 or type(warmup) is not int or not 0<=warmup<=2 or len(examples)*repeats+warmup>60:raise ValueError('Lote/repetições excedem limite')
+                    for example in examples:
+                        text=example.get('text') if type(example) is dict else None
+                        if type(text) is not str or not 1<=len(text)<=512 or any(ord(c)<32 for c in text):raise ValueError('Texto inválido')
+                    previous=(getattr(adapter,'active_model_key',None),adapter.active_backend)
+                    results=[]
+                    try:
+                        for selected_model,selected_backend in pairs:
+                            try:
+                                if selected_backend=='gpu_intel' and not gpu_probe()['available']:raise BackendUnavailable(gpu_probe()['reason'])
+                                adapter.backend_name=selected_backend
+                                await asyncio.to_thread(adapter.load,selected_model,selected_backend)
+                                cold_ms=adapter.load_ms
+                                for iteration in range(warmup+len(examples)*repeats):
+                                    warming=iteration<warmup;case=0 if warming else (iteration-warmup)%len(examples)
+                                    before=time.perf_counter()
+                                    row=await asyncio.to_thread(adapter.infer,examples[case]['text'],catalog,selected_model,
+                                        {**active,'algorithm':'structured-v3','backend':selected_backend},context=body.get('context'))
+                                    row.update(backend=selected_backend,backend_used=adapter.active_backend,combination=selected_model+':'+selected_backend,
+                                        case=case,repetition=-1 if warming else (iteration-warmup)//len(examples),warmup=warming,
+                                        cold_start_ms=cold_ms if iteration==0 else 0,wall_ms=(time.perf_counter()-before)*1000,
+                                        dimension=MODELS[selected_model]['dimension'],**adapter.measurements)
+                                    results.append(row)
+                            except Exception as exc:
+                                results.append({'model':selected_model,'backend':selected_backend,'combination':selected_model+':'+selected_backend,
+                                    'decision_status':'unsupported' if isinstance(exc,BackendUnavailable) else 'error','proposal':None,
+                                    'error_type':type(exc).__name__,'reason':str(exc)[:256] if isinstance(exc,BackendUnavailable) else 'model_or_runtime_unavailable'})
+                    finally:
+                        adapter.model_key=active['model'];adapter.backend_name=active['backend']
+                        if previous[0]:await asyncio.to_thread(adapter.load,*previous)
+                        else:adapter.unload()
+                    return {'comparisons':results,'dry_run':True,'proposal':None,'home_assistant_actions':0,'queue_ms':(acquired-enqueued)*1000}
+
                 catalog = validate_catalog(body.get("catalog"))
-                algorithm = body.get('algorithm', (body.get('config') or {}).get('algorithm', (runtime_settings or {}).get('algorithm', 'baseline-v2')))
+                algorithm = body.get('algorithm', (body.get('config') or {}).get('algorithm', active['algorithm']))
                 if algorithm not in {'baseline-v2','structured-v3'}:
                     raise ValueError('Algoritmo Decision desconhecido')
                 if action == "readiness":
                     return adapter.readiness(catalog, algorithm)
                 if action == "calibrate":
-                    return await asyncio.to_thread(adapter.calibrate, catalog, KEY, body["train"], body["validation"], algorithm=algorithm, provenance=body.get('provenance'))
+                    return await asyncio.to_thread(adapter.calibrate, catalog, key, body["train"], body["validation"], algorithm=algorithm, provenance=body.get('provenance'))
                 text = body.get("text")
                 if not isinstance(text, str) or not 1 <= len(text) <= 512 or any(ord(c) < 32 for c in text):
                     raise ValueError("Texto deve ter 1–512 caracteres em uma linha")
                 config = dict(body.get('config') or {})
                 config['algorithm'] = algorithm
-                config.update({k: v for k, v in (runtime_settings or {}).items() if k in {'threshold', 'min_margin'}})
+                config['backend']=backend
+                config.update({k:active[k] for k in ('threshold','min_margin')})
                 config['threshold'], config['min_margin'] = settings(config)
                 queued = time.perf_counter()
                 if body.get('compare_algorithms') is True:
                     comparisons = []
                     for selected in ('baseline-v2','structured-v3'):
-                        comparisons.append(await asyncio.to_thread(adapter.infer, text, catalog, KEY, {**config,'algorithm':selected}, context=body.get('context')))
+                        comparisons.append(await asyncio.to_thread(adapter.infer, text, catalog, key, {**config,'algorithm':selected}, context=body.get('context')))
                     # Comparison is diagnostic. Never return an executable top-level proposal.
                     return {'algorithm_comparison':comparisons,'proposal':None,'decision_status':'rejected',
                             'reason':'diagnostic_comparison_only','dry_run':True,'catalog_fingerprint':digest(catalog)}
-                result = await asyncio.to_thread(adapter.infer, text, catalog, KEY, config, context=body.get("context"))
-                result.setdefault('queue_ms', (queued-received)*1000)
+                result = await asyncio.to_thread(adapter.infer, text, catalog, key, config, context=body.get("context"))
+                result.setdefault('queue_ms', (acquired-enqueued)*1000)
+                result.update(backend=backend,backend_used=adapter.active_backend if result.get('embedding_used') else None,dimension=MODELS[key]['dimension'],**adapter.measurements)
                 result['applied_config'] = config
                 result.update(catalog_fingerprint=digest(catalog), catalog_entities=len(catalog["entities"]), service="arandu-decision")
                 return result
@@ -157,7 +257,7 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
         tasks.add(task)
         task.add_done_callback(tasks.discard)
         try:
-            async with asyncio.timeout(180):
+            async with asyncio.timeout(960 if action=="install" else 300):
                 return web.json_response(await asyncio.shield(task))
         except TimeoutError:
             return web.json_response({"error": "Timeout; aguarde liberação do serviço"}, status=504)
@@ -168,32 +268,27 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
     app.on_cleanup.append(cleanup)
     app.router.add_get("/status", status)
     app.router.add_post("/infer", infer)
+    app.router.add_post("/install",infer)
     return app
-
-def install(root):
-    from huggingface_hub import snapshot_download, hf_hub_download
-    directory = root / KEY
-    info = MODELS[KEY]
-    if info["kind"] == "llm":
-        hf_hub_download(info["repo"], info["file"], revision=REVISION, local_dir=directory, token=False)
-    else:
-        snapshot_download(info["repo"], revision=REVISION, local_dir=directory, token=False,
-            allow_patterns=["*.json", "*.safetensors", "*.txt", "*.model", "1_Pooling/*", "README.md", "LICENSE*"])
-    (directory / "arandu-model.json").write_text(json.dumps({"repo": info["repo"], "revision": REVISION, "license": info["license"]}), encoding="utf-8")
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["serve", "install"])
+    parser.add_argument("command", choices=["serve", "install", "prepare"])
     parser.add_argument("--models", type=Path, default=Path.home() / ".cache" / "arandu-ai-lab")
+    parser.add_argument("--model",choices=MODELS,default="e5-small")
+    parser.add_argument("--backend",choices=["cpu","gpu_intel"],default="cpu")
     parser.add_argument("--threads", type=int, choices=range(1, 5), default=2)
     parser.add_argument('--algorithm',choices=['baseline-v2','structured-v3'],default='structured-v3')
     parser.add_argument("--llama-server", default=os.environ.get("ARANDU_LLAMA_SERVER") or shutil.which("llama-server"))
     args = parser.parse_args()
     if args.command == "install":
-        install(args.models)
+        install(args.models,args.model)
+    elif args.command=="prepare":
+        from .backends import prepare_ir
+        prepare_ir(args.models,args.model)
     else:
         from aiohttp import web
-        web.run_app(create_app(args.models, args.llama_server, args.threads, runtime_settings={'algorithm':args.algorithm}), host="127.0.0.1", port=PORT, access_log=None)
+        web.run_app(create_app(args.models, args.llama_server, args.threads, runtime_settings={'algorithm':args.algorithm,'model':args.model,'backend':args.backend}), host="127.0.0.1", port=PORT, access_log=None)
 
 if __name__ == "__main__":
     main()

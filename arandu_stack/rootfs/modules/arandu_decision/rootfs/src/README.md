@@ -1,3 +1,18 @@
+# Arandu Decision 3.0.0 — proposta da Fase 3.1
+
+Serviço passivo multimodelo: E5 Small (padrão), MiniLM Multilingual L12 e E5 Base. CPU preserva SentenceTransformer/PyTorch; GPU Intel usa OpenVINO 2024.6, target GPU explícito, FP32, mean pooling com máscara e normalização. GPU indisponível nunca troca silenciosamente para CPU. Apenas o HA valida e executa ações.
+
+Revisões, arquivos, tamanhos, SHA-256 e licenças em `model_manifests.json`. Instalação individual explícita, staging e verificação; inferência offline. E5 usa query:/passage:, MiniLM não. Dimensões 384/384/768 e tokenizer/pooling próprios. Um único modelo/backend residente. Cache e calibração separados por assinatura efetiva, precisão, conversor, versão do tokenizer/runtime e algoritmo. Artefatos de calibração anteriores permanecem em disco e não autorizam a combinação nova.
+
+CPU: `arandu-decision install --model e5-small --models /data/models` e `arandu-decision serve --model e5-small --backend cpu --models /data/models`.
+GPU (Python 3.12 no app): instale o extra `[gpu]`, use `arandu-decision prepare --model e5-small --models /data/models` para exportação local explícita; depois `serve --backend gpu_intel`. Preparar IR não comprova GPU. Readiness exige dispositivo enumerado, compilação exclusiva GPU, execução numérica e dimensão verificadas. `video: true` pede acesso suportado pelo Supervisor; não exige privilégios extras nem instala driver/kernel no host.
+
+Dashboard: instalar/verificar pesos, preparar GPU quando desejado e aplicar seleção com confirmação. A API só persiste após carga/smoke e restaura a seleção anterior em falha. Endpoints internos protegidos `/api/decision/models`, `/install`, `/prepare`, `/apply` no app; serviço loopback 11557 mantém `/infer` e acrescenta `/install`. Clientes antigos continuam podendo pedir E5 Small/CPU. O AI Lab nativo compara até seis combinações em dry-run e exporta somente métricas.
+
+Relatório e handoff: `docs/PHASE-3.1-DECISION-MULTIMODEL.md` na raiz. Versão global/release ficam para integração com a Fase 3.2; esta branch não publica tag/release.
+
+## Histórico até Decision 2.0.0
+
 ## Decision 2.0.0
 
 `structured-v3` separa intenção e entidade em embeddings distintos, com área como filtro. Mantém a média dos cosines, pesos E5 residentes e caches limitados. `baseline-v2` permanece selecionável para comparação/rollback. A calibração v3 usa artefato próprio; não reaproveita probabilidades anteriores nem valida fixtures sintéticas para produção. O HA valida e executa, o serviço apenas propõe. Consulte `docs/DECISION-v2.0.0.md` na raiz.

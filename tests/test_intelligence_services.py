@@ -77,47 +77,35 @@ class LlmHttp(unittest.IsolatedAsyncioTestCase):
 
 class Readiness(unittest.TestCase):
     def test_decision_reuses_model_and_configures_threads_once(self):
-        from types import ModuleType
-        torch = ModuleType('torch')
-        torch.set_num_threads = Mock()
-        torch.set_num_interop_threads = Mock()
-        transformers = ModuleType('sentence_transformers')
-        transformers.SentenceTransformer = Mock(return_value=SimpleNamespace(max_seq_length=None))
-        with tempfile.TemporaryDirectory() as directory, patch.dict(sys.modules, {
-                'torch': torch, 'sentence_transformers': transformers}):
-            root = Path(directory)
-            (root/'e5-small').mkdir()
-            (root/'e5-small/arandu-model.json').write_text('{"revision":"fixture"}')
-            adapter = Encoder(root)
-            adapter.load('e5-small')
-            model = adapter.model
-            adapter.load('e5-small')
-            self.assertIs(adapter.model, model)
-            self.assertEqual(adapter.load_ms, 0)
-            transformers.SentenceTransformer.assert_called_once()
-            torch.set_num_threads.assert_called_once_with(2)
-            torch.set_num_interop_threads.assert_called_once_with(1)
-            adapter.unload()
-            adapter.load('e5-small')
-            torch.set_num_interop_threads.assert_called_once_with(1)
+        import hashlib
+        from arandu_decision.contracts import MODELS
+        torch=SimpleNamespace(set_num_threads=Mock(),set_num_interop_threads=Mock())
+        import numpy as np
+        backend=SimpleNamespace(encode=Mock(return_value=np.ones((1,384))),close=Mock())
+        info={**MODELS['e5-small'],'files':{'weights.bin':{'size':4,'sha256':hashlib.sha256(b'good').hexdigest()}}}
+        with tempfile.TemporaryDirectory() as directory,patch.dict(sys.modules,{'torch':torch}),patch.dict(MODELS,{'e5-small':info}),patch('arandu_decision.backends.create_backend',return_value=backend) as factory:
+            root=Path(directory);(root/'e5-small').mkdir();(root/'e5-small/weights.bin').write_bytes(b'good')
+            adapter=Encoder(root);adapter.load('e5-small');model=adapter.model;adapter.load('e5-small')
+            self.assertIs(adapter.model,model);self.assertEqual(adapter.load_ms,0);factory.assert_called_once()
+            torch.set_num_threads.assert_called_once_with(2);torch.set_num_interop_threads.assert_called_once_with(1)
+            adapter.unload();adapter.load('e5-small');torch.set_num_interop_threads.assert_called_once_with(1)
 
     def test_catalog_and_model_changes_invalidate_calibration_without_loading(self):
+        from arandu_decision.contracts import MODELS
+        from arandu_decision.installation import signature
         with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory)
-            (root/'e5-small').mkdir()
-            manifest={'revision':'fixture'}
-            (root/'e5-small/arandu-model.json').write_text(json.dumps(manifest))
-            calibration={'version':VERSION,'validated':True,'catalog':digest(catalog()),
-                         'model':digest({'key':'e5-small','adapter':'embedding-v2','manifest':manifest})}
-            (root/'e5-small-calibration.json').write_text(json.dumps(calibration))
-            encoder=Encoder(root)
-            self.assertTrue(encoder.readiness(catalog())['calibration_valid'])
-            self.assertIsNone(encoder.model)
-            changed=catalog()
-            changed['entities'][0]['name']='Alterado'
-            self.assertFalse(encoder.readiness(changed)['can_accept'])
-            (root/'e5-small/arandu-model.json').write_text(json.dumps({'revision':'other'}))
+            root=Path(directory);encoder=Encoder(root)
+            (root/'e5-small-calibration.json').write_text(json.dumps({'version':VERSION,'validated':True}))
             self.assertFalse(encoder.readiness(catalog())['calibration_valid'])
+            calibration={'version':VERSION,'validated':True,'catalog':digest(catalog()),'model':signature('e5-small','cpu'),'provenance':{'representative':True}}
+            encoder.calibration_path('e5-small').write_text(json.dumps(calibration))
+            with patch('arandu_decision.installation.installed',return_value=True):
+                self.assertTrue(encoder.readiness(catalog())['calibration_valid']);self.assertIsNone(encoder.model)
+                changed=catalog();changed['entities'][0]['name']='Alterado'
+                self.assertFalse(encoder.readiness(changed)['can_accept'])
+                with patch.dict(MODELS,{'e5-small':{**MODELS['e5-small'],'revision':'different'}}):
+                    self.assertFalse(encoder.readiness(catalog())['can_accept'])
+
 
 
 class CompletionContract(unittest.TestCase):

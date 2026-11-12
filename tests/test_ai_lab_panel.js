@@ -14,6 +14,21 @@ vm.runInNewContext(fs.readFileSync('custom_components/local_nlu/ai_lab_panel.js'
   document:{createElement:()=>new Element(),createTextNode:text=>({textContent:text})}
 });
 const text=node=>node.textContent+' '+(node.children || []).map(text).join(' ');
+
+test('Decision matrix exports metrics without raw commands, catalog or residential IDs',()=>{
+  const panel=new Panel();panel.decisionMatrix={repetitions:3,warmup:1,rows:[{text:'private speech',target_entities:['fan.private']}],
+    metrics:{'e5-small:cpu':{samples:3,labelled:3,correct_plan:3,status:'pass',reason:'private speech',latency_ms:{p50:1,p95:2,p99:3},peak_rss_bytes:1048576}}};
+  const data=panel.decisionMatrixData(),serialized=JSON.stringify(data);
+  assert.equal(data.home_assistant_actions,0);assert.equal(data.rows[0].p95_ms,2);
+  assert.ok(!serialized.includes('private'));assert.ok(!serialized.includes('target_entities'));
+});
+
+test('Decision matrix renders unsupported GPU without fabricating latency',()=>{
+  const panel=new Panel(),nodes={};panel.$=id=>nodes[id] ||= new Element();
+  panel.decisionMatrix={metrics:{'e5-small:gpu_intel':{status:'unsupported',samples:0,labelled:0,latency_ms:{},cold_start_ms:0}}};
+  panel.renderDecisionMatrix();const rendered=text(nodes.matrixOutput);
+  assert.match(rendered,/unsupported/);assert.match(rendered,/não medido/);assert.match(rendered,/—/);
+});
 function render(result) {
   const panel=new Panel(),nodes={};
   panel.$=id=>nodes[id] ||= new Element();

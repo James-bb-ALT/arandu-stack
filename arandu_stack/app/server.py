@@ -30,7 +30,7 @@ MODULES = {
     'wake': ('arandu_wake', 'Wake', 'Palavra de ativação · Wyoming'),
     'stt': ('arandu_stt', 'STT', 'Áudio para texto · FastConformer / Whisper'),
     'nlu': ('ptbr_nlu', 'NLU', 'Comandos e validação · Rust'),
-    'decision': ('arandu_decision', 'Decision', 'Multilingual E5 Small'),
+    'decision': ('arandu_decision', 'Decision', 'E5 / MiniLM · CPU / GPU Intel'),
     'llm': ('arandu_llm', 'LLM', 'LLM 2.0 · Tucano / Qwen3 CPU'),
     'tts': ('arandu_tts', 'TTS', 'Texto para áudio · Piper / Pocket'),
 }
@@ -83,10 +83,11 @@ def create_app(data_dir, local=False):
     async def boundary(request, handler):
         # Only the Supervisor ingress proxy reaches UI; runtime is internal read-only.
         peer = request.remote
-        module_internal = request.path.startswith(('/api/stt/','/api/llm/')) and request.headers.get('X-Arandu-Lab') == '1' and not request.headers.get('Origin')
+        module_internal = request.path.startswith(('/api/stt/','/api/llm/','/api/decision/')) and request.headers.get('X-Arandu-Lab') == '1' and not request.headers.get('Origin')
         if os.environ.get('ARANDU_LOCAL_CONTAINER') == '1':
             import ipaddress
-            if request.host not in {'127.0.0.1:8770', 'localhost:8770'} or not peer or not ipaddress.ip_address(peer).is_private:
+            validation_port=int(os.environ.get('ARANDU_LOCAL_PORT','8770'))
+            if request.host not in {f'127.0.0.1:{validation_port}', f'localhost:{validation_port}'} or not peer or not ipaddress.ip_address(peer).is_private:
                 raise web.HTTPForbidden()
         elif local:
             if peer not in {'127.0.0.1', '::1'} or request.host not in {'127.0.0.1:8770', 'localhost:8770'}:
@@ -159,6 +160,8 @@ def create_app(data_dir, local=False):
                 options = body.get('options')
                 if not isinstance(options, dict):
                     raise ValueError('Opções devem ser objeto JSON')
+                if key=='decision' and any(options.get(k,manager.config[key][k])!=manager.config[key][k] for k in ('model','backend')):
+                    raise ValueError('Use Aplicar Decision para verificar modelo/backend antes de salvar a seleção')
                 await manager.configure(key, options)
             elif action == 'start':
                 await manager.start(key)
@@ -199,7 +202,7 @@ def create_app(data_dir, local=False):
             raise ValueError('Módulo de inferência inválido')
         port = 11557 if key == 'decision' else 11558
         url = 'http://127.0.0.1:' + str(port) + path
-        async with ClientSession(timeout=ClientTimeout(total=360 if payload and payload.get('action')=='install' else 185), trust_env=False) as session:
+        async with ClientSession(timeout=ClientTimeout(total=970 if payload and payload.get('action')=='install' else 310), trust_env=False) as session:
             async with session.request('GET' if payload is None else 'POST', url, json=payload,
                     headers={'X-Arandu-Lab': '1'}, allow_redirects=False) as response:
                 raw = await read_limited(response.content, 2_097_152)
@@ -213,10 +216,12 @@ def create_app(data_dir, local=False):
                             phase = diagnostic['phase']
                         if key == 'llm' and diagnostic.get('code') in {'llm_output_truncated', 'llm_invalid_json', 'llm_response_invalid', 'llm_response_incomplete'}:
                             code = diagnostic['code']
+                        if key=='decision' and diagnostic.get('code')=='backend_unavailable':
+                            code='backend_unavailable'
                     except (ValueError, AttributeError):
                         pass
                     raise web.HTTPBadGateway(text=json.dumps({'stage': key, 'code': code,
-                        'phase': phase, 'message': 'Módulo recusou a solicitação; consulte os logs do módulo.'}), content_type='application/json')
+                        'phase': phase, 'message': 'GPU Intel indisponível. Verifique o estado do runtime, acesso ao dispositivo e preparação IR; a seleção anterior foi preservada.' if code=='backend_unavailable' else 'Módulo recusou a solicitação; consulte os logs do módulo.'}), content_type='application/json')
                 return json.loads(raw)
     async def synthesize(request):
         body = await request.json()
@@ -258,7 +263,7 @@ def create_app(data_dir, local=False):
                 raise ValueError('Modelo LLM desconhecido')
             key = 'llm'
         else:
-            if payload.get('model', 'e5-small') != 'e5-small':
+            if payload.get('model',manager.config['decision']['model']) not in {'e5-small','minilm-multilingual','e5-base'}:
                 raise ValueError('Este módulo Decision usa E5 Small; outros modelos pertencem ao Lab experimental no PC')
             key = 'decision'
         policy = json.dumps(manager.config[key], sort_keys=True)
@@ -313,6 +318,46 @@ def create_app(data_dir, local=False):
                     manager.save()
                 except Exception:LOGGER.exception('Falha ao restaurar configuração LLM')
                 raise
+    async def decision_control(request):
+        action=request.match_info['action']
+        if action=='models':
+            try:result=await model_request('decision','/status')
+            except Exception:result={'models':[],'backends':[],'reason':'Módulo Decision parado ou indisponível'}
+            return web.json_response({**result,'configured_model':manager.config['decision']['model'],'configured_backend':manager.config['decision']['backend']})
+        if action not in {'install','prepare','apply'}:raise ValueError('Ação Decision inválida')
+        if request.method!='POST':raise web.HTTPMethodNotAllowed(request.method,['POST'])
+        body=await request.json()
+        if type(body) is not dict:raise ValueError('Objeto JSON obrigatório')
+        model=body.get('model');backend=body.get('backend','cpu')
+        if model not in {'e5-small','minilm-multilingual','e5-base'} or backend not in {'cpu','gpu_intel'}:raise ValueError('Seleção Decision inválida')
+        if action=='apply' and body.get('confirm') is not True:raise ValueError('Confirmação explícita necessária')
+        if type(body.get('options',{})) is not dict:raise ValueError('Opções devem ser objeto')
+        if lock.locked():return web.json_response({'error':'Controle ocupado; aguarde'},status=429)
+        async with lock:
+            if action in {'install','prepare'}:
+                await manager.start('decision')
+                return web.json_response(await model_request('decision','/infer',{'action':action,'model':model,'backend':backend}))
+            if (await manager.status('decision'))['state']!='started':raise ValueError('Ative ou instale o Decision antes de aplicar')
+            old=dict(manager.config['decision'])
+            from modules import validate_options
+            candidate=validate_options('decision',{**old,**body.get('options',{}),'model':model,'backend':backend},manager.data)
+            if candidate['enabled']!=old['enabled']:raise ValueError('Use Ativar/Desativar para mudar enabled')
+            try:
+                policy={'algorithm':candidate['algorithm'],'threshold':max(.8,candidate['threshold']),'min_margin':max(.08,candidate['min_margin'])}
+                result=await model_request('decision','/infer',{'action':'apply','model':model,'backend':backend,'threads':candidate['threads'],'config':policy})
+                if result.get('loaded') is not True or result.get('model')!=model or result.get('backend_used')!=backend or result.get('integrity_verified') is not True:
+                    raise ValueError('Decision não confirmou modelo/backend/integração')
+                if result.get('applied_config')!=policy:raise ValueError('Decision não confirmou algoritmo/limiares solicitados')
+                await manager.configure('decision',candidate)
+                return web.json_response({**result,'applied':True})
+            except BaseException:
+                manager.config['decision']=old
+                try:
+                    await model_request('decision','/infer',{'action':'apply','model':old['model'],'backend':old['backend'],'threads':old['threads'],
+                        'config':{k:old[k] for k in ('algorithm','threshold','min_margin')}})
+                    manager.save()
+                except Exception:LOGGER.exception('Falha ao recuperar seleção Decision')
+                raise
     async def stt_models(request):
         return web.json_response(await stt_lab.models(request.query.get('variant')))
     async def stt_action(request):
@@ -358,6 +403,8 @@ def create_app(data_dir, local=False):
     app.router.add_post('/api/stt/{action}', stt_action)
     app.router.add_get('/api/logs', logs)
     app.router.add_post('/api/modules/{key}/{action}', control)
+    app.router.add_get('/api/decision/{action}',decision_control)
+    app.router.add_post('/api/decision/{action}',decision_control)
     app.router.add_get('/api/llm/{action}',llm_control)
     app.router.add_post('/api/llm/{action}',llm_control)
     app.router.add_post('/api/phrases', save_phrases)

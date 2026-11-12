@@ -1,18 +1,23 @@
 name: Arandu Decision
 slug: arandu_decision
-version: "2.0.0"
-description: Decision 2.0 — intenção, dispositivo e área separados, E5 residente e calibração independente
+version: "3.0.0"
+description: Decision multimodelo — E5 Small, MiniLM, E5 Base; CPU e GPU Intel explícita, calibração isolada
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]
 startup: application
 boot: manual
 init: false
 stage: experimental
+video: true
 ports:
   11557/tcp: null
 options:
+  model: e5-small
+  backend: cpu
   auto_download: false
   threads: 2
 schema:
+  model: list(e5-small|minilm-multilingual|e5-base)
+  backend: list(cpu|gpu_intel)
   auto_download: bool
   threads: int(1,4)

@@ -7,7 +7,7 @@ function notice(text,error=false){$('notice').textContent=text;$('notice').class
 async function api(path,body){
   const response=await fetch('api/'+path,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json','X-Arandu-CSRF':state?.csrf||''},body:body===undefined?undefined:JSON.stringify(body)});
   let data;try{data=await response.json();}catch(e){throw Error(response.status===403?'Acesso recusado. Atualize a página e confira as permissões do app.':'O serviço não retornou uma resposta válida.');}
-  if(!response.ok)throw Error(data.error||'Não foi possível concluir.');return data;
+  if(!response.ok)throw Error(data.error||data.message||'Não foi possível concluir.');return data;
 }
 async function task(fn){
   document.querySelectorAll('button').forEach(b=>b.disabled=true);
@@ -87,12 +87,13 @@ function openSettings(module){
     }
     input.onchange=()=>updateDependencies();group.append(row);
   }
-  const apply=$('saveRestart');apply.disabled=module.state!=='started'&&module.id!=='stt';apply.textContent=module.id==='stt'?'Salvar e aplicar no Assist':'Salvar e reiniciar';
+  const apply=$('saveRestart');apply.disabled=module.state!=='started'&&module.id!=='stt';apply.textContent=module.id==='stt'?'Salvar e aplicar no Assist':module.id==='decision'?'Salvar e aplicar':'Salvar e reiniciar';
   apply.title=apply.disabled?'Ative o módulo para aplicar imediatamente':'Salva as opções e reinicia somente este módulo';
   if(apply.disabled)apply.dataset.unavailable='true';else delete apply.dataset.unavailable;
   updateDependencies();$('configDialog').showModal();
   if(module.id==='stt')renderSttManager();
   if(module.id==='llm')renderLlmManager();
+  if(module.id==='decision')renderDecisionManager();
 }
 function settingInput(name){return $('configFields').querySelector('[data-setting="'+name+'"]');}
 function updateDependencies(){
@@ -127,9 +128,14 @@ function settingsPayload(){
 async function saveSettings(restart){
   if(!$('configForm').reportValidity())return;
   $('configError').textContent='';
+  let decisionApplied=false;
   try{
     const options=settingsPayload();
-    if(editing.id==='stt'&&restart){
+    if(editing.id==='decision'&&(restart||options.model!==editing.options.model||options.backend!==editing.options.backend)){
+      if(!confirm('Verificar e aplicar '+options.model+' em '+options.backend+' no Decision?'))return;
+      await api('decision/apply',{model:options.model,backend:options.backend,options,confirm:true});
+      decisionApplied=true;
+    }else if(editing.id==='stt'&&restart){
       if(!confirm('Aplicar '+options.stt_model+' no Assist? Somente o STT será reiniciado.'))return;
       await api('stt/apply',{model:options.stt_model,variant:options.model_variant||editing.options.model_variant,options,confirm:true});
       }else if(editing.id==='llm'&&restart){
@@ -141,7 +147,7 @@ async function saveSettings(restart){
     }
   }catch(error){$('configError').textContent=error.message;return;}
   $('configDialog').close();await refresh();
-    notice(restart?(editing.id==='llm'?'Configuração aplicada; carga e identidade do modelo verificadas.':'Configuração salva e módulo reiniciado.'):'Configuração salva. Reinicie o módulo para aplicar.');
+    notice(decisionApplied?'Decision aplicado; modelo, processador e inferência verificados.':restart?(editing.id==='llm'?'Configuração aplicada; carga e identidade do modelo verificadas.':'Configuração salva e módulo reiniciado.'):'Configuração salva. Reinicie o módulo para aplicar.');
 }
 function phraseRow(row){
   const item=el('div',undefined,'phrase-row'),enabled=el('input');
@@ -260,6 +266,28 @@ async function renderLlmManager(){
     if(model.value==='qwen3'&&settingInput('contract_version').value==='1')settingInput('contract_version').value='2';
   });
   await update();
+}
+async function renderDecisionManager(){
+  const group=el('fieldset',undefined,'setting-section');group.append(el('legend','Modelos Decision e processadores'));
+  const status=el('p','Consultando prontidão…');status.setAttribute('role','status');const list=el('div');group.append(status,list);$('configFields').append(group);
+  async function update(){
+    try{
+      const result=await api('decision/models');list.replaceChildren();
+      status.textContent='Configurado: '+result.configured_model+' / '+result.configured_backend+'. Residente: '+(result.active_model||'nenhum')+' / '+(result.backend_used||'nenhum confirmado');
+      for(const backend of result.backends||[])list.append(el('p',backend.id+': '+backend.status+' · '+(backend.reason||'Disponível')+(backend.validated?' · inferência GPU validada':'')));
+      const rows=result.models?.length?result.models:[{id:'e5-small',name:'E5 Small'},{id:'minilm-multilingual',name:'MiniLM Multilingual'},{id:'e5-base',name:'E5 Base'}];
+      for(const model of rows){
+        const row=el('div',undefined,'setting-row');row.append(el('span',model.name+' · '+(model.license||'licença no manifesto')+' · '+(model.dimension||'?')+' dimensões · '+(model.disk_bytes?Math.ceil(model.disk_bytes/1e6)+' MB':'tamanho não verificado')+' · '+(model.loaded?'carregado e verificado':model.installed?'instalado':'instalação não verificada')));
+        for(const [action,label] of [['install','Instalar/verificar pesos'],['prepare','Preparar GPU (exportação local)']]){
+          const button=el('button',label,'secondary');button.type='button';button.onclick=async()=>{
+            button.disabled=true;status.textContent=(action==='install'?'Instalando/verificando ':'Exportando IR local de ')+model.name+'…';
+            try{await api('decision/'+action,{model:model.id,backend:action==='prepare'?'gpu_intel':'cpu'});await update();}
+            catch(e){status.textContent=e.message;button.disabled=false;}
+          };row.append(button);
+        }list.append(row);
+      }
+    }catch(e){status.textContent=e.message;}
+  }await update();
 }
 async function renderSttManager(){
   const group=el('fieldset',undefined,'setting-section stt-manager');group.append(el('legend','Pesos e modelo ativo'));

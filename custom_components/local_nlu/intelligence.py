@@ -183,7 +183,7 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
         try:
             body = {"action": source, "text": text, "catalog": snapshot.payload, "context": context or {}}
             if source == "decision":
-                body.update(model="e5-small", config={"threshold": .8, "min_margin": .08})
+                body.update(config={"threshold": .8, "min_margin": .08})
             else:
                 body.update(decision=llm_hint(decision), nlu=nlu or {}, accept_contracts=[1,2])
             async with asyncio.timeout(TIMEOUT):

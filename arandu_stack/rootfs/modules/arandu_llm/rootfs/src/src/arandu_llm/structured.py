@@ -62,13 +62,18 @@ async def ensure(adapter,key,*,rollback=True):
         raise
 
 
-def context_for(text,catalog,analysis,context,decision):
+def context_for(text,catalog,analysis,context,decision,partial_understanding=None,graph_context=None):
     ranked={}
     hints={r.get('entity_id'):r.get('raw_score') for r in (decision or {}).get('ranking',[]) if type(r) is dict}
     for clause in analysis['analysis'].get('clauses',[]):
         for row in clause['candidates']:
             ranked[row['entity_id']]=row
     ids=set(ranked)
+    if isinstance(graph_context, dict):
+        for g_ent in graph_context.get('entities') or ():
+            eid = g_ent.get('entity_id')
+            if isinstance(eid, str) and any(r.get('entity_id') == eid for r in catalog.get('entities', [])):
+                ids.add(eid)
     rows=[]
     for row in catalog['entities']:
         if row['entity_id'] in ids:
@@ -83,6 +88,33 @@ def context_for(text,catalog,analysis,context,decision):
         {k:c[k] for k in ('clause','action','parameters')} for c in analysis['analysis']['clauses']]}
     if context:content['context']={k:v for k,v in context.items() if k in {'origin_area','last_area','last_targets','last_action','temperature_unit'}}
     content['areas']=[a for a in catalog['areas'] if a['area_id'] in {r.get('area_id') for r in rows}]
+    if isinstance(partial_understanding, dict):
+        content['partial_understanding']={
+            'request_kind': partial_understanding.get('request_kind'),
+            'clauses': [
+                {
+                    'clause_id': c.get('clause_id'),
+                    'unresolved': c.get('unresolved', []),
+                    'allowed_actions': c.get('allowed_actions', []),
+                    'constraints': c.get('constraints', {}),
+                    'frozen_slots': {k: v.get('value') for k, v in (c.get('slots') or {}).items() if v.get('status') == 'resolved'},
+                }
+                for c in (partial_understanding.get('clauses') or [])
+            ],
+        }
+    if isinstance(decision, dict):
+        content['decision_evidence']={
+            'route': decision.get('route'),
+            'status': decision.get('status') or decision.get('decision_status'),
+            'reason': decision.get('reason'),
+            'alternatives': (decision.get('alternatives') or [])[:4],
+        }
+    if isinstance(graph_context, dict):
+        content['graph_context']={
+            'summary': graph_context.get('summary'),
+            'rounds_used': graph_context.get('rounds_used', 0),
+            'entities': (graph_context.get('entities') or [])[:8],
+        }
     return content,ids
 
 
@@ -130,6 +162,9 @@ async def completion(adapter,request):
 async def infer(adapter,payload,catalog):
     from .adapter import parse_conversation,LlmOutputError,CONVERSATION_PROMPT
     text=payload['text'];context=payload.get('context') or {};started=time.perf_counter()
+    partial_understanding=payload.get('partial_understanding')
+    graph_context=payload.get('graph_context')
+    decision=payload.get('decision')
     adapter.phase='retrieval'
     analysis=analyze(text,catalog,context)
     key=payload.get('llm_model',adapter.settings.get('llm_model','tucano'))
@@ -139,12 +174,16 @@ async def infer(adapter,payload,catalog):
     base={'contract_version':2,'model':key,'catalog_fingerprint':digest(catalog),
         'response_text':None,'confirmation_required':False,'load_ms':0,'inference_ms':0,'first_token_ms':None,
         'generated_tokens':0,'tokens_per_second':None,'memory_bytes':None,'cpu_ms':None,
+        'mode':'clarification','repairs':[],
         'retrieval':{'ranking':[],'retrieval':'hybrid-full-authorized-catalog','analysis':analysis['analysis']}}
-    if analysis['type']=='clarification':
-        return {**base,'kind':'clarification','plan':analysis,'reason':analysis['reason'],
+    if isinstance(partial_understanding, dict) and (partial_understanding.get('safety_flags') or partial_understanding.get('request_kind') == 'safety_refusal'):
+        return {**base,'kind':'clarification','mode':'refusal','reason':'safety_locked',
                 'retrieval_ms':(time.perf_counter()-started)*1000}
-    general=analysis['type']=='conversation'
-    content,ids=({'comando':text},set()) if general else context_for(text,catalog,analysis,context,payload.get('decision'))
+    if analysis['type']=='clarification':
+        return {**base,'kind':'clarification','mode':'clarification','plan':analysis,'reason':analysis['reason'],
+                'retrieval_ms':(time.perf_counter()-started)*1000}
+    general=(analysis['type']=='conversation') or (isinstance(decision, dict) and decision.get('route')=='general_conversation')
+    content,ids=({'comando':text},set()) if general else context_for(text,catalog,analysis,context,decision,partial_understanding=partial_understanding,graph_context=graph_context)
     encoded=json.dumps(content,ensure_ascii=False,separators=(',',':'),allow_nan=False)
     if len(encoded.encode())>14000:raise ValueError('Contexto recuperado excedeu limite')
     base['retrieval'].update(ranking=[{'entity_id':e} for e in sorted(ids)],eligible_entities=len(catalog['entities']),candidates=len(ids))
@@ -170,7 +209,7 @@ async def infer(adapter,payload,catalog):
     adapter.phase='validation';validation_started=time.perf_counter()
     if general:
         proposal,reply=parse_conversation({'choices':[{'finish_reason':'stop','message':{'content':raw}}]},adapter.settings['max_tokens'])
-        base.update(proposal=proposal,response_text=reply,kind='conversation')
+        base.update(proposal=proposal,response_text=reply,kind='conversation',mode='conversation_response')
     else:
         try:
             def invalid_constant(_):raise ValueError('JSON não finito')
@@ -179,7 +218,14 @@ async def infer(adapter,payload,catalog):
         base.update(raw_json=value,raw_json_validated=False)
         try:
             value=validate(value,text,catalog,context,ids)
-            base.update(plan=value,kind=value['type'],validated_json=value,raw_json_validated=True)
+            repairs=[]
+            for idx, op in enumerate(value.get('operations') or ()):
+                if op.get('action'):
+                    repairs.append({'clause_id': idx, 'slot': 'action', 'value': op['action'], 'source': 'llm_proposed', 'evidence': ['llm_structured_v2']})
+                if op.get('targets'):
+                    repairs.append({'clause_id': idx, 'slot': 'target', 'value': op['targets'][0] if len(op['targets'])==1 else op['targets'], 'source': 'llm_proposed', 'evidence': ['llm_structured_v2']})
+            mode='repair_proposal' if repairs else ('read_query' if value.get('type')=='query' else 'clarification')
+            base.update(plan=value,kind=value['type'],mode=mode,repairs=repairs,validated_json=value,raw_json_validated=True)
         except (ValueError,TypeError,KeyError) as exc:
-            base.update(plan=clarification('model_plan_rejected',analysis['analysis']),kind='clarification',reason='model_plan_rejected',validation_reason=str(exc))
+            base.update(plan=clarification('model_plan_rejected',analysis['analysis']),kind='clarification',mode='clarification',reason='model_plan_rejected',validation_reason=str(exc))
     return {**base,'validation_ms':(time.perf_counter()-validation_started)*1000,'total_ms':(time.perf_counter()-started)*1000}

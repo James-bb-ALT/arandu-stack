@@ -1,9 +1,12 @@
 //! Local, passive capability-driven interpretation. Wire v4 is additive to v1-v3.
 pub mod contract;
 mod grammar;
+pub mod progressive;
 mod resolver;
 mod safety;
 pub mod slots;
+
+pub use progressive::{interpret_partial, review_proposal};
 
 use contract::{Catalog, Command, ContextRequest, Operation, Response};
 use resolver::Index;

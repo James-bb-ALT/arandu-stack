@@ -59,7 +59,7 @@ fn diagnostic_endpoint_identifies_passive_service_without_private_data() {
     let value: serde_json::Value =
         serde_json::from_str(response.split("\r\n\r\n").nth(1).expect("body")).expect("json");
     assert_eq!(value["service_version"], env!("CARGO_PKG_VERSION"));
-    assert_eq!(value["protocols"], serde_json::json!([1, 2, 3, 4]));
+    assert_eq!(value["protocols"], serde_json::json!([1, 2, 3, 4, 5]));
     assert_eq!(value["execution"], "passive");
     assert_eq!(value.as_object().expect("object").len(), 4);
 }

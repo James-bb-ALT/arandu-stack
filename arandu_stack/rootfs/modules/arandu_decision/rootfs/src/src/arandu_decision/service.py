@@ -13,8 +13,25 @@ from .installation import install, installed
 from .backends import gpu_probe, BackendUnavailable
 from .adapter import Encoder
 from .inference_slot import inference_slot
+from .partial_reasoner import reason_partial
 
 PORT = 11557
+RESIDENCY_POLICIES = ("RESIDENT", "LAZY", "OFF")
+
+
+def _process_rss_bytes() -> int | None:
+    try:
+        statm = Path("/proc/self/statm")
+        if statm.is_file():
+            pages = int(statm.read_text(encoding="utf-8").split()[1])
+            return pages * os.sysconf("SC_PAGE_SIZE")
+    except Exception:
+        pass
+    try:
+        import psutil
+        return int(psutil.Process(os.getpid()).memory_info().rss)
+    except Exception:
+        return None
 
 def validate_catalog(catalog):
     if not isinstance(catalog, dict) or not isinstance(catalog.get("entities"), list) or not isinstance(catalog.get("areas"), list):
@@ -71,10 +88,19 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
     active=dict(runtime_settings or {})
     active.setdefault("model","e5-small");active.setdefault("backend","cpu")
     active.setdefault('algorithm','baseline-v2')
+    policy_env = str(active.get("resident_policy") or os.environ.get("ARANDU_DECISION_RESIDENCY", "RESIDENT")).upper()
+    active["resident_policy"] = policy_env if policy_env in RESIDENCY_POLICIES else "RESIDENT"
     active['threshold'],active['min_margin']=settings(active)
     selection(active["model"],active["backend"])
     adapter.model_key=active["model"];adapter.backend_name=active["backend"]
     lock, tasks = asyncio.Lock(), set()
+    residency_state = {
+        "preload_success": False,
+        "preload_error": None,
+        "cold_start_ms": 0.0,
+        "last_infer_ms": 0.0,
+        "resolved_slots_count": 0,
+    }
 
     @web.middleware
     async def boundary(request, handler):
@@ -97,14 +123,30 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
     preload_ms = 0.0
     async def warm(app):
         nonlocal preload_ms
+        if active["resident_policy"] == "OFF":
+            adapter.unload()
+            adapter.phase = "off"
+            residency_state["preload_success"] = False
+            residency_state["preload_error"] = None
+            return
+        if active["resident_policy"] == "LAZY":
+            adapter.phase = "lazy_standby"
+            residency_state["preload_success"] = False
+            residency_state["preload_error"] = None
+            return
         if installed(root,active['model']):
             try:
                 async with inference_slot():
                     await asyncio.to_thread(adapter.load,active['model'],active['backend'])
                     preload_ms=adapter.load_ms;adapter.phase='ready'
-            except Exception:
+                    residency_state["preload_success"] = True
+                    residency_state["preload_error"] = None
+                    residency_state["cold_start_ms"] = adapter.load_ms
+            except Exception as exc:
                 import logging
                 logging.getLogger('arandu.decision').exception('Pré-carga indisponível; fast-path permanece independente')
+                residency_state["preload_success"] = False
+                residency_state["preload_error"] = str(exc)[:256]
     app.on_startup.append(warm)
     async def status(request):
         gpu=await asyncio.to_thread(gpu_probe)
@@ -118,11 +160,22 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
                 'reason':None if present else 'Pesos ausentes; instalação explícita necessária'})
         if adapter.model is not None and adapter.active_backend=='gpu_intel':
             gpu.update(validated=True,status='ready',execution_devices=getattr(adapter.model,'devices',[]))
-        return web.json_response({'package':'arandu-decision','version':'3.0.0','protocol':'arandu-inference-v1',
+        is_loaded = adapter.model is not None
+        return web.json_response({'package':'arandu-decision','version':'3.1.0','protocol':'arandu-inference-v1',
             'models':rows,'backends':[{'id':'cpu','available':True,'status':'available','precision':'fp32'},gpu],
             'selected_model':active['model'],'selected_backend':active['backend'],
-            'active_model':getattr(adapter,'active_model_key',None) if adapter.model is not None else None,
-            'backend_used':adapter.active_backend,'loaded':adapter.model is not None,'busy':lock.locked() or bool(tasks),
+            'active_model':getattr(adapter,'active_model_key',None) if is_loaded else None,
+            'model_id':getattr(adapter,'active_model_key',None) if is_loaded else active['model'],
+            'backend_used':adapter.active_backend,'loaded':is_loaded,'is_model_loaded':is_loaded,
+            'busy':lock.locked() or bool(tasks),
+            'resident_policy':active['resident_policy'],
+            'pid':os.getpid(),'rss_bytes':_process_rss_bytes(),
+            'last_load_ms':adapter.load_ms,'cold_start_ms':residency_state['cold_start_ms'],
+            'last_infer_ms':residency_state['last_infer_ms'],
+            'cache_status':'warm' if is_loaded else ('disabled' if active['resident_policy']=='OFF' else 'cold'),
+            'preload_success':residency_state['preload_success'],
+            'error':residency_state['preload_error'],
+            'resolved_slots_count':residency_state['resolved_slots_count'],
             'config':{k:active[k] for k in ('algorithm','threshold','min_margin')},
             'threads':adapter.threads,'preload_ms':preload_ms,'deterministic_available':True})
 
@@ -147,8 +200,40 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
                 if action == "unload":
                     adapter.unload()
                     return {"unloaded": True}
-                if action not in {"decision", "load", "apply", "prepare", "compare", "calibrate", "readiness"}:
+                if action not in {"decision", "partial", "residency", "load", "apply", "prepare", "compare", "calibrate", "readiness"}:
                     raise ValueError("Ação indisponível neste pacote")
+                if action == "residency":
+                    requested = str(body.get("resident_policy", active["resident_policy"])).upper()
+                    if requested not in RESIDENCY_POLICIES:
+                        raise ValueError("Política de RAM inválida")
+                    active["resident_policy"] = requested
+                    if requested == "OFF":
+                        adapter.unload()
+                        adapter.phase = "off"
+                    elif requested == "RESIDENT" and adapter.model is None and installed(root, key):
+                        await asyncio.to_thread(adapter.load, key, backend)
+                        residency_state["preload_success"] = True
+                        residency_state["cold_start_ms"] = adapter.load_ms
+                    return {"resident_policy": active["resident_policy"], "is_model_loaded": adapter.model is not None, "rss_bytes": _process_rss_bytes()}
+                if action == "partial":
+                    infer_start = time.perf_counter()
+                    if active["resident_policy"] in {"RESIDENT", "LAZY"} and adapter.model is None and installed(root, key):
+                        try:
+                            await asyncio.to_thread(adapter.load, key, backend)
+                            residency_state["cold_start_ms"] = adapter.load_ms
+                        except Exception as exc:
+                            residency_state["preload_error"] = str(exc)[:256]
+                    use_encoder = adapter if (active["resident_policy"] != "OFF" and adapter.model is not None) else None
+                    out = await asyncio.to_thread(reason_partial, body, encoder=use_encoder)
+                    elapsed_ms = (time.perf_counter() - infer_start) * 1000.0
+                    residency_state["last_infer_ms"] = elapsed_ms
+                    if out.get("repairs"):
+                        residency_state["resolved_slots_count"] += len(out["repairs"])
+                    out["infer_ms"] = round(elapsed_ms, 3)
+                    out["resident_policy"] = active["resident_policy"]
+                    out["is_model_loaded"] = adapter.model is not None
+                    out["backend_used"] = adapter.active_backend if use_encoder else "deterministic_phonetics"
+                    return out
                 if action in {'load','apply'}:
                     previous=dict(active);old_threads=adapter.threads
                     previous_binding=(getattr(adapter,'active_model_key',None),adapter.active_backend) if adapter.model is not None else None
@@ -279,6 +364,7 @@ def main():
     parser.add_argument("--backend",choices=["cpu","gpu_intel"],default="cpu")
     parser.add_argument("--threads", type=int, choices=range(1, 5), default=2)
     parser.add_argument('--algorithm',choices=['baseline-v2','structured-v3'],default='structured-v3')
+    parser.add_argument('--residency',choices=list(RESIDENCY_POLICIES),default='RESIDENT')
     parser.add_argument("--llama-server", default=os.environ.get("ARANDU_LLAMA_SERVER") or shutil.which("llama-server"))
     args = parser.parse_args()
     if args.command == "install":
@@ -288,7 +374,7 @@ def main():
         prepare_ir(args.models,args.model)
     else:
         from aiohttp import web
-        web.run_app(create_app(args.models, args.llama_server, args.threads, runtime_settings={'algorithm':args.algorithm,'model':args.model,'backend':args.backend}), host="127.0.0.1", port=PORT, access_log=None)
+        web.run_app(create_app(args.models, args.llama_server, args.threads, runtime_settings={'algorithm':args.algorithm,'model':args.model,'backend':args.backend,'resident_policy':args.residency}), host="127.0.0.1", port=PORT, access_log=None)
 
 if __name__ == "__main__":
     main()

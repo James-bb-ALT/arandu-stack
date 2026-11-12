@@ -20,7 +20,7 @@ DEFAULTS = {
             'padding_ms': 0, 'profile': 'full', 'debug_text': False, 'refresh_inventory': False,
             'lexical_enabled': True, 'closed_vocabulary': True, 'generic_weight': 7,
             'home_assistant_weight': 10, 'inventory_refresh_seconds': 0},
-    'decision': {'enabled': False, 'auto_download': False, 'threads': 2, 'threshold': .8, 'min_margin': .08, 'algorithm': 'structured-v3', 'model':'e5-small', 'backend':'cpu'},
+    'decision': {'enabled': False, 'auto_download': False, 'threads': 2, 'threshold': .8, 'min_margin': .08, 'algorithm': 'structured-v3', 'model':'e5-small', 'backend':'cpu', 'resident_policy': 'RESIDENT', 'auto_resolve_level': 'conservative'},
     'llm': {'enabled': False, 'auto_download': False, 'threads': 2, 'context_size': 4096, 'max_tokens': 384, 'temperature': 0.0, 'llm_model':'tucano', 'contract_version':2},
     'tts': {'enabled': False, 'voice': 'pt_BR-arandu-medium', 'auto_download': False, 'max_chars': 3000,
             'preload': True, 'cpu_threads': 2, 'pocket_enabled': False, 'pocket_preload': False,
@@ -251,6 +251,8 @@ class ModuleManager:
                                OPENBLAS_NUM_THREADS=str(self.config[key]['threads']),
                                MKL_NUM_THREADS=str(self.config[key]['threads']),
                                OMP_WAIT_POLICY='PASSIVE', KMP_BLOCKTIME='0')
+        if key == 'decision':
+            environment['ARANDU_DECISION_RESIDENCY'] = str(self.config['decision'].get('resident_policy', 'RESIDENT'))
         if key == 'stt':
             environment.update(OMP_NUM_THREADS=str(self.config[key]['threads']), MKL_NUM_THREADS=str(self.config[key]['threads']), OMP_WAIT_POLICY='PASSIVE')
         if key == 'stt' and self.config[key].get('refresh_inventory') and os.environ.get('SUPERVISOR_TOKEN'):

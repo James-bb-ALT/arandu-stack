@@ -305,7 +305,7 @@ pub struct Operation {
     pub depends_on: Vec<usize>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SelectionOption {
     pub key: String,
     pub targets: Vec<String>,
@@ -313,7 +313,7 @@ pub struct SelectionOption {
     pub evidence: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Response {
     pub version: u8,
     pub status: String,
@@ -360,4 +360,154 @@ impl Response {
             ..Self::status(status)
         }
     }
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct SlotState {
+    pub value: Value,
+    pub status: String,
+    #[serde(default)]
+    pub evidence: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub candidates: Vec<Value>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct ClauseConstraints {
+    #[serde(default)]
+    pub negated: bool,
+    #[serde(default)]
+    pub excluded_targets: Vec<String>,
+    #[serde(default)]
+    pub conditional: bool,
+    #[serde(default)]
+    pub quoted_content: bool,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct PartialClause {
+    pub clause_id: usize,
+    pub original_text: String,
+    pub slots: BTreeMap<String, SlotState>,
+    #[serde(default)]
+    pub allowed_actions: Vec<String>,
+    #[serde(default)]
+    pub constraints: ClauseConstraints,
+    #[serde(default)]
+    pub unresolved: Vec<String>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct OriginContext {
+    #[serde(default)]
+    pub area_id: Option<String>,
+    pub source: String,
+    #[serde(default)]
+    pub context_id: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PartialRequest {
+    pub version: u8,
+    pub request_id: String,
+    pub generation: String,
+    #[serde(default)]
+    pub identity_scope_hash: String,
+    pub text: String,
+    #[serde(default)]
+    pub origin_area: Option<String>,
+    #[serde(default)]
+    pub origin_area_source: Option<String>,
+    #[serde(default)]
+    pub origin_context_id: Option<String>,
+    #[serde(default)]
+    pub last_area: Option<String>,
+    #[serde(default)]
+    pub last_targets: Vec<String>,
+    #[serde(default)]
+    pub pending: Option<Command>,
+    #[serde(default)]
+    pub antecedent: Option<Antecedent>,
+}
+
+impl PartialRequest {
+    #[must_use]
+    pub fn valid(&self) -> bool {
+        !self.request_id.is_empty()
+            && self.request_id.len() <= 128
+            && self.version == 5
+            && self.to_v4().valid()
+    }
+
+    #[must_use]
+    pub fn to_v4(&self) -> ContextRequest {
+        ContextRequest {
+            version: 4,
+            generation: self.generation.clone(),
+            text: self.text.clone(),
+            origin_area: self.origin_area.clone(),
+            origin_area_source: self.origin_area_source.clone(),
+            last_area: self.last_area.clone(),
+            last_targets: self.last_targets.clone(),
+            pending: self.pending.clone(),
+            antecedent: self.antecedent.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct PartialUnderstanding {
+    pub version: u8,
+    pub request_id: String,
+    pub catalog_generation: String,
+    pub identity_scope_hash: String,
+    pub origin: OriginContext,
+    pub request_kind: String,
+    pub clauses: Vec<PartialClause>,
+    #[serde(default)]
+    pub safety_flags: Vec<String>,
+    #[serde(default)]
+    pub literal_segments: Vec<String>,
+    pub criticality: String,
+    pub freshness: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub v4_outcome: Option<Response>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub timings: BTreeMap<String, f64>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProposalRepair {
+    pub clause_id: usize,
+    pub slot: String,
+    pub value: Value,
+    pub source: String,
+    #[serde(default)]
+    pub evidence: Vec<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewProposalRequest {
+    pub version: u8,
+    pub partial: PartialUnderstanding,
+    pub repairs: Vec<ProposalRepair>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct ReviewProposalResponse {
+    pub version: u8,
+    pub accepted: bool,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub operations: Vec<Operation>,
+    pub requires_confirmation: bool,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub timings: BTreeMap<String, f64>,
 }

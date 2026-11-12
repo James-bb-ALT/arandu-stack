@@ -1,0 +1,54 @@
+{
+  "baseline_id": "ptbr-independent-phase-b-v1",
+  "benchmark": {
+    "cold_start_ms": 22.95525399995313,
+    "failures": 0,
+    "first_request_failures": 0,
+    "first_request_ms": 0.8295160000670876,
+    "freeze_id": "ptbr-independent-phase-b-v1",
+    "latency_ms": {
+      "max": 0.7632509999666581,
+      "mean": 0.4581185913059965,
+      "min": 0.37718100008987676,
+      "p50": 0.43975099993076583,
+      "p95": 0.628252999945289,
+      "p99": 0.6782059999750345
+    },
+    "measured_rounds": 5,
+    "memory": {
+      "hwm_bytes": 2445312,
+      "rss_bytes": 2445312
+    },
+    "requests": 115,
+    "round_duration_seconds": [
+      0.010098874000050273,
+      0.011213558000008561,
+      0.010594432999937453,
+      0.010282286000006025,
+      0.010589041999992332
+    ],
+    "schema_version": 1,
+    "throughput_requests_per_second": 2178.9302259744222,
+    "warmup_rounds": 2
+  },
+  "files": {
+    "benchmark-v1.json": "a3d6ef9a5f1cc52e1621bbb47d09e2bb1c40b9ab1345db196f95fd64d231fbfa",
+    "catalog-v1.json": "c88d80ec13ce288d189cd40a89c5fa4c178ca70230e28a46d289a134a73b57e0",
+    "corpus-v1.jsonl": "21262ae414e483942cf1786e007dbfac7245cd64d46eb35b1f183c7e095ce935",
+    "freeze-v1.json": "64960ac920c6b613bf9f0cd8067a209d8f457e28f23eb5c44fca0b11d6783688",
+    "run-v1.json": "f0c8d319ff7cf52d84f836ed8787f295ab5816538449ea2937f14f90497572f0",
+    "spec-v1.json": "2b1fa4b896a110ce30d9f2f1781396a3b66fcaff4a27d80c1539239aa29c446c"
+  },
+  "phase": "B",
+  "provenance": {
+    "kind": "PROJECT_AUTHORED_SYNTHETIC",
+    "license": "Apache-2.0",
+    "product_output_used_for_labels": false
+  },
+  "schema_version": 1,
+  "scope": "passive ordered composition over protocol v1 Vec<Operation>",
+  "summary": {
+    "cases": 23,
+    "exact_pass": 23
+  }
+}

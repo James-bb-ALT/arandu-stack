@@ -95,9 +95,32 @@ _add("todo", "todo_add", "add_item", feature=1, field="item")
 _add("todo", "todo_complete", "update_item", feature=4, field="item")
 _add("todo", "todo_list", "get_items", read=True)
 
-READ_ACTIONS = frozenset(action for (_, action), adapter in ADAPTERS.items() if adapter.read) | {"local_time", "local_date"}
+TEMPORAL_ACTIONS = frozenset((
+    "clock_alarm_create",
+    "clock_alarm_list",
+    "clock_alarm_query",
+    "clock_alarm_cancel",
+    "clock_alarm_snooze",
+    "clock_alarm_dismiss",
+    "reminder_create",
+    "reminder_list",
+    "reminder_query",
+    "reminder_cancel",
+    "reminder_snooze",
+    "reminder_complete",
+    "timer_query",
+    "timer_list",
+    "schedule_action",
+    "scheduled_action_list",
+    "scheduled_action_cancel",
+))
+
+READ_ACTIONS = (
+    frozenset(action for (_, action), adapter in ADAPTERS.items() if adapter.read)
+    | {"local_time", "local_date", "clock_alarm_list", "clock_alarm_query", "reminder_list", "reminder_query", "timer_query", "timer_list", "scheduled_action_list"}
+)
 SPECIAL_ACTIONS = frozenset(("music", "transfer", "remote_key", "channel", "camera_view", "binding", "cancel", "confirm", "repeat_response"))
-ACTIONS = frozenset(action for _, action in ADAPTERS) | READ_ACTIONS | SPECIAL_ACTIONS
+ACTIONS = frozenset(action for _, action in ADAPTERS) | READ_ACTIONS | SPECIAL_ACTIONS | TEMPORAL_ACTIONS
 
 
 def finite(value: Any) -> bool:

@@ -80,10 +80,18 @@ class ContextualRuntime:
         self.active_request = None
         self.cancelled_tasks = set()
         self.queued_requests = {}
+        from .scheduled_delivery import ScheduledDeliveryHandler
+        from .scheduled_execution import ScheduledExecutionHandler
+        from .scheduled_jobs import ScheduledJobManager
+        self.delivery_handler = ScheduledDeliveryHandler(hass, options)
+        self.execution_handler = ScheduledExecutionHandler(hass, options)
+        self.scheduler = ScheduledJobManager(hass, self.delivery_handler, self.execution_handler)
 
     def close(self) -> None:
         self.catalog.close()
         self.sessions.clear()
+        if hasattr(self, "scheduler"):
+            self.scheduler.close()
 
     def options_changed(self) -> None:
         self.options_revision += 1
@@ -681,6 +689,20 @@ class ContextualRuntime:
     def prepare(self, operation: Operation, snapshot: Snapshot, user: Any, options: dict) -> Prepared:
         if operation.action in ("local_time", "local_date"):
             return Prepared(operation, ())
+        from .capabilities import TEMPORAL_ACTIONS
+        if operation.action in TEMPORAL_ACTIONS or (operation.action.startswith("timer_") and not operation.targets):
+            if operation.action == "schedule_action":
+                rows = []
+                target_action = operation.parameters.get("target_action", "turn_on")
+                for target in operation.targets:
+                    row = snapshot.by_id.get(target)
+                    if row is None:
+                        raise ExecutionError("stale", "target_not_in_snapshot")
+                    state = self.live(row, target_action, user, options)
+                    self.validate_scope(row, operation)
+                    rows.append(row)
+                return Prepared(operation, tuple(rows), ())
+            return Prepared(operation, ())
         if operation.action in ("binding", "camera_view"):
             binding = options.get("intent_bindings", {}).get(operation.intent)
             if type(binding) is not dict:
@@ -862,6 +884,11 @@ class ContextualRuntime:
                 if fresh.calls != item.calls:
                     raise ExecutionError("stale", "parameters_changed")
                 action = item.operation.action
+                from .capabilities import TEMPORAL_ACTIONS
+                if action in TEMPORAL_ACTIONS or (action.startswith("timer_") and not item.calls):
+                    responses.append(await self.handle_temporal(item, snapshot, user_input, user, options))
+                    completed += 1
+                    continue
                 if action in READ_ACTIONS:
                     async with asyncio.timeout(10):
                         responses.append(await self.query(item, snapshot, user_input, user, options, identity))
@@ -952,6 +979,8 @@ class ContextualRuntime:
                 members = set(groups[0]["area_ids"])
             candidates = [row for row in snapshot.by_id.values() if row["attributes"].get("bulk_eligible") is True and (category is None or row["domain"] == category) and (scope == "bulk_global" or row["area_id"] in members)]
             expected = {row["registry_id"] for row in candidates if row["attributes"].get("available") is not False and operation.action in row["actions"]}
+            excluded_targets = set(operation.parameters.get("excluded_targets", []))
+            expected -= excluded_targets
             if expected != set(operation.targets):
                 raise ExecutionError("denied", "bulk_target_set_changed")
 
@@ -1100,6 +1129,156 @@ class ContextualRuntime:
         if item.operation.action == "transfer":
             self.live(source, "transfer", current_user, options)
         await self.hass.services.async_call("music_assistant", service, data, blocking=True, context=user_input.context, target={"entity_id": [row["entity_id"]]})
+
+    async def handle_temporal(self, item: Prepared, snapshot: Snapshot, user_input: Any, user: Any, options: dict) -> str:
+        op = item.operation
+        action = op.action
+        params = op.parameters
+        if action == "clock_alarm_create":
+            job = await self.scheduler.async_add_job(
+                job_type="alarm",
+                target_action="clock_alarm",
+                time_str=params.get("time"),
+                date_str=params.get("date"),
+                recurrence=params.get("recurrence"),
+                name=params.get("name"),
+            )
+            time_display = params.get("time", "")
+            return f"Despertador definido para as {time_display}." if time_display else "Despertador configurado."
+
+        if action == "clock_alarm_list":
+            jobs = self.scheduler.list_jobs(job_type="alarm")
+            if not jobs:
+                return "Você não tem despertadores ativos."
+            details = [f"{j.due_iso[11:16]}" + (f" ({j.name})" if j.name else "") for j in jobs]
+            return f"Você tem {len(jobs)} despertador{'es' if len(jobs) > 1 else ''} ativo{'s' if len(jobs) > 1 else ''}: " + ", ".join(details) + "."
+
+        if action == "clock_alarm_cancel":
+            cancelled = await self.scheduler.async_cancel_jobs(
+                job_type="alarm",
+                name=params.get("name"),
+                time_str=params.get("time"),
+            )
+            return "Despertador cancelado." if cancelled else "Nenhum despertador correspondente encontrado."
+
+        if action == "clock_alarm_snooze":
+            dur = params.get("duration", 600.0)
+            job = await self.scheduler.async_snooze_job(job_type="alarm", duration_seconds=dur)
+            mins = int(dur // 60)
+            return f"Despertador adiado por {mins} minutos." if job else "Não há despertador tocando para adiar."
+
+        if action == "clock_alarm_dismiss":
+            job = await self.scheduler.async_dismiss_job(job_type="alarm")
+            return "Despertador desligado." if job else "Não há despertador tocando."
+
+        if action == "reminder_create":
+            title = params.get("title") or "lembrete"
+            job = await self.scheduler.async_add_job(
+                job_type="reminder",
+                target_action="reminder",
+                delay_seconds=params.get("delay"),
+                time_str=params.get("time"),
+                date_str=params.get("date"),
+                title=title,
+            )
+            return f"Lembrete criado: {title}."
+
+        if action == "reminder_list":
+            jobs = self.scheduler.list_jobs(job_type="reminder")
+            if not jobs:
+                return "Você não tem lembretes pendentes."
+            titles = [j.title or "sem título" for j in jobs]
+            return f"Você tem {len(jobs)} lembrete{'s' if len(jobs) > 1 else ''}: " + ", ".join(titles) + "."
+
+        if action == "reminder_cancel":
+            cancelled = await self.scheduler.async_cancel_jobs(
+                job_type="reminder",
+                name=params.get("title"),
+            )
+            return "Lembrete cancelado." if cancelled else "Nenhum lembrete correspondente encontrado."
+
+        if action == "timer_start":
+            dur = params.get("duration") or params.get("value") or 0.0
+            job = await self.scheduler.async_add_job(
+                job_type="timer",
+                target_action="timer",
+                delay_seconds=dur,
+                name=params.get("name"),
+            )
+            mins = int(dur // 60) if dur >= 60 else int(dur)
+            unit = "minutos" if dur >= 60 else "segundos"
+            name_str = f" para {job.name}" if job.name else ""
+            return f"Timer de {mins} {unit}{name_str} iniciado."
+
+        if action == "timer_list":
+            jobs = self.scheduler.list_jobs(job_type="timer")
+            if not jobs:
+                return "Não há timers ativos no momento."
+            now_ts = time.time()
+            details = []
+            for j in jobs:
+                rem = max(0, int(j.due_timestamp - now_ts))
+                m, s = divmod(rem, 60)
+                time_str = f"{m}m {s}s" if m else f"{s}s"
+                details.append((f"{j.name}: " if j.name else "") + time_str)
+            return "Timers ativos: " + ", ".join(details) + "."
+
+        if action == "timer_query":
+            jobs = self.scheduler.list_jobs(job_type="timer")
+            name = params.get("name")
+            if name:
+                jobs = [j for j in jobs if j.name and j.name.lower() == name.lower()]
+            if not jobs:
+                return "Não há nenhum timer ativo no momento."
+            rem = max(0, int(jobs[0].due_timestamp - time.time()))
+            m, s = divmod(rem, 60)
+            time_str = f"{m} minutos e {s} segundos" if m else f"{s} segundos"
+            return f"Faltam {time_str} no timer."
+
+        if action == "timer_change":
+            delta = params.get("relative", 0.0)
+            job = await self.scheduler.async_change_timer(name=params.get("name"), delta_seconds=delta)
+            if job:
+                return "Tempo do timer ajustado."
+            return "Nenhum timer correspondente encontrado para alterar."
+
+        if action == "timer_cancel":
+            all_timers = op.intent == "timer.cancel_all"
+            cancelled = await self.scheduler.async_cancel_jobs(
+                job_type="timer",
+                name=params.get("name"),
+                all_of_type=all_timers,
+            )
+            return "Timer cancelado." if cancelled else "Nenhum timer ativo para cancelar."
+
+        if action == "schedule_action":
+            target_action = params.get("target_action", "turn_on")
+            targets = [row["entity_id"] for row in item.rows]
+            job = await self.scheduler.async_add_job(
+                job_type="action",
+                target_action=target_action,
+                targets=targets,
+                delay_seconds=params.get("delay"),
+                time_str=params.get("time"),
+                date_str=params.get("date"),
+                parameters=params,
+            )
+            return "Ação agendada com sucesso."
+
+        if action == "scheduled_action_list":
+            jobs = self.scheduler.list_jobs(job_type="action")
+            if not jobs:
+                return "Não há tarefas agendadas."
+            return f"Você tem {len(jobs)} ação{'ões' if len(jobs) > 1 else ''} agendada{'s' if len(jobs) > 1 else ''}."
+
+        if action == "scheduled_action_cancel":
+            cancelled = await self.scheduler.async_cancel_jobs(
+                job_type="action",
+                name=params.get("target_action"),
+            )
+            return "Agendamento cancelado." if cancelled else "Nenhuma tarefa agendada correspondente encontrada."
+
+        return "Comando temporal concluído."
 
 
 def _options_hash(options: dict) -> str:

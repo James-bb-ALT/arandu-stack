@@ -1,0 +1,31 @@
+{
+  "cold_start_ms": 22.95525399995313,
+  "failures": 0,
+  "first_request_failures": 0,
+  "first_request_ms": 0.8295160000670876,
+  "freeze_id": "ptbr-independent-phase-b-v1",
+  "latency_ms": {
+    "max": 0.7632509999666581,
+    "mean": 0.4581185913059965,
+    "min": 0.37718100008987676,
+    "p50": 0.43975099993076583,
+    "p95": 0.628252999945289,
+    "p99": 0.6782059999750345
+  },
+  "measured_rounds": 5,
+  "memory": {
+    "hwm_bytes": 2445312,
+    "rss_bytes": 2445312
+  },
+  "requests": 115,
+  "round_duration_seconds": [
+    0.010098874000050273,
+    0.011213558000008561,
+    0.010594432999937453,
+    0.010282286000006025,
+    0.010589041999992332
+  ],
+  "schema_version": 1,
+  "throughput_requests_per_second": 2178.9302259744222,
+  "warmup_rounds": 2
+}

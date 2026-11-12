@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "spec_id": "ptbr-independent-entity-resolution-v1",
+  "status": "prepared_not_implemented",
+  "outcomes": ["resolved", "ambiguous", "no_match"],
+  "matching": {
+    "comparison": "exact_after_existing_contract_normalization",
+    "precedence": ["external_entity_id", "explicit_registry_alias", "display_name_with_constraint"],
+    "display_name_requires_constraint": true,
+    "tie_policy": "ambiguous",
+    "catalog_order_is_semantic": false
+  },
+  "constraints": ["area_id", "domain", "capability"],
+  "generation": {"required": true, "stale_policy": "no_match"},
+  "spans": {"kind": "half_open_utf8_byte", "must_belong_to_original_request": true},
+  "forbidden_matching": ["fuzzy", "phonetic", "transliteration", "additional_case_folding", "additional_accent_folding", "confusable_folding", "partial_name"],
+  "security": {"false_plan_max": 0, "unsafe_partial_max": 0, "residential_persistence": false, "execution": false},
+  "provenance": {"kind": "PROJECT_AUTHORED_SYNTHETIC", "license": "Apache-2.0", "product_output_used_for_labels": false}
+}

@@ -1,0 +1,55 @@
+{
+  "baseline_id": "ptbr-independent-entity-resolution-pre-implementation-v1",
+  "capabilities_absent": [
+    "entity-resolution-request-binding",
+    "external-entity-id-resolution",
+    "explicit-alias-resolution",
+    "constrained-display-name-resolution",
+    "ambiguity-outcome",
+    "stale-generation-rejection",
+    "validated-mention-spans"
+  ],
+  "corpus": {
+    "cases": 21,
+    "outcomes": {
+      "ambiguous": 2,
+      "no_match": 11,
+      "resolved": 8
+    }
+  },
+  "inputs": {
+    "catalog-v1.json": {
+      "path": "evaluation/ptbr-independent/entity-resolution/catalog-v1.json",
+      "sha256": "0a27438783f7e421277caf192af5b3ea1974bb6388e1c3a8e332d723322e3d3a"
+    },
+    "corpus-v1.jsonl": {
+      "path": "evaluation/ptbr-independent/entity-resolution/corpus-v1.jsonl",
+      "sha256": "b43492044dec2c0a837e5f724d7bf595a2ed66a633a2fb9ea8e659596d8671b0"
+    },
+    "freeze.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/freeze.py",
+      "sha256": "05de7da5a5d2727a12c423254f8a4de8c7257eab92e4213d119522ba12eeb74e"
+    },
+    "generate.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/generate.py",
+      "sha256": "838b5ba30c706915957183ca9ef85e2fa26114d08520dd92709495695fbdf3a6"
+    },
+    "oracle.py": {
+      "path": "evaluation/ptbr-independent/entity-resolution/oracle.py",
+      "sha256": "79b896b22f9a4f03439769b43de8d1bb18619ee0db05262a2c3619b99bd4661c"
+    },
+    "spec-v1.json": {
+      "path": "evaluation/ptbr-independent/entity-resolution/spec-v1.json",
+      "sha256": "cdf5e8d7348a912d15f852395afc25b291877fc6dcaf0278a5645028224669c1"
+    }
+  },
+  "known_contract_gaps": [
+    "no runtime result schema for entity candidates",
+    "no independent product runner",
+    "no Rust implementation or focused tests"
+  ],
+  "product_changes": [],
+  "product_output_used": false,
+  "schema_version": 1,
+  "status": "not_implemented"
+}

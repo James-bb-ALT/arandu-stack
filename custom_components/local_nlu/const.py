@@ -12,6 +12,8 @@ CONF_DEVICE_IDENTITY_BINDINGS = "device_identity_bindings"
 CONF_SHADOW_ENABLED = "shadow_enabled"
 CONF_DECISION_ENABLED = "decision_enabled"
 CONF_LLM_ENABLED = "llm_enabled"
+CONF_DELIVERY_MEDIA_PLAYER = "delivery_media_player"
+CONF_DELIVERY_TTS_ENGINE = "delivery_tts_engine"
 DEFAULT_ENDPOINT = "http://local-arandu-stack:11555"
 
 PROTOCOL_VERSION = 1

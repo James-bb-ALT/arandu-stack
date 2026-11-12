@@ -1,0 +1,50 @@
+{
+  "baseline_id": "ptbr-independent-mention-extraction-pre-implementation-v1",
+  "capabilities_absent": [
+    "mention-text-extraction",
+    "utf8-mention-spans",
+    "typed-constraints-with-evidence",
+    "ellipsis-inheritance-links",
+    "unlinked-reference-signal",
+    "multi-segment-extraction",
+    "atomic-extraction-rejection"
+  ],
+  "corpus": {
+    "cases": 30,
+    "outcomes": {
+      "extracted": 22,
+      "no_extraction": 8
+    }
+  },
+  "inputs": {
+    "corpus-v1.jsonl": {
+      "path": "evaluation/ptbr-independent/mention-extraction/corpus-v1.jsonl",
+      "sha256": "0616f2e87379997d1ddf2bf674cf9a031b753436031de3b778ecd6558841d443"
+    },
+    "freeze.py": {
+      "path": "evaluation/ptbr-independent/mention-extraction/freeze.py",
+      "sha256": "0c841e33efc00c3f6558c4d6270bd7e5f5f26f8a68ff60a05ede32d2d9f92755"
+    },
+    "generate.py": {
+      "path": "evaluation/ptbr-independent/mention-extraction/generate.py",
+      "sha256": "aeced144eb501d18a6410d3fe3953cd5c4ab83301b97eafd267d75dc64f22361"
+    },
+    "oracle.py": {
+      "path": "evaluation/ptbr-independent/mention-extraction/oracle.py",
+      "sha256": "115f882315bbb058fcff9268c1f451a548a765fab782ae8d8bdfe1e30dfa2509"
+    },
+    "snapshot-v1.json": {
+      "path": "evaluation/ptbr-independent/mention-extraction/snapshot-v1.json",
+      "sha256": "b99683eb01bfd51bd89ed6f89c9775806bdf45087acee6c84a321a9b338834d3"
+    }
+  },
+  "known_contract_gaps": [
+    "no runtime extraction schema",
+    "no independent product runner",
+    "no Rust implementation or focused tests"
+  ],
+  "product_changes": [],
+  "product_output_used": false,
+  "schema_version": 1,
+  "status": "not_implemented"
+}

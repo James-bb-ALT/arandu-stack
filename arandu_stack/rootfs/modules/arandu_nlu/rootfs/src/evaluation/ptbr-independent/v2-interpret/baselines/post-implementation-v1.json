@@ -1,0 +1,87 @@
+{
+  "activation_note": "v2 path is additive and local-only; protocol v1 and Home Assistant execution are unchanged and unwired",
+  "active": false,
+  "baseline_id": "ptbr-independent-v2-interpret-post-implementation-v1",
+  "benchmark_end_to_end": {
+    "cases_per_round": 24,
+    "endpoint": "POST /v2/interpret over loopback HTTP",
+    "mean_ns_per_case": 3294520.8333333335,
+    "memory_collection": "Win32 GetProcessMemoryInfo PeakWorkingSetSize sampled externally during sustained traffic",
+    "peak_working_set_bytes": 5570560,
+    "rounds": 40,
+    "throughput_cases_per_second": 303.53427724062044
+  },
+  "conformance": {
+    "cases": 24,
+    "gold_mismatches": 0,
+    "gold_outcomes": {
+      "ambiguous": 2,
+      "no_match": 13,
+      "plan": 9
+    },
+    "rust_gold_tests": "cargo test --workspace --locked --offline --test v2_interpret (24 gold rows + snapshot permutation): pass",
+    "rust_unit_tests": "cargo test --workspace --locked --offline --lib: pass",
+    "schema_bidirectional": "request/response schemas validate all live traffic"
+  },
+  "freeze_manifest": {
+    "path": "evaluation/ptbr-independent/v2-interpret/freeze-v1.json",
+    "sha256": "5662753819c0a8521ef4dd3aa8f97c7efebfa63ba38ab5b2e484059b353360e2"
+  },
+  "inputs": {
+    "corpus-v1.jsonl": {
+      "path": "evaluation/ptbr-independent/v2-interpret/corpus-v1.jsonl",
+      "sha256": "cdcbfa4249e4bfe925ae8c4d91c8d82473f49859b33916c00ef06a255c61b2ed"
+    },
+    "freeze.py": {
+      "path": "evaluation/ptbr-independent/v2-interpret/freeze.py",
+      "sha256": "624f38d1d48ac29fec9642c2c45356d7a48fba046dcc7ea5e77d08aa6d005e68"
+    },
+    "generate.py": {
+      "path": "evaluation/ptbr-independent/v2-interpret/generate.py",
+      "sha256": "fee9a5e42b20421e567ac0d920605b391ba9f082506ec804d92a80fb43d9c7dd"
+    },
+    "oracle.py": {
+      "path": "evaluation/ptbr-independent/v2-interpret/oracle.py",
+      "sha256": "7133b35418041944e57dd8584dc3721cbdd2b47c0c3a94ad28e8b602736c5c27"
+    },
+    "snapshot-v1.json": {
+      "path": "evaluation/ptbr-independent/v2-interpret/snapshot-v1.json",
+      "sha256": "343c5f16e870c8e3e47ab37807c7f5ed9d73d3b0e7e527cbd565283c0caeeccb"
+    },
+    "validate_v2.py": {
+      "path": "evaluation/ptbr-independent/v2-interpret/validate_v2.py",
+      "sha256": "200b7e13fd099f9ef3098e7dcb2b8ddf19b8c9dc9b47835fec26cbc2be936c76"
+    }
+  },
+  "product_changes": [
+    "addon/engine/src/v2.rs",
+    "addon/engine/src/extraction.rs",
+    "addon/engine/src/parser.rs",
+    "addon/engine/src/resolution.rs",
+    "addon/engine/src/normalize.rs",
+    "addon/engine/src/model.rs",
+    "addon/engine/src/server.rs",
+    "addon/engine/src/lib.rs",
+    "addon/engine/tests/v2_interpret.rs",
+    "addon/engine/tests/v2_interpret_http.rs",
+    "addon/engine/examples/mx_shadow.rs",
+    "custom_components/local_nlu/client.py",
+    "custom_components/local_nlu/protocol.py",
+    "schemas/v2-interpret-request.schema.json",
+    "schemas/v2-interpret-response.schema.json",
+    "evaluation/ptbr-independent/v2-interpret/validate_v2.py"
+  ],
+  "product_output_used": false,
+  "schema_version": 1,
+  "schemas": {
+    "v2-interpret-request.schema.json": {
+      "path": "schemas/v2-interpret-request.schema.json",
+      "sha256": "08aedc8390479ff2b336d76e02ea4472ac86620d13b415d0ca016834303acb23"
+    },
+    "v2-interpret-response.schema.json": {
+      "path": "schemas/v2-interpret-response.schema.json",
+      "sha256": "c575201e798fb0ca4d69f3300c6217e03cf6b211afce7533819152b99ff90d8f"
+    }
+  },
+  "status": "implemented_tested_baselined"
+}

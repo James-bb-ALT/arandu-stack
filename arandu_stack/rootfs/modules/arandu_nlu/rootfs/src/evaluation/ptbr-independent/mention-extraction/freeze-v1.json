@@ -1,0 +1,43 @@
+{
+  "corpus": {
+    "line_count": 30,
+    "outcomes": {
+      "extracted": 22,
+      "no_extraction": 8
+    }
+  },
+  "files": {
+    "corpus-v1.jsonl": {
+      "path": "evaluation/ptbr-independent/mention-extraction/corpus-v1.jsonl",
+      "sha256": "0616f2e87379997d1ddf2bf674cf9a031b753436031de3b778ecd6558841d443"
+    },
+    "freeze.py": {
+      "path": "evaluation/ptbr-independent/mention-extraction/freeze.py",
+      "sha256": "0c841e33efc00c3f6558c4d6270bd7e5f5f26f8a68ff60a05ede32d2d9f92755"
+    },
+    "generate.py": {
+      "path": "evaluation/ptbr-independent/mention-extraction/generate.py",
+      "sha256": "aeced144eb501d18a6410d3fe3953cd5c4ab83301b97eafd267d75dc64f22361"
+    },
+    "oracle.py": {
+      "path": "evaluation/ptbr-independent/mention-extraction/oracle.py",
+      "sha256": "115f882315bbb058fcff9268c1f451a548a765fab782ae8d8bdfe1e30dfa2509"
+    },
+    "prebaseline.py": {
+      "path": "evaluation/ptbr-independent/mention-extraction/prebaseline.py",
+      "sha256": "531dcfdfea1692dab88d4535bc452d0cbc99899c324ca798a69e1cf6c50d45f5"
+    },
+    "snapshot-v1.json": {
+      "path": "evaluation/ptbr-independent/mention-extraction/snapshot-v1.json",
+      "sha256": "b99683eb01bfd51bd89ed6f89c9775806bdf45087acee6c84a321a9b338834d3"
+    }
+  },
+  "freeze_id": "ptbr-independent-mention-extraction-v1",
+  "provenance": {
+    "kind": "PROJECT_AUTHORED_SYNTHETIC",
+    "license": "Apache-2.0",
+    "product_output_used_for_labels": false
+  },
+  "purpose": "prepared mention-extraction evidence before product implementation",
+  "schema_version": 1
+}

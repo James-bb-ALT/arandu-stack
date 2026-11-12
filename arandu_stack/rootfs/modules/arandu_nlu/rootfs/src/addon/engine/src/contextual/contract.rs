@@ -79,6 +79,23 @@ pub const ACTIONS: &[&str] = &[
     "cancel",
     "confirm",
     "repeat_response",
+    "clock_alarm_create",
+    "clock_alarm_list",
+    "clock_alarm_query",
+    "clock_alarm_cancel",
+    "clock_alarm_snooze",
+    "clock_alarm_dismiss",
+    "reminder_create",
+    "reminder_list",
+    "reminder_query",
+    "reminder_cancel",
+    "reminder_snooze",
+    "reminder_complete",
+    "timer_query",
+    "timer_list",
+    "schedule_action",
+    "scheduled_action_list",
+    "scheduled_action_cancel",
 ];
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -153,6 +170,28 @@ pub struct Parameters {
     pub category: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub secondary_targets: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub time: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duration: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub delay: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recurrence: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_action: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_domain: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub excluded_mentions: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub excluded_targets: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub excluded_device_ids: Vec<String>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]

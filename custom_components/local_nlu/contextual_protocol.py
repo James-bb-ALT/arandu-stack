@@ -46,7 +46,12 @@ class Outcome:
     options: tuple[dict, ...] = ()
 
 
-PARAMETERS = frozenset(("value", "relative", "metric", "aggregate", "state_filter", "threshold", "area", "date", "provider", "secondary_targets", "scope", "category"))
+PARAMETERS = frozenset((
+    "value", "relative", "metric", "aggregate", "state_filter", "threshold",
+    "area", "date", "provider", "secondary_targets", "scope", "category",
+    "name", "title", "time", "duration", "delay", "recurrence", "target_action",
+    "target_domain", "excluded_mentions", "excluded_targets", "excluded_device_ids",
+))
 AGGREGATES = frozenset(("count", "any", "all", "none", "min", "max", "sum", "average", "compare", "filter"))
 METRICS = frozenset(("temperature", "target_temperature", "device_temperature", "humidity", "co2", "illuminance", "noise", "air_quality", "presence", "location", "opening", "power", "energy", "battery", "leak", "tank_level", "people_count", "remaining_time", "media", "inventory", "area", "remaining", "weather", "sunrise", "sunset", "next_event", "position", "speed"))
 
@@ -57,6 +62,21 @@ def validate_parameters(value: Any) -> dict:
     for key, item in value.items():
         if key in ("relative", "threshold"):
             if type(item) not in (int, float) or not math.isfinite(item) or abs(item) > 604_800:
+                raise ProtocolError(key)
+        elif key in ("duration", "delay"):
+            if type(item) not in (int, float) or not math.isfinite(item) or not 0 <= item <= 604_800:
+                raise ProtocolError(key)
+        elif key in ("name", "title", "time", "recurrence", "target_domain"):
+            if not text(item):
+                raise ProtocolError(key)
+        elif key == "target_action":
+            if item not in ACTIONS:
+                raise ProtocolError(key)
+        elif key == "excluded_mentions":
+            if type(item) is not list or len(item) > 32 or any(not text(m) for m in item):
+                raise ProtocolError(key)
+        elif key in ("excluded_targets", "excluded_device_ids"):
+            if type(item) is not list or len(item) > 32 or any(not identifier(t) for t in item):
                 raise ProtocolError(key)
         elif key == "aggregate":
             if item not in AGGREGATES:
@@ -110,7 +130,16 @@ def parse(value: Any) -> Outcome:
         targets = operation["targets"]
         if type(targets) is not list or len(targets) > 32 or any(not identifier(target) for target in targets) or targets != sorted(set(targets)):
             raise ProtocolError("targets")
-        if not targets and action not in ("local_time", "local_date", "binding", "camera_view"):
+        NO_TARGET_ACTIONS = (
+            "local_time", "local_date", "binding", "camera_view",
+            "clock_alarm_create", "clock_alarm_list", "clock_alarm_query", "clock_alarm_cancel",
+            "clock_alarm_snooze", "clock_alarm_dismiss",
+            "reminder_create", "reminder_list", "reminder_query", "reminder_cancel",
+            "reminder_snooze", "reminder_complete",
+            "timer_query", "timer_list", "timer_start", "timer_cancel", "timer_pause", "timer_resume", "timer_change",
+            "scheduled_action_list", "scheduled_action_cancel",
+        )
+        if not targets and action not in NO_TARGET_ACTIONS:
             raise ProtocolError("empty_targets")
         dependencies = operation["depends_on"]
         if type(dependencies) is not list or any(type(item) is not int or not 0 <= item < number for item in dependencies) or dependencies != sorted(set(dependencies)):

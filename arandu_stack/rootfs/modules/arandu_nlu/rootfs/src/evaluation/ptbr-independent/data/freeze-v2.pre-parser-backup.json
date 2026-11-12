@@ -1,0 +1,252 @@
+{
+  "catalog": {
+    "bytes": 2966,
+    "path": "evaluation/ptbr-independent/data/catalog-v2.json",
+    "sha256": "ad4023b97a05f6b054df53f909e6240dc5eb299c580f4b42e1e6669149f157b4",
+    "target_count": 12
+  },
+  "created_at": "2026-09-17T04:10:25.608014Z",
+  "data_authorship": {
+    "kind": "PROJECT_AUTHORED_SYNTHETIC",
+    "license": "Apache-2.0",
+    "product_output_used_for_labels": false,
+    "second_annotator": false
+  },
+  "dataset": {
+    "buckets": {
+      "expected-pass-now": 72,
+      "expected-reject-now": 48,
+      "known-gap-future": 24
+    },
+    "bytes": 71757,
+    "id_sha256": "530e16f644d44b808898ad9512f611e9d22ca136b10f12f94096e82fb5094181",
+    "line_count": 144,
+    "path": "evaluation/ptbr-independent/data/dataset-v2.jsonl",
+    "sha256": "71c65a4f101b3a5adbbfd0918d4760243e1dce74fc267bcc11ea3c1fe29e72d4"
+  },
+  "engine_source": {
+    "files": [
+      {
+        "bytes": 264,
+        "path": "addon/engine/src/lib.rs",
+        "sha256": "c1ed13e62036416ce702a919cdb49363f56ce2aeb7cf75ee7bb64a7403b91b06"
+      },
+      {
+        "bytes": 959,
+        "path": "addon/engine/src/main.rs",
+        "sha256": "3f79d50b0e5d2b063637fee3494e886c25277631be5c89375522dd193f2fdd20"
+      },
+      {
+        "bytes": 6705,
+        "path": "addon/engine/src/model.rs",
+        "sha256": "3afc4f9b360a18e5facd4e49ae7854d85eb6dfc4895e36a7f60b99881178eb46"
+      },
+      {
+        "bytes": 1435,
+        "path": "addon/engine/src/normalize.rs",
+        "sha256": "a7673a08b4f717677450b62a73cb6a95c1082bb5ac016b434cb9e7dec9ce9293"
+      },
+      {
+        "bytes": 16990,
+        "path": "addon/engine/src/parser.rs",
+        "sha256": "e2a7da2eeafc53b8d9f6c87134beddca3e88aca3a82e300eb1133ca29d5c2fca"
+      },
+      {
+        "bytes": 8256,
+        "path": "addon/engine/src/server.rs",
+        "sha256": "a3ad47720a5b2bbba74a4bd35f0f7c59f3fd0504a37da83a7a6cfe37528e5fbc"
+      }
+    ],
+    "path": "addon/engine/src",
+    "sha256": "c81a64e72fdaacf1b9fc7479908dca33a6e33944429bafd93d0415ef31537967"
+  },
+  "evaluation_source": {
+    "files": [
+      {
+        "bytes": 5745,
+        "path": "evaluation/ptbr-independent/arandu_adapter.py",
+        "sha256": "f64444f17e4d47e4cb07da1de72ea6910c698e11318de1be6977784a8522eed9"
+      },
+      {
+        "bytes": 7964,
+        "path": "evaluation/ptbr-independent/benchmark.py",
+        "sha256": "f4d1f18fb1a68b5b3afde0384d4e27a766a67a227d02a0bd5c3af5762da957cf"
+      },
+      {
+        "bytes": 8172,
+        "path": "evaluation/ptbr-independent/benchmark_v2.py",
+        "sha256": "ea1fe677d40b6efdc30b804355959df314ba4c4c650c5401792f5ac2b6e3efca"
+      },
+      {
+        "bytes": 2687,
+        "path": "evaluation/ptbr-independent/corpus.py",
+        "sha256": "6bf40a105e7f92feb70f5987ab29f1cf8a18f4070e72e219dd15cf2c35eef357"
+      },
+      {
+        "bytes": 2742,
+        "path": "evaluation/ptbr-independent/data/catalog-v1.json",
+        "sha256": "91c5a2a8e728adc6e51442d0e0b27388a9e795e20638f62e42a85a0512a80c73"
+      },
+      {
+        "bytes": 0,
+        "path": "evaluation/ptbr-independent/data/catalog-v1.json.modified-backup",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "bytes": 2742,
+        "path": "evaluation/ptbr-independent/data/catalog-v1.original-backup.json",
+        "sha256": "91c5a2a8e728adc6e51442d0e0b27388a9e795e20638f62e42a85a0512a80c73"
+      },
+      {
+        "bytes": 2966,
+        "path": "evaluation/ptbr-independent/data/catalog-v2.json",
+        "sha256": "ad4023b97a05f6b054df53f909e6240dc5eb299c580f4b42e1e6669149f157b4"
+      },
+      {
+        "bytes": 3240,
+        "path": "evaluation/ptbr-independent/data/dataset-phase-a.jsonl",
+        "sha256": "1f04cc1830fe3294de5ce8bbcad410f3359a15ee8a9412463c1d94284b990875"
+      },
+      {
+        "bytes": 71857,
+        "path": "evaluation/ptbr-independent/data/dataset-v1.jsonl",
+        "sha256": "b9cdba8ea51ac96f18d3b8dd6508933f6179d7f96c2b34b430e6e2e57591e664"
+      },
+      {
+        "bytes": 71757,
+        "path": "evaluation/ptbr-independent/data/dataset-v2.jsonl",
+        "sha256": "71c65a4f101b3a5adbbfd0918d4760243e1dce74fc267bcc11ea3c1fe29e72d4"
+      },
+      {
+        "bytes": 571,
+        "path": "evaluation/ptbr-independent/data/freeze-phase-a.json",
+        "sha256": "30262e1f5ddc7adf75881120b8c8fda3c0eb8feca34947c9c1c684979a21c331"
+      },
+      {
+        "bytes": 5213,
+        "path": "evaluation/ptbr-independent/data/freeze-v1.json",
+        "sha256": "40f016c56d51c498307bedeb873a6a23ff2365c6ab21b883ba86aee016bf944c"
+      },
+      {
+        "bytes": 4866,
+        "path": "evaluation/ptbr-independent/freeze.py",
+        "sha256": "5884d15d1dd68ea56901037ef723e4562630338b989205103d7c9d0a2d92fe97"
+      },
+      {
+        "bytes": 4996,
+        "path": "evaluation/ptbr-independent/freeze_v2.py",
+        "sha256": "695df70092d88400586edac2add2c1fca3e8c2cb5698a17033604466fda475c4"
+      },
+      {
+        "bytes": 10084,
+        "path": "evaluation/ptbr-independent/generate_dataset.py",
+        "sha256": "0815efe5c8a7382d285e514d806bf91c1b2a456dbd23517823698f1c948f6b48"
+      },
+      {
+        "bytes": 548,
+        "path": "evaluation/ptbr-independent/generate_phase_a.py",
+        "sha256": "40664ad62290a69d78cf63fc3cfb99bd78a560d8eb9e79b501821348c9c34b21"
+      },
+      {
+        "bytes": 2822,
+        "path": "evaluation/ptbr-independent/phase_a.py",
+        "sha256": "cfc07a333eb2aafbd598ab39ecf93d826996fcd38d2f5de6fe00c60db11e66eb"
+      },
+      {
+        "bytes": 2065,
+        "path": "evaluation/ptbr-independent/phase_a_manifest.py",
+        "sha256": "de0ea19bfe12837a0c2ef753a3175dff971dbb3ea18973191a97eadf034b37cf"
+      },
+      {
+        "bytes": 2728,
+        "path": "evaluation/ptbr-independent/phase_a_run.py",
+        "sha256": "ceba5eda11798f1fc14ac50527b2dc19b54d6331d162078cc4cbbcde0630c721"
+      },
+      {
+        "bytes": 2354,
+        "path": "evaluation/ptbr-independent/README.md",
+        "sha256": "7fc730b78f44b4503115c5a12b6e9f499466aa2e09570b93ef64ec732ab5dc7f"
+      },
+      {
+        "bytes": 3357,
+        "path": "evaluation/ptbr-independent/record.py",
+        "sha256": "f2b2e7ddbbf3a8fbda5b85032615ce34fcf954eedf3794b09c21bd881e74b57c"
+      },
+      {
+        "bytes": 2976,
+        "path": "evaluation/ptbr-independent/reporting.py",
+        "sha256": "4dd0d5b50ec9f1f054126b001abfebccea1c622dca14eef7881efc5499597c2d"
+      },
+      {
+        "bytes": 4702,
+        "path": "evaluation/ptbr-independent/run.py",
+        "sha256": "ad82861f049d12e9b2a224393cc9772a896bc43cad071eda0e2bcef54676228f"
+      },
+      {
+        "bytes": 4836,
+        "path": "evaluation/ptbr-independent/run_v2.py",
+        "sha256": "690ecc3375490d5f39dfb98814078fb92e9139e9919ad2979efbd351d82d7f63"
+      },
+      {
+        "bytes": 12697,
+        "path": "evaluation/ptbr-independent/semantic.py",
+        "sha256": "86839d6ad9b01f791508aeeee6b2d299564371e85c2c271969f626cbac31e375"
+      },
+      {
+        "bytes": 3370,
+        "path": "evaluation/ptbr-independent/test_arandu_adapter.py",
+        "sha256": "582bea1ce257c519f0aef927bb6e5aa9d152052408ca429718521bf7fff8221c"
+      },
+      {
+        "bytes": 1448,
+        "path": "evaluation/ptbr-independent/test_benchmark.py",
+        "sha256": "39d851a9c447cdeccee7c4716c8848a84677ce71464cbcdc387dd1e98d13d25e"
+      },
+      {
+        "bytes": 1504,
+        "path": "evaluation/ptbr-independent/test_corpus.py",
+        "sha256": "f75cb36365b386946e4308b95fdee3bd5f92630e6e97bea7955de1017813e4db"
+      },
+      {
+        "bytes": 1759,
+        "path": "evaluation/ptbr-independent/test_phase_a.py",
+        "sha256": "681622bb0dd226d2496a3ddb24a304b9261b0317a4c39ea6a33a27445b4c91a5"
+      },
+      {
+        "bytes": 1272,
+        "path": "evaluation/ptbr-independent/test_phase_a_run.py",
+        "sha256": "5b4d7c0d03bec9ebfe20ba76b86ecccec0e1370472880d55119e67a055b8c643"
+      },
+      {
+        "bytes": 2322,
+        "path": "evaluation/ptbr-independent/test_record.py",
+        "sha256": "041019a860b3375845fe8df29bb5fbab3e6ab664550626865c89f012793eb07d"
+      },
+      {
+        "bytes": 1121,
+        "path": "evaluation/ptbr-independent/test_reporting.py",
+        "sha256": "09690aa2b312a95cb802675ff7495317fed42867ecb7dd4e3a917695b25653c4"
+      },
+      {
+        "bytes": 2987,
+        "path": "evaluation/ptbr-independent/test_run.py",
+        "sha256": "3acf7a66d96186e547f399789059a4a4335e60a3c6f012321f8371d0b3396d45"
+      },
+      {
+        "bytes": 5408,
+        "path": "evaluation/ptbr-independent/test_semantic.py",
+        "sha256": "dbb1f56c907e20a816e019101f068b0e47bb578a3388c1205b254c8085096c0e"
+      }
+    ],
+    "path": "evaluation/ptbr-independent",
+    "sha256": "43ba40397b602611bf5caf1febcb4c95d690593857449b90203e26285fae9f7f"
+  },
+  "freeze_id": "ptbr-independent-v2",
+  "purpose": "frozen project-authored inputs before first product HTTP request",
+  "repository": {
+    "commit": "0f3b7d3337e651d6ebb5fe8706341bead239459c",
+    "status_porcelain": "M addon/engine/src/model.rs\n M addon/engine/src/parser.rs\n M docs/mlp/BUILD-WINDOWS.md\n M implementation-clean-room\n M tools/dev/Dockerfile\n M tools/dev/run.py\n M tools/mlp-dev.ps1\n?? .cargo/\n?? baseline_check.txt\n?? docs/roadmap/\n?? docs/sophia_behavioral_analysis.md\n?? evaluation/\n?? sophia-ha-app/\n?? test_baseline_output.txt\n?? work/",
+    "tree": "bacc65e4a67beb6559be781d52d261b6b9e170cb"
+  },
+  "schema_version": 1
+}

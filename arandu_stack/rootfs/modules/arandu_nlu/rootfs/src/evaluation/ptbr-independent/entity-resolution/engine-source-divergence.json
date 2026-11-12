@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "record_id": "ptbr-independent-engine-source-divergence-er-implementation",
+  "reason": "additive ADR-0051/ADR-0052-Steps-1-2/ADR-0053-Steps-4-6 implementation; protocol v1 behavior and integration execution path unchanged (proven by regression_gate, not by inspection)",
+  "history": [
+    {
+      "digest": "6a3790b3d402ad3501c74828068892510d8d1291e526ed2e9f69fbcd3772dd20",
+      "scope": "resolution.rs plus lib.rs exports plus model.rs visibility"
+    },
+    {
+      "digest": "089041a5f1e68004f7be648030ef928fb861cf52073502e1bd698c049ccc9d29",
+      "scope": "Step 1 /v2/resolve route pre-rustfmt"
+    },
+    {
+      "digest": "2580ccf7f2b0d8d369a61aedc39449a1e679205fde92eec16f7551d9c3c6ac3b",
+      "scope": "Step 1 complete with schemas, client, tests"
+    }
+  ],
+  "phase_a_freeze": {
+    "path": "evaluation/ptbr-independent/data/freeze-v2.json",
+    "engine_source_digest": "6e61c34757fc2fe66570f84327c2ebb3a11a7d9b4074f57ebaf20ec15e550b23"
+  },
+  "current_engine_source_digest": "02557b9ad97bbe1bbf010b0b28a9a6f6eeeabbd9d3f977ac3b64457758b5427c",
+  "digest_method": "freeze_v2.tree_digest over addon/engine/src (same official function as the freeze)",
+  "engine_files": {
+    "added": [
+      "addon/engine/src/extraction.rs",
+      "addon/engine/src/resolution.rs",
+      "addon/engine/src/v2.rs"
+    ],
+    "changed": [
+      "addon/engine/src/lib.rs",
+      "addon/engine/src/model.rs",
+      "addon/engine/src/normalize.rs",
+      "addon/engine/src/parser.rs",
+      "addon/engine/src/server.rs"
+    ],
+    "unchanged": ["addon/engine/src/main.rs"]
+  },
+  "change_summary": [
+    "resolution.rs: resolve_entity module, snapshot index with areas, rigid-span helper",
+    "extraction.rs: pure mention extraction with original-UTF-8 spans, shared parser grammar",
+    "v2.rs: versioned full interpretation with unlinked poisoning, inherits abstention, action-capability constraints",
+    "normalize.rs: additive normalize_with_spans locked equivalent to normalize",
+    "parser.rs: effect_segments_spanned (effect_segments delegates, behavior identical), shared verb_action/percentage tables, visibility only otherwise",
+    "model.rs: valid_identifier visibility; mention bound constants",
+    "lib.rs: additive module exports; interpret() untouched",
+    "server.rs: additive POST /v2/resolve and /v2/interpret branches with route-appropriate error bodies; v1 path byte-identical"
+  ],
+  "frozen_inputs_still_verified": ["catalog", "dataset", "data_authorship"],
+  "note": "run_v2.py still refuses --binary runs while engine_source differs (fail-closed, by design). Use evaluation/ptbr-independent/regression_gate.py for post-freeze regression proof; it reuses the official loaders, oracles and HTTP adapter without editing any freeze."
+}

@@ -1,0 +1,24 @@
+{
+  "artifacts": {
+    "benchmark-v2.json": "9b6bbddf38425792970e361b5221f52a92bb423a4b09b4d895394695fb07f326",
+    "benchmark-v2.md": "0932b30adada8e6cfc1d50987a20380dcde7c7e7a509932056b1dc3a0a9a2f6c",
+    "run-v2.json": "1f4294dfdec8f0f98d5ddc974bf241ca08fe7f90faa4c1840c3bff7257445513",
+    "run-v2.md": "76854e6e5c4f049a72448826eb740bd1b7501e82294d44864c236c1ca6765423"
+  },
+  "benchmark_hashes": {
+    "adapter": "a55b7f60317a62bb3d05edbbf399f876a2706f0cd41f7a519e770ffd6260b272",
+    "benchmark": "941178ecc1aec2037d311dc85301be837e47e999f7c64978d40f66212134e3aa",
+    "binary": "33370a173388c90b80b089d215cf1fd4140f95ba4345dfbeab215fc1b231714e",
+    "comparison": "47c66e841f284d26522ad707b4e89f215980c1df26329010f31d7abe017a3e63"
+  },
+  "freeze_id": "ptbr-independent-v2",
+  "run_hashes": {
+    "adapter": "a55b7f60317a62bb3d05edbbf399f876a2706f0cd41f7a519e770ffd6260b272",
+    "binary": "33370a173388c90b80b089d215cf1fd4140f95ba4345dfbeab215fc1b231714e",
+    "catalog": "ad4023b97a05f6b054df53f909e6240dc5eb299c580f4b42e1e6669149f157b4",
+    "comparison": "47c66e841f284d26522ad707b4e89f215980c1df26329010f31d7abe017a3e63",
+    "dataset": "71c65a4f101b3a5adbbfd0918d4760243e1dce74fc267bcc11ea3c1fe29e72d4",
+    "runner": "2ca6dd287fa3dbe4d33b64c8e7a104d189f0dd3805fee2d641713db6aa15ddeb"
+  },
+  "schema_version": 1
+}

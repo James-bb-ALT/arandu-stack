@@ -338,4 +338,4 @@ class OutputConfiguration(unittest.IsolatedAsyncioTestCase):
         flow=self.module.LocalNluOptionsFlow()
         result=await flow.async_step_init()
         self.assertEqual(result['type'],'menu')
-        self.assertEqual(result['menu_options'],['voice_output','identity_binding','intelligence','performance','settings'])
+        self.assertEqual(result['menu_options'],['voice_output','identity_binding','announcements','intelligence','performance','settings'])

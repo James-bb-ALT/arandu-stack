@@ -31,9 +31,28 @@
         "menu_options": {
           "voice_output": "Audio outputs — review and edit bindings",
           "identity_binding": "Voice identity — users and bindings",
+          "announcements": "Voice announcements (Intercom) — areas and satellites",
           "intelligence": "Intelligence layers",
           "settings": "Other settings",
           "performance": "Queues and limits"
+        }
+      },
+      "announcements": {
+        "title": "Voice announcements (Intercom)",
+        "description": "**Configured announcement destinations**\n\n{destinations}\n\nChoose an area and associate an Assist satellite OR media player to receive targeted announcements. To remove, select an existing destination. Broadcasts to the whole house require single-use confirmation.",
+        "data": {
+          "announcements_enabled": "Enable targeted voice announcements",
+          "announcements_allow_all": "Allow whole-house announcements (broadcast)",
+          "announcements_chime": "Play a chime before the announcement",
+          "announcements_cooldown_s": "Minimum interval between announcements from same source (seconds)",
+          "announcements_tts_entity": "TTS entity for media players",
+          "quiet_hours_start": "Quiet hours start (HH:MM, optional)",
+          "quiet_hours_end": "Quiet hours end (HH:MM, optional)",
+          "area_id": "Target area",
+          "satellite_id": "Assist satellite",
+          "media_player_id": "Target media player",
+          "save_and_finish": "Save and finish",
+          "existing_mapping": "Existing destination to remove"
         }
       },
       "intelligence": {
@@ -119,7 +138,13 @@
       "invalid_voice_output": "Choose an available media player; up to 128 output bindings are allowed.",
       "voice_output_unavailable": "The output is unavailable, removed or disabled.",
       "voice_output_not_exposed": "Expose this output to Assist under voice assistant entity exposure, then try again.",
-      "voice_output_no_volume": "This media player does not support volume control in Home Assistant."
+      "voice_output_no_volume": "This media player does not support volume control in Home Assistant.",
+      "invalid_announcement_origin": "The selected device is unavailable or disabled.",
+      "announcement_not_exposed": "The selected entity is not exposed to Assist.",
+      "choose_one_announcement_target": "Choose either a satellite or a media player at a time.",
+      "announcement_area_required": "Select an area to associate the announcement device.",
+      "announcement_limit_reached": "Announcement destinations limit reached (max 32 areas, 2 entities per area).",
+      "invalid_quiet_hours": "Invalid quiet hours (use HH:MM format)."
     }
   },
   "title": "Arandu Assistant"

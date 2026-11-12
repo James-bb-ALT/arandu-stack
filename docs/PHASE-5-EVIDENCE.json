@@ -1,0 +1,34 @@
+{
+  "phase": 5,
+  "date": "2026-11-12",
+  "branch": "feat/arandu-fase-5-nlu-avancado",
+  "base_sha": "dfe574b327fccb6a04a8c2ee05340f1c9081abe7",
+  "phase4": {"pr": 2, "state": "MERGED", "merge_sha": "dfe574b327fccb6a04a8c2ee05340f1c9081abe7", "preserved": ["549dc61", "af43bb4"]},
+  "release": "No standalone release or global metadata bump; final F5/F6 integration owns versions",
+  "validation": {
+    "rust": {"commands": ["cargo fmt --manifest-path engine/Cargo.toml -- --check", "cargo clippy --manifest-path engine/Cargo.toml --locked --offline --all-targets -- -D warnings", "cargo test --manifest-path engine/Cargo.toml --locked --offline"], "working_directory": "arandu_stack/rootfs/modules/arandu_nlu/rootfs/src/addon", "toolchain": "1.98.0", "environments": ["Windows native", "Docker Linux musl offline"], "tests_passed_each": 104},
+    "python_root": {"command": "python -m pytest tests -q --tb=short", "real_nlu": true, "real_model_stack": true, "ha": "simulated", "passed": 376, "skipped": 4, "subtests_passed": 217, "warnings": 8},
+    "final_spatial_fix": {"command": "python -m pytest tests/test_phase5_runtime.py tests/test_phase5_protocol.py tests/test_phase5_history.py tests/test_phase5_compatibility.py tests/test_phase1_e2e.py -q --tb=short", "passed": 43, "subtests_passed": 36, "note": "After last Rust spatial-scope tightening; full root suite also rerun afterward: 376 passed, 4 skipped, 217 subtests in 100.84s"},
+    "legacy_comparison": {"command": "python -m pytest arandu_stack/rootfs/modules/arandu_nlu/rootfs/src/tests/mlp -q --tb=short", "phase4": {"passed": 155, "failed": 23, "skipped": 68, "subtests_passed": 65}, "phase5": {"passed": 155, "failed": 23, "skipped": 68, "subtests_passed": 65}, "cause": "Same 4 historical identity/requires_review assertions and 19 packaging tests requiring unavailable Ruby executable. No new failure versus Phase4."},
+    "packaging": {"type": "unpublished local flat HACS ZIP", "files": 61, "checks": ["all Python AST parsed", "all JSON parsed", "ZIP CRC", "required new helpers present", "no pycache or forbidden audio/database/key files"]},
+    "docker": {"command": "docker build --target nlu_builder -t arandu-phase5:nlu arandu_stack", "scope": "modified Rust build stage; full model dependency image not rebuilt"},
+    "js": "No JavaScript modified",
+    "standard_gate": "tools/mlp-check absent in this base; constituent checks run explicitly",
+    "reviews": {"correctness": "Three reproduced findings corrected with regression tests: undo snapshot timing, unknown spatial scope, temporal slot contamination", "security": "No actionable finding; delta reviewed", "diff_check": "git diff --check"},
+    "earlier_attempts": "Initial root run had 16 implementation failures corrected; subsequent run had two real LLM upstream 503/429 failures. Owned validation container restarted; full root rerun passed. One retry overlapped native server rebuild and failed connection; not counted as passing. Legacy initial collection needed explicit fixture PYTHONPATH."
+  },
+  "benchmark": {
+    "command": "ARANDU_NLU_ENDPOINT=<isolated native HTTP> python tests/test_phase5_benchmark.py <output.json>",
+    "kind": "REAL_RUST_HTTP_SIMULATED_HA",
+    "samples": 100,
+    "nlu_http": {"p50_ms": 1.22310, "p95_ms": 1.90870},
+    "ha_read_render": {"p50_ms": 0.11945, "p95_ms": 0.18940},
+    "ha_query_end_to_end": {"p50_ms": 2.46370, "p95_ms": 3.57470},
+    "scope": "Windows development host; includes transport and simulated HA catalog/rendering; not i5-6500T or physical HA performance",
+    "physical_actions": 0,
+    "neural_calls": 0
+  },
+  "physical_home_assistant": "Not validated; Recorder contract fixtures only. No residential data or live domestic effects used.",
+  "history_limits": "HA Core 2026.11 helper/version guard; raw <=25h, <=4096 points, <=1MiB, 5s timeout, one native job per HA; missing coverage returns insufficient_history",
+  "corpus": "Project-authored Apache-2.0 FIXTURE_TECNICA; no linguistic accuracy claim"
+}

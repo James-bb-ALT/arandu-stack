@@ -292,6 +292,9 @@ pub fn recognize(
     inherited: Option<&Command>,
     domain_hint: Option<&str>,
 ) -> Option<Command> {
+    if let Some(result) = parse_phase5(text) {
+        return Some(result);
+    }
     let mut text = canonicalize(text);
     // Closed, reusable category allowlist. Never derive an implicit action from names.
     if let Some(domain) = implicit_category(&text) {
@@ -977,6 +980,344 @@ fn command(action: &str, domain: Option<&str>, target: Option<&str>) -> Command 
         mention: target.map(str::to_owned),
         ..Command::default()
     }
+}
+
+/// Whole clauses only: list content is a literal slot, never a device clause.
+pub(super) fn parse_phase5(text: &str) -> Option<Command> {
+    parse_todo_command(text)
+        .or_else(|| parse_automation_command(text))
+        .or_else(|| parse_advanced_query(text))
+}
+
+fn todo_canonical_head(text: &str) -> String {
+    text.split_once(' ').map_or_else(
+        || text.to_owned(),
+        |(verb, rest)| {
+            let head = match verb {
+                "adicione" | "adicionar" => "adiciona",
+                "anote" | "anotar" => "anota",
+                "coloque" | "colocar" => "coloca",
+                "inclua" | "incluir" => "inclui",
+                "remova" | "remover" => "remove",
+                "tire" | "tirar" => "tira",
+                "marque" | "marcar" => "marca",
+                "troque" | "trocar" => "troca",
+                "renomeie" | "renomear" => "renomeia",
+                "limpe" | "limpar" => "limpa",
+                _ => verb,
+            };
+            format!("{head} {rest}")
+        },
+    )
+}
+
+pub(super) fn parse_todo_command(text: &str) -> Option<Command> {
+    let canonical = todo_canonical_head(text);
+    let text = canonical.as_str();
+    let (body, list) = [
+        " da lista de ",
+        " na lista de ",
+        " a lista de ",
+        " da lista ",
+        " na lista ",
+        " a lista ",
+    ]
+    .iter()
+    .find_map(|separator| text.rsplit_once(separator))
+    .map_or((text, None), |(body, list)| (body, Some(list)));
+    let body = body
+        .trim_end_matches(" na lista")
+        .trim_end_matches(" da lista");
+    let mut result = command("todo_list", Some("todo"), list);
+    if body.starts_with("limpa os itens concluidos")
+        || body.starts_with("remove todos os concluidos")
+    {
+        if !matches!(
+            body,
+            "limpa os itens concluidos" | "remove todos os concluidos"
+        ) {
+            return None;
+        }
+        result.action = "todo_remove_completed".into();
+    } else if matches!(
+        body,
+        "o que falta comprar"
+            | "lista de compras"
+            | "mostra os itens"
+            | "mostra a lista"
+            | "lista os itens"
+    ) {
+        if body == "lista de compras" {
+            result.mention = Some("compras".into());
+        }
+    } else if let Some(item) = body.strip_prefix("marca ").and_then(|s| {
+        s.strip_suffix(" como comprado")
+            .or_else(|| s.strip_suffix(" como concluido"))
+    }) {
+        result.action = "todo_complete".into();
+        result.parameters.value = Some(Value::String(item.into()));
+    } else if let Some(rest) = body
+        .strip_prefix("troca ")
+        .or_else(|| body.strip_prefix("renomeia "))
+    {
+        let (old, new) = rest
+            .split_once(" por ")
+            .or_else(|| rest.split_once(" para "))?;
+        result.action = "todo_update".into();
+        result.parameters.old_item = Some(old.into());
+        result.parameters.new_item = Some(new.into());
+    } else {
+        let (prefix, action) = [
+            ("adiciona ", "todo_add"),
+            ("anota ", "todo_add"),
+            ("coloca ", "todo_add"),
+            ("inclui ", "todo_add"),
+            ("remove ", "todo_remove"),
+            ("tira ", "todo_remove"),
+        ]
+        .into_iter()
+        .find(|(prefix, _)| body.starts_with(prefix))?;
+        if prefix == "coloca "
+            && list.is_none()
+            && !text.ends_with(" na lista")
+            && !text.ends_with(" da lista")
+        {
+            return None;
+        }
+        let item = body.strip_prefix(prefix)?;
+        if item.is_empty() || item.len() > 256 {
+            return None;
+        }
+        result.action = action.into();
+        result.parameters.value = Some(Value::String(item.into()));
+    }
+    result.intent = match result.action.as_str() {
+        "todo_add" => "todo.add",
+        "todo_complete" => "todo.complete",
+        "todo_remove" => "todo.remove",
+        "todo_update" => "todo.update",
+        "todo_remove_completed" => "todo.clear_completed",
+        _ => "todo.list",
+    }
+    .into();
+    Some(result)
+}
+
+pub(super) fn parse_automation_command(text: &str) -> Option<Command> {
+    let mut result;
+    if matches!(
+        text,
+        "quais automacoes estao desativadas"
+            | "qual automacao esta desativada"
+            | "quais automacoes estao ativas"
+            | "quais automacoes estao ligadas"
+    ) {
+        result = command("query", Some("automation"), None);
+        result.plural = true;
+        result.parameters.aggregate = Some("filter".into());
+        result.parameters.state_filter = Some(
+            if text.contains("desativada") {
+                "off"
+            } else {
+                "on"
+            }
+            .into(),
+        );
+    } else if let Some(name) = text.strip_prefix("a automacao ").and_then(|s| {
+        s.strip_suffix(" esta ligada")
+            .or_else(|| s.strip_suffix(" esta desativada"))
+    }) {
+        result = command("query", Some("automation"), Some(name));
+    } else {
+        let (verb, rest) = text.split_once(' ')?;
+        let action = match verb {
+            "ativa" | "ative" | "ativar" | "habilita" | "habilite" | "habilitar" | "liga"
+            | "ligue" | "ligar" => "automation_enable",
+            "desativa" | "desative" | "desabilita" | "desabilite" | "desliga" | "desligue" => {
+                "automation_disable"
+            }
+            "executa" | "execute" | "executar" | "roda" | "rode" | "rodar" => "automation_trigger",
+            _ => return None,
+        };
+        let name = rest
+            .strip_prefix("a automacao ")
+            .or_else(|| rest.strip_prefix("automacao "))?;
+        let name = name.strip_suffix(" agora").unwrap_or(name);
+        result = command(action, Some("automation"), Some(name));
+    }
+    result.intent = match result.action.as_str() {
+        "automation_enable" => "automation.enable",
+        "automation_disable" => "automation.disable",
+        "automation_trigger" => "automation.run",
+        _ => "automation.status",
+    }
+    .into();
+    Some(result)
+}
+
+#[allow(clippy::too_many_lines)] // Closed metric/window table and explicit scope binding.
+pub(super) fn parse_advanced_query(text: &str) -> Option<Command> {
+    let period = [
+        ("ultimas 24 horas", "last_24h"),
+        ("ultima hora", "last_hour"),
+        ("esta semana", "this_week"),
+        ("ontem", "yesterday"),
+        ("hoje", "today"),
+    ]
+    .into_iter()
+    .find(|(phrase, _)| text.contains(phrase));
+    let period = period.map(|(_, period)| period);
+    let scoped_text = [
+        " nas ultimas 24 horas",
+        " na ultima hora",
+        " esta semana",
+        " ontem",
+        " hoje",
+    ]
+    .iter()
+    .find_map(|suffix| text.strip_suffix(suffix))
+    .unwrap_or(text);
+    let (metric, aggregate, intent) = if text.starts_with("qual foi o pico")
+        || text.starts_with("qual o pico")
+    {
+        (
+            if text.contains("temperatura") {
+                "temperature"
+            } else if text.contains("umidade") {
+                "humidity"
+            } else if text.contains("potencia") {
+                "power"
+            } else {
+                return None;
+            },
+            "peak",
+            "metric_peak",
+        )
+    } else if text.starts_with("quanto tempo ") && text.contains(" ligada") {
+        ("power_state", "state_duration", "state_duration")
+    } else if text.starts_with("quanto consumiu")
+        || text.contains("consumiu ontem")
+        || text.contains("consumiu hoje")
+    {
+        ("energy", "sum", "energy_period")
+    } else if text.starts_with("a umidade ")
+        || text.starts_with("a temperatura ")
+        || text.contains(" ficou mais quente")
+    {
+        (
+            if text.contains("umidade") {
+                "humidity"
+            } else {
+                "temperature"
+            },
+            if text.contains("pico") || text.contains("maxima") {
+                "peak"
+            } else {
+                "trend"
+            },
+            if text.contains("pico") || text.contains("maxima") {
+                "metric_peak"
+            } else {
+                "metric_trend"
+            },
+        )
+    } else if text.starts_with("qual comodo esta mais quente")
+        || text.starts_with("qual comodo esta mais frio")
+    {
+        (
+            "temperature",
+            if text.ends_with("frio") { "min" } else { "max" },
+            "temperature_extremes",
+        )
+    } else if (text.starts_with("quais ") || text.starts_with("qual "))
+        && [
+            "menos bateria",
+            "menor bateria",
+            "bateria mais baixa",
+            "baterias mais baixas",
+            "bateria menor",
+        ]
+        .iter()
+        .any(|s| text.contains(s))
+    {
+        ("battery", "rank", "battery_ranking")
+    } else if (text.starts_with("qual aparelho ") || text.starts_with("qual esta puxando mais "))
+        && (text.contains("gasta mais") || text.contains("puxando mais"))
+    {
+        (
+            "power",
+            if text.contains("energia") {
+                "ambiguous"
+            } else {
+                "rank"
+            },
+            "power_ranking",
+        )
+    } else {
+        return None;
+    };
+    let mut result = command(
+        if period.is_some() {
+            "history_query"
+        } else {
+            "query"
+        },
+        Some(if metric == "power_state" {
+            "media_player"
+        } else {
+            "sensor"
+        }),
+        None,
+    );
+    result.intent = format!("query.{intent}");
+    if metric == "temperature" {
+        result.domains = vec!["sensor".into(), "climate".into()];
+        result.device_class = Some("temperature".into());
+    }
+    result.parameters.metric = Some(metric.into());
+    result.parameters.aggregate = Some(aggregate.into());
+    result.parameters.period = period.map(str::to_owned);
+    result.parameters.limit = Some(8);
+    result.parameters.order = Some(if metric == "battery" { "asc" } else { "desc" }.into());
+    if metric == "energy" {
+        let name = if scoped_text == "quanto consumiu" {
+            None
+        } else if let Some(rest) = scoped_text.strip_prefix("quanto consumiu ") {
+            Some(rest)
+        } else {
+            scoped_text.split_once(" consumiu").map(|(name, _)| name)
+        };
+        result.mention = name.filter(|name| !name.is_empty()).map(str::to_owned);
+    }
+    if matches!(metric, "humidity" | "temperature") && matches!(aggregate, "trend" | "peak") {
+        if let Some((room, _)) = scoped_text.split_once(" ficou mais quente") {
+            result.area = Some(
+                room.trim_start_matches("o ")
+                    .trim_start_matches("a ")
+                    .into(),
+            );
+        } else if let Some((_, rest)) = scoped_text
+            .split_once(" do ")
+            .or_else(|| scoped_text.split_once(" da "))
+        {
+            let room = rest
+                .split(" caiu")
+                .next()
+                .unwrap_or(rest)
+                .split(" subiu")
+                .next()
+                .unwrap_or(rest)
+                .split(" na ultima")
+                .next()
+                .unwrap_or(rest);
+            result.area = Some(room.into());
+        }
+    }
+    if matches!(aggregate, "trend" | "peak" | "state_duration") && period.is_none() {
+        result.parameters.period = Some("today".into());
+        result.action = "history_query".into();
+    }
+    Some(result)
 }
 
 fn basic(text: &str, domain: Option<&str>) -> Option<Command> {

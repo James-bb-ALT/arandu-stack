@@ -2361,4 +2361,22 @@
       "confere a {window}"
     ]
   }
+  ,{"intent":"automation.status","operation":"query","domains":["automation"],"templates":["a automação {automation} está ligada"],"target_slot":"automation"}
+  ,{"intent":"automation.enable","operation":"automation_enable","domains":["automation"],"templates":["habilita a automação {automation}"],"target_slot":"automation"}
+  ,{"intent":"automation.disable","operation":"automation_disable","domains":["automation"],"templates":["desabilita a automação {automation}"],"target_slot":"automation"}
+  ,{"intent":"automation.run","operation":"automation_trigger","domains":["automation"],"templates":["executa a automação {automation} agora"],"target_slot":"automation"}
+  ,{"intent":"todo.add","operation":"todo_add","domains":["todo"],"templates":["adiciona {item} na lista de {list}"],"target_slot":"list","value_slot":"item"}
+  ,{"intent":"todo.list","operation":"todo_list","domains":["todo"],"templates":["mostra os itens da lista de {list}"],"target_slot":"list"}
+  ,{"intent":"todo.complete","operation":"todo_complete","domains":["todo"],"templates":["marca {item} como comprado na lista de {list}"],"target_slot":"list","value_slot":"item"}
+  ,{"intent":"todo.remove","operation":"todo_remove","domains":["todo"],"templates":["tira {item} da lista de {list}"],"target_slot":"list","value_slot":"item"}
+  ,{"intent":"todo.update","operation":"todo_update","domains":["todo"],"templates":["troca {old_item} por {new_item} na lista de {list}"],"target_slot":"list"}
+  ,{"intent":"todo.clear_completed","operation":"todo_remove_completed","domains":["todo"],"templates":["limpa os itens concluídos da lista de {list}"],"target_slot":"list"}
+  ,{"intent":"scene.invoke_exact","operation":"activate","domains":["scene"],"templates":["modo {scene}"],"target_slot":"scene"}
+  ,{"intent":"query.temperature_extremes","operation":"query","domains":["sensor"],"templates":["qual cômodo está mais quente"],"metric":"temperature","aggregate":"max","plural":true}
+  ,{"intent":"query.battery_ranking","operation":"query","domains":["sensor"],"templates":["quais aparelhos têm menos bateria"],"metric":"battery","aggregate":"rank","plural":true}
+  ,{"intent":"query.power_ranking","operation":"query","domains":["sensor"],"templates":["qual aparelho gasta mais potência agora"],"metric":"power","aggregate":"rank","plural":true}
+  ,{"intent":"query.energy_period","operation":"history_query","domains":["sensor"],"templates":["quanto consumiu ontem"],"metric":"energy","aggregate":"sum"}
+  ,{"intent":"query.state_duration","operation":"history_query","domains":["media_player"],"templates":["quanto tempo a {player} ficou ligada hoje"],"target_slot":"player","aggregate":"state_duration"}
+  ,{"intent":"query.metric_trend","operation":"history_query","domains":["sensor"],"templates":["a umidade caiu na última hora"],"metric":"humidity","aggregate":"trend"}
+  ,{"intent":"query.metric_peak","operation":"history_query","domains":["sensor"],"templates":["a temperatura máxima hoje"],"metric":"temperature","aggregate":"peak"}
 ]

@@ -80,6 +80,7 @@ _add("number input_number", "number", "set_value", field="value", attribute="__s
 _add("select input_select", "select", "select_option", field="option", values="options")
 _add("automation", "automation_enable", "turn_on")
 _add("automation", "automation_disable", "turn_off")
+_add("automation", "automation_trigger", "trigger")
 for _action, _service, _feature in [("vacuum_start", "start", 8192), ("vacuum_stop", "stop", 8), ("vacuum_pause", "pause", 4), ("vacuum_dock", "return_to_base", 16), ("vacuum_area", "clean_area", 16384)]:
     _add("vacuum", _action, _service, feature=_feature, field="cleaning_area_id" if _action == "vacuum_area" else None)
 for _action, _service, _feature in [("mower_start", "start_mowing", 1), ("mower_pause", "pause", 2), ("mower_dock", "dock", 4)]:
@@ -94,6 +95,10 @@ _add("weather", "forecast", "get_forecasts", feature=1, read=True)
 _add("todo", "todo_add", "add_item", feature=1, field="item")
 _add("todo", "todo_complete", "update_item", feature=4, field="item")
 _add("todo", "todo_list", "get_items", read=True)
+_add("todo", "todo_remove", "remove_item", feature=2, field="item")
+_add("todo", "todo_update", "update_item", feature=4, field="item")
+_add("todo", "todo_remove_completed", "remove_completed_items", feature=2)
+_add("sensor media_player", "history_query", "", read=True)
 
 TEMPORAL_ACTIONS = frozenset((
     "clock_alarm_create",
@@ -119,7 +124,7 @@ READ_ACTIONS = (
     frozenset(action for (_, action), adapter in ADAPTERS.items() if adapter.read)
     | {"local_time", "local_date", "clock_alarm_list", "clock_alarm_query", "reminder_list", "reminder_query", "timer_query", "timer_list", "scheduled_action_list"}
 )
-SPECIAL_ACTIONS = frozenset(("music", "transfer", "remote_key", "channel", "camera_view", "binding", "cancel", "confirm", "repeat_response"))
+SPECIAL_ACTIONS = frozenset(("music", "transfer", "remote_key", "channel", "camera_view", "binding", "cancel", "confirm", "repeat_response", "contextual_undo"))
 ACTIONS = frozenset(action for _, action in ADAPTERS) | READ_ACTIONS | SPECIAL_ACTIONS | TEMPORAL_ACTIONS
 
 
@@ -187,6 +192,9 @@ def parameters(action: str, adapter: Adapter, state: Any, params: dict, incremen
     from .contextual_protocol import normalize
     value = params.get("value")
     relative = params.get("relative")
+    if action == 'automation_trigger':
+        if params:raise CapabilityError('unexpected_parameter')
+        return {'skip_condition':False}
     if action in ("mute", "unmute"):
         return {"is_volume_muted": action == "mute"}
     if action.startswith("shuffle_"):
@@ -232,7 +240,14 @@ def parameters(action: str, adapter: Adapter, state: Any, params: dict, incremen
         if len(matches) != 1:
             raise CapabilityError("unsupported_mode")
         return {adapter.field: matches[0]}
-    if action in ("todo_add", "todo_complete"):
+    if action == 'todo_remove_completed':
+        return {}
+    if action == 'todo_update':
+        old, new=params.get('old_item'),params.get('new_item')
+        if not all(type(v) is str and 0<len(v.encode('utf-8'))<=256 for v in (old,new)):
+            raise CapabilityError('invalid_todo_item')
+        return {'item':old,'rename':new}
+    if action in ("todo_add", "todo_complete", "todo_remove"):
         if type(value) is not str or not value.strip() or len(value.encode()) > 256:
             raise CapabilityError("item")
         return {"item": value, **({"status": "completed"} if action == "todo_complete" else {})}

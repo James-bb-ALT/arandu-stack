@@ -56,6 +56,8 @@ class Session:
     pending_origin: str | None = None
     pending_options: str | None = None
     selection: dict | None = None
+    dialogue: Any = None
+    todo_confirmation: dict = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -71,6 +73,8 @@ class ContextualRuntime:
         self.hass, self.client = hass, client
         self.options = options if options is not None else lambda: {}
         self.catalog = CatalogCache(hass)
+        self.phase5_supported = None if callable(getattr(client,'async_phase5_supported',None)) else True
+        self.feature_lock = asyncio.Lock()
         self.sessions: dict[tuple[str, str, str], Session] = {}
         self.sent_generations: set[str] = set()
         self.session_locks = ResourceLocks()
@@ -203,7 +207,7 @@ class ContextualRuntime:
     async def process(self, user_input: Any) -> Any:
         from .voice_controls import cancellation
         from .voice_input import without_wake_word
-        if type(getattr(user_input, 'text', None)) is not str or not 1 <= len(user_input.text) <= 512 or any(ord(ch) < 32 or ord(ch) == 127 for ch in user_input.text):
+        if type(getattr(user_input, 'text', None)) is not str or not user_input.text.strip() or not 1 <= len(user_input.text) <= 512 or any(ord(ch) < 32 or ord(ch) == 127 for ch in user_input.text):
             return self.result('invalid_request', user_input)
         if getattr(user_input, 'language', 'pt-BR') not in ('pt-BR', 'pt', 'pt-br'):
             return self.result('no_match', user_input)
@@ -331,7 +335,9 @@ class ContextualRuntime:
         encoded = json.dumps(dict(self.options()), sort_keys=True, allow_nan=False)
         if len(encoded.encode()) > 65536:
             raise ExecutionError("invalid_request", "options_bytes")
-        return json.loads(encoded)
+        value=json.loads(encoded)
+        if self.phase5_supported is False:value['_phase5_supported']=False
+        return value
 
     def validate_options(self, expected: dict) -> None:
         if (task := asyncio.current_task()) is not None and task.cancelling():
@@ -352,8 +358,12 @@ class ContextualRuntime:
         self.origin_binding_configured = False
         self.request_revision = self.options_revision
         try:
+            if self.phase5_supported is None:
+                async with self.feature_lock:
+                    if self.phase5_supported is None:
+                        self.phase5_supported=await self.client.async_phase5_supported()
             options = self.current_options()
-        except (ExecutionError, TypeError, ValueError):
+        except (ExecutionError, ClientError, TypeError, ValueError):
             return self.result("invalid_request", user_input)
         if type(getattr(user_input, "text", None)) is not str or not user_input.text or len(user_input.text.encode()) > 2048 or len(user_input.text) > 512 or any(ord(ch) < 32 or ord(ch) == 127 for ch in user_input.text):
             return self.result("invalid_request", user_input)
@@ -478,12 +488,18 @@ class ContextualRuntime:
             area = origin_area(self.hass, user_input, options)
             spatial_context = origin_context(self.hass, user_input, options)
             if session.history_generation != generation or session.history_origin != spatial_context:
+                session.dialogue = None
                 session.last_targets = ()
                 session.last_area = None
                 session.last_action = None
             session.history_generation = generation
             session.history_origin = spatial_context
             from .semantic_context import semantic_refusal
+            from .dialogue_context import reserved
+            from .dialogue_context import context_request
+            if self.phase5_supported is False and context_request(user_input.text):
+                session.dialogue=None
+                return self.result('unavailable',user_input,reason='phase5_not_supported',speech='Atualize também o módulo NLU para usar o contexto da Fase 5.')
             refusal = semantic_refusal(user_input.text, snapshot.payload)
             pending = session.pending
             if pending is not None and (generation != session.pending_generation or area != session.pending_origin or _options_hash(options) != session.pending_options):
@@ -496,6 +512,9 @@ class ContextualRuntime:
             payload = {"version": 4, "generation": generation, "text": user_input.text,
                        "origin_area": area, "origin_area_source": spatial_context[1], "last_area": session.last_area,
                        "last_targets": list(session.last_targets), "pending": pending}
+            prior=session.dialogue
+            if self.phase5_supported and prior and prior.valid(generation,_options_hash(options)) and not session.confirmation and not pending:
+                payload['antecedent']=prior.antecedent()
             _LOGGER.debug("ARANDU contextual route=/v4/interpret")
             self.stage = "intent_recognition"
             outcome = await self._interpret(payload)
@@ -503,15 +522,26 @@ class ContextualRuntime:
                 await self._send(snapshot)
                 outcome = await self._interpret(payload)
             self.validate_options(options)
+            if outcome.status!='plan':session.dialogue=None
+            if outcome.status!='plan' and (reserved(user_input.text) or (outcome.status=='clarification' and outcome.reason=='scene_not_unique')):
+                session.dialogue=None
+                session.pending=None
+                session.candidates=()
+                from .contextual_errors import MESSAGES
+                return self.result('missing_slot' if outcome.status=='clarification' else 'unavailable',user_input,
+                    speech=MESSAGES.get(outcome.reason,'Preciso de um alvo, lista, período ou antecedente único e autorizado. Repita o pedido completo.'),reason=outcome.reason)
             if refusal:
                 from .typed_constraints import operational_refusal
                 remaining = operational_refusal(user_input.text,snapshot.payload,outcome.operations) if outcome.status=='plan' else refusal
+                from .todo_actions import literal_binding
+                if literal_binding(user_input.text,outcome.operations): remaining=None
                 if remaining:
+                    session.dialogue=None
                     session.pending,session.selection,session.confirmation,session.candidates=None,None,(),()
                     return self.result('cancelled' if remaining=='semantic_negation' else 'unavailable',user_input,reason=remaining,
                         speech='Não executei: o pedido contém uma restrição que não consigo aplicar com segurança.')
             from .intelligence import eligible, fallback, nlu_summary
-            if (options.get("decision_enabled") is True or options.get("llm_enabled") is True) and eligible(outcome, pending=pending is not None or bool(session.candidates)):
+            if not reserved(user_input.text) and (options.get("decision_enabled") is True or options.get("llm_enabled") is True) and eligible(outcome, pending=pending is not None or bool(session.candidates)):
                 from .ai_lab import local_request
                 from homeassistant.helpers.aiohttp_client import async_get_clientsession
                 endpoint = options.get("stack_endpoint", "")
@@ -523,7 +553,10 @@ class ContextualRuntime:
                     async with observed_wait('model_queue', self.model_admission.enter()):
                         async with self.circuits[source].call(), asyncio.timeout(timeout):
                             return await local_request(async_get_clientsession(self.hass), endpoint, "/infer", payload=body, timeout=timeout)
-                proposed, trace = await fallback(user_input.text, snapshot, options, infer,
+                from .contextual_protocol import legacy_neural_catalog
+                model_payload=legacy_neural_catalog(snapshot.payload)
+                model_snapshot=Snapshot(model_payload,{row['registry_id']:row for row in model_payload['entities']})
+                proposed, trace = await fallback(user_input.text, model_snapshot, options, infer,
                     {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets), "last_action":session.last_action,
                      'temperature_unit':getattr(getattr(getattr(self.hass,'config',None),'units',None),'temperature_unit',None)},
                     nlu=nlu_summary(outcome))
@@ -646,8 +679,10 @@ class ContextualRuntime:
             timings["integration_total_ms"] = (time.perf_counter() - started) * 1000
             return replace(result, timings=timings)
         except (ExecutionError, IdentityError) as error:
+            if 'session' in locals():session.dialogue=None
             return self.result(error.code, user_input, reason=error.reason)
         except QueryError as error:
+            if 'session' in locals():session.dialogue=None
             return self.result("unavailable", user_input, reason=str(error))
         except ClientError as error:
             reason = str(error) if str(error) in {'endpoint', 'health', 'diagnostics', 'length', 'status', 'transport', 'json'} else 'unknown'
@@ -832,7 +867,9 @@ class ContextualRuntime:
                 raise ExecutionError("denied", "authentication_required")
             if row["domain"] == "alarm_control_panel" and operation.action in ("arm", "disarm") and (state.attributes.get("code_arm_required", True) if operation.action == "arm" else state.attributes.get("code_format")):
                 raise ExecutionError("denied", "authentication_required")
-            if operation.action in ("query", "calendar", "forecast", "todo_list"):
+            if operation.action in ('automation_trigger','todo_remove_completed'):
+                needs_confirmation=True
+            if operation.action in ("query", "calendar", "forecast", "todo_list", "history_query"):
                 if operation.action == "query":
                     self.read_live(row, state, operation.parameters, snapshot, user, options)
                 elif operation.action == "calendar":
@@ -919,6 +956,22 @@ class ContextualRuntime:
 
     @observe_execution
     async def execute(self, operations: tuple[Operation, ...], snapshot: Snapshot, user_input: Any, session: Session, options: dict, identity: ResolvedIdentity, *, confirmed: bool = False) -> Any:
+        from .dialogue_context import context_request
+        if len(operations)==1 and operations[0].intent=='context.ellipsis':
+            from .dialogue_context import validate_copy
+            if session.dialogue is None or not session.dialogue.valid(snapshot.payload['generation'],_options_hash(options)):
+                raise QueryError('context_insufficient')
+            validate_copy(user_input.text,session.dialogue,operations[0],snapshot,options)
+        if len(operations)==1 and operations[0].action=='contextual_undo':
+            record=session.dialogue
+            if record is None or not record.valid(snapshot.payload['generation'],_options_hash(options)):
+                raise QueryError('undo_unavailable')
+            source=snapshot.by_id.get(operations[0].targets[0])
+            if source is None:raise QueryError('undo_unavailable')
+            if options.get('entity_preferences',{}).get(source['entity_id'],{}).get('critical') is True:raise QueryError('undo_unavailable')
+            operations=(record.undo(self.hass.states.get(source['entity_id']),operations[0].targets),)
+        elif not context_request(user_input.text):
+            session.dialogue=None
         # Resolve physical targets/backends before locking. Preparation here is
         # passive; repeat all live validation and relative reads under the locks.
         user = await self.revalidate(identity, user_input, options)
@@ -935,7 +988,17 @@ class ContextualRuntime:
         from .typed_constraints import operational_refusal
         from .semantic_context import read_only_question, clearly_conversational, speech_only_request
         refusal = operational_refusal(user_input.text, snapshot.payload, operations)
-        if not refusal and (read_only_question(user_input.text) or clearly_conversational(user_input.text, snapshot.payload)) and any(op.action not in READ_ACTIONS for op in operations):
+        from .todo_actions import literal_binding, bind as bind_todo, MUTATIONS
+        from .dialogue_context import exact_scene, remember, acknowledged
+        if user_input.text.lstrip().startswith(('"',"'",'“','‘','`','«')) and any(op.action not in READ_ACTIONS and op.intent.startswith(('todo.','context.','automation.')) for op in operations):
+            raise ExecutionError('unavailable','semantic_quoted_command')
+        from .automation_actions import requested
+        if not confirmed and any(op.intent in ('automation.run','automation.enable','automation.disable') and not requested(user_input.text,op,snapshot) for op in operations):
+            raise ExecutionError('unavailable','semantic_quoted_command')
+        if any(op.intent=='scene.invoke_exact' for op in operations) and not exact_scene(user_input.text,operations,snapshot):
+            raise QueryError('scene_not_unique')
+        if literal_binding(user_input.text,operations): refusal=None
+        if not refusal and not exact_scene(user_input.text,operations,snapshot) and (read_only_question(user_input.text) or clearly_conversational(user_input.text, snapshot.payload)) and any(op.action not in READ_ACTIONS for op in operations):
             refusal = 'semantic_non_effect_request'
         if speech_only_request(user_input.text):
             refusal = 'semantic_non_effect_request'
@@ -953,14 +1016,36 @@ class ContextualRuntime:
         prepared = tuple(self.prepare(operation, snapshot, user, options) for operation in operations)
         self.validate_plan(prepared)
         self.validate_bulk_snapshot(operations, snapshot, user, options)
+        undo_record=session.dialogue if operations[0].intent=='context.undo' else None
+        if undo_record:
+            undo_record.undo(self.hass.states.get(snapshot.by_id[operations[0].targets[0]]['entity_id']),operations[0].targets)
+        todo_bound={}
+        for i,item in enumerate(prepared):
+            if item.operation.action in MUTATIONS:
+                if len(item.rows)!=1 or len(item.calls)!=1:raise QueryError('todo_single_list_required')
+                async def authorize(item=item):
+                    current=await self.revalidate(identity,user_input,options)
+                    self.validate_options(options)
+                    if origin_context(self.hass,user_input,options)!=spatial_context:raise ExecutionError('stale','origin_area_changed')
+                    self.live(item.rows[0],item.operation.action,current,options)
+                    self.live(item.rows[0],'todo_list',current,options)
+                todo_bound[i]=await bind_todo(self.hass,item.calls[0],item.operation.action,user_input.context,authorize)
+        clear_evidence={str(i):value[1] for i,value in todo_bound.items() if prepared[i].operation.action=='todo_remove_completed'}
+        if confirmed and clear_evidence and session.todo_confirmation!=clear_evidence:
+            raise QueryError('todo_completed_set_changed')
         if any(item.needs_confirmation for item in prepared) and not confirmed:
+            session.dialogue=None
+            session.todo_confirmation=clear_evidence
             session.confirmation = operations
             session.confirmation_generation = snapshot.payload["generation"]
             session.confirmation_origin = origin_area(self.hass, user_input, options)
             session.confirmation_origin_context = spatial_context
             session.confirmation_options = _options_hash(options)
             session.expires = time.monotonic() + min(30, _ttl(options))
-            return self.result("confirmation_required", user_input, speech="Esse comando altera um dispositivo de acesso ou proteção. Confirma?", followup=True)
+            return self.result("confirmation_required", user_input, speech=f'Confirma remover {sum(value[1] for value in clear_evidence.values())} itens concluídos dessa lista?' if clear_evidence else 'Confirma solicitar o disparo dessa automação, respeitando suas condições?' if any(op.action=='automation_trigger' for op in operations) else "Esse comando altera um dispositivo de acesso ou proteção. Confirma?", followup=True)
+        session.todo_confirmation={}
+        candidate=None
+        session.dialogue=None
         signature = hashlib.sha256(json.dumps([operation.as_dict() for operation in operations], sort_keys=True).encode()).hexdigest()
         if any(item.operation.action not in READ_ACTIONS for item in prepared) and session.signature == signature and time.monotonic() - session.last_execution < 2:
             return self.result("cancelled", user_input, speech="Evitei repetir a tentativa recente desse comando.")
@@ -974,7 +1059,7 @@ class ContextualRuntime:
         responses = []
         execution_start = time.perf_counter()
         try:
-            for item in prepared:
+            for item_number,item in enumerate(prepared):
                 # Renew authentication and rebind each entire operation immediately before execution.
                 user = await self.revalidate(identity, user_input, options)
                 self.validate_options(options)
@@ -1012,12 +1097,36 @@ class ContextualRuntime:
                         for row in item.rows:
                             self.live(row, call.get("bound_action", action) if action in ("binding", "camera_view") else action, user, options)
                             self.validate_scope(row, item.operation)
+                        actual_data=call['data']
+                        if undo_record:
+                            undo_record.undo(self.hass.states.get(call['entity_id']),item.operation.targets)
+                        if item.operation.intent in ('context.ellipsis','context.undo'):
+                            from .contextual_catalog import build
+                            if build(self.hass,user,options).payload['generation']!=snapshot.payload['generation']:
+                                raise ExecutionError('stale','dialogue_changed')
+                        if action in MUTATIONS:
+                            async def authorize():
+                                current=await self.revalidate(identity,user_input,options)
+                                self.validate_options(options)
+                                if origin_context(self.hass,user_input,options)!=spatial_context:raise ExecutionError('stale','origin_area_changed')
+                                self.live(item.rows[0],action,current,options)
+                                self.live(item.rows[0],'todo_list',current,options)
+                            latest=await bind_todo(self.hass,call,action,user_input.context,authorize)
+                            if latest!=todo_bound[item_number]:raise QueryError('todo_item_changed')
+                            actual_data=latest[0]
+                        # No await between the pre-effect snapshot and service dispatch.
+                        # Earlier authentication/list reads can yield to external changes.
+                        if len(prepared)==1 and len(item.calls)==1:
+                            candidate=remember(item,self.hass.states.get(call['entity_id']),snapshot.payload['generation'],_options_hash(options),_ttl(options))
                         async with asyncio.timeout(10):
                             self.stage = "ha_execution"
                             attempted_effect = True
                             session.signature, session.last_execution = signature, time.monotonic()
-                            await self.hass.services.async_call(call["domain"], call["service"], call["data"], blocking=True, context=user_input.context, target={"entity_id": [call["entity_id"]]})
+                            await self.hass.services.async_call(call["domain"], call["service"], actual_data, blocking=True, context=user_input.context, target={"entity_id": [call["entity_id"]]})
                         had_effects = True
+                        if action=='automation_trigger':
+                            from .automation_actions import trigger_response
+                            responses.append(trigger_response())
                 completed += 1
         except asyncio.CancelledError:
             raise
@@ -1031,6 +1140,7 @@ class ContextualRuntime:
                 session.signature, session.last_execution = signature, time.monotonic()
             return self.result("partial_failure" if completed or had_effects else "execution_failed", user_input, speech=f"Concluí {completed} operações; houve uma falha na próxima." if completed else "Parte dos dispositivos respondeu; o serviço não confirmou o restante." if had_effects else "O serviço não confirmou a execução.", count=completed)
         session.last_targets = operations[-1].targets
+        session.dialogue=acknowledged(candidate,self.hass.states.get(prepared[0].rows[0]['entity_id'])) if candidate and had_effects else None
         session.last_action = operations[-1].action
         target_areas={snapshot.by_id[t].get('area_id') for t in session.last_targets}
         session.last_area = next(iter(target_areas)) if len(target_areas)==1 else None
@@ -1130,11 +1240,26 @@ class ContextualRuntime:
 
     async def query(self, item: Prepared, snapshot: Snapshot, user_input: Any, user: Any, options: dict, identity: ResolvedIdentity) -> str:
         action, params = item.operation.action, item.operation.parameters
+        if action=='history_query':
+            from .advanced_queries import query
+            expected_origin=origin_context(self.hass,user_input,options)
+            async def authorize():
+                current=await self.revalidate(identity,user_input,options)
+                self.validate_options(options)
+                if origin_context(self.hass,user_input,options)!=expected_origin:raise ExecutionError('stale','origin_area_changed')
+                for row in item.rows:self.live(row,'history_query',current,options)
+            return await query(self.hass,item.rows,params,authorize)
         if action == "local_time":
             return f"São {now(self.hass):%H:%M}."
         if action == "local_date":
             return f"Hoje é {now(self.hass):%d/%m/%Y}."
         if action == "query":
+            if item.operation.intent in ('query.temperature_extremes','query.battery_ranking','query.power_ranking'):
+                for row in item.rows:
+                    state=self.live(row,action,user,options)
+                    if params.get('metric')=='temperature' and row.get('attributes',{}).get('measurement_kind') in ('equipment','outdoor'):raise QueryError('no_compatible_sensor')
+                    if params.get('metric')=='power' and state.attributes.get('state_class')!='measurement':raise QueryError('invalid_measurement')
+                    if params.get('metric') in ('temperature','humidity') and state.attributes.get('state_class') not in (None,'measurement'):raise QueryError('invalid_measurement')
             values = [self.read_live(row, self.live(row, action, user, options), params, snapshot, user, options) for row in item.rows]
             if params.get("metric") == "location" and params.get("area"):
                 area = params["area"]
@@ -1444,7 +1569,7 @@ def _options_hash(options: dict) -> str:
 
 def _schedule_options_hash(options):
     limits={'performance_concurrency','performance_waiting','performance_model_waiting','performance_timeout',
-            'performance_scheduler_concurrency','performance_scheduler_timeout','performance_scheduler_jobs'}
+            'performance_scheduler_concurrency','performance_scheduler_timeout','performance_scheduler_jobs','_phase5_supported'}
     return _options_hash({key:value for key,value in options.items() if key not in limits})
 
 

@@ -73,6 +73,8 @@ def build(hass: Any, user: Any, options: dict) -> Snapshot:
         if not user.is_admin and user.permissions.check_entity(entity_id, "read") is not True:
             continue
         actions = capabilities(hass, entity_id, state, options.get("device_mappings")) if available else ["query"]
+        if options.get('_phase5_supported') is False:
+            actions=[action for action in actions if action not in ('automation_trigger','todo_remove','todo_update','todo_remove_completed','history_query','contextual_undo')]
         if not user.is_admin and user.permissions.check_entity(entity_id, "control") is not True:
             from .capabilities import READ_ACTIONS
             actions = [action for action in actions if action in READ_ACTIONS]
@@ -96,6 +98,11 @@ def build(hass: Any, user: Any, options: dict) -> Snapshot:
             if overrides["measurement_kind"] not in ("ambient", "equipment", "outdoor"):
                 raise CatalogError("measurement_kind")
             attrs["measurement_kind"] = overrides["measurement_kind"]
+        elif state.attributes.get('device_class')=='temperature':
+            from .contextual_protocol import normalize
+            labels=set(normalize(' '.join(names)).split())
+            if labels.intersection({'cpu','gpu','processador','equipamento','geladeira','freezer','externo','externa','exterior','outdoor'}) or getattr(entry,'entity_category',None)=='diagnostic':
+                attrs['measurement_kind']='equipment'
         reference_ids = [did for did, binding in sensor_bindings.items() if entity_id in (binding.get("battery"), binding.get("location"))]
         if len(reference_ids) > 1:
             raise CatalogError("ambiguous_device_binding")

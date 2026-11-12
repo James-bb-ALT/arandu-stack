@@ -187,6 +187,15 @@ class LocalNluClient:
     async def async_catalog_v4(self, payload: dict[str, Any]) -> Any:
         return await self._async_json("POST", "/v4/catalog", payload)
 
+    async def async_phase5_supported(self) -> bool:
+        """An empty, credential-free v4 probe works with the previous strict reader."""
+        import hashlib
+        generation=hashlib.sha256(b'arandu-phase5-capability-probe-v1').hexdigest()
+        response=await self.async_catalog_v4({'version':4,'generation':generation,'entities':[],'areas':[],'groups':[]})
+        if type(response) is not dict or response.get('status')!='catalog_ready' or response.get('generation')!=generation:
+            raise ClientError('phase5_capability_probe')
+        return response.get('reason')=='phase5_supported'
+
     async def async_interpret_v4(self, payload: dict[str, Any]) -> Any:
         self._last_interpret_protocol = 4
         return await self._async_json("POST", "/v4/interpret", payload)

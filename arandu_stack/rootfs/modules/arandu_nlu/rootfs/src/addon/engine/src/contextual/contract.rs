@@ -76,6 +76,12 @@ pub const ACTIONS: &[&str] = &[
     "todo_complete",
     "automation_enable",
     "automation_disable",
+    "automation_trigger",
+    "todo_remove",
+    "todo_update",
+    "todo_remove_completed",
+    "history_query",
+    "contextual_undo",
     "cancel",
     "confirm",
     "repeat_response",
@@ -146,6 +152,16 @@ pub struct AreaGroup {
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Parameters {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub old_item: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub new_item: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub period: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub order: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u8>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub value: Option<Value>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -228,6 +244,17 @@ pub struct ContextRequest {
     pub last_targets: Vec<String>,
     #[serde(default)]
     pub pending: Option<Command>,
+    #[serde(default)]
+    pub antecedent: Option<Antecedent>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Antecedent {
+    pub generation: String,
+    pub action: String,
+    pub targets: Vec<String>,
+    pub parameters: Parameters,
 }
 
 impl ContextRequest {
@@ -239,6 +266,24 @@ impl ContextRequest {
             && self.text.chars().count() <= 512
             && !self.text.chars().any(char::is_control)
             && self.last_targets.len() <= 32
+            && self.antecedent.as_ref().is_none_or(|prior| {
+                prior.generation == self.generation
+                    && prior.targets.len() == 1
+                    && prior.targets[0].len() <= 128
+                    && matches!(
+                        prior.action.as_str(),
+                        "turn_on"
+                            | "turn_off"
+                            | "brightness"
+                            | "percentage"
+                            | "temperature"
+                            | "volume"
+                            | "mute"
+                            | "unmute"
+                    )
+                    && prior.parameters.relative.is_none()
+                    && serde_json::to_vec(&prior.parameters).is_ok_and(|raw| raw.len() <= 1024)
+            })
             && self.origin_area_source.as_deref().is_none_or(|source| {
                 matches!(source, "satellite" | "device" | "default" | "unknown")
             })

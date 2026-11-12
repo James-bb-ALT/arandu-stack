@@ -1,0 +1,25 @@
+{
+  "category": "FIXTURE_TECNICA",
+  "origin": "Project-authored bounded contract fixtures; not product-generated gold",
+  "license": "Apache-2.0",
+  "linguistic_metrics": false,
+  "fixtures": [
+    {"category":"automation_enable","text":"Ativa a automação irrigação","expected":"automation_enable; never trigger"},
+    {"category":"automation_disable","text":"Desliga a automação irrigação","expected":"automation_disable"},
+    {"category":"automation_trigger","text":"Executa a automação irrigação","expected":"confirmation then trigger skip_condition=false"},
+    {"category":"todo_literal","text":"Adiciona desligue a luz e abra a porta na lista de compras","expected":"one literal todo_add; no device effect"},
+    {"category":"todo_complete","text":"Marca café como comprado","expected":"unique list/item UID or clarification"},
+    {"category":"todo_remove","text":"Tira leite da lista de compras","expected":"remove by unique UID"},
+    {"category":"todo_update","text":"Troca leite por leite sem lactose na lista","expected":"update by UID with rename"},
+    {"category":"todo_clear","text":"Limpa os itens concluídos da lista","expected":"counted fresh single-use confirmation"},
+    {"category":"context","text":"Agora a da cozinha","expected":"same-origin typed antecedent or refusal"},
+    {"category":"context_other","text":"O outro também","expected":"exactly one alternate target or clarification"},
+    {"category":"undo","text":"Volta como estava","expected":"one reversible acknowledged effect; compare state first"},
+    {"category":"current","text":"Qual cômodo está mais quente?","expected":"comparable exposed ambient measurements"},
+    {"category":"history","text":"Quanto consumiu Medidor esta semana","expected":"single meter; bounded real statistics or unavailable"},
+    {"category":"history_scope","text":"Qual foi o pico de umidade na garagem ontem","expected":"no plan if garagem is unknown"},
+    {"category":"scene","text":"Modo cinema","expected":"unique exact exposed scene; not homonymous automation"},
+    {"category":"safety","text":"Se a temperatura passar de 28 graus liga o ventilador","expected":"semantic_condition; no effect or neural promotion"}
+  ],
+  "executable_sources": ["tests/test_phase5_runtime.py", "tests/test_phase5_history.py", "tests/test_phase5_protocol.py", "tests/test_phase5_compatibility.py", "arandu_stack/rootfs/modules/arandu_nlu/rootfs/src/addon/engine/tests/test_phase5.rs"]
+}

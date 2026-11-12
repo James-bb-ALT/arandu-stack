@@ -243,6 +243,155 @@ pub(super) fn category_domain(text: &str) -> Option<&'static str> {
 }
 
 impl Index {
+    /// Exact, domain-scoped selection for the Phase 5 closed actions.
+    #[allow(clippy::too_many_lines)] // Bounded exact selection; no effectful fallback.
+    pub(super) fn resolve_phase5(
+        &self,
+        command: &Command,
+        request: &ContextRequest,
+    ) -> Result<Vec<String>, &'static str> {
+        let fail = || "phase5_target_ambiguous";
+        let mut rows: Vec<_> = self
+            .catalog
+            .entities
+            .iter()
+            .filter(|row| {
+                command.domains.contains(&row.domain) && row.actions.contains(&command.action)
+            })
+            .collect();
+        if let Some(area) = command.area.as_deref() {
+            let areas: Vec<_> = self
+                .catalog
+                .areas
+                .iter()
+                .filter(|a| a.names.iter().any(|n| slots::normalize(n) == area))
+                .map(|a| a.area_id.as_str())
+                .collect();
+            if areas.len() != 1 {
+                return Err(fail());
+            }
+            rows.retain(|r| r.area_id.as_deref() == areas.first().copied());
+        }
+        let name = |s: &str| {
+            let s = clean(s);
+            s.strip_prefix("automacao ")
+                .or_else(|| s.strip_prefix("lista "))
+                .unwrap_or(&s)
+                .to_owned()
+        };
+        if let Some(mention) = command.mention.as_deref() {
+            rows.retain(|row| {
+                std::iter::once(&row.name)
+                    .chain(&row.aliases)
+                    .any(|label| name(label) == name(mention))
+            });
+        } else if command.domains == ["todo"] && request.last_targets.len() == 1 {
+            let recent: Vec<_> = rows
+                .iter()
+                .copied()
+                .filter(|row| request.last_targets.contains(&row.registry_id))
+                .collect();
+            if recent.len() == 1 {
+                rows = recent;
+            }
+        }
+        if let Some(metric) = command.parameters.metric.as_deref() {
+            rows.retain(|row| match metric {
+                "temperature" => {
+                    class_compatible(command, row)
+                        && (row.device_class.as_deref() == Some("temperature")
+                            || row.domain == "climate")
+                }
+                "humidity" | "battery" | "power" | "energy" => {
+                    row.device_class.as_deref() == Some(metric)
+                }
+                "power_state" => row.domain == "media_player",
+                _ => false,
+            });
+            let text = format!(" {} ", slots::normalize(&request.text));
+            let areas: BTreeSet<_> = self
+                .catalog
+                .areas
+                .iter()
+                .filter(|area| {
+                    area.names.iter().any(|n| {
+                        let n = slots::normalize(n);
+                        ["do", "da", "no", "na", "em"]
+                            .iter()
+                            .any(|p| text.contains(&format!(" {p} {n} ")))
+                    })
+                })
+                .map(|area| area.area_id.as_str())
+                .collect();
+            if !areas.is_empty() {
+                rows.retain(|row| row.area_id.as_deref().is_some_and(|a| areas.contains(a)));
+            }
+            let named: Vec<_> = rows
+                .iter()
+                .copied()
+                .filter(|row| {
+                    std::iter::once(&row.name).chain(&row.aliases).any(|n| {
+                        let name = slots::normalize(n);
+                        !["umidade", "temperatura", "bateria", "potencia", "energia"]
+                            .contains(&name.as_str())
+                            && text.contains(&format!(" {name} "))
+                    })
+                })
+                .collect();
+            let words: Vec<_> = text.split_whitespace().collect();
+            let unknown_scope = words.windows(2).enumerate().any(|(i, pair)| {
+                if !["do", "da", "no", "na", "em"].contains(&pair[0])
+                    || ["ultima", "ultimo", "manha", "tarde", "noite"].contains(&pair[1])
+                {
+                    return false;
+                }
+                let tail = words[i + 1..]
+                    .iter()
+                    .copied()
+                    .take_while(|word| {
+                        ![
+                            "gasta", "esta", "ficou", "consumiu", "ontem", "hoje", "caiu", "subiu",
+                            "na", "nas", "esta",
+                        ]
+                        .contains(word)
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                let known_area = self
+                    .catalog
+                    .areas
+                    .iter()
+                    .any(|a| a.names.iter().any(|n| tail == slots::normalize(n)));
+                let known_entity = rows.iter().any(|row| {
+                    std::iter::once(&row.name)
+                        .chain(&row.aliases)
+                        .any(|n| tail == slots::normalize(n))
+                });
+                !known_area && !known_entity
+            });
+            if unknown_scope {
+                return Err(fail());
+            }
+            if !named.is_empty() {
+                rows = named;
+            }
+            if command.action == "history_query" && rows.len() != 1 {
+                return Err(fail());
+            }
+        }
+        if rows.is_empty()
+            || rows.len() > 8
+            || (command.parameters.metric.is_none() && !command.plural && rows.len() != 1)
+        {
+            return Err(fail());
+        }
+        let mut targets: Vec<_> = rows
+            .into_iter()
+            .map(|row| row.registry_id.clone())
+            .collect();
+        targets.sort();
+        Ok(targets)
+    }
     #[allow(clippy::too_many_lines)] // One bounded catalog validation/compilation pass.
     pub fn new(mut catalog: Catalog) -> Option<Self> {
         if catalog.version != 4

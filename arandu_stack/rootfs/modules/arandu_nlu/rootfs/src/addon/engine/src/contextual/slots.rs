@@ -187,13 +187,19 @@ pub fn qualitative(text: &str) -> Option<&'static str> {
 
 #[must_use]
 pub fn original_slot(source: &str, value: &str) -> Option<String> {
+    original_slot_after(source, value, 0).map(|(text, _)| text)
+}
+
+#[must_use]
+pub fn original_slot_after(source: &str, value: &str, after: usize) -> Option<(String, usize)> {
     let (normalized, spans) = crate::normalize::normalize_with_spans(source);
     let value = base_normalize(value);
     if value.is_empty() {
         return None;
     }
     let (start, matched) = normalized.match_indices(&value).find(|(start, matched)| {
-        (*start == 0 || normalized.as_bytes()[start - 1] == b' ')
+        spans.get(*start).is_some_and(|byte| *byte >= after)
+            && (*start == 0 || normalized.as_bytes()[start - 1] == b' ')
             && (start + matched.len() == normalized.len()
                 || normalized.as_bytes()[start + matched.len()] == b' ')
     })?;
@@ -206,7 +212,7 @@ pub fn original_slot(source: &str, value: &str) -> Option<String> {
         }
         end += ch.len_utf8();
     }
-    source.get(first..end).map(str::to_owned)
+    source.get(first..end).map(|text| (text.to_owned(), end))
 }
 
 #[must_use]

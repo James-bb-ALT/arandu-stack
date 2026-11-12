@@ -1,6 +1,8 @@
 # Arandu Assistant
 
-Fase 3 Integrada: Decision 3.0.0 com seleção CPU/GPU Intel explícita e AI Lab nativo (Fase 3.1) somado ao NLU 0.6.4 determinístico com agendamentos pontuais, alarmes, lembretes, timers, exclusões bulk e léxico de aspirador (Fase 3.2). Relatórios em [Decision Multimodelo](docs/PHASE-3.1-DECISION-MULTIMODEL.md) e [NLU Temporal](docs/FASE-3.2-NLU-TEMPORAL.md).
+Fase 4: filas limitadas, pedidos independentes concorrentes e commit serializado por dispositivo, sem retirar validações de segurança. Agendamentos têm entrega independente dos modelos. O Fluxo mostra filas, percentis e etapas observadas; áudio e reprodução físicos continuam explicitamente não observados quando não há identificação pública confiável. [Medições, configuração e limites](docs/PHASE-4-PERFORMANCE.md).
+
+Preserva a Fase 3 integrada: [Decision multimodelo CPU/GPU Intel](docs/PHASE-3.1-DECISION-MULTIMODEL.md), LLM 2.0 e [NLU temporal](docs/FASE-3.2-NLU-TEMPORAL.md), com alarmes, lembretes, timers e exclusões coletivas.
 
 Um único app para Home Assistant com **Wake, STT, NLU, Decision, LLM e TTS**.
 Todos os motores estão incluídos na mesma instalação. Você ativa, desativa e
@@ -16,14 +18,14 @@ Decision 2.0: [algoritmo, validação A/B e limites](docs/DECISION-v2.0.0.md).
 
 LLM 2.0: [planos tipados, modelos, comparação real e limites](docs/LLM-v2.0.0.md).
 
-**Versão integrada: app 7.0.0 / HACS 8.0.0 / STT 4.0.1 / NLU 0.6.4 / Decision 3.0.0 / LLM 2.0.0 / TTS 0.2.1.** Consolidação unificada das Fases 3.1 e 3.2.
+**Versões: app 10.0.0 / HACS 10.0.0 / STT 4.0.2 / NLU 0.6.5 / Decision 3.0.0 / LLM 2.0.0 / TTS 0.2.2.** Fase 4 publicada como pré-release com validação local; homologação física HAOS/i5 e playback pendentes. Modelos, voz e seleções existentes são preservados. [Notas e limites da versão](docs/RELEASE-v10.0.0.md).
 
 HACS 3.0.1: pedidos não compreendidos em origens ReSpeaker recebem apenas
 “Não entendi.” e encerram o diálogo. Identificação pelo dispositivo registrado
 (modelo/nome/hostname); não aplica esse perfil a todo ESPHome ou Raspberry Pi.
 Atualize a integração HACS e reinicie o Home Assistant para carregar a correção.
 
-TTS 0.2.1 aguarda a fala completa antes de reproduzir no Home Assistant. Recarregue
+TTS 0.2.2 mantém a fala completa antes de reproduzir no Home Assistant e limita filas e buffers. Recarregue
 a integração Wyoming após atualizar; pode aumentar a espera inicial. A validação
 de frases longas pelo usuário ainda apresentou falhas; não é uma solução definitiva.
 

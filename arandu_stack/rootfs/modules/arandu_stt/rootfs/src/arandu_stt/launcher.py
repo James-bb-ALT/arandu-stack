@@ -74,6 +74,7 @@ def main() -> None:
         "--uri", "tcp://0.0.0.0:10350",
         *(["--no-discovery"] if os.environ.get('ARANDU_MODULE_DATA') else []),
         "--threads", str(int(cfg.get("threads", 2))),
+        "--max-clients", str(int(cfg.get('max_clients', 16))),
         "--padding-ms", str(int(cfg.get("padding_ms", 0))),
         "--profile", str(cfg.get("profile", "full") if model == "fastconformer" else cfg.get("whisper_profile", "normalize_only")),
         "--metrics", str(DATA / 'metrics.jsonl'),

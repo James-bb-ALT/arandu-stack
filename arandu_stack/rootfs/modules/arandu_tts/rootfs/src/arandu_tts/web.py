@@ -48,12 +48,18 @@ def create_app(cfg: Config, engine: SpeechEngine) -> web.Application:
     async def status(request):
         voices = available()
         return web.json_response({
-            'version': '0.2.1',
+            'version': '0.2.2',
             'voices': [dict(id=v.name, label=v.description or v.name, engine=v.backend, language=v.language)
                        for v in voices.values()],
             'piper_available': any(v.backend == 'piper' for v in voices.values()),
             'pocket_enabled': cfg.pocket_enabled,
             'pocket_loaded': engine.pocket_loaded,
+            'performance': getattr(engine,'recent',{}),
+            'loaded_voice':getattr(engine,'_loaded_name',None),
+            'piper_thread_budget':cfg.piper_thread_budget,
+            'piper_threads_requested':cfg.piper_threads,
+            'piper_threads_mode':'manual' if cfg.piper_thread_budget else 'piper_default',
+            'busy':getattr(engine,'_requests',0)>0,
             'default_voice': cfg.default_voice,
             'max_upload_mb': cfg.max_upload_mb,
             'max_chars': cfg.max_chars,

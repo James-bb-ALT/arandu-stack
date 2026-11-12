@@ -1,7 +1,7 @@
 name: Arandu STT
-version: "4.0.1"
+version: "4.0.2"
 slug: arandu_stt
-description: STT PT-BR local com oito modelos: FastConformer, Whisper, Parakeet, Orukeet e Granite, correção contextual e Wyoming
+description: "STT local multimodelo com correção contextual, Wyoming, captura limitada e métricas de áudio"
 arch:
   - amd64
 init: false
@@ -25,6 +25,7 @@ options:
   auto_download: false
   model_variant: adapted
   threads: 2
+  max_clients: 16
   padding_ms: 0
   profile: full
   debug_text: false
@@ -40,6 +41,7 @@ schema:
   auto_download: bool
   model_variant: "list(adapted|original)"
   threads: "int(1,4)"
+  max_clients: "int(1,32)"
   padding_ms: "list(0|100|200|300)"
   profile: "list(raw|normalize_only|acoustic_only|fuzzy_only|inventory_only|full|legacy_full)"
   debug_text: bool

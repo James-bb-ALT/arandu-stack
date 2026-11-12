@@ -91,6 +91,11 @@ class WyomingGateway:
 
     async def handle(self, reader, writer):
         task = asyncio.current_task()
+        if len(self.clients) >= 16:
+            writer.write(encode_event('error',{'code':'queue_saturated','text':'Wyoming ocupado; tente novamente'}))
+            await writer.drain()
+            await close_writer(writer)
+            return
         self.clients.add(task)
         backend_writer = None
         pumps = []

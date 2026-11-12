@@ -37,10 +37,14 @@ class Config:
     web_ingress_only: bool = False
     max_upload_mb: int = 12
     max_audio_seconds: int = 30
+    queue_limit: int = 4
+    piper_thread_budget: bool = False
 
     @classmethod
     def from_env(cls) -> Config:
         return cls(
+            queue_limit=max(0, min(16, int(os.environ.get('ARANDU_QUEUE_LIMIT', '4')))),
+            piper_thread_budget=bool_env('ARANDU_PIPER_THREAD_BUDGET', False),
             uri=os.environ.get('ARANDU_URI', cls.uri),
             voices_dir=Path(os.environ.get('ARANDU_VOICES_DIR', './voices')).expanduser(),
             default_voice=os.environ.get('ARANDU_DEFAULT_VOICE', cls.default_voice),

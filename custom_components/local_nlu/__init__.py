@@ -35,6 +35,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         lambda: bool(entry.options.get(CONF_CONTEXTUAL_ENABLED, True)),
         lambda: {"stack_endpoint": entry.data.get("stack_endpoint", ""), **dict(entry.options), **getattr(entry.runtime_data, '_stack_options', {})},
     )
+    # Restore scheduling at setup, even before the first voice request.
+    from .contextual_runtime import ContextualRuntime
+    runtime = entry.runtime_data
+    runtime._contextual = ContextualRuntime(hass,client,runtime._contextual_options)
+    try:
+        await runtime._contextual.scheduler.async_load()
+    except Exception as exc:
+        await runtime._contextual.async_close()
+        raise ConfigEntryNotReady('Não foi possível restaurar os agendamentos com segurança.') from exc
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     from .ai_lab import async_register
@@ -56,6 +65,18 @@ async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> Non
     # Clearing dialogue on every saved options change prevents change/restore replay.
     # Runtime options are read live; no restart or automatic add-on update is needed.
     runtime = entry.runtime_data
+    if runtime._contextual is not None:
+        from .workload import bounded
+        contextual = runtime._contextual
+        desired = (bounded(entry.options,'performance_concurrency',4,1,8), bounded(entry.options,'performance_waiting',16,0,32),
+                   bounded(entry.options,'performance_model_waiting',4,0,8),bounded(entry.options,'performance_timeout',45,5,90),
+                   bounded(entry.options,'performance_scheduler_concurrency',2,1,4),
+                   bounded(entry.options,'performance_scheduler_timeout',20,5,60),bounded(entry.options,'performance_scheduler_jobs',50,1,50))
+        actual = (contextual.nlu_admission.concurrency,contextual.nlu_admission.waiting,contextual.model_admission.waiting,contextual.total_timeout,
+                  contextual.scheduler.concurrency,contextual.scheduler.deadline,contextual.scheduler.max_active)
+        if desired != actual:
+            await hass.config_entries.async_reload(entry.entry_id)
+            return
     runtime._stack_options = {}
     runtime._stack_policy = {}
     if runtime._contextual is not None:
@@ -71,7 +92,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if publisher := getattr(entry.runtime_data, '_trace_publisher', None):
             publisher.close()
         if getattr(entry.runtime_data, "_contextual", None) is not None:
-            entry.runtime_data._contextual.close()
+            await entry.runtime_data._contextual.async_close()
         try:
             del entry.runtime_data
         except AttributeError:

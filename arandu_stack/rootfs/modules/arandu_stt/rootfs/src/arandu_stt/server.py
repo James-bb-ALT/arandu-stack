@@ -37,7 +37,7 @@ NAME = 'arandu-fastconformer-ptbr-int8'  # Preserve Assist's existing selected m
 UPSTREAM = 'https://huggingface.co/nvidia/stt_pt_fastconformer_hybrid_large_pc'
 MAX_SECONDS = 35
 MAX_INPUT_BYTES = 2 * 16000 * MAX_SECONDS
-VERSION = '4.0.1'
+VERSION = '4.0.2'
 
 
 def pcm16_to_float32(pcm: bytes) -> np.ndarray:
@@ -84,6 +84,8 @@ class Engine:
             self.backend.close()
             raise MemoryError('STT excedeu o orçamento de RAM do modelo')
         self._lock = threading.Lock()
+        self.clients = 0
+        self.client_limit = 16
         self.recent = {}
 
     def recognize(self, audio):
@@ -104,10 +106,10 @@ class Engine:
         from model_catalog import CATALOG
         manifest = self.manifest
         return {'revision': manifest.get('revision') or manifest.get('version'), 'model_path': str(self.backend.model_dir), 'model': self.model, 'variant': self.variant, 'backend': CATALOG[self.model]['runtime'],
-                'public_service_id': NAME, 'state': 'ready', 'threads': self.threads, 'device': 'cpu',
+                'public_service_id': NAME, 'state': 'busy' if self._lock.locked() else 'ready', 'threads': self.threads, 'device': 'cpu',
                 'compute': 'fp32' if self.model == 'fastconformer' and self.variant == 'adapted' else CATALOG[self.model]['compute'],
                 'model_load_ms': self.backend.load_ms, 'process_rss_mb': psutil.Process(os.getpid()).memory_info().rss/1048576,
-                'recent': self.recent}
+                'recent': self.recent, 'clients': self.clients, 'client_limit': self.client_limit}
 
 
 class Metrics:
@@ -120,7 +122,7 @@ class Metrics:
 
     def log(self, *, duration_s: float, inference_s: float, correction_ms: float,
             queue_s: float, after_stop_s: float, raw: str, final: str,
-            changes: int, padding_ms: int, outcome: str, lexical: dict | None = None) -> None:
+            changes: int, padding_ms: int, outcome: str, lexical: dict | None = None, audio_timings: dict | None = None) -> None:
         entry = {
             'utc': datetime.now(timezone.utc).isoformat(),
             'model': self.model,
@@ -137,6 +139,7 @@ class Metrics:
             'raw_chars': len(raw),
             'final_chars': len(final),
             'outcome': outcome,
+            'audio_timings': audio_timings or {},
         }
         if self.debug_text:
             entry['raw'] = raw
@@ -150,6 +153,8 @@ class Metrics:
                 entry['lexical']['tokens'] = lexical.get('tokens', [])
         with self._lock:
             self.path.parent.mkdir(parents=True, exist_ok=True)
+            if self.path.exists() and self.path.stat().st_size > 2*1024*1024:
+                self.path.replace(self.path.with_suffix(self.path.suffix+'.1'))
             with self.path.open('a', encoding='utf-8') as file:
                 file.write(json.dumps(entry, ensure_ascii=False) + '\n')
             if outcome == 'ok':
@@ -165,6 +170,21 @@ class Metrics:
 
 
 class Handler(AsyncEventHandler):
+    async def run(self):
+        # Bound capture buffers and idle sockets even on the direct 10350 port.
+        if self.engine.clients >= self.engine.client_limit:
+            try:
+                await self.write_event(Error(text='STT ocupado', code='queue_saturated').event())
+            finally:
+                await self.disconnect()
+            return
+        self.engine.clients += 1
+        try:
+            async with asyncio.timeout(120):
+                await super().run()
+        finally:
+            self.engine.clients -= 1
+
     def __init__(self, engine: Engine, resolver: ContextualResolver, metrics: Metrics,
                  padding_ms: int, profile: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -181,6 +201,8 @@ class Handler(AsyncEventHandler):
         self.armed = False
         self.chunk_count = 0
         self.started = False
+        self.capture_started = None
+        self.conversion_ms = 0.0
         LOG.info('[WYOMING] client connected')
 
     async def disconnect(self):
@@ -199,6 +221,8 @@ class Handler(AsyncEventHandler):
         self.armed = True
         self.chunk_count = 0
         self.started = False
+        self.capture_started = None
+        self.conversion_ms = 0.0
 
     async def handle_event(self, event: Event) -> bool:
         if Describe.is_type(event.type):
@@ -219,6 +243,7 @@ class Handler(AsyncEventHandler):
                 self.reset()
             start = AudioStart.from_event(event)
             self.started = True
+            self.capture_started = time.perf_counter()
             LOG.info('[WYOMING] AudioStart rate=%s width=%s channels=%s',
                      start.rate, start.width, start.channels)
             return True
@@ -235,7 +260,9 @@ class Handler(AsyncEventHandler):
                     raise ValueError('Formato de audio nao suportado')
                 if chunk.rate > 96000 or chunk.rate < 8000 or len(chunk.audio) > 2_000_000:
                     raise ValueError('Chunk de audio fora dos limites')
+                convert_started = time.perf_counter()
                 converted = self.converter.convert(chunk)
+                self.conversion_ms += (time.perf_counter()-convert_started)*1000
                 if self.total + len(converted.audio) > MAX_INPUT_BYTES:
                     raise ValueError('Audio excedeu 35s')
                 self.parts.append(converted.audio)
@@ -293,7 +320,10 @@ class Handler(AsyncEventHandler):
             elapsed = time.perf_counter() - stop
             await asyncio.to_thread(self.metrics.log, duration_s=duration, inference_s=infer, correction_ms=correction_ms,
                              queue_s=wait, after_stop_s=elapsed, raw=raw, final=final,
-                             changes=changes, padding_ms=self.padding_ms, outcome=outcome, lexical=resolved)
+                             changes=changes, padding_ms=self.padding_ms, outcome=outcome, lexical=resolved,
+                             audio_timings={'capture_transport_ms':(stop-self.capture_started)*1000 if self.capture_started is not None else None,
+                                 'resample_ms':self.conversion_ms,'buffer_bytes':len(pcm),'wake':'not_observed',
+                                 'external_vad':'not_observed','assist_delivery':'not_observed'})
             self.parts.clear()
             return False
         return True
@@ -308,6 +338,7 @@ def parse_args(argv=None):
     p.add_argument('--inventory', type=Path, default=Path('/data/arandu_ha_inventory.json'))
     p.add_argument('--uri', default='tcp://0.0.0.0:10350')
     p.add_argument('--threads', type=int, default=2)
+    p.add_argument('--max-clients', type=int, default=16)
     p.add_argument('--padding-ms', type=int, choices=(0,100,200,300), default=0)
     p.add_argument('--profile', choices=('raw','normalize_only','acoustic_only','fuzzy_only','inventory_only','full','legacy_full'), default='full')
     p.add_argument('--lexical-config', type=Path, default=HERE/'config'/'lexical.json')
@@ -323,6 +354,8 @@ def parse_args(argv=None):
     a = p.parse_args(argv)
     if not 1 <= a.threads <= 4:
         p.error('--threads precisa estar entre 1 e 4')
+    if not 1 <= a.max_clients <= 32:
+        p.error('--max-clients precisa estar entre 1 e 32')
     if not 0 <= a.inventory_refresh_seconds <= 86400:
         p.error('--inventory-refresh-seconds: 0–86400')
     return a
@@ -347,6 +380,7 @@ async def main(argv=None):
     LOG.info('Carregando %s | threads=%s | profile=%s | padding=%sms', a.stt_model, a.threads, a.profile, a.padding_ms)
     LOG.info('Resolver: %s', resolver.stats())
     engine = Engine(a.model_dir, a.threads, a.stt_model, a.model_variant)
+    engine.client_limit = a.max_clients
     metrics = Metrics(a.metrics, a.debug_text, a.stt_model, a.model_variant)
     server = AsyncServer.from_uri(a.uri)
     LOG.info('PRONTO: Arandu STT Wyoming %s | profile=%s | padding=%sms', a.uri, a.profile, a.padding_ms)

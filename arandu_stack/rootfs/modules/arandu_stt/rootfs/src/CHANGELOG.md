@@ -1,3 +1,8 @@
+# 4.0.2 — 2026-11-12
+
+- Limites de conexões/captura na porta Wyoming direta e rejeição explícita de saturação, sem alterar o modelo selecionado.
+- Métricas separadas de buffering/captura/resample, estado ocupado e rotação limitada dos logs. Wake, VAD externo e entrega Assist não são inferidos dessas durações.
+
 # 4.0.1 — 2026-11-11
 
 - Orukeet INT8 como padrão de instalações novas. Preserva seleção explícita e FastConformer legado sem campo stt_model.

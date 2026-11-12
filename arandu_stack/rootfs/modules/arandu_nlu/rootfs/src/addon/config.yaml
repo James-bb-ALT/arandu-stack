@@ -1,7 +1,7 @@
 name: ARANDU NLU
-version: 0.6.3
+version: 0.6.5
 slug: ptbr_nlu
-description: Local contextual Brazilian Portuguese intelligence for Home Assistant
+description: Deterministic Brazilian Portuguese with named timers, schedules and typed exclusions
 arch:
   - aarch64
   - amd64

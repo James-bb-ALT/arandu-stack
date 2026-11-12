@@ -1,14 +1,22 @@
 # Arquitetura e Especificação Técnica: Model Residency & LLM Model Manager
 
+**Integração da Fase 4:** commit `549dc61` incorporado sem substituir o runtime
+existente. Estes componentes permanecem isolados, sem novas rotas HTTP montadas.
+Seus 20 testes usam fixtures/mocks; LFM2.5, LFM3 e Qwen3 1.7B não foram homologados
+por inferência nesta entrega. O padrão de produção continua Tucano e o Qwen3 0.6B
+existente é preservado. `DEFAULT_MODEL_ID` deste catálogo não altera essa seleção.
+Residência/evicção aqui são registros contábeis: precisam de callbacks reais de
+carga/descarga e verificação do processo antes de serem expostos como estado real.
+
 **Módulo:** Arandu Assistant / App Control Plane  
 **Branch de Desenvolvimento Isolado:** `feat/arandu-model-residency-llm-manager`  
 **Escopo:** Catálogo com os três novos modelos LLM, download atômico GGUF com SHA-256 verificado, gerenciamento de residência em memória RAM (`RESIDENT`, `LAZY`, `STANDBY`), evicção cooperativa com STT/TTS e troca segura de modelo com rollback automático.
 
 ---
 
-## 1. Catálogo de Modelos LLM Homologados
+## 1. Catálogo experimental fornecido
 
-Todos os modelos possuem hashes SHA-256 rigorosamente pinados e validados por API/headers LFS oficiais no Hugging Face:
+Revisões, tamanhos e hashes fornecidos pelo commit de origem, mantidos abaixo. A incorporação não comprova compatibilidade de inferência com o llama.cpp instalado:
 
 | Identificador | Nome Oficial | Família | Quantização | Tamanho (Bytes) | Hash SHA-256 | Licença |
 |---|---|---|---|---|---|---|
@@ -51,7 +59,7 @@ Todos os modelos possuem hashes SHA-256 rigorosamente pinados e validados por AP
   - Persistidas em `model-residency.json` em `data_dir`.
 - **Orçamento e Headroom Cooperativo:**
   - Orçamento padrão de 2048 MB para o subsistema de modelos.
-  - Reserva obrigatória de 512 MB para STT (Whisper/Parakeet/Orukeet) e 256 MB para TTS (Piper/Pocket), garantindo que a inferência concorrente de voz não provoque OOM.
+  - Reserva contábil de 512 MB para STT e 256 MB para TTS. Essas estimativas não garantem ausência de OOM; o Orukeet residente real pode exceder a reserva e o runtime precisa observar a RAM disponível.
 - **Estimativa de Footprint Dinâmica:**
   - Modelos Liquid AI (LFM) combinam convoluções curtas e GQA, consumindo ~30% do KV-cache de transformers puros.
 - **Evicção Graciosa:** Ordem estrita de descarte:

@@ -504,6 +504,20 @@ fn phase32_approved_temporal_and_exclusion_forms() {
         ],
     ));
     assert_eq!(register_catalog(cat).status, "catalog_ready");
+    for (text, name, duration) in [
+        ("Timer para pizza de 15 minutos", "pizza", 900.0),
+        ("Timer para bolo de 10 minutos", "bolo", 600.0),
+        (
+            "Coloca um timer para bolo de chocolate de 10 minutos",
+            "bolo de chocolate",
+            600.0,
+        ),
+    ] {
+        let result = interpret(&request(text));
+        assert_eq!(result.status, "plan", "{text}: {result:?}");
+        assert_eq!(result.operations[0].parameters.name.as_deref(), Some(name));
+        assert_eq!(result.operations[0].parameters.duration, Some(duration));
+    }
     for (text, action, target) in [
         (
             "Liga a luz depois de dez minutos",

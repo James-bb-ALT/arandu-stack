@@ -8,6 +8,7 @@ from pathlib import Path
 import signal
 import sys
 import math
+import time
 from urllib.parse import urlsplit
 from settings import FIELDS, VOICE_ID, schema
 from logs import LogStore
@@ -26,6 +27,10 @@ DEFAULTS = {
             'pocket_threads': 2, 'pocket_fallback': False, 'fallback_voice': 'pt_BR-faber-medium',
             'remote_fallback': False, 'remote_url': '', 'remote_token': '', 'hf_token': '', 'log_level': 'INFO'},
 }
+for _key in ('decision', 'llm', 'tts'):
+    DEFAULTS[_key]['queue_limit'] = 4
+DEFAULTS['stt']['max_clients'] = 16
+DEFAULTS['tts']['piper_thread_budget'] = False
 PORTS = {'nlu': 11555, 'wake': 10400, 'stt': 10350, 'tts': 10212, 'decision': 11557, 'llm': 11558}
 
 def validate_options(key, options, data=Path('/data')):
@@ -89,6 +94,11 @@ class ModuleManager:
         self.stopping = set()
         self.failures = {}
         self.lock = asyncio.Lock()
+        self.health = {}
+        self.recovery = {}
+        self.monitor_task = None
+        self.closing = False
+        self.cpu_samples = {}
         self.llm_policy_file=data/'llm-policy.json'
         self.llm_profiles={}
         self.decision_model_file=data/"decision-model-policy.json"
@@ -186,6 +196,8 @@ class ModuleManager:
         process = self.processes.get(key)
         running = bool(process and process.returncode is None)
         return {'id': key, 'installed': self.installed(key), 'state': 'started' if running else ('error' if key in self.failures or process and self.config[key]['enabled'] else 'stopped'),
+                'runtime': self.health.get(key, {'state':'loading' if running else 'off','rss_mb':None,'cpu_percent':None}),
+                'recovery_attempts':self.recovery.get(key,{}).get('attempts',0),
                 'enabled': self.config[key]['enabled'], 'options': dict(self.config[key]),
                 'last_error': self.journal.redact(self.failures.get(key, '')),
                 'port': PORTS[key], 'exit_code': process.returncode if process else None,
@@ -231,7 +243,8 @@ class ModuleManager:
             worker_options['profiles']=profiles
         (directory / 'options.json').write_text(json.dumps(worker_options), encoding='utf-8')
         environment = {k: v for k, v in os.environ.items() if k not in {'SUPERVISOR_TOKEN','HASSIO_TOKEN','HA_TOKEN','HASS_TOKEN','HF_TOKEN'}}
-        environment.update(ARANDU_MODULE_DATA=str(directory), OMP_NUM_THREADS='2', OPENBLAS_NUM_THREADS='2')
+        environment.update(ARANDU_MODULE_DATA=str(directory), OMP_NUM_THREADS='2', OPENBLAS_NUM_THREADS='2',
+            MKL_NUM_THREADS='2', NUMEXPR_NUM_THREADS='1', TOKENIZERS_PARALLELISM='false')
         if key in {'decision', 'llm'}:
             environment.update(ARANDU_INFERENCE_LOCK=str(self.data / 'intelligence.lock'),
                                OMP_NUM_THREADS=str(self.config[key]['threads']),
@@ -308,8 +321,82 @@ class ModuleManager:
                     except Exception as exc:
                         self.failures[key] = str(exc)
                         self.journal.event(key, 'Inicialização falhou: ' + str(exc), error=True)
+            self.monitor_task = asyncio.create_task(self._monitor())
+
+    async def _monitor(self):
+        """Bounded crash recovery; observation never authorizes an HA action."""
+        while not self.closing:
+            for key in DEFAULTS:
+                process = self.processes.get(key)
+                if process and process.returncode is None:
+                    def sample():
+                        try:
+                            import psutil
+                            proc = psutil.Process(process.pid)
+                            family = [proc,*proc.children(recursive=True)]
+                            rss = sum(child.memory_info().rss for child in family)/1048576
+                            cpu = sum(sum(child.cpu_times()[:2]) for child in family)
+                            tick = time.monotonic()
+                            previous = self.cpu_samples.get(process.pid)
+                            self.cpu_samples[process.pid]=(tick,cpu)
+                            return {'state':'running','rss_mb':rss,'cpu_percent':max(0,(cpu-previous[1])/(tick-previous[0])*100) if previous else None,
+                                'available_memory_mb':psutil.virtual_memory().available/1048576,
+                                'cpu_count':os.cpu_count(),'requested_threads':self.config[key].get('threads',self.config[key].get('cpu_threads',None))}
+                        except Exception:
+                            return {'state':'running','rss_mb':None,'cpu_percent':None}
+                    self.health[key] = await asyncio.to_thread(sample)
+                    try:
+                        from aiohttp import ClientSession,ClientTimeout
+                        ports={'nlu':(11555,'/health'),'stt':(11560,'/status'),'decision':(11557,'/status'),'llm':(11558,'/status'),'tts':(11559,'/api/status')}
+                        if key in ports:
+                            port,path=ports[key]
+                            async with ClientSession(timeout=ClientTimeout(total=1),trust_env=False) as client:
+                                async with client.get(f'http://127.0.0.1:{port}{path}',headers={'X-Arandu-Lab':'1','X-Arandu-UI':'1'},allow_redirects=False) as response:
+                                    if response.status != 200:
+                                        raise ValueError('health_failed')
+                                    raw=bytearray()
+                                    async for chunk in response.content.iter_chunked(8192):
+                                        raw.extend(chunk)
+                                        if len(raw)>65536:
+                                            raise ValueError('health_size')
+                                    status=json.loads(raw)
+                            self.health[key]['state']='busy' if status.get('busy') or status.get('state')=='busy' else 'ready' if key in ('nlu','stt') or status.get('loaded') or status.get('active_model') or status.get('loaded_voice') else 'installed'
+                        else:
+                            from wyoming_gateway import describe_backend
+                            status=await describe_backend(10400)
+                            self.health[key]['state']='ready' if status.get('wake') else 'loading'
+                    except Exception:
+                        self.health[key]['state']='degraded'
+                        self.health[key]['reason']='health_unavailable'
+                    available = self.health[key].get('available_memory_mb')
+                    if available is not None and available<256:
+                        self.health[key]['state']='degraded'
+                        self.health[key]['reason']='memory_pressure'
+                elif self.config[key]['enabled'] and key in self.failures:
+                    await self._recover(key)
+                else:
+                    self.health[key]={'state':'off','rss_mb':None,'cpu_percent':None}
+            await asyncio.sleep(2)
+
+    async def _recover(self,key):
+        row=self.recovery.setdefault(key,{'attempts':0,'next':0})
+        if self.closing or row['attempts']>=3 or time.monotonic()<row['next']:
+            return
+        row['attempts']+=1
+        row['next']=time.monotonic()+(2,5,15)[row['attempts']-1]
+        async with self.lock:
+            if not self.config[key]['enabled'] or self.closing:
+                return
+            try:
+                await self.start(key,persist=False)
+            except Exception:
+                self.journal.event(key,'Recuperação falhou; tentativas limitadas a três.',error=True)
 
     async def close(self):
+        self.closing = True
+        if self.monitor_task:
+            self.monitor_task.cancel()
+            await asyncio.gather(self.monitor_task,return_exceptions=True)
         for key in DEFAULTS:
             await self.stop(key, persist=False)
         for log in self.logs.values():

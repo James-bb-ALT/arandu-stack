@@ -121,7 +121,20 @@ class LocalNluOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return await self.async_step_settings(user_input)
         return self.async_show_menu(step_id='init', menu_options=[
-            'voice_output', 'identity_binding', 'intelligence', 'settings'])
+            'voice_output', 'identity_binding', 'intelligence', 'performance', 'settings'])
+
+    async def async_step_performance(self, user_input=None):
+        limits = {'performance_concurrency':(4,1,8),'performance_waiting':(16,0,32),
+                  'performance_model_waiting':(4,0,8),'performance_timeout':(45,5,90),
+                  'performance_scheduler_concurrency':(2,1,4),'performance_scheduler_timeout':(20,5,60),
+                  'performance_scheduler_jobs':(50,1,50)}
+        if user_input is not None:
+            if set(user_input)-set(limits) or any(type(value) is not int or not limits[key][1] <= value <= limits[key][2] for key,value in user_input.items()):
+                return self.async_abort(reason='invalid_intelligence_options')
+            return self.async_create_entry(data={**self.config_entry.options,**user_input})
+        return self.async_show_form(step_id='performance', data_schema=vol.Schema({
+            vol.Optional(key, default=self.config_entry.options.get(key,default)):vol.All(vol.Coerce(int),vol.Range(min=low,max=high))
+            for key,(default,low,high) in limits.items()}))
 
     @staticmethod
     def _display(value):

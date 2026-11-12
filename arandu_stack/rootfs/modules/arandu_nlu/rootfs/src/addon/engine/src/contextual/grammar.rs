@@ -2150,17 +2150,25 @@ fn extract_timer_slots(text: &str) -> (Option<String>, Option<f64>) {
             name = Some(after.trim().trim_end_matches('.').to_owned());
             duration_secs = extract_duration_from_phrase(before);
         }
-    } else if let Some((_, after)) = text.split_once(" de pizza de ") {
-        name = Some("pizza".into());
-        duration_secs = slots::duration(after);
-    } else if let Some((_, after_timer)) = text.split_once(" timer ") {
+    } else if let Some(after_timer) = text
+        .strip_prefix("timer ")
+        .or_else(|| text.split_once(" timer ").map(|(_, after)| after))
+    {
         let after_timer = after_timer.trim();
         if let Some((n, s)) = after_timer
-            .split_once(" de ")
+            .rsplit_once(" de ")
             .filter(|(n, _)| !matches!(*n, "um" | "uma" | "para" | "pra"))
             .and_then(|(n, dur)| slots::duration(dur).map(|s| (n, s)))
         {
-            name = Some(n.trim().to_owned());
+            let n = n.trim();
+            let n = n
+                .strip_prefix("para ")
+                .or_else(|| n.strip_prefix("pra "))
+                .or_else(|| n.strip_prefix("de "))
+                .unwrap_or(n);
+            if !n.is_empty() {
+                name = Some(n.to_owned());
+            }
             duration_secs = Some(s);
         }
     }

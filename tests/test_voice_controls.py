@@ -178,7 +178,7 @@ class OutputControls(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await self.runtime.process(self.request('volume 30'))).code,'missing_slot')
         self.assertEqual(self.hass.services.calls,[])
 
-    async def test_cancel_clears_all_dialogues_for_origin_and_stops_only_its_speaker(self):
+    async def test_cancel_clears_only_own_conversation_and_stops_only_its_speaker(self):
         for conv in ['fixture','previous']:
             self.runtime.sessions[('user','assist_satellite.fixture',conv)]=Session(float('inf'),pending={'fixture':True})
         self.runtime.sessions[('user','assist_satellite.other','fixture')]=Session(float('inf'))
@@ -186,7 +186,8 @@ class OutputControls(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.code,'cancelled')
         self.assertEqual(result.response_text,'')
         self.assertFalse(result.continue_conversation)
-        self.assertEqual(len(self.runtime.sessions),1)
+        self.assertEqual(len(self.runtime.sessions),2)
+        self.assertIn(('user','assist_satellite.fixture','previous'),self.runtime.sessions)
         self.assertEqual(self.hass.services.calls[-1]['service'],'media_stop')
         self.assertEqual(self.hass.services.calls[-1]['target'],{'entity_id':['media_player.speaker']})
         self.assertEqual(self.client.requests,[])
@@ -199,7 +200,7 @@ class OutputControls(unittest.IsolatedAsyncioTestCase):
         self.client.async_interpret_v4=AsyncMock(side_effect=blocked)
         first=asyncio.create_task(self.runtime.process(self.request('liga a luz')))
         await asyncio.wait_for(entered.wait(),1)
-        queued=asyncio.create_task(self.runtime.process(self.request('liga a luz',conversation_id='queued')))
+        queued=asyncio.create_task(self.runtime.process(self.request('liga a luz')))
         await asyncio.sleep(0)
         cancel=await asyncio.wait_for(self.runtime.process(self.request('para')),1)
         self.assertEqual(cancel.code,'cancelled')
@@ -337,4 +338,4 @@ class OutputConfiguration(unittest.IsolatedAsyncioTestCase):
         flow=self.module.LocalNluOptionsFlow()
         result=await flow.async_step_init()
         self.assertEqual(result['type'],'menu')
-        self.assertEqual(result['menu_options'],['voice_output','identity_binding','intelligence','settings'])
+        self.assertEqual(result['menu_options'],['voice_output','identity_binding','intelligence','performance','settings'])

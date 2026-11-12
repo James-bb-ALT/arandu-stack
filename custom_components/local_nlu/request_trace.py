@@ -12,7 +12,7 @@ import time
 import uuid
 
 CURRENT = ContextVar('arandu_request_trace', default=None)
-STAGES = ('wake', 'stt', 'prepare', 'authorization', 'queue', 'nlu', 'decision', 'llm', 'validation', 'ha', 'tts')
+STAGES = ('wake', 'stt', 'prepare', 'normalization', 'authorization', 'queue', 'model_queue', 'nlu_queue', 'resource_queue', 'nlu', 'decision', 'llm', 'validation', 'ha', 'tts', 'playback', 'scheduler')
 
 
 def code(value):
@@ -47,9 +47,10 @@ class RequestTrace:
                          started_at=datetime.now(timezone.utc).isoformat(), status='running',
                          origin=origin, result=None, reason=None, total_ms=None, text=None, stages={})
         for name in STAGES:
-            self.data['stages'][name] = {'status': 'not_observed' if name in ('wake', 'stt', 'tts')
+            self.data['stages'][name] = {'status': 'not_observed' if name in ('wake', 'stt', 'tts', 'playback', 'scheduler')
                                         else 'disabled' if name in ('decision', 'llm') and not (options or {}).get(name + '_enabled')
                                         else 'pending'}
+            self.data['stages'][name]['observation'] = 'disabled' if self.data['stages'][name]['status']=='disabled' else 'not_observed'
 
     def emit(self):
         self.data['sequence'] += 1
@@ -62,6 +63,7 @@ class RequestTrace:
         row = self.data['stages'][name]
         self.running[name] = time.perf_counter()
         row['status'] = 'running'
+        row['observation'] = 'observed'
         row.setdefault('offset_ms', (self.running[name] - self.clock) * 1000)
         self.emit()
 
@@ -72,10 +74,25 @@ class RequestTrace:
             row['duration_ms'] = row.get('duration_ms', 0) + (time.perf_counter() - started) * 1000
             row['attempts'] = row.get('attempts', 0) + 1
         row['status'] = status
+        row['observation'] = status if status in ('error','cancelled','unavailable','disabled') else 'observed'
         if code(reason):
             row['reason'] = reason
         if type(confidence) in (int, float) and 0 <= confidence <= 1:
             row['confidence'] = confidence
+        self.emit()
+
+    def model(self, stage, response):
+        row = self.data['stages'][stage]
+        if response.get('model') in {'e5-small','minilm-multilingual','e5-base','tucano','qwen3'}:
+            row['model'] = response['model']
+        if response.get('backend_used') in {'cpu','gpu_intel'}:
+            row['backend'] = response['backend_used']
+        if type(response.get('embedding_used')) is bool:
+            row['embedding_used'] = response['embedding_used']
+        for name in ('load_ms','inference_ms','cpu_ms','tokens_per_second'):
+            value = response.get(name)
+            if type(value) in (int,float) and 0 <= value <= 86400000:
+                row[name] = value
         self.emit()
 
     def finish(self, result, text=None, include_text=False):

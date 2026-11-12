@@ -40,6 +40,7 @@ function renderModules(){
     if(module.id==='stt'){const test=el('a','Testar STT','button secondary');test.href='/arandu-ai-lab#stt';test.target='_top';actions.append(test);}
     card.append(actions,el('div',module.slug||'Módulo incluído no Arandu Assistant.','slug'));$('cards').append(card);
     if(module.last_error)card.append(el('p',module.last_error,'log-error'));
+    if(module.runtime){const state={off:'Desligado',running:'Processo ativo',loading:'Carregando',ready:'Pronto',busy:'Ocupado',installed:'Instalado, modelo não carregado',degraded:'Degradado',error:'Erro'}[module.runtime.state]||'Não observado';card.append(el('p',state+(Number.isFinite(module.runtime.rss_mb)?' · '+module.runtime.rss_mb.toFixed(0)+' MiB':'')+(Number.isFinite(module.runtime.cpu_percent)?' · CPU '+module.runtime.cpu_percent.toFixed(0)+'%':'')+(module.recovery_attempts?' · recuperações '+module.recovery_attempts+'/3':''),'slug'));}
     if(module.id==='stt'){const actual=el('p','Consultando motor realmente ativo…','slug');card.append(actual);api('stt/models').then(result=>{if(actual.isConnected)actual.textContent=result.active?'Assist: '+result.active.model+' · '+(result.active.model==='fastconformer'?result.active.variant:'multilíngue')+' · '+result.active.process_rss_mb.toFixed(0)+' MiB'+(Number.isFinite(result.active.recent?.inference_ms)?' · '+result.active.recent.inference_ms.toFixed(1)+' ms':''):'Modelo de produção ainda não confirmou prontidão.';}).catch(()=>{actual.textContent='Diagnóstico STT indisponível.';});}
   });
 }

@@ -155,11 +155,16 @@ async def completion(adapter,request,*,cache_prompt=False):
     cached_tokens=(usage.get('prompt_tokens_details') or {}).get('cached_tokens')
     if cached_tokens is None and 'cache_n' in timings:
         cached_tokens=timings.get('cache_n')
+    decode_ms = timings.get('predicted_ms')
+    decode_tps = timings.get('predicted_per_second')
+    if decode_tps is None and type(n) is int and isinstance(decode_ms, (int, float)) and decode_ms > 0:
+        decode_tps = n / (decode_ms / 1000.0)
+    e2e_tps = n / (total / 1000.0) if type(n) is int and total > 0 else None
     metrics={'inference_ms':total,'first_token_ms':(first-started)*1000 if first else None,
         'prompt_tokens':usage.get('prompt_tokens'),'generated_tokens':n,
-        'prompt_eval_ms':timings.get('prompt_ms'),'decode_ms':timings.get('predicted_ms'),
-        'tokens_per_second':n/(total/1000) if type(n) is int and total>0 else None,
-        'decode_tokens_per_second':timings.get('predicted_per_second'),'prefix_cache_requested':bool(cache_prompt),
+        'prompt_eval_ms':timings.get('prompt_ms'),'decode_ms':decode_ms,
+        'tokens_per_second':e2e_tps,'end_to_end_tokens_per_second':e2e_tps,
+        'decode_tokens_per_second':decode_tps,'prefix_cache_requested':bool(cache_prompt),
         'cached_prompt_tokens':cached_tokens,'cache_hit':bool(cached_tokens and cached_tokens>0)}
     return ''.join(content),metrics
 

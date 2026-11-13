@@ -342,3 +342,44 @@ test('TTS consecutive speak revokes previous objectURL and ignores stale respons
     ctx.restore();
   }
 });
+
+test('reloading panel script updates already-defined custom element and reports mismatch warning', () => {
+  class OldPanel { constructor() { this.dataset = {panelVersion: '11.3.7'}; } }
+  OldPanel.PANEL_VERSION = '11.3.7';
+  const liveEl = new OldPanel();
+  const nodes = {
+    playAudio: new Element(),
+    versionDiagnostics: {textContent: ''},
+    versionWarning: {hidden: true, style: {display: 'none'}, textContent: ''},
+  };
+  liveEl.shadowRoot = {
+    innerHTML: '',
+    getElementById: (id) => nodes[id] || null,
+    querySelectorAll: () => [],
+  };
+  let defines = 0;
+  vm.runInNewContext(fs.readFileSync('custom_components/local_nlu/ai_lab_panel.js', 'utf8'), {
+    HTMLElement: class {},
+    customElements: {
+      get: (name) => (name === 'arandu-ai-lab' ? OldPanel : undefined),
+      define: () => { defines++; },
+    },
+    document: {
+      createElement: () => new Element(),
+      createTextNode: (t) => ({textContent: t}),
+      querySelector: () => ({getAttribute: () => '/local_nlu_ai_lab/panel.js?v=11.3.9-abc123def456'}),
+      querySelectorAll: () => [liveEl],
+    },
+    clearInterval: globalThis.clearInterval,
+    clearTimeout: globalThis.clearTimeout,
+  });
+  assert.equal(defines, 0);
+  assert.equal(OldPanel.PANEL_VERSION, '11.3.9');
+  assert.equal(typeof OldPanel.prototype.updateVersionDiagnostics, 'function');
+  assert.equal(liveEl.dataset.panelVersion, '11.3.9');
+  assert.match(nodes.versionDiagnostics.textContent, /AI Lab frontend: 11\.3\.9.*Asset hash: abc123def456/);
+  assert.equal(nodes.versionWarning.hidden, true);
+  liveEl.updateVersionDiagnostics({backend_version: '11.3.8', asset_hash: '000000000000', panel_tag: '11.3.8-000000000000'});
+  assert.equal(nodes.versionWarning.hidden, false);
+  assert.equal(nodes.versionWarning.textContent, 'O painel carregado está desatualizado. Atualize o frontend do Arandu.');
+});

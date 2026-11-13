@@ -141,17 +141,36 @@ customElements.whenDefined('arandu-ai-lab').then(() => {{
     return httpd, f"http://127.0.0.1:{port}/", tag
 
 
-def test_real_chromium_and_android_mobile_layout_and_tts_autoplay():
-    playwright_sync = pytest.importorskip("playwright.sync_api")
+def _launch_chromium(p):
+    """Launch Playwright-managed Chromium first, falling back to Chrome/Edge; fail loudly if absent."""
+    errors = []
+    try:
+        return p.chromium.launch(headless=True)
+    except Exception as exc:
+        errors.append(f"default: {exc}")
     browser_exe = _find_browser_executable()
-    if not browser_exe:
-        pytest.skip("Nenhum binário Chromium/Chrome/Edge disponível neste host")
+    if browser_exe:
+        try:
+            return p.chromium.launch(executable_path=browser_exe, headless=True)
+        except Exception as exc:
+            errors.append(f"{browser_exe}: {exc}")
+    raise AssertionError("Chromium/Chrome/Edge indisponível para teste E2E real: " + " | ".join(errors))
+
+
+def test_real_chromium_and_android_mobile_layout_and_tts_autoplay():
+    from pathlib import Path
+    import sys
+    repo_root = str(Path(__file__).resolve().parent.parent)
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
+    from playwright.sync_api import sync_playwright
 
     httpd, url, expected_tag = _start_fixture_server()
+    expected_hash = expected_tag.split("-", 1)[1] if "-" in expected_tag else expected_tag
     try:
-        with playwright_sync.sync_playwright() as p:
-            browser = p.chromium.launch(executable_path=browser_exe, headless=True)
-            # 1. Desktop Chromium: autoplay blocked NotAllowedError -> manual Tocar áudio without re-synthesizing
+        with sync_playwright() as p:
+            browser = _launch_chromium(p)
+            # 1. Desktop Chromium: version diagnostics, mismatch banner, autoplay blocked NotAllowedError -> manual play
             context = browser.new_context(viewport={"width": 1280, "height": 900})
             page = context.new_page()
             page.goto(url, wait_until="networkidle")
@@ -159,17 +178,43 @@ def test_real_chromium_and_android_mobile_layout_and_tts_autoplay():
 
             info = page.evaluate("""() => {
               const el = document.querySelector('arandu-ai-lab');
+              const sr = el.shadowRoot;
               return {
                 version: el.dataset.panelVersion,
                 hasPlayAudio: typeof el.playAudio === 'function',
-                hasPlayBtn: !!el.shadowRoot.getElementById('playAudio'),
-                srcAttr: document.querySelector('script[src*="panel.js"]').getAttribute('src')
+                hasPlayBtn: !!sr.getElementById('playAudio'),
+                srcAttr: document.querySelector('script[src*="panel.js"]').getAttribute('src'),
+                diagText: sr.getElementById('versionDiagnostics')?.textContent || '',
+                warnHidden: sr.getElementById('versionWarning')?.hidden,
               };
             }""")
-            assert info["version"] == "11.3.8"
+            assert info["version"] == "11.3.9"
             assert info["hasPlayAudio"] is True
             assert info["hasPlayBtn"] is True
             assert f"?v={expected_tag}" in info["srcAttr"]
+            assert "AI Lab frontend: 11.3.9" in info["diagText"]
+            assert f"Asset hash: {expected_hash}" in info["diagText"]
+            assert info["warnHidden"] is True
+
+            # Verify stale frontend warning appears on backend/hash mismatch and clears when synced
+            mismatch_state = page.evaluate("""() => {
+              const el = document.querySelector('arandu-ai-lab');
+              el.updateVersionDiagnostics({backend_version: '11.3.8', asset_hash: '000000000000', panel_tag: '11.3.8-000000000000'});
+              const w = el.shadowRoot.getElementById('versionWarning');
+              return {hidden: w.hidden, display: w.style.display, text: w.textContent};
+            }""")
+            assert mismatch_state["hidden"] is False
+            assert mismatch_state["display"] == "block"
+            assert mismatch_state["text"] == "O painel carregado está desatualizado. Atualize o frontend do Arandu."
+
+            synced_state = page.evaluate("""([ver, h, tag]) => {
+              const el = document.querySelector('arandu-ai-lab');
+              el.updateVersionDiagnostics({backend_version: ver, asset_hash: h, panel_tag: tag});
+              const w = el.shadowRoot.getElementById('versionWarning');
+              return {hidden: w.hidden, diag: el.shadowRoot.getElementById('versionDiagnostics').textContent};
+            }""", ["11.3.9", expected_hash, expected_tag])
+            assert synced_state["hidden"] is True
+            assert "Backend: 11.3.9" in synced_state["diag"]
 
             page.evaluate("""() => {
               const el = document.querySelector('arandu-ai-lab');

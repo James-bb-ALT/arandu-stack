@@ -1,5 +1,39 @@
 /* Native Home Assistant panel. Uses the authenticated hass websocket, never stored tokens. */
 class AranduAILab extends HTMLElement {
+  static PANEL_VERSION = '11.3.9';
+  loadedScriptTag() {
+    try {
+      const script = typeof document !== 'undefined' && typeof document.querySelector === 'function'
+        ? document.querySelector('script[src*="/local_nlu_ai_lab/panel.js"]')
+        : null;
+      const src = script?.getAttribute?.('src') || script?.src || '';
+      const match = src.match(/[?&]v=([^&#]+)/);
+      if (match) return decodeURIComponent(match[1]);
+    } catch {}
+    return null;
+  }
+  updateVersionDiagnostics(meta = {}) {
+    if (!this.shadowRoot) return;
+    const diag = this.$('versionDiagnostics');
+    const warn = this.$('versionWarning');
+    const feVer = AranduAILab.PANEL_VERSION;
+    const loadedTag = this.loadedScriptTag();
+    const loadedHash = loadedTag && loadedTag.includes('-') ? loadedTag.split('-').slice(1).join('-') : null;
+    const backendVer = meta?.backend_version || '—';
+    const backendHash = meta?.asset_hash || loadedHash || '—';
+    if (diag) {
+      diag.textContent = `AI Lab frontend: ${feVer} · Backend: ${backendVer} · Asset hash: ${backendHash}`;
+    }
+    const versionMismatch = Boolean(meta?.backend_version && meta.backend_version !== feVer);
+    const tagMismatch = Boolean(meta?.panel_tag && loadedTag && meta.panel_tag !== loadedTag);
+    const hashMismatch = Boolean(meta?.asset_hash && loadedHash && meta.asset_hash !== loadedHash);
+    const mismatch = versionMismatch || tagMismatch || hashMismatch;
+    if (warn) {
+      warn.hidden = !mismatch;
+      if (warn.style) warn.style.display = mismatch ? 'block' : 'none';
+      warn.textContent = mismatch ? 'O painel carregado está desatualizado. Atualize o frontend do Arandu.' : '';
+    }
+  }
   duration(ms, missing='Indisponível') {
     if (!Number.isFinite(ms)) return missing;
     return ms >= 1000 ? (ms / 1000).toFixed(2).replace('.', ',')+' s' : ms.toFixed(1).replace('.', ',')+' ms';
@@ -32,9 +66,9 @@ class AranduAILab extends HTMLElement {
     finally { this.busy = false; this.shadowRoot.querySelectorAll('button').forEach(b => { b.disabled = false; }); this.executionState();this.sttControls?.();this.updateTtsUi?.(); }
   }
   mount() {
-    this.dataset.panelVersion = '11.3.8';
-    this.attachShadow({mode: 'open'});
-    this.shadowRoot.innerHTML = `
+    this.dataset.panelVersion = AranduAILab.PANEL_VERSION;
+    const root = this.shadowRoot || this.attachShadow({mode: 'open'});
+    root.innerHTML = `
       <style>
       :host{display:block;background:var(--primary-background-color,#f4f6f3);color:var(--primary-text-color,#172a27);font:15px/1.5 system-ui;min-height:100vh}*{box-sizing:border-box}
       main{max-width:1200px;margin:auto;padding:32px 24px 70px}header{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:28px}h1{font-size:30px;letter-spacing:-1px;margin:0}h2{font-size:18px;margin:0 0 16px}p{margin:6px 0}.muted{color:var(--secondary-text-color,#5a6d67)}.badge{border:1px solid #7b9f8c;border-radius:20px;padding:5px 12px;font-size:12px;color:var(--primary-text-color,#24503c)}
@@ -43,7 +77,7 @@ class AranduAILab extends HTMLElement {
       #stages{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}.stage{border:1px solid var(--divider-color,#dae1da);padding:8px 10px;border-radius:8px;flex:1 1 140px;font-size:12px;min-width:120px;max-width:100%}.stage[open]{flex-basis:100%}.executed{border-color:#508567;background:#50856718}.error{border-color:#bb6654}pre{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font:12px/1.5 ui-monospace,monospace;max-height:480px;overflow:auto;max-width:100%}table{width:100%;border-collapse:collapse;font-size:13px}td,th{text-align:left;padding:8px;border-bottom:1px solid var(--divider-color,#ddd)}.scroll{overflow:auto}summary{cursor:pointer}#status{min-height:28px;margin:12px 0}audio{width:100%;margin-top:12px}.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.metric{padding:12px;background:#5085670e;border-radius:8px}.metric strong{display:block;font-size:20px}#history button{display:block;width:100%;text-align:left;margin-top:8px}small{font-size:12px}a{color:inherit}
       @media(max-width:850px){.layout{grid-template-columns:1fr}main{padding:20px 12px}header{align-items:start}h1{font-size:25px}#stages{display:grid;grid-template-columns:1fr;gap:8px}.stage{width:100%;min-width:0;flex:none}.stage pre{max-width:100%;overflow-x:auto;white-space:pre-wrap;word-break:break-word}}
       </style>
-      <main><header><div class="lab-brand"><img src="/local_nlu_ai_lab/brand/arandu-icon.svg" width="52" height="52" alt="Símbolo Arandu"><div><p class="muted eyebrow">ARANDU / CONHECIMENTO EM MOVIMENTO</p><h1>AI Decision Lab</h1><p class="muted">Interprete, compare e revise antes de agir.</p></div></div><span class="badge" id="safety" role="status" aria-live="polite">Dry-run ativo</span></header>
+      <main><header><div class="lab-brand"><img src="/local_nlu_ai_lab/brand/arandu-icon.svg" width="52" height="52" alt="Símbolo Arandu"><div><p class="muted eyebrow">ARANDU / CONHECIMENTO EM MOVIMENTO</p><h1>AI Decision Lab</h1><p class="muted">Interprete, compare e revise antes de agir.</p><p class="muted"><small id="versionDiagnostics" aria-live="polite"></small></p><p id="versionWarning" role="alert" style="display:none;color:#9d2d1d;background:#fbeceb;border:1px solid #d46b5c;border-radius:8px;padding:8px 10px;margin-top:8px;font-size:13px"></p></div></div><span class="badge" id="safety" role="status" aria-live="polite">Dry-run ativo</span></header>
       <nav class="lab-tabs" aria-label="Seções do laboratório"><button data-lab-tab="test" aria-current="page">Testar</button><button data-lab-tab="compare">Comparar</button><button data-lab-tab="stt">STT</button><button data-lab-tab="advanced">Avançado</button></nav>
       <section class="card" id="demoCard"><h2>Testes prontos · casa fictícia</h2>
         <p class="muted">Dataset sintético com dispositivos, aliases, áreas e gabaritos prontos. Os modelos rodam de verdade, somente após seu clique. Nenhuma ação real é permitida nesta suíte.</p>
@@ -171,6 +205,7 @@ class AranduAILab extends HTMLElement {
       player.onended = () => { if (!this.disconnected) { this.playbackState = 'idle'; this.updateTtsUi(); } };
       player.onerror = () => { if (!this.disconnected && this.audioUrl) { this.playbackState = 'playback_error'; this.updateTtsUi(); } };
     }
+    this.updateVersionDiagnostics();
     this.$('clear').onclick = () => { this.store('history', []); this.history(); };
     this.$('saveExamples').onclick = () => this.task(async () => { this.store('examples', JSON.parse(this.$('examples').value)); });
     this.$('batch').onclick = () => this.task(async () => {
@@ -404,6 +439,7 @@ class AranduAILab extends HTMLElement {
     let result;
     try{result=await this.call('status');}catch(error){result={models:[],error:error.message||String(error)};}
     this.modelStatus=result.models;
+    this.updateVersionDiagnostics(result);
     try {
       const catalog=await this.call('catalog'),previous=this.$('testArea').value;
       this.$('testArea').replaceChildren();
@@ -414,6 +450,7 @@ class AranduAILab extends HTMLElement {
     } catch(error) { this.$('testAreaStatus').textContent='Não foi possível carregar as áreas de teste: '+(error.message || error); }
     try {
       const state=await this.call('readiness'),p=state.production_policy,d=state.decision;
+      this.updateVersionDiagnostics(state);
       this.$('layerReadiness').textContent='Pipeline real: NLU ativo; Decision '+(p.decision?'habilitado':'desabilitado')+'; LLM '+(p.llm?'habilitado':'desabilitado')+'. Decision: '+(d.calibration_valid===true?'calibração válida; aceitação depende da confiança e margem de cada hipótese':d.calibration_valid===false?(d.deterministic_available?'ação/alvo explícitos disponíveis; sem calibração semântica':'não calibrado; somente diagnóstico'):'indisponível; calibração não verificada')+'. Os testes abaixo são independentes.';
     } catch { this.$('layerReadiness').textContent='Não foi possível consultar a política da integração. Testes independentes.'; }
     const fill = (id, kind) => {
@@ -566,6 +603,7 @@ class AranduAILab extends HTMLElement {
     if(this.$('autoTts').checked)await this.speak();
   }
   render(result) {
+    if (this.shadowRoot) this.updateVersionDiagnostics(result);
     const labels = {turn_on:'ligar',turn_off:'desligar',query:'consultar',conversation:'conversar'};
     const statuses = {executed:'executado',accepted:'aceito',resolved:'resolvido por ação/alvo explícitos',confirmation_required:'aguarda confirmação',rejected:'rejeitado',ambiguous:'aguardando esclarecimento',uncalibrated:'não calibrado',skipped:'não necessário',error:'erro'};
     const stageNames={vad:'VAD',stt:'STT',nlu:'NLU',decision:'Decision',llm:'LLM',validation:'Validação HA',ha:'Home Assistant',response:'Resposta',tts:'TTS'};
@@ -688,4 +726,29 @@ class AranduAILab extends HTMLElement {
     const url=URL.createObjectURL(new Blob([text],{type:format==='json'?'application/json':'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='arandu-ai-lab.'+format;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 }
-if (!customElements.get('arandu-ai-lab')) customElements.define('arandu-ai-lab', AranduAILab);
+const existingPanelClass = typeof customElements !== 'undefined' ? customElements.get('arandu-ai-lab') : null;
+if (!existingPanelClass) {
+  customElements.define('arandu-ai-lab', AranduAILab);
+} else if (existingPanelClass !== AranduAILab) {
+  try {
+    for (const key of Object.getOwnPropertyNames(AranduAILab.prototype)) {
+      if (key === 'constructor') continue;
+      const desc = Object.getOwnPropertyDescriptor(AranduAILab.prototype, key);
+      if (desc) Object.defineProperty(existingPanelClass.prototype, key, desc);
+    }
+    existingPanelClass.PANEL_VERSION = AranduAILab.PANEL_VERSION;
+    if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+      for (const el of document.querySelectorAll('arandu-ai-lab')) {
+        if (el.shadowRoot && el.dataset?.panelVersion !== AranduAILab.PANEL_VERSION) {
+          el.dataset.panelVersion = AranduAILab.PANEL_VERSION;
+          const hasControls = typeof el.$ === 'function' && el.$('versionDiagnostics') && el.$('playAudio');
+          if (!hasControls) {
+            try { el.ready = true; el.mount(); } catch {}
+          }
+          el.updateVersionDiagnostics?.({ backend_version: el.last?.backend_version, asset_hash: el.last?.asset_hash, panel_tag: el.last?.panel_tag });
+          if (el.last) try { el.render(el.last); } catch {}
+        }
+      }
+    }
+  } catch {}
+}

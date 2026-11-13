@@ -61,7 +61,7 @@ echo "CONTAINER_IMPORTS_OK"
 
     # 2. Isolated runtime server smoke test (never touches production /data or host ports)
     cname = f'arandu-smoke-{_free_port()}'
-    with tempfile.TemporaryDirectory(prefix='arandu-smoke-data-') as tmp:
+    with tempfile.TemporaryDirectory(prefix='arandu-smoke-data-', ignore_cleanup_errors=True) as tmp:
         data_dir = Path(tmp)
         try:
             _run([
@@ -107,6 +107,8 @@ print(json.dumps(out))
             for ep, count in info['endpoints'].items():
                 print(f'[OK] {ep} HTTP 200 ({count} models)')
         finally:
+            # Clean root-owned container artifacts inside bind mount so non-root CI runners can remove tmpdir.
+            _run(['docker', 'exec', cname, 'sh', '-c', 'rm -rf /data/* /data/.[!.]* 2>/dev/null || true'], check=False)
             _run(['docker', 'rm', '-f', cname], check=False)
 
 

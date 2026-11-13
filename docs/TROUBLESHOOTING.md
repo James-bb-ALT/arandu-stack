@@ -47,3 +47,20 @@ python scripts/docker_smoke_test.py --image arandu:preflight
   1. Antes de atualizar o add-on, crie um **Backup** pelo painel do Home Assistant (Configurações → Sistema → Backups).
   2. Se um build falhar, não remova `/data` — corrija ou volte para uma release estável anterior no repositório e clique em **Reconstruir / Atualizar**.
   3. Se uma troca de modelo STT falhar, o `server.py` / `stt_lab.py` preserva a seleção anterior funcional.
+
+## 5. Métricas de LLM no AI Lab (`decode_tokens_per_second` vs `end_to_end_tokens_per_second`)
+
+O AI Lab reporta duas taxas separadas para evitar confundir velocidade pura do decodificador com latência total da requisição:
+
+- **`decode_tokens_per_second` (`Taxa decode pura`)**: tokens gerados divididos exclusivamente pelo tempo de decodificação reportado pelo servidor (`predicted_ms` / `decode_ms`). Não inclui espera em fila (`gateway_queue_ms`, `service_queue_ms`, `inference_slot_wait_ms`), carregamento de modelo (`model_load_ms`) nem prefill (`prompt_eval_ms`).
+- **`end_to_end_tokens_per_second` (`Taxa fim-a-fim`)**: tokens gerados divididos pelo tempo total medido de inferência (`inference_ms`, que engloba prefill + decode na chamada `/v1/chat/completions`).
+- **Ausência de fabricação de dados**: quando o runtime não retorna `timings.predicted_ms`, `timings.prompt_ms` ou tempo de carga/fila, os campos permanecem `None` (`null` no JSON) e a interface exibe `Indisponível` — nunca `0` ou estimativa sintética.
+- **Cache de prompt (`cache_prompt`)**: em execuções consecutivas no mesmo modelo (ex.: Tucano 0.5B), o primeiro turno (cold) preenche o prefixo e apresenta `cache_hit: false`; turnos seguintes com prefixo compatível aproveitam tokens em cache (`cached_prompt_tokens > 0`, `cache_hit: true`), reduzindo `prompt_eval_ms` e TTFT (`first_token_ms`).
+
+## 6. Atualização do frontend AI Lab e diagnósticos de versão
+
+O painel é registrado com cache-busting determinístico (`?v=<versão>-<sha256[:12]>`). Caso o servidor backend/integração e o JS em cache do navegador/app Android divirjam, o cabeçalho do AI Lab exibe o banner:
+
+`O painel carregado está desatualizado. Atualize o frontend do Arandu.`
+
+Nesse caso, recarregue a integração `local_nlu` / limpe o cache WebView do app Android Companion e reabra o AI Lab verificando no cabeçalho que `AI Lab frontend`, `Backend` e `Asset hash` coincidem.

@@ -64,7 +64,7 @@ test('LLM v2 exposes typed plan and measured generation without execution claims
   const nodes=render(result);
   assert.match(text(nodes.interpretations),/LLM e contrato.*tucano.*v2/);
   assert.match(text(nodes.interpretations),/"value":40/);
-  assert.match(text(nodes.interpretations),/1,20 s.*80 tokens.*20.0 tokens\/s/);
+  assert.match(text(nodes.interpretations),/TTFT 1,20 s.*80 tokens.*Taxa fim-a-fim: 20\.0 tok\/s/);
   assert.match(text(nodes.answer),/simulação/);
 });
 

@@ -388,6 +388,53 @@ class Lab:
                     proposal = validate_proposal(raw["proposal"], catalog, {r["entity_id"] for r in retrieval.get("ranking", [])})
                     proposal["confidence"] = None
                     return {**raw, "proposal": proposal}
+                if mode == "pipeline":
+                    from .light_aggregation import evaluate_aggregated_light_query, is_aggregated_light_query
+                    from .queries_set import detect_queryset_domain, evaluate_queryset
+                    fast_started = time.perf_counter()
+                    q_res = None
+                    q_reason = None
+                    if is_aggregated_light_query(text):
+                        q_res = evaluate_aggregated_light_query(text, snapshot, self.hass)
+                        q_reason = "light_aggregation"
+                    elif detect_queryset_domain(text) is not None:
+                        q_res = evaluate_queryset(text, snapshot, self.hass)
+                        q_reason = f"queryset_{q_res['domain']}" if q_res else None
+                    if q_res is not None and q_res.get("speech"):
+                        fast_ms = (time.perf_counter() - fast_started) * 1000
+                        fast_result = {
+                            "text": text,
+                            "source": "ha_read_fast_path",
+                            "kind": "query",
+                            "response_text": q_res["speech"],
+                            "clarification_question": None,
+                            "confirmation_required": False,
+                            "sensitive": False,
+                            "operations_validated": False,
+                            "action_json": None,
+                            "target_entities": [],
+                            "proposal": {"intent": "query", "target_entities": [], "requires_clarification": False},
+                            "dry_run": True,
+                            "catalog_generation": catalog["generation"],
+                            "model": model,
+                            "catalog": catalog,
+                            "test_mode": "independent",
+                            "test_context": test_context,
+                            "production_policy": {"nlu": True, "decision": options.get("decision_enabled", False), "llm": options.get("llm_enabled", False)},
+                            "total_ms": fast_ms,
+                            "stages": {
+                                "vad": {"status": "skipped", "reason": "não necessário — entrada de texto"},
+                                "stt": {"status": "skipped", "reason": "não necessário — texto digitado"},
+                                "nlu": {"status": "skipped", "reason": "Fast path de leitura autorizada"},
+                                "decision": {"status": "skipped", "reason": "Fast path de leitura autorizada"},
+                                "llm": {"status": "skipped", "reason": "Consulta determinística autorizada (LLM não acionado)"},
+                                "validation": {"status": "skipped", "reason": "Consulta somente leitura autorizada"},
+                                "ha": {"status": "executed", "read_only": True, "reason": q_reason, "latency_ms": fast_ms, "output": {"code": "query_success", "response_text": q_res["speech"]}},
+                                "response": {"status": "executed", "reason": q_res["speech"]},
+                                "tts": {"status": "skipped", "reason": "não solicitado"},
+                            },
+                        }
+                        return fast_result, ()
                 from .semantic_context import clearly_conversational
                 result = await pipeline(text, nlu, decision, llm, mode=mode, timeout=95, general=clearly_conversational(text, catalog))
                 result.update(dry_run=True, catalog_generation=catalog["generation"], model=model,
@@ -515,30 +562,59 @@ class Lab:
             runtime.close()
 
 
+def _panel_asset_tag() -> str:
+    """Build deterministic version+hash tag for cache-busting panel JS across HA/Android updates."""
+    import hashlib
+    base = Path(__file__).resolve().parent
+    version = "0"
+    manifest = base / "manifest.json"
+    if manifest.is_file():
+        try:
+            version = str(json.loads(manifest.read_text(encoding="utf-8")).get("version") or "0")
+        except Exception:
+            pass
+    h = hashlib.sha256()
+    for fname in ("ai_lab_panel.js", "stt_lab_panel.js"):
+        fp = base / fname
+        if fp.is_file():
+            h.update(fp.read_bytes())
+    return f"{version}-{h.hexdigest()[:12]}"
+
+
 async def async_register(hass):
     """Register one sidebar panel and authenticated websocket route for all entries."""
-    if "local_nlu_ai_lab" in hass.data:
+    tag = _panel_asset_tag()
+    if "local_nlu_ai_lab" in hass.data and hass.data.get("local_nlu_ai_lab_tag") == tag:
         return
     from homeassistant.components import panel_custom, websocket_api
     from homeassistant.components.http import StaticPathConfig
-    lab = Lab(hass)
+    if "local_nlu_ai_lab" not in hass.data:
+        lab = Lab(hass)
 
-    @websocket_api.websocket_command({"type": "local_nlu/ai_lab", "payload": dict})
-    @websocket_api.async_response
-    async def handle(connection_hass, connection, msg):
-        try:
-            result = await lab.handle(connection.user, msg["payload"])
-            connection.send_result(msg["id"], result)
-        except asyncio.CancelledError:
-            raise
-        except Exception as exc:
-            connection.send_error(msg["id"], "ai_lab_error", str(exc)[:256])
-    websocket_api.async_register_command(hass, handle)
-    await hass.http.async_register_static_paths([
-        StaticPathConfig("/local_nlu_ai_lab/stt.js", str(Path(__file__).with_name("stt_lab_panel.js")), False),
-        StaticPathConfig("/local_nlu_ai_lab/panel.js", str(Path(__file__).with_name("ai_lab_panel.js")), False),
-        StaticPathConfig("/local_nlu_ai_lab/brand", str(Path(__file__).with_name("brand")), False),
-    ])
-    await panel_custom.async_register_panel(hass, webcomponent_name="arandu-ai-lab", frontend_url_path="arandu-ai-lab",
-        module_url="/local_nlu_ai_lab/panel.js", sidebar_title="Arandu AI Lab", sidebar_icon="mdi:flask-outline", require_admin=True)
-    hass.data["local_nlu_ai_lab"] = lab
+        @websocket_api.websocket_command({"type": "local_nlu/ai_lab", "payload": dict})
+        @websocket_api.async_response
+        async def handle(connection_hass, connection, msg):
+            try:
+                result = await lab.handle(connection.user, msg["payload"])
+                connection.send_result(msg["id"], result)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                connection.send_error(msg["id"], "ai_lab_error", str(exc)[:256])
+        websocket_api.async_register_command(hass, handle)
+        await hass.http.async_register_static_paths([
+            StaticPathConfig("/local_nlu_ai_lab/stt.js", str(Path(__file__).with_name("stt_lab_panel.js")), False),
+            StaticPathConfig("/local_nlu_ai_lab/panel.js", str(Path(__file__).with_name("ai_lab_panel.js")), False),
+            StaticPathConfig("/local_nlu_ai_lab/brand", str(Path(__file__).with_name("brand")), False),
+        ])
+        hass.data["local_nlu_ai_lab"] = lab
+    await panel_custom.async_register_panel(
+        hass,
+        webcomponent_name="arandu-ai-lab",
+        frontend_url_path="arandu-ai-lab",
+        module_url=f"/local_nlu_ai_lab/panel.js?v={tag}",
+        sidebar_title="Arandu AI Lab",
+        sidebar_icon="mdi:flask-outline",
+        require_admin=True,
+    )
+    hass.data["local_nlu_ai_lab_tag"] = tag

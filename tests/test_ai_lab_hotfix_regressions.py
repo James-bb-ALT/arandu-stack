@@ -181,3 +181,121 @@ def test_real_ha_state_query_reflects_live_changes_and_respects_authorization():
     assert res2 is not None
     assert "Luz da Sala" in res2["speech"]
     assert "Secreta" not in res2["speech"]
+
+
+def test_panel_asset_tag_cache_busting_and_frontend_markers():
+    import re
+    from custom_components.local_nlu.ai_lab import _panel_asset_tag
+    repo = Path(__file__).resolve().parent.parent
+    panel_js = (repo / "custom_components" / "local_nlu" / "ai_lab_panel.js").read_text(encoding="utf-8")
+    tag = _panel_asset_tag()
+    assert re.fullmatch(r"\d+\.\d+\.\d+-[0-9a-f]{12}", tag), f"Tag inesperada: {tag}"
+    for marker in ("playAudio(", "Tocar áudio", "ttsState", "playbackState", "dataset.panelVersion"):
+        assert marker in panel_js, f"Marcador ausente no frontend: {marker}"
+
+
+class TestFastPathAndMetricsAsync(unittest.IsolatedAsyncioTestCase):
+    async def test_pipeline_read_query_uses_fast_path_without_calling_llm(self):
+        import sys
+        import types
+        from custom_components.local_nlu.ai_lab import Lab
+
+        entry = SimpleNamespace(
+            entry_id="entry-1",
+            options={"decision_enabled": True, "llm_enabled": True, "stack_endpoint": "http://127.0.0.1:11555"},
+            data={},
+            runtime_data=SimpleNamespace(_client=SimpleNamespace(_endpoint="http://127.0.0.1:11555", async_catalog_v4=AsyncMock(return_value={"version": 4, "status": "catalog_ready", "generation": 1}))),
+        )
+        states = {"light.sala": SimpleNamespace(state="on", attributes={"friendly_name": "Luz da Sala"})}
+        hass = SimpleNamespace(
+            config_entries=SimpleNamespace(async_entries=lambda _domain: [entry]),
+            states=SimpleNamespace(get=lambda eid: states.get(eid)),
+            config=SimpleNamespace(units=SimpleNamespace(temperature_unit="°C")),
+        )
+        fake_snapshot = SimpleNamespace(
+            payload={
+                "generation": 1,
+                "entities": [{"entity_id": "light.sala", "domain": "light", "name": "Luz da Sala", "area_id": "sala", "actions": ["turn_on", "turn_off", "query"]}],
+                "areas": [{"area_id": "sala", "names": ["Sala"]}],
+            },
+            by_id={"light.sala": {"entity_id": "light.sala", "domain": "light", "name": "Luz da Sala", "area_id": "sala", "actions": ["turn_on", "turn_off", "query"]}},
+        )
+        user = SimpleNamespace(id="user-1", is_admin=True, is_active=True)
+        lab = Lab(hass)
+
+        fake_ha_core = types.ModuleType("homeassistant.core")
+        fake_ha_core.Context = lambda user_id=None: SimpleNamespace(user_id=user_id)
+        fake_ha_helpers = types.ModuleType("homeassistant.helpers")
+        fake_ha_aiohttp = types.ModuleType("homeassistant.helpers.aiohttp_client")
+        fake_ha_aiohttp.async_get_clientsession = lambda _h: SimpleNamespace()
+
+        local_req_spy = AsyncMock(side_effect=AssertionError("LLM/Decision não deveria ser chamado no fast path"))
+        with patch.dict(sys.modules, {"homeassistant.core": fake_ha_core, "homeassistant.helpers": fake_ha_helpers, "homeassistant.helpers.aiohttp_client": fake_ha_aiohttp}), \
+             patch("custom_components.local_nlu.contextual_catalog.build", return_value=fake_snapshot), \
+             patch("custom_components.local_nlu.contextual_catalog.origin_area", return_value=("sala", "lab_selection")), \
+             patch("custom_components.local_nlu.ai_lab.local_request", local_req_spy):
+            res = await lab.handle(user, {"command": "run", "text": "Qual luz tá ligada?", "mode": "pipeline"})
+
+        assert local_req_spy.call_count == 0
+        assert res["source"] == "ha_read_fast_path"
+        assert res["kind"] == "query"
+        assert res["operations_validated"] is False
+        assert "execution_token" not in res
+        assert res["stages"]["llm"]["status"] == "skipped"
+        assert res["stages"]["ha"]["status"] == "executed"
+        assert res["stages"]["ha"]["read_only"] is True
+        assert "Luz da Sala" in res["response_text"]
+
+    async def test_completion_separates_decode_rate_from_e2e_and_tracks_cache_hit(self):
+        import sys
+        llm_src = Path(__file__).resolve().parent.parent / "arandu_stack" / "rootfs" / "modules" / "arandu_llm" / "rootfs" / "src" / "src"
+        if str(llm_src) not in sys.path:
+            sys.path.insert(0, str(llm_src))
+        from arandu_llm import structured
+
+        chunks = [
+            b'data: {"choices":[{"delta":{"content":"Oi!"}}]}\n',
+            b'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":40,"completion_tokens":10,"prompt_tokens_details":{"cached_tokens":32}},"timings":{"prompt_ms":120.0,"predicted_ms":500.0,"predicted_per_second":20.0}}\n',
+            b"data: [DONE]\n",
+        ]
+
+        class FakeContent:
+            def __aiter__(self):
+                self._it = iter(chunks)
+                return self
+            async def __anext__(self):
+                try:
+                    return next(self._it)
+                except StopIteration:
+                    raise StopAsyncIteration
+
+        class FakeResponse:
+            status = 200
+            content = FakeContent()
+            async def __aenter__(self):
+                return self
+            async def __aexit__(self, *_):
+                return False
+
+        class FakeSession:
+            def __init__(self, *_, **__):
+                pass
+            async def __aenter__(self):
+                return self
+            async def __aexit__(self, *_):
+                return False
+            def post(self, *_a, **_kw):
+                return FakeResponse()
+
+        import aiohttp
+        with patch.object(aiohttp, "ClientSession", FakeSession):
+            raw, metrics = await structured.completion(SimpleNamespace(port=19999), {"messages": []}, cache_prompt=True)
+
+        assert raw == "Oi!"
+        assert metrics["prompt_eval_ms"] == 120.0
+        assert metrics["decode_ms"] == 500.0
+        assert metrics["decode_tokens_per_second"] == 20.0
+        assert metrics["end_to_end_tokens_per_second"] == metrics["tokens_per_second"]
+        assert metrics["cached_prompt_tokens"] == 32
+        assert metrics["cache_hit"] is True
+        assert metrics["prefix_cache_requested"] is True

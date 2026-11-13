@@ -296,3 +296,36 @@ def test_corpus_664_and_300_negatives_and_100_dynamic_aliases():
     for d in dynamics:
         matches = graph.search_entities(d["alias"], limit=5)
         assert any(m["entity_id"] == d["entity_id"] for m in matches), d
+
+
+def test_ai_lab_pipeline_ambiguous_decision_escalates_to_llm():
+    from custom_components.local_nlu.ai_lab_core import pipeline
+
+    async def _run():
+        async def nlu(_text):
+            return {"version": 4, "status": "no_match", "reason": "unknown_intent"}
+
+        async def decision(_payload):
+            return {
+                "algorithm": "structured-v3",
+                "decision_status": "ambiguous",
+                "reason": "insufficient_margin",
+                "analysis": {"device": {"candidate_count": 2}},
+            }
+
+        async def llm(payload):
+            assert payload["decision"]["decision_status"] == "ambiguous"
+            return {
+                "kind": "conversation",
+                "contract_version": 2,
+                "plan": None,
+                "response_text": "Qual ventilador você quer ligar?",
+            }
+
+        res = await pipeline("liga ventilador", nlu, decision, llm, mode="pipeline")
+        assert res["stages"]["decision"]["ambiguity_evidence"] is True
+        assert res["stages"]["llm"]["status"] == "executed"
+        assert res["source"] == "llm"
+        assert res["response_text"] == "Qual ventilador você quer ligar?"
+
+    asyncio.run(_run())

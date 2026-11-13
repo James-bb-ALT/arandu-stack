@@ -250,15 +250,9 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30, gen
         de = await run("decision", decision, dec_payload) if mode != "llm" and not (general and mode == "pipeline") else None
         if mode != "llm" and de and de.get("decision_status") in {"accepted", "resolved", "confirmation_required"} and de.get("proposal"):
             result.update(proposal=de["proposal"], source="decision")
-        elif de and de.get('algorithm') == 'structured-v3' and de.get('decision_status') == 'ambiguous' and (de.get('analysis') or {}).get('device',{}).get('candidate_count',0) > 1:
-            stages['decision']['ambiguity_evidence'] = True
-            le = await _timed('llm', llm({'text': text, 'decision': de, 'partial_understanding': nlu_payload.get('partial_understanding') if isinstance(nlu_payload, dict) else None}))
-            stages['llm']['proposal_type'] = le.get('kind') if le else None
-            if le and le.get('kind') in ('plan', 'query') and validate_proposal(le.get('plan')):
-                ops = (le.get('plan') or {}).get('operations') or ()
-                stages['final'].update(selected_stage='llm', resolution_source='llm', status='ok')
-                return stages, tuple(ops)
         elif mode != "decision":
+            if de and de.get('algorithm') == 'structured-v3' and de.get('decision_status') == 'ambiguous' and (de.get('analysis') or {}).get('device', {}).get('candidate_count', 0) > 1:
+                stages['decision']['ambiguity_evidence'] = True
             stages["llm"]["fallback_reason"] = (de or {}).get("reason") or "decision_unavailable"
             llm_payload = {"text": text, "nlu": nl, "decision": de}
             if route is not None:

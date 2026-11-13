@@ -1,3 +1,7 @@
+# 11.3.2 — Remoção de código interno `proposal.reason` do TTS no AI Lab (2026-11-13)
+
+- **AI Lab (`ai_lab_panel.js`):** Removido o fallback `this.last?.proposal?.reason` na síntese TTS (`speak()`), evitando que códigos internos do Decision como `explicit_fields_and_unique_target` sejam falados em voz alta quando a ação é resolvida sem resposta personalizada; usa `'Pronto.'` quando a operação é validada.
+
 # 11.3.1 — Correção de HTTP 503 no LLM/Model Registry e lista de download no AI Lab (2026-11-13)
 
 - **`arandu_stack/Dockerfile`:** Adicionado `COPY model_registry /opt/model_registry` (com verificação de build para `/opt/model_registry/models.json`), corrigindo `FileNotFoundError` (que retornava HTTP 503 em `/api/llm/models`, `/api/tts/models` e `/api/infer` LLM dentro do container).

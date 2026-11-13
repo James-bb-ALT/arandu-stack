@@ -19,6 +19,7 @@ def test_dockerfile_copies_model_registry_and_ai_lab_lists_all_llms():
 
     ai_lab_py = (ROOT / 'custom_components' / 'local_nlu' / 'ai_lab.py').read_text(encoding='utf-8')
     ai_lab_js = (ROOT / 'custom_components' / 'local_nlu' / 'ai_lab_panel.js').read_text(encoding='utf-8')
+    assert 'this.last?.proposal?.reason' not in ai_lab_js
     for mid in ('tucano', 'qwen3', 'lfm2.5-1.2b', 'lfm3-1.7b', 'qwen3-1.7b'):
         assert mid in ai_lab_py
         assert mid in ai_lab_js

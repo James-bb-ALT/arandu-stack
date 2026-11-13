@@ -254,7 +254,7 @@ class AranduAILab extends HTMLElement {
       }
       const text = isConv
         ? convText
-        : (this.last?.execution?.response_text || this.last?.response_text || this.last?.clarification_question || this.last?.proposal?.reason || 'Ação interpretada em modo de simulação.');
+        : (this.last?.execution?.response_text || this.last?.response_text || this.last?.clarification_question || (this.last?.operations_validated ? 'Pronto.' : 'Ação interpretada em modo de simulação.'));
       const r = await this.call('tts', {text, tts_model:this.$('tts').value});
       if (this.audioUrl) URL.revokeObjectURL(this.audioUrl);
       this.audioUrl = URL.createObjectURL(new Blob([Uint8Array.from(atob(r.audio), c=>c.charCodeAt(0))], {type:'audio/wav'}));

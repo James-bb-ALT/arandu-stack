@@ -69,6 +69,10 @@ def parse_wav(wav_bytes: bytes, limit: int = 32 * 1024 * 1024) -> Iterator[PCMCh
             yield PCMChunk(audio, wav.getframerate(), 2, 1)
 
 
+class TtsDisabledError(RuntimeError):
+    code = 'tts_disabled'
+
+
 class SpeechEngine:
     """Cache de um modelo na CPU, inferência serializada e isolamento de backend."""
 
@@ -77,17 +81,42 @@ class SpeechEngine:
         self._lock = threading.RLock()
         self._loaded_name: str | None = None
         self._loaded_model = None
+        self._piper_cache: dict[str, object] = {}
         self._pocket = None
         self._async_slots = asyncio.Semaphore(1)
         self._requests = 0
         self._native_jobs = 0
+        self.state = 'off' if cfg.resident_policy == 'OFF' else 'waiting_first_use'
+        self.load_ms: float | None = None
+        self.last_error: str | None = None
         self.recent = {}
 
     @property
     def pocket_loaded(self) -> bool:
         return self._pocket is not None and self._pocket.loaded
 
+    @property
+    def is_primary_voice_loaded(self) -> bool:
+        if self.cfg.resident_policy == 'OFF':
+            return False
+        primary = self.cfg.default_voice
+        if primary.startswith('pocket-'):
+            return self._pocket is not None and self._pocket.has_voice_loaded(primary)
+        return primary in self._piper_cache or (self._loaded_name == primary and self._loaded_model is not None)
+
+    def loaded_voices_list(self) -> list[str]:
+        voices = list(self._piper_cache.keys())
+        if self._loaded_name and self._loaded_model is not None and self._loaded_name not in voices:
+            voices.append(self._loaded_name)
+        if self._pocket is not None and self._pocket.loaded:
+            for name in self._pocket.states.keys():
+                if name not in voices:
+                    voices.append(name)
+        return voices
+
     def warm_pocket(self) -> None:
+        if self.cfg.resident_policy == 'OFF':
+            raise TtsDisabledError('TTS desativado pela política de RAM (OFF)')
         self._get_pocket().load()
 
     def _get_pocket(self):
@@ -104,21 +133,63 @@ class SpeechEngine:
         self._get_pocket().prepare_voice(wav, target)
 
     def preload(self, voice: VoiceSpec) -> None:
-        if voice.backend != "piper":
-            return
+        if self.cfg.resident_policy == 'OFF':
+            raise TtsDisabledError('TTS desativado pela política de RAM (OFF)')
+        started = time.perf_counter()
+        self.state = 'loading'
+        self.last_error = None
+        try:
+            if voice.backend == "piper":
+                with self._lock:
+                    self._load(voice)
+            elif voice.backend == "pocket":
+                self._get_pocket().preload_voice(voice)
+            self.load_ms = round((time.perf_counter() - started) * 1000, 1)
+            self.state = 'ready'
+        except Exception as exc:
+            self.state = 'load_failed'
+            self.last_error = str(exc) or type(exc).__name__
+            raise
+
+    def close(self) -> None:
         with self._lock:
-            self._load(voice)
+            self._piper_cache.clear()
+            self._loaded_model = None
+            self._loaded_name = None
+            if self._pocket is not None:
+                self._pocket.unload()
+            self.state = 'off' if self.cfg.resident_policy == 'OFF' else 'unloaded'
 
     def _load(self, voice: VoiceSpec):
+        if self.cfg.resident_policy == 'OFF':
+            raise TtsDisabledError('TTS desativado pela política de RAM (OFF)')
         if voice.backend != "piper" or voice.model is None:
             raise ValueError("Voz não é Piper")
-        if self._loaded_name != voice.name:
-            LOG.info("Carregando modelo local: %s", voice.name)
-            self._loaded_model = load_piper(voice,self.cfg.piper_threads if self.cfg.piper_thread_budget else 0)
+        if voice.name in self._piper_cache:
+            model = self._piper_cache[voice.name]
+            self._loaded_model = model
             self._loaded_name = voice.name
+            self.state = 'ready'
+            return model
+        if self._loaded_name != voice.name or self._loaded_model is None:
+            LOG.info("Carregando modelo local: %s", voice.name)
+            started = time.perf_counter()
+            model = load_piper(voice, self.cfg.piper_threads if self.cfg.piper_thread_budget else 0)
+            self.load_ms = round((time.perf_counter() - started) * 1000, 1)
+            # Bounded Piper cache: keep primary resident voice pinned, evict only secondary voices
+            if len(self._piper_cache) >= 2:
+                evict = next((k for k in self._piper_cache if k != self.cfg.default_voice), None)
+                if evict is not None:
+                    self._piper_cache.pop(evict, None)
+            self._piper_cache[voice.name] = model
+            self._loaded_model = model
+            self._loaded_name = voice.name
+            self.state = 'ready'
         return self._loaded_model
 
     def _piper_stream(self, text: str, voice: VoiceSpec) -> Iterator[PCMChunk]:
+        if self.cfg.resident_policy == 'OFF':
+            raise TtsDisabledError('TTS desativado pela política de RAM (OFF)')
         os.environ["OMP_NUM_THREADS"] = str(self.cfg.piper_threads)
         # A trava precisa cobrir síntese inteira para não substituir o modelo em uso.
         with self._lock:

@@ -21,9 +21,17 @@ def configure(options: dict) -> None:
     os.environ['ARANDU_PIPER_THREAD_BUDGET'] = '1' if options.get('piper_thread_budget', False) else '0'
     os.environ["ARANDU_URI"] = "tcp://0.0.0.0:10212"
     os.environ["ARANDU_VOICES_DIR"] = "/share/arandu_tts/voices"
-    os.environ["ARANDU_DEFAULT_VOICE"] = str(options.get("voice", "pt_BR-faber-medium"))
+    voice = str(options.get("voice", "pt_BR-faber-medium"))
+    policy = options.get("resident_policy")
+    if policy not in {"RESIDENT", "LAZY", "OFF"}:
+        if voice.startswith("pocket-"):
+            policy = "RESIDENT" if options.get("pocket_preload", False) else "LAZY"
+        else:
+            policy = "RESIDENT" if options.get("preload", True) else "LAZY"
+    os.environ["ARANDU_DEFAULT_VOICE"] = voice
+    os.environ["ARANDU_TTS_RESIDENCY"] = str(policy)
     os.environ["ARANDU_AUTO_DOWNLOAD"] = "1" if options.get("auto_download", True) else "0"
-    os.environ["ARANDU_PRELOAD"] = "1" if options.get("preload", True) else "0"
+    os.environ["ARANDU_PRELOAD"] = "1" if policy == "RESIDENT" else "0"
     os.environ["ARANDU_PIPER_THREADS"] = str(options.get("cpu_threads", 2))
     os.environ["ARANDU_FALLBACK_VOICE"] = str(options.get("fallback_voice", "pt_BR-faber-medium"))
     os.environ["ARANDU_REMOTE_FALLBACK"] = "1" if options.get("remote_fallback", True) else "0"

@@ -17,6 +17,7 @@ class Config:
     default_voice: str = 'pt_BR-faber-medium'
     auto_download: bool = True
     preload: bool = True
+    resident_policy: str = 'RESIDENT'
     max_chars: int = 3000
     piper_threads: int = 2
     fallback_voice: str = 'pt_BR-faber-medium'
@@ -42,14 +43,27 @@ class Config:
 
     @classmethod
     def from_env(cls) -> Config:
+        default_voice = os.environ.get('ARANDU_DEFAULT_VOICE', cls.default_voice)
+        preload_val = bool_env('ARANDU_PRELOAD', True)
+        pocket_preload_val = bool_env('ARANDU_POCKET_PRELOAD', False)
+        raw_residency = os.environ.get('ARANDU_TTS_RESIDENCY', '').strip().upper()
+        if raw_residency:
+            if raw_residency not in {'RESIDENT', 'LAZY', 'OFF'}:
+                raise ValueError(f'ARANDU_TTS_RESIDENCY inválido: {raw_residency}')
+            resident_policy = raw_residency
+        elif default_voice.startswith('pocket-'):
+            resident_policy = 'RESIDENT' if pocket_preload_val else 'LAZY'
+        else:
+            resident_policy = 'RESIDENT' if preload_val else 'LAZY'
         return cls(
             queue_limit=max(0, min(16, int(os.environ.get('ARANDU_QUEUE_LIMIT', '4')))),
             piper_thread_budget=bool_env('ARANDU_PIPER_THREAD_BUDGET', False),
             uri=os.environ.get('ARANDU_URI', cls.uri),
             voices_dir=Path(os.environ.get('ARANDU_VOICES_DIR', './voices')).expanduser(),
-            default_voice=os.environ.get('ARANDU_DEFAULT_VOICE', cls.default_voice),
+            default_voice=default_voice,
             auto_download=bool_env('ARANDU_AUTO_DOWNLOAD', True),
-            preload=bool_env('ARANDU_PRELOAD', True),
+            preload=preload_val,
+            resident_policy=resident_policy,
             max_chars=int(os.environ.get('ARANDU_MAX_CHARS', '3000')),
             piper_threads=int(os.environ.get('ARANDU_PIPER_THREADS', '2')),
             fallback_voice=os.environ.get('ARANDU_FALLBACK_VOICE', cls.fallback_voice),

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import importlib.util
+import os
 from pathlib import Path
 import tempfile
 import threading
@@ -9,6 +11,19 @@ import time
 import wave
 
 import numpy as np
+
+from stt_errors import AranduRuntimeUnavailableError
+
+DEFAULT_NEMOTRON_PYTHON = Path('/opt/venvs/nemotron/bin/python')
+
+
+def is_nemotron_runtime_available() -> bool:
+    env_override = os.environ.get('ARANDU_NEMOTRON_PYTHON')
+    if env_override and Path(env_override).is_file():
+        return True
+    if DEFAULT_NEMOTRON_PYTHON.is_file():
+        return True
+    return importlib.util.find_spec('nemo') is not None
 
 STREAMING_PROFILES: dict[str, dict[str, int]] = {
     'precision': {'chunk_ms': 560, 'right_context_ms': 560, 'left_context_ms': 5600},
@@ -52,8 +67,9 @@ class NemotronUnifiedBackend:
             import torch
             import nemo.collections.asr as nemo_asr  # type: ignore
         except ImportError as exc:
-            raise ImportError(
-                'NVIDIA NeMo/PyTorch indisponível no runtime STT padrão; requer ambiente Python isolado'
+            raise AranduRuntimeUnavailableError(
+                'NVIDIA NeMo/PyTorch indisponível no runtime STT padrão; requer ambiente Python isolado (/opt/venvs/nemotron)',
+                stage='load',
             ) from exc
 
         start = time.perf_counter()

@@ -211,9 +211,11 @@ def test_new_stt_backends_contracts_and_missing_runtimes(tmp_path, monkeypatch):
     ph_dir = tmp_path / 'phonon_2_5'
     ph_dir.mkdir()
     (ph_dir / 'phonon-2.5.fsq').write_bytes(b'x' * 10_000_001)
-    fake_fr = types.ModuleType('fermion_research')
-    fake_fr.load_model = lambda path, **kw: types.SimpleNamespace(transcribe=lambda audio, **k: {'text': 'acende o quarto'})
-    monkeypatch.setitem(sys.modules, 'fermion_research', fake_fr)
+    (ph_dir / 'config.json').write_text('{}', encoding='utf-8')
+    (ph_dir / 'packed_manifest.json').write_text('{}', encoding='utf-8')
+    fake_fr = types.ModuleType('fermion')
+    fake_fr.load_speech = lambda path, **kw: types.SimpleNamespace(transcribe_array=lambda audio, **k: ('acende o quarto', 0.05, 1.0))
+    monkeypatch.setitem(sys.modules, 'fermion', fake_fr)
     b_ph = create_backend('phonon_2_5', ph_dir, threads=2)
     assert type(b_ph).__name__ == 'PhononBackend'
     b_ph.load()

@@ -206,10 +206,31 @@ def verify(root, model, variant='adapted'):
     return manifest
 
 
+def _runtime_status(model: str) -> tuple[bool, str | None]:
+    if model == 'phonon_2_5':
+        try:
+            from phonon_backend import is_phonon_runtime_available
+            ok = is_phonon_runtime_available()
+            return ok, None if ok else 'MODEL_RUNTIME_UNAVAILABLE: /opt/venvs/phonon ausente'
+        except Exception as exc:
+            return False, f'MODEL_RUNTIME_UNAVAILABLE: {exc}'
+    if model == 'nemotron_unified_0_6b':
+        try:
+            from nemotron_unified_backend import is_nemotron_runtime_available
+            ok = is_nemotron_runtime_available()
+            return ok, None if ok else 'MODEL_RUNTIME_UNAVAILABLE: experimental sem NeMo isolado (/opt/venvs/nemotron)'
+        except Exception as exc:
+            return False, f'MODEL_RUNTIME_UNAVAILABLE: {exc}'
+    return True, None
+
+
 def describe(root, model, variant='adapted'):
     directory = location(root, model, variant)
+    runtime_ok, runtime_note = _runtime_status(model)
     result = {'id': model, **CATALOG[model], 'variant': variant if model == 'fastconformer' else None,
-              'required_files': files(model, variant), 'ready': False, 'path': str(directory), 'state': 'not_installed', 'installed': False}
+              'required_files': files(model, variant), 'ready': False, 'path': str(directory),
+              'state': 'not_installed', 'installed': False,
+              'runtime_available': runtime_ok, 'runtime_note': runtime_note}
     if model == 'fastconformer' and variant == 'adapted':
         result.update(download_bytes=456406182, installed_bytes=456406182, source_url=ADAPTED_URL, download_revision=ADAPTED_VERSION)
     try:

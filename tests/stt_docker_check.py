@@ -23,13 +23,22 @@ from stt_lab import decode_audio
 from model_catalog import CATALOG
 
 
+def _expected_version() -> str:
+    for line in (ROOT / 'arandu_stack' / 'config.yaml').read_text(encoding='utf-8').splitlines():
+        if line.strip().startswith('version:'):
+            return line.split(':', 1)[1].strip().strip('"\'')
+    raise AssertionError('version not found in arandu_stack/config.yaml')
+
+
 async def main():
     audio=Path(os.environ['ARANDU_STT_TEST_WAV']).read_bytes()
     pcm,_=await decode_audio(audio)
+    expected_version = _expected_version()
+    expected_models = len(CATALOG)
     async with ClientSession(timeout=ClientTimeout(total=780)) as session:
         async with session.get('http://127.0.0.1:8770/api/state') as response:
             state=await response.json()
-        assert state['version']=='5.0.1',state
+        assert state['version']==expected_version,(state, expected_version)
         headers={'X-Arandu-CSRF':state['csrf']}
         async def request(path,body,expected=200):
             async with session.post('http://127.0.0.1:8770/api/'+path,json=body,headers=headers) as response:
@@ -61,7 +70,7 @@ async def main():
                 assert Transcript.is_type(response.type),response
                 assert Transcript.from_event(response).text
         inventory=await (await session.get('http://127.0.0.1:8770/api/stt/models')).json()
-        assert len(inventory['models'])==8
+        assert len(inventory['models'])==expected_models, (len(inventory['models']), expected_models)
         await request('stt/install',{'model':'orukeet_int8'})
         for _ in range(60):
             cached=await (await session.get('http://127.0.0.1:8770/api/stt/models')).json()
@@ -78,7 +87,7 @@ async def main():
         result,_=await asyncio.gather(request('stt/compare',{'model':'whisper_base','models':list(CATALOG),
                     'audio':base64.b64encode(audio).decode(),'reference':'Liga a luz da sala'}),wyoming(10212))
         installed={'fastconformer','whisper_tiny','whisper_base','whisper_small','orukeet_int8'}
-        assert len(result['results'])==8 and result['sequential'] and result['dry_run']
+        assert len(result['results'])==expected_models and result['sequential'] and result['dry_run']
         assert all(row['state']==('ready' if row['model'] in installed else 'error') for row in result['results']),result
         assert len({row['audio_sha256'] for row in result['results']})==1
         # Original variant is deliberately absent in this fixture. Preflight must not disrupt Base.

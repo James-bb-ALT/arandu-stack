@@ -577,6 +577,30 @@ class ContextualRuntime:
                     session.candidates = ()
                     session.response = agg["speech"]
                     return self.result("query_success", user_input, speech=agg["speech"], reason="light_aggregation")
+            from .queries_set import detect_queryset_domain, evaluate_queryset
+            if outcome.status != "plan" and pending is None and not session.candidates and detect_queryset_domain(user_input.text) is not None:
+                current_user = await self.revalidate(identity, user_input, options)
+                from .contextual_catalog import build
+                current_snapshot = build(self.hass, current_user, options)
+                if current_snapshot.payload["generation"] != generation:
+                    raise ExecutionError("stale", "semantic_catalog_changed")
+                qset = evaluate_queryset(user_input.text, current_snapshot, self.hass)
+                if qset is not None:
+                    session.pending = None
+                    session.candidates = ()
+                    session.response = qset["speech"]
+                    return self.result("query_success", user_input, speech=qset["speech"], reason=f"queryset_{qset['domain']}")
+            from .dialogue_coordinator import PendingRequest, PendingRequestStore
+            if not hasattr(self, "_pending_requests"):
+                self._pending_requests = PendingRequestStore()
+            conv_id = getattr(user_input, "conversation_id", None)
+            active_pending_req = self._pending_requests.get_valid(
+                user_id=identity.user_id,
+                origin_id=origin,
+                conversation_id=conv_id,
+                generation=generation,
+            )
+            effective_text = active_pending_req.merge_reply(user_input.text) if (active_pending_req is not None and outcome.status != "plan") else user_input.text
             from .intelligence import eligible, fallback, nlu_summary
             if not reserved(user_input.text) and (options.get("decision_enabled") is True or options.get("llm_enabled") is True) and eligible(outcome, pending=pending is not None or bool(session.candidates)):
                 from .ai_lab import local_request
@@ -586,17 +610,95 @@ class ContextualRuntime:
                     if not endpoint:
                         raise ValueError("Endpoint Arandu Stack ausente")
                     source = body['action']
-                    timeout = 10 if source == 'decision' else 30
+                    timeout = 10 if source in ('decision', 'decision_partial') else 30
                     async with observed_wait('model_queue', self.model_admission.enter()):
-                        async with self.circuits[source].call(), asyncio.timeout(timeout):
+                        async with self.circuits[source if source in self.circuits else 'decision'].call(), asyncio.timeout(timeout):
                             return await local_request(async_get_clientsession(self.hass), endpoint, "/infer", payload=body, timeout=timeout)
                 from .contextual_protocol import legacy_neural_catalog
                 model_payload=legacy_neural_catalog(snapshot.payload)
                 model_snapshot=Snapshot(model_payload,{row['registry_id']:row for row in model_payload['entities']})
-                proposed, trace = await fallback(user_input.text, model_snapshot, options, infer,
-                    {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets), "last_action":session.last_action,
-                     'temperature_unit':getattr(getattr(getattr(self.hass,'config',None),'units',None),'temperature_unit',None)},
-                    nlu=nlu_summary(outcome))
+                # Try unified Progressive V5 orchestrator when client supports v5 interpret & review
+                v5_result = None
+                if options.get("progressive_v5", True) and hasattr(self.client, "async_interpret_v5") and hasattr(self.client, "async_review_v5"):
+                    try:
+                        from .progressive_orchestrator import ProgressiveOrchestrator
+                        from .progressive_contract import build_llm_handoff
+                        orchestrator = ProgressiveOrchestrator()
+                        async def _decision_partial(req_body):
+                            return await infer({"action": "decision_partial", "catalog": model_payload, **req_body})
+                        async def _llm_handoff(partial_u, dec_out, graph_ctx):
+                            handoff_payload = build_llm_handoff(
+                                partial_u,
+                                dec_out,
+                                graph_ctx,
+                                session_state={"preserved_slots": active_pending_req.preserved_slots} if active_pending_req else None,
+                            )
+                            return await infer({
+                                "action": "llm",
+                                "text": effective_text,
+                                "catalog": model_payload,
+                                "context": {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets), "last_action": session.last_action},
+                                "partial_understanding": partial_u,
+                                "decision": dec_out,
+                                "graph_context": graph_ctx,
+                                "handoff": handoff_payload,
+                                "contract_version": 2,
+                            })
+                        v5_result = await orchestrator.resolve(
+                            text=effective_text,
+                            snapshot_payload=snapshot.payload,
+                            snapshot_by_id=snapshot.by_id,
+                            origin_area=area,
+                            origin_source=origin,
+                            origin_context_id=conv_id,
+                            user_id=identity.user_id,
+                            interpret_v5=self.client.async_interpret_v5,
+                            review_v5=self.client.async_review_v5,
+                            decision_partial=_decision_partial if options.get("decision_enabled") is True else None,
+                            llm_handoff=_llm_handoff if options.get("llm_enabled") is True else None,
+                            decision_enabled=options.get("decision_enabled") is True,
+                            llm_enabled=options.get("llm_enabled") is True,
+                        )
+                    except Exception:
+                        v5_result = None
+                if v5_result is not None and v5_result.outcome_kind in ("conversation_response", "safety_refusal"):
+                    self._pending_requests.pop(conv_id)
+                    if v5_result.outcome_kind == "conversation_response" and v5_result.speech:
+                        await self.revalidate(identity, user_input, options)
+                        session.pending = None
+                        session.candidates = ()
+                        session.response = v5_result.speech
+                        return self.result("query_success", user_input, speech=v5_result.speech, reason="llm_conversation")
+                    return self.result("unavailable", user_input, reason=v5_result.reason or "safety_refusal",
+                        speech="Não executei: o pedido contém uma restrição que não consigo aplicar com segurança.")
+                if v5_result is not None and v5_result.outcome_kind in ("execute_plan", "confirmation_required") and v5_result.operations:
+                    self._pending_requests.pop(conv_id)
+                    proposed = tuple(Operation(action=op["action"], targets=tuple(op.get("targets") or ()), parameters=op.get("parameters") or {}, evidence=op.get("evidence") or ()) for op in v5_result.operations)
+                    trace = {"progressive_v5": v5_result.trace}
+                    if v5_result.outcome_kind == "confirmation_required":
+                        trace["progressive_v5"]["status"] = "confirmation_required"
+                elif v5_result is not None and v5_result.outcome_kind == "clarification":
+                    if conv_id:
+                        clauses_trace = (v5_result.trace or {}).get("clauses") or []
+                        preserved = dict(clauses_trace[0].get("frozen_slots") or {}) if clauses_trace else {}
+                        missing = tuple(clauses_trace[0].get("unresolved") or ()) if clauses_trace else ()
+                        self._pending_requests.put(
+                            PendingRequest(
+                                user_id=identity.user_id,
+                                origin_id=origin,
+                                conversation_id=conv_id,
+                                generation=generation,
+                                preserved_slots=preserved,
+                                missing_slots=missing,
+                                original_text=effective_text,
+                            )
+                        )
+                    return self.result("missing_slot", user_input, speech=v5_result.speech, reason=v5_result.reason or "clarification")
+                else:
+                    proposed, trace = await fallback(effective_text, model_snapshot, options, infer,
+                        {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets), "last_action":session.last_action,
+                         'temperature_unit':getattr(getattr(getattr(self.hass,'config',None),'units',None),'temperature_unit',None)},
+                        nlu=nlu_summary(outcome))
                 self.validate_options(options)
                 self.last_intelligence = trace
                 if any(row.get('reason') == 'queue_saturated' for row in trace.values()):

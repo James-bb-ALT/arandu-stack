@@ -1,0 +1,6163 @@
+{
+  "schema_version": "arandu-ptbr-semantics-v3",
+  "language": "pt-BR",
+  "status": "PRODUCTION_SHARED_PTBR_V3",
+  "description": "Catálogo expansível de conceitos, variantes, polissemias e contraexemplos; não é um dicionário exaustivo nem uma tabela de execução; validar antes do uso de produção.",
+  "nonnegotiable_rules": [
+    "Cada item é pista semântica e/ou operador; nunca cria entidade nem dá permissão de execução.",
+    "Entidades/nomes/aliases personalizados vêm dinamicamente do inventário autorizado do Home Assistant e têm precedência contextual, mesmo fora do vocabulário.",
+    "Ações se vinculam às capabilities reais e às restrições de usuário, área, exclusões e estado.",
+    "Se não houver suporte ou confiança, propagar hipóteses para Decision e LLM; sem autoexecução por semelhança.",
+    "Pergunta agregada sobre múltiplos dispositivos não é ambiguidade de alvo singular.",
+    "Não usar regexes de exemplos como solução nem exigir termos específicos desta lista.",
+    "Candidatos do NLU e Decision são pistas para LLM, não a lista final permitida; o universo permitido é o inventário filtrado por autorização.",
+    "O corpus lexical pode crescer; cobertura deve ser testada por metamorfismo e por classes desconhecidas."
+  ],
+  "sources": [
+    {
+      "id": "ha_aliases",
+      "url": "https://www.home-assistant.io/voice_control/aliases",
+      "use": "Aliases de entidades, áreas e andares e origem contextual"
+    },
+    {
+      "id": "ha_best_practices",
+      "url": "https://www.home-assistant.io/voice_control/best_practices",
+      "use": "Nomes, exposição e escopo de modelos"
+    },
+    {
+      "id": "ha_exposure",
+      "url": "https://www.home-assistant.io/voice_control/voice_remote_expose_devices",
+      "use": "Autorização por exposição"
+    },
+    {
+      "id": "ha_areas",
+      "url": "https://www.home-assistant.io/docs/organizing/areas/",
+      "use": "Áreas, pisos e aliases espaciais"
+    },
+    {
+      "id": "ohf_ptbr",
+      "url": "https://github.com/OHF-Voice/intents/tree/main/sentences/pt-BR",
+      "use": "Famílias canônicas de intenções, formas e slots oficiais PT-BR; fonte comparativa, não implementação"
+    },
+    {
+      "id": "ohf_rules",
+      "url": "https://github.com/OHF-Voice/intents/tree/main/rules/pt-BR",
+      "use": "Estrutura de regras de verbos, estados e consultas, formas flexionadas"
+    },
+    {
+      "id": "ohf_lists",
+      "url": "https://github.com/OHF-Voice/intents/tree/main/lists/pt-BR",
+      "use": "Estados, cores, mídia e covers"
+    },
+    {
+      "id": "corAA",
+      "url": "https://link.springer.com/article/10.1007/s10579-022-09621-4",
+      "use": "Variação oral PT-BR para análise de ASR, reduções e disfluências"
+    },
+    {
+      "id": "ptbr_lex",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9536312/",
+      "use": "Relevância de sinônimos em contexto; não assumir equivalência global"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "entity.lighting",
+      "group": "entity",
+      "canonical": "iluminação",
+      "forms": [
+        "luz",
+        "luzes",
+        "lâmpada",
+        "lâmpadas",
+        "luminária",
+        "luminárias",
+        "ponto de luz",
+        "pontos de luz",
+        "iluminação",
+        "lustre",
+        "plafon",
+        "spot",
+        "spots",
+        "fita de led",
+        "fita led",
+        "led",
+        "abajur",
+        "arandela",
+        "pendente",
+        "luz de teto",
+        "luz ambiente",
+        "luz de leitura",
+        "bulbo",
+        "bulbos",
+        "lâmpada inteligente",
+        "luminária inteligente"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "light"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.climate_unit",
+      "group": "entity",
+      "canonical": "equipamento de climatização",
+      "forms": [
+        "ar-condicionado",
+        "ar condicionado",
+        "ar",
+        "condicionador de ar",
+        "climatizador",
+        "split",
+        "mini split",
+        "clima",
+        "aparelho de ar",
+        "AC",
+        "HVAC",
+        "central de ar",
+        "ar de janela",
+        "inverter",
+        "refrigerador de ambiente"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "climate"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.thermostat",
+      "group": "entity",
+      "canonical": "controle térmico",
+      "forms": [
+        "termostato",
+        "controlador de temperatura",
+        "controle de temperatura",
+        "termostato inteligente",
+        "ajuste de temperatura",
+        "setpoint"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "climate",
+        "sensor",
+        "number"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.fan",
+      "group": "entity",
+      "canonical": "ventilação mecânica",
+      "forms": [
+        "ventilador",
+        "ventiladores",
+        "ventoinha",
+        "ventoinhas",
+        "ventilador de teto",
+        "exaustor",
+        "circulador de ar",
+        "ventilação",
+        "ventilador de mesa",
+        "fan",
+        "ventilador de parede"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "fan",
+        "switch"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.switch",
+      "group": "entity",
+      "canonical": "interruptor",
+      "forms": [
+        "interruptor",
+        "interruptores",
+        "botão de parede",
+        "acionador",
+        "chave",
+        "chave liga desliga",
+        "relé",
+        "rele",
+        "comutador",
+        "switch",
+        "comando de parede"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "switch",
+        "light",
+        "input_boolean"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.outlet",
+      "group": "entity",
+      "canonical": "tomada controlável",
+      "forms": [
+        "tomada",
+        "tomadas",
+        "tomada inteligente",
+        "plugue inteligente",
+        "plug smart",
+        "smart plug",
+        "plug",
+        "plugue",
+        "extensão inteligente",
+        "régua de tomadas",
+        "filtro de linha inteligente",
+        "toma de energia"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "switch"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.media_player",
+      "group": "entity",
+      "canonical": "reprodutor de mídia",
+      "forms": [
+        "reprodutor de mídia",
+        "player",
+        "mídia",
+        "áudio",
+        "som",
+        "aparelho de som",
+        "caixa de som",
+        "caixinha de som",
+        "alto-falante",
+        "alto falante",
+        "speaker",
+        "home theater",
+        "receiver",
+        "soundbar",
+        "barra de som",
+        "amplificador",
+        "rádio",
+        "streamer"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "media_player"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.television",
+      "group": "entity",
+      "canonical": "televisão",
+      "forms": [
+        "televisão",
+        "televisor",
+        "tv",
+        "tê vê",
+        "tela da tv",
+        "smart tv",
+        "monitor da sala",
+        "roku",
+        "fire tv",
+        "android tv",
+        "google tv",
+        "aparelho de tv"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "media_player",
+        "remote"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.remote",
+      "group": "entity",
+      "canonical": "controle remoto",
+      "forms": [
+        "controle remoto",
+        "controle",
+        "comando remoto",
+        "infravermelho",
+        "IR",
+        "blaster",
+        "emissor IR",
+        "remote"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "remote"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.cover_generic",
+      "group": "entity",
+      "canonical": "cobertura ou fechamento motorizado",
+      "forms": [
+        "cortina",
+        "cortinas",
+        "persiana",
+        "persianas",
+        "blackout",
+        "rolô",
+        "rolo",
+        "veneziana",
+        "venezianas",
+        "estore",
+        "estores",
+        "toldo",
+        "toldos",
+        "janela automática",
+        "porta motorizada",
+        "cobertura",
+        "shutter",
+        "blind",
+        "shade"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "cover"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.curtain",
+      "group": "entity",
+      "canonical": "cortina",
+      "forms": [
+        "cortina",
+        "cortinas",
+        "cortinado",
+        "cortina da janela",
+        "cortina elétrica",
+        "cortina motorizada"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "cover"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.blind",
+      "group": "entity",
+      "canonical": "persiana",
+      "forms": [
+        "persiana",
+        "persianas",
+        "rolô",
+        "veneziana",
+        "blackout",
+        "tela solar",
+        "persiana elétrica"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "cover"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.garage",
+      "group": "entity",
+      "canonical": "acesso da garagem",
+      "forms": [
+        "garagem",
+        "porta de garagem",
+        "portão da garagem",
+        "portão automático",
+        "basculante",
+        "portão basculante",
+        "porteira de garagem"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "cover",
+        "lock"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.door_cover",
+      "group": "entity",
+      "canonical": "porta motorizada",
+      "forms": [
+        "porta de correr",
+        "porta automática",
+        "porta motorizada",
+        "porta da garagem",
+        "portão motorizado"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "cover"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.window_cover",
+      "group": "entity",
+      "canonical": "janela motorizada",
+      "forms": [
+        "janela",
+        "janelas",
+        "janela elétrica",
+        "janela automatizada",
+        "janela motorizada"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "cover"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.lock",
+      "group": "entity",
+      "canonical": "fechadura",
+      "forms": [
+        "fechadura",
+        "fechaduras",
+        "tranca",
+        "trancas",
+        "trinco",
+        "cadeado",
+        "porta trancada",
+        "fechadura digital",
+        "fechadura eletrônica",
+        "lock"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "lock"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.alarm_panel",
+      "group": "entity",
+      "canonical": "sistema de alarme",
+      "forms": [
+        "alarme de segurança",
+        "central de alarme",
+        "alarme residencial",
+        "sistema de segurança",
+        "alarme da casa",
+        "painel de alarme",
+        "arme da casa"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "alarm_control_panel"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.camera",
+      "group": "entity",
+      "canonical": "câmera",
+      "forms": [
+        "câmera",
+        "câmeras",
+        "câmera de segurança",
+        "cam",
+        "webcam",
+        "CFTV",
+        "circuito de segurança",
+        "câmera IP",
+        "vigilância",
+        "filmadora"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "camera"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.motion_sensor",
+      "group": "entity",
+      "canonical": "sensor de movimento",
+      "forms": [
+        "sensor de movimento",
+        "sensor de presença",
+        "detector de movimento",
+        "sensor PIR",
+        "detector PIR",
+        "movimento",
+        "presença detectada"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "binary_sensor",
+        "sensor"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.presence_sensor",
+      "group": "entity",
+      "canonical": "sensor de ocupação",
+      "forms": [
+        "ocupação",
+        "sensor de ocupação",
+        "presença",
+        "detector de pessoas",
+        "sensor de pessoas",
+        "mmwave",
+        "radar de presença",
+        "presença no ambiente"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "binary_sensor",
+        "sensor"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.contact_sensor",
+      "group": "entity",
+      "canonical": "sensor de abertura",
+      "forms": [
+        "sensor de porta",
+        "sensor de janela",
+        "contato magnético",
+        "sensor de abertura",
+        "contato",
+        "ímã de porta",
+        "sensor de contato"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "binary_sensor"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.temperature_sensor",
+      "group": "entity",
+      "canonical": "sensor de temperatura",
+      "forms": [
+        "termômetro",
+        "sensor de temperatura",
+        "temperatura ambiente",
+        "leitor de temperatura",
+        "medidor de temperatura",
+        "temperatura do quarto"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "sensor",
+        "climate"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.humidity_sensor",
+      "group": "entity",
+      "canonical": "sensor de umidade",
+      "forms": [
+        "higrômetro",
+        "sensor de umidade",
+        "umidade do ar",
+        "medidor de umidade",
+        "umidade relativa"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "sensor",
+        "humidifier"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.co2_sensor",
+      "group": "entity",
+      "canonical": "sensor de CO₂",
+      "forms": [
+        "sensor de CO2",
+        "medidor de CO2",
+        "gás carbônico",
+        "dióxido de carbono",
+        "concentração de CO2",
+        "qualidade do ar CO2"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "sensor"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.air_quality_sensor",
+      "group": "entity",
+      "canonical": "qualidade do ar",
+      "forms": [
+        "qualidade do ar",
+        "sensor de partículas",
+        "sensor de fumaça",
+        "partículas no ar",
+        "PM2.5",
+        "PM10",
+        "índice do ar",
+        "AQI",
+        "VOC",
+        "compostos orgânicos voláteis"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "sensor",
+        "binary_sensor"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.illuminance_sensor",
+      "group": "entity",
+      "canonical": "sensor de luminosidade",
+      "forms": [
+        "lux",
+        "sensor de luz",
+        "luminosidade",
+        "iluminância",
+        "sensor de luminosidade",
+        "claridade ambiente",
+        "medidor de luz"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "sensor"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.power_sensor",
+      "group": "entity",
+      "canonical": "potência elétrica",
+      "forms": [
+        "potência",
+        "potência elétrica",
+        "consumo instantâneo",
+        "watts",
+        "watt",
+        "potência da tomada",
+        "medidor de potência"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "sensor"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.energy_sensor",
+      "group": "entity",
+      "canonical": "energia acumulada",
+      "forms": [
+        "consumo de energia",
+        "consumo elétrico",
+        "energia consumida",
+        "medidor de energia",
+        "eletricidade",
+        "kWh",
+        "quilowatt-hora",
+        "contador de energia"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "sensor"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.battery_sensor",
+      "group": "entity",
+      "canonical": "bateria",
+      "forms": [
+        "bateria",
+        "nível de bateria",
+        "carga",
+        "porcentagem de bateria",
+        "pilha",
+        "pilhas",
+        "autonomia",
+        "battery",
+        "carga restante"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "sensor"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.leak_sensor",
+      "group": "entity",
+      "canonical": "sensor de vazamento",
+      "forms": [
+        "sensor de vazamento",
+        "detector de água",
+        "vazamento de água",
+        "inundação",
+        "alarme de vazamento",
+        "detector de inundação"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "binary_sensor"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.smoke_sensor",
+      "group": "entity",
+      "canonical": "detector de fumaça",
+      "forms": [
+        "detector de fumaça",
+        "sensor de fumaça",
+        "detector de incêndio",
+        "alarme de incêndio",
+        "sensor de calor"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "binary_sensor",
+        "sensor"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.vacuum",
+      "group": "entity",
+      "canonical": "robô aspirador",
+      "forms": [
+        "aspirador",
+        "aspirador robô",
+        "robô aspirador",
+        "robo aspirador",
+        "robô de limpeza",
+        "aspirador automático",
+        "robô",
+        "faxineiro",
+        "robô que limpa",
+        "vacuum"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "vacuum"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.lawn_mower",
+      "group": "entity",
+      "canonical": "robô cortador",
+      "forms": [
+        "cortador de grama",
+        "robô de cortar grama",
+        "cortador automático",
+        "robô jardineiro",
+        "cortador robótico",
+        "lawn mower"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "lawn_mower"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.humidifier",
+      "group": "entity",
+      "canonical": "umidificador",
+      "forms": [
+        "umidificador",
+        "umidificadores",
+        "aparelho de umidificar",
+        "umidificador de ar",
+        "gerador de umidade"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "humidifier"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.dehumidifier",
+      "group": "entity",
+      "canonical": "desumidificador",
+      "forms": [
+        "desumidificador",
+        "aparelho de tirar umidade",
+        "removedor de umidade",
+        "secador de ar"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "humidifier",
+        "switch"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.air_purifier",
+      "group": "entity",
+      "canonical": "purificador de ar",
+      "forms": [
+        "purificador de ar",
+        "filtro de ar",
+        "filtro HEPA",
+        "purificador",
+        "filtrador de ar",
+        "aparelho que filtra o ar"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "fan",
+        "switch"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.water_heater",
+      "group": "entity",
+      "canonical": "aquecedor de água",
+      "forms": [
+        "aquecedor",
+        "aquecedor de água",
+        "boiler",
+        "chuveiro inteligente",
+        "termoacumulador",
+        "aquecimento de água",
+        "água quente"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "water_heater",
+        "climate",
+        "switch"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.valve",
+      "group": "entity",
+      "canonical": "válvula",
+      "forms": [
+        "válvula",
+        "registro",
+        "registro de água",
+        "solenoide",
+        "eletroválvula",
+        "torneira automatizada",
+        "registro de gás",
+        "válvula inteligente"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "valve",
+        "switch"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.irrigation",
+      "group": "entity",
+      "canonical": "irrigação",
+      "forms": [
+        "rega",
+        "irrigação",
+        "aspersor",
+        "aspersores",
+        "irrigador",
+        "regador automático",
+        "jardim automático",
+        "sistema de irrigação"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "valve",
+        "switch"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.scene",
+      "group": "entity",
+      "canonical": "cena",
+      "forms": [
+        "cena",
+        "cenas",
+        "cenário",
+        "cenários",
+        "ambiente predefinido",
+        "perfil de iluminação",
+        "clima de cinema",
+        "modo cinema",
+        "modo jantar"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "scene"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.script",
+      "group": "entity",
+      "canonical": "script",
+      "forms": [
+        "script",
+        "scripts",
+        "sequência",
+        "sequencia",
+        "ação predefinida",
+        "macro",
+        "comando predefinido"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "script"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.automation",
+      "group": "entity",
+      "canonical": "automação existente",
+      "forms": [
+        "automação",
+        "automacoes",
+        "automações",
+        "rotina existente",
+        "regra automática",
+        "automação da casa",
+        "agendamento automatizado"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "automation"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.boolean_helper",
+      "group": "entity",
+      "canonical": "helper binário",
+      "forms": [
+        "ajudante",
+        "helper",
+        "auxiliar",
+        "booleano",
+        "interruptor virtual",
+        "chave virtual",
+        "toggle virtual"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "input_boolean"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.button_helper",
+      "group": "entity",
+      "canonical": "botão",
+      "forms": [
+        "botão",
+        "botões",
+        "acionador virtual",
+        "comando de botão",
+        "botão auxiliar",
+        "botão de cena"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "button",
+        "input_button"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.select_helper",
+      "group": "entity",
+      "canonical": "seletor",
+      "forms": [
+        "seletor",
+        "lista de opções",
+        "modo selecionável",
+        "opção do dispositivo",
+        "seletor virtual"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "select",
+        "input_select"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.number_helper",
+      "group": "entity",
+      "canonical": "controle numérico",
+      "forms": [
+        "controle numérico",
+        "slider",
+        "barra de ajuste",
+        "deslizador",
+        "valor ajustável",
+        "controle deslizante"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "number",
+        "input_number"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.weather",
+      "group": "entity",
+      "canonical": "clima meteorológico",
+      "forms": [
+        "tempo",
+        "clima",
+        "previsão",
+        "meteorologia",
+        "condição do tempo",
+        "tempo lá fora",
+        "previsão do tempo"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "weather"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.calendar",
+      "group": "entity",
+      "canonical": "calendário",
+      "forms": [
+        "calendário",
+        "agenda",
+        "compromissos",
+        "evento da agenda",
+        "marcação de horário",
+        "evento"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "calendar"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.todo",
+      "group": "entity",
+      "canonical": "lista de tarefas",
+      "forms": [
+        "lista",
+        "lista de compras",
+        "lista de tarefas",
+        "itens pendentes",
+        "checklist",
+        "afazeres",
+        "to do",
+        "to-do"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "todo"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.timer",
+      "group": "entity",
+      "canonical": "temporizador",
+      "forms": [
+        "timer",
+        "temporizador",
+        "contagem regressiva",
+        "contador regressivo",
+        "conta tempo",
+        "cronômetro regressivo"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "timer"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.alarm_clock",
+      "group": "entity",
+      "canonical": "despertador",
+      "forms": [
+        "despertador",
+        "alarme de horário",
+        "alarme para acordar",
+        "alarme das sete",
+        "alarme de relógio"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "alarm_clock"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.reminder",
+      "group": "entity",
+      "canonical": "lembrete",
+      "forms": [
+        "lembrete",
+        "recordatório",
+        "aviso programado",
+        "me lembre",
+        "lembrar depois"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "reminder"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.announcement",
+      "group": "entity",
+      "canonical": "anúncio por voz",
+      "forms": [
+        "anúncio",
+        "recado falado",
+        "aviso por voz",
+        "mensagem falada",
+        "intercom",
+        "interfone",
+        "falar no outro quarto",
+        "broadcast"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "assist_satellite",
+        "media_player"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.computer",
+      "group": "entity",
+      "canonical": "computador",
+      "forms": [
+        "computador",
+        "PC",
+        "desktop",
+        "notebook",
+        "laptop",
+        "micro",
+        "estação de trabalho",
+        "mini pc",
+        "servidor"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "switch",
+        "button",
+        "sensor",
+        "wake_on_lan"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.person",
+      "group": "entity",
+      "canonical": "pessoa",
+      "forms": [
+        "pessoa",
+        "morador",
+        "pessoal",
+        "gente",
+        "usuário",
+        "habitante",
+        "residentes",
+        "alguém"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "person",
+        "device_tracker"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "entity.zone",
+      "group": "entity",
+      "canonical": "zona geográfica",
+      "forms": [
+        "zona",
+        "localização",
+        "área geográfica",
+        "casa",
+        "trabalho",
+        "fora de casa",
+        "local"
+      ],
+      "relation": "category_candidate",
+      "domain_candidates": [
+        "zone",
+        "device_tracker"
+      ],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Nunca mapear termo diretamente para entidade sem aplicar área, exposição, autorização e capability. Relações entre domínios são condicionais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.turn_on",
+      "group": "action",
+      "canonical": "turn_on",
+      "forms": [
+        "liga",
+        "ligue",
+        "ligar",
+        "acende",
+        "acenda",
+        "acender",
+        "ativa",
+        "ative",
+        "ativar",
+        "coloca pra funcionar",
+        "bota pra funcionar",
+        "põe pra funcionar",
+        "deixa ligado",
+        "deixe ligado",
+        "deixa aceso",
+        "deixe aceso",
+        "faz funcionar",
+        "dá uma ligada",
+        "inicia o aparelho",
+        "aciona",
+        "acione"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.turn_off",
+      "group": "action",
+      "canonical": "turn_off",
+      "forms": [
+        "desliga",
+        "desligue",
+        "desligar",
+        "apaga",
+        "apague",
+        "apagar",
+        "desativa",
+        "desative",
+        "desativar",
+        "deixa desligado",
+        "deixe desligado",
+        "deixa apagado",
+        "deixe apagado",
+        "para de funcionar",
+        "desative o aparelho",
+        "corta o funcionamento",
+        "encerra o funcionamento",
+        "desliga geral"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.toggle",
+      "group": "action",
+      "canonical": "toggle",
+      "forms": [
+        "inverte o estado",
+        "alterna o estado",
+        "comuta",
+        "troca ligado desligado",
+        "muda o estado",
+        "troca o estado"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.open",
+      "group": "action",
+      "canonical": "open",
+      "forms": [
+        "abre",
+        "abra",
+        "abrir",
+        "levanta",
+        "levante",
+        "levantar",
+        "sobe a persiana",
+        "deixa aberto",
+        "escancara",
+        "recolhe a persiana"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.close",
+      "group": "action",
+      "canonical": "close",
+      "forms": [
+        "fecha",
+        "feche",
+        "fechar",
+        "abaixa",
+        "abaixe",
+        "baixar",
+        "desce a cortina",
+        "deixa fechado",
+        "recolhe o toldo",
+        "puxa a persiana"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.lock",
+      "group": "action",
+      "canonical": "lock",
+      "forms": [
+        "tranca",
+        "tranque",
+        "trancar",
+        "tranque a porta",
+        "põe a fechadura",
+        "deixa trancado",
+        "trave",
+        "travar",
+        "trava a porta"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.unlock",
+      "group": "action",
+      "canonical": "unlock",
+      "forms": [
+        "destranca",
+        "destranque",
+        "destrancar",
+        "destrave",
+        "destravar",
+        "libera o trinco",
+        "solta a fechadura"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.brightness_set",
+      "group": "action",
+      "canonical": "brightness",
+      "forms": [
+        "ajusta o brilho",
+        "define o brilho",
+        "deixa a luz em",
+        "coloca iluminação em",
+        "muda luminosidade para",
+        "regula intensidade",
+        "coloca a intensidade em"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.brightness_increase",
+      "group": "action",
+      "canonical": "brightness_relative_up",
+      "forms": [
+        "aumenta o brilho",
+        "mais claro",
+        "mais clara",
+        "clareia",
+        "ilumina mais",
+        "sobe o brilho",
+        "aumenta a intensidade",
+        "deixa mais iluminado"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.brightness_decrease",
+      "group": "action",
+      "canonical": "brightness_relative_down",
+      "forms": [
+        "diminui o brilho",
+        "mais escuro",
+        "menos claro",
+        "escurece",
+        "abaixa o brilho",
+        "reduz a intensidade",
+        "deixa menos iluminado"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.color_set",
+      "group": "action",
+      "canonical": "color",
+      "forms": [
+        "coloca na cor",
+        "muda a cor para",
+        "deixa azul",
+        "deixa vermelha",
+        "altera a cor",
+        "pinta a luz de",
+        "troca a cor para"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.color_temperature_set",
+      "group": "action",
+      "canonical": "color_temperature",
+      "forms": [
+        "luz mais quente",
+        "luz mais fria",
+        "ajusta a temperatura de cor",
+        "branco quente",
+        "branco frio",
+        "muda o tom de branco"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.temperature_set",
+      "group": "action",
+      "canonical": "temperature",
+      "forms": [
+        "regula a temperatura",
+        "define a temperatura",
+        "coloca em graus",
+        "ajusta os graus",
+        "deixa em vinte e dois graus",
+        "seta a temperatura"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.temperature_up",
+      "group": "action",
+      "canonical": "temperature_relative_up",
+      "forms": [
+        "aumenta a temperatura",
+        "esquenta mais",
+        "mais quente",
+        "sobe a temperatura",
+        "aquece mais",
+        "dá mais calor"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.temperature_down",
+      "group": "action",
+      "canonical": "temperature_relative_down",
+      "forms": [
+        "abaixa a temperatura",
+        "diminui a temperatura",
+        "esfria mais",
+        "resfria mais",
+        "mais frio",
+        "reduz os graus"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.hvac_cool",
+      "group": "action",
+      "canonical": "hvac_mode_cool",
+      "forms": [
+        "modo frio",
+        "modo refrigeração",
+        "refrigerar",
+        "resfriar",
+        "ligar pra esfriar",
+        "climatizar no frio"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.hvac_heat",
+      "group": "action",
+      "canonical": "hvac_mode_heat",
+      "forms": [
+        "modo quente",
+        "modo aquecimento",
+        "aquecer",
+        "esquentar",
+        "ativar aquecimento"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.hvac_auto",
+      "group": "action",
+      "canonical": "hvac_mode_auto",
+      "forms": [
+        "modo automático do ar",
+        "climatização automática",
+        "temperatura automática",
+        "auto do ar"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.hvac_dry",
+      "group": "action",
+      "canonical": "hvac_mode_dry",
+      "forms": [
+        "modo desumidificar",
+        "modo seco",
+        "dry",
+        "tirar umidade do ar"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.hvac_fan",
+      "group": "action",
+      "canonical": "hvac_mode_fan_only",
+      "forms": [
+        "modo ventilação",
+        "só ventilar",
+        "fan only",
+        "ventilação sem refrigerar"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.fan_speed_set",
+      "group": "action",
+      "canonical": "percentage",
+      "forms": [
+        "define a velocidade",
+        "muda a velocidade do ventilador",
+        "coloca velocidade em",
+        "regula a rotação",
+        "ajusta a intensidade do ventilador"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.fan_speed_up",
+      "group": "action",
+      "canonical": "percentage_up",
+      "forms": [
+        "aumenta a velocidade",
+        "gira mais rápido",
+        "ventila mais",
+        "sobe a velocidade",
+        "aumenta a rotação"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.fan_speed_down",
+      "group": "action",
+      "canonical": "percentage_down",
+      "forms": [
+        "diminui a velocidade",
+        "gira mais devagar",
+        "ventila menos",
+        "reduz a rotação",
+        "baixa a velocidade"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.oscillate_on",
+      "group": "action",
+      "canonical": "oscillate_on",
+      "forms": [
+        "liga a oscilação",
+        "oscila",
+        "gira de um lado pro outro",
+        "varredura ligada",
+        "ativa oscilação"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.oscillate_off",
+      "group": "action",
+      "canonical": "oscillate_off",
+      "forms": [
+        "para de oscilar",
+        "desliga oscilação",
+        "fica parado",
+        "desativa varredura",
+        "não gira"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.cover_position",
+      "group": "action",
+      "canonical": "position",
+      "forms": [
+        "abre pela metade",
+        "fecha um quarto",
+        "coloca posição em",
+        "move a cortina para",
+        "define a abertura"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.media_play",
+      "group": "action",
+      "canonical": "play",
+      "forms": [
+        "toca",
+        "toque",
+        "reproduz",
+        "reproduza",
+        "dar play",
+        "põe pra tocar",
+        "inicia a música",
+        "começa a reprodução"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.media_pause",
+      "group": "action",
+      "canonical": "pause",
+      "forms": [
+        "pausa",
+        "pause",
+        "pausar",
+        "dá pause",
+        "interrompe temporariamente",
+        "segura a música"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.media_resume",
+      "group": "action",
+      "canonical": "resume",
+      "forms": [
+        "continua a música",
+        "retoma",
+        "retome",
+        "volta a tocar",
+        "retoma a reprodução",
+        "prossegue a reprodução"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.media_stop",
+      "group": "action",
+      "canonical": "stop",
+      "forms": [
+        "para",
+        "pare",
+        "parar a reprodução",
+        "encerra o som",
+        "para o áudio",
+        "para a música"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.media_next",
+      "group": "action",
+      "canonical": "next",
+      "forms": [
+        "próxima",
+        "próximo",
+        "pula a música",
+        "avança a faixa",
+        "música seguinte",
+        "passa a faixa"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.media_previous",
+      "group": "action",
+      "canonical": "previous",
+      "forms": [
+        "anterior",
+        "música anterior",
+        "volta a faixa",
+        "faixa passada",
+        "retrocede a música"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.volume_set",
+      "group": "action",
+      "canonical": "volume",
+      "forms": [
+        "volume em",
+        "coloca o volume em",
+        "ajusta o som para",
+        "define o volume",
+        "deixa o áudio em"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.volume_up",
+      "group": "action",
+      "canonical": "volume_up",
+      "forms": [
+        "aumenta o som",
+        "mais alto",
+        "sobe o volume",
+        "aumenta volume",
+        "som mais alto"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.volume_down",
+      "group": "action",
+      "canonical": "volume_down",
+      "forms": [
+        "abaixa o som",
+        "menos alto",
+        "mais baixo",
+        "diminui o volume",
+        "reduz volume"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.mute",
+      "group": "action",
+      "canonical": "mute",
+      "forms": [
+        "silencia",
+        "silencie",
+        "muta",
+        "mute",
+        "tira o som",
+        "deixa mudo",
+        "sem áudio"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.unmute",
+      "group": "action",
+      "canonical": "unmute",
+      "forms": [
+        "tira do mudo",
+        "volta o som",
+        "desmuta",
+        "desmute",
+        "ativa o áudio"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.vacuum_start",
+      "group": "action",
+      "canonical": "vacuum_start",
+      "forms": [
+        "começa a limpar",
+        "inicia a limpeza",
+        "aspira",
+        "aspire",
+        "faz a faxina",
+        "inicia aspiração",
+        "limpa a casa"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.vacuum_pause",
+      "group": "action",
+      "canonical": "vacuum_pause",
+      "forms": [
+        "pausa a limpeza",
+        "interrompe a aspiração por enquanto",
+        "segura a faxina",
+        "pausa o robô"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.vacuum_stop",
+      "group": "action",
+      "canonical": "vacuum_stop",
+      "forms": [
+        "para a limpeza",
+        "encerra aspiração",
+        "para o robô",
+        "cancela a limpeza"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.vacuum_dock",
+      "group": "action",
+      "canonical": "vacuum_dock",
+      "forms": [
+        "volta pra base",
+        "retorna à base",
+        "vai pra doca",
+        "volta carregar",
+        "recolhe o robô"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.mower_start",
+      "group": "action",
+      "canonical": "mower_start",
+      "forms": [
+        "corta a grama",
+        "inicia corte de grama",
+        "começa a aparar",
+        "inicia jardinagem"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.mower_dock",
+      "group": "action",
+      "canonical": "mower_dock",
+      "forms": [
+        "volta pro carregador do cortador",
+        "retorna à base do cortador",
+        "recolhe o cortador"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.scene_activate",
+      "group": "action",
+      "canonical": "activate",
+      "forms": [
+        "ativa cena",
+        "executa cenário",
+        "liga modo cinema",
+        "inicia cena",
+        "ativa ambiente predefinido"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.script_run",
+      "group": "action",
+      "canonical": "activate",
+      "forms": [
+        "roda script",
+        "executa script",
+        "inicia sequência",
+        "aciona macro",
+        "faz a rotina existente"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.automation_enable",
+      "group": "action",
+      "canonical": "automation_enable",
+      "forms": [
+        "ativa automação",
+        "habilita automação",
+        "liga a regra",
+        "deixa a automação ativa"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.automation_disable",
+      "group": "action",
+      "canonical": "automation_disable",
+      "forms": [
+        "desativa automação",
+        "desabilita automação",
+        "desliga a regra",
+        "suspende a automação"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.automation_trigger",
+      "group": "action",
+      "canonical": "automation_trigger",
+      "forms": [
+        "executa automação agora",
+        "dispara automação",
+        "roda a regra",
+        "aciona automação existente"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.todo_add",
+      "group": "action",
+      "canonical": "todo_add",
+      "forms": [
+        "coloca na lista",
+        "adiciona à lista",
+        "anota na lista",
+        "inclui item",
+        "bota na lista",
+        "põe na lista"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.todo_remove",
+      "group": "action",
+      "canonical": "todo_remove",
+      "forms": [
+        "tira da lista",
+        "remove item",
+        "apaga da lista",
+        "exclui da lista",
+        "retira item"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.todo_complete",
+      "group": "action",
+      "canonical": "todo_complete",
+      "forms": [
+        "marca como feito",
+        "marca concluído",
+        "dá baixa na tarefa",
+        "conclui item",
+        "risca da lista"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.timer_create",
+      "group": "action",
+      "canonical": "timer_create",
+      "forms": [
+        "cria timer",
+        "inicia temporizador",
+        "começa contagem regressiva",
+        "marca um timer",
+        "define temporizador"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.timer_cancel",
+      "group": "action",
+      "canonical": "timer_cancel",
+      "forms": [
+        "cancela timer",
+        "para temporizador",
+        "interrompe contagem regressiva",
+        "remove o timer"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.timer_pause",
+      "group": "action",
+      "canonical": "timer_pause",
+      "forms": [
+        "pausa timer",
+        "congela contagem regressiva",
+        "suspende temporizador"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.timer_resume",
+      "group": "action",
+      "canonical": "timer_resume",
+      "forms": [
+        "retoma temporizador",
+        "continua timer",
+        "reinicia contagem regressiva pausada"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.alarm_create",
+      "group": "action",
+      "canonical": "alarm_create",
+      "forms": [
+        "põe despertador",
+        "coloca alarme para",
+        "me acorda às",
+        "configura despertador",
+        "define alarme de horário"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.reminder_create",
+      "group": "action",
+      "canonical": "reminder_create",
+      "forms": [
+        "me lembra de",
+        "me lembre de",
+        "cria lembrete",
+        "anota pra me avisar",
+        "me recorda de"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.announce",
+      "group": "action",
+      "canonical": "announce",
+      "forms": [
+        "avisa",
+        "avise",
+        "anuncia",
+        "anuncie",
+        "dá um recado",
+        "manda um recado",
+        "fala no alto-falante",
+        "transmite mensagem"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "action.query",
+      "group": "action",
+      "canonical": "query",
+      "forms": [
+        "consulta",
+        "verifica",
+        "confere",
+        "me diz",
+        "me diga",
+        "informa",
+        "qual é o estado",
+        "como está",
+        "diz como está"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Aceitar somente com capacidade e tipo de aparelho compatíveis. Verbos de estado mudam de sentido entre domínios; não são aliases universais.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.count",
+      "group": "query",
+      "canonical": "count",
+      "forms": [
+        "quantos",
+        "quantas",
+        "quantidade de",
+        "número de",
+        "conta quantos",
+        "tem quantos",
+        "me diz o total de",
+        "quantos estão",
+        "quantas estão",
+        "quantos existem"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.which",
+      "group": "query",
+      "canonical": "list",
+      "forms": [
+        "quais",
+        "que dispositivos",
+        "quais deles",
+        "me lista",
+        "lista pra mim",
+        "enumera",
+        "me diz quais",
+        "quais são",
+        "mostra quais"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.any",
+      "group": "query",
+      "canonical": "any",
+      "forms": [
+        "tem algum",
+        "tem alguma",
+        "existe algum",
+        "existe alguma",
+        "há algum",
+        "há alguma",
+        "algum está",
+        "alguma está",
+        "tem pelo menos um"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.all",
+      "group": "query",
+      "canonical": "all",
+      "forms": [
+        "todos estão",
+        "todas estão",
+        "estão todos",
+        "estão todas",
+        "sem exceção",
+        "o conjunto inteiro está"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.none",
+      "group": "query",
+      "canonical": "none",
+      "forms": [
+        "nenhum",
+        "nenhuma",
+        "não tem nenhum",
+        "não há nenhum",
+        "não existe nenhuma",
+        "zero aparelhos",
+        "nenhum está"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.status",
+      "group": "query",
+      "canonical": "status",
+      "forms": [
+        "tá ligado",
+        "está ligado",
+        "está funcionando",
+        "qual o estado",
+        "situação atual",
+        "status",
+        "como está",
+        "em que estado está"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.value",
+      "group": "query",
+      "canonical": "value",
+      "forms": [
+        "qual o valor",
+        "quanto marca",
+        "quanto está medindo",
+        "qual a leitura",
+        "quanto indica",
+        "valor atual"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.average",
+      "group": "query",
+      "canonical": "average",
+      "forms": [
+        "média",
+        "média de",
+        "em média",
+        "valor médio",
+        "média das leituras"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.sum",
+      "group": "query",
+      "canonical": "sum",
+      "forms": [
+        "soma",
+        "total",
+        "somatório",
+        "quanto tudo junto",
+        "soma de todos",
+        "total acumulado"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.minimum",
+      "group": "query",
+      "canonical": "min",
+      "forms": [
+        "menor",
+        "mínimo",
+        "mais baixo",
+        "mais frio entre",
+        "valor menor"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.maximum",
+      "group": "query",
+      "canonical": "max",
+      "forms": [
+        "maior",
+        "máximo",
+        "mais alto",
+        "mais quente entre",
+        "valor maior"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.rank",
+      "group": "query",
+      "canonical": "rank",
+      "forms": [
+        "ordena do maior",
+        "qual é o que mais",
+        "ranking",
+        "os mais altos",
+        "os que mais gastam",
+        "top de consumo"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.compare",
+      "group": "query",
+      "canonical": "compare",
+      "forms": [
+        "compara",
+        "qual diferença",
+        "qual é maior",
+        "qual é menor",
+        "versus",
+        "em relação a",
+        "quanto a mais",
+        "mais do que"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.trend",
+      "group": "query",
+      "canonical": "trend",
+      "forms": [
+        "tendência",
+        "subiu ou caiu",
+        "vem aumentando",
+        "variou",
+        "evolução",
+        "mudou ao longo do tempo"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.delta",
+      "group": "query",
+      "canonical": "delta",
+      "forms": [
+        "quanto mudou",
+        "diferença de",
+        "variação de",
+        "quanto aumentou",
+        "quanto caiu"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.duration_state",
+      "group": "query",
+      "canonical": "state_duration",
+      "forms": [
+        "há quanto tempo",
+        "quanto tempo ficou",
+        "desde quando está",
+        "tempo que permaneceu",
+        "por quantas horas ficou"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.history",
+      "group": "query",
+      "canonical": "history",
+      "forms": [
+        "histórico",
+        "ontem",
+        "semana passada",
+        "mês anterior",
+        "últimos dias",
+        "no passado",
+        "quanto já consumiu"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "query.forecast",
+      "group": "query",
+      "canonical": "forecast",
+      "forms": [
+        "previsão",
+        "vai chover",
+        "temperatura amanhã",
+        "como vai estar",
+        "clima mais tarde"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Interpretação de operador sobre conjuntos; várias entidades não significam ambiguidade de alvo. Requer fonte de dados autorizada e cálculo determinístico.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.state",
+      "group": "metric",
+      "canonical": "state",
+      "forms": [
+        "estado",
+        "status",
+        "situação",
+        "ligado",
+        "desligado",
+        "ativo",
+        "inativo",
+        "funcionamento"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.temperature",
+      "group": "metric",
+      "canonical": "temperature",
+      "forms": [
+        "temperatura",
+        "graus",
+        "calor",
+        "frio",
+        "temperatura ambiente",
+        "sensação térmica"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.target_temperature",
+      "group": "metric",
+      "canonical": "target_temperature",
+      "forms": [
+        "temperatura ajustada",
+        "temperatura configurada",
+        "setpoint",
+        "meta de temperatura",
+        "graus definidos"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.humidity",
+      "group": "metric",
+      "canonical": "humidity",
+      "forms": [
+        "umidade",
+        "umidade do ar",
+        "umidade relativa",
+        "higrômetro",
+        "ar seco"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.illuminance",
+      "group": "metric",
+      "canonical": "illuminance",
+      "forms": [
+        "claridade",
+        "luminosidade",
+        "iluminância",
+        "lux",
+        "luz ambiente"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.power",
+      "group": "metric",
+      "canonical": "power",
+      "forms": [
+        "potência",
+        "consumo agora",
+        "watts",
+        "carga elétrica instantânea",
+        "energia instantânea"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.energy",
+      "group": "metric",
+      "canonical": "energy",
+      "forms": [
+        "consumo",
+        "energia",
+        "energia total",
+        "gasto elétrico",
+        "quilowatt-hora",
+        "kwh"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.voltage",
+      "group": "metric",
+      "canonical": "voltage",
+      "forms": [
+        "tensão",
+        "voltagem",
+        "volts",
+        "V",
+        "tensão da rede"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.current",
+      "group": "metric",
+      "canonical": "current",
+      "forms": [
+        "corrente",
+        "amperagem",
+        "amperes",
+        "ampères",
+        "corrente elétrica"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.battery",
+      "group": "metric",
+      "canonical": "battery",
+      "forms": [
+        "nível da bateria",
+        "bateria",
+        "carga restante",
+        "porcentagem de carga",
+        "autonomia"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.co2",
+      "group": "metric",
+      "canonical": "co2",
+      "forms": [
+        "co2",
+        "gás carbônico",
+        "dióxido de carbono",
+        "qualidade do ar",
+        "ppm de CO2"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.voc",
+      "group": "metric",
+      "canonical": "voc",
+      "forms": [
+        "voc",
+        "compostos voláteis",
+        "gases no ar",
+        "qualidade do ar",
+        "concentração volátil"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.pm25",
+      "group": "metric",
+      "canonical": "pm25",
+      "forms": [
+        "pm2.5",
+        "partículas finas",
+        "material particulado",
+        "poeira fina"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.occupancy",
+      "group": "metric",
+      "canonical": "occupancy",
+      "forms": [
+        "ocupação",
+        "pessoas presentes",
+        "presença",
+        "detectando gente",
+        "alguém no cômodo"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.motion",
+      "group": "metric",
+      "canonical": "motion",
+      "forms": [
+        "movimento",
+        "detectou movimento",
+        "movimentação",
+        "passagem de pessoas"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.door_opening",
+      "group": "metric",
+      "canonical": "opening",
+      "forms": [
+        "porta aberta",
+        "janela aberta",
+        "abertura",
+        "fechamento",
+        "contato aberto"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.location",
+      "group": "metric",
+      "canonical": "location",
+      "forms": [
+        "localização",
+        "onde está",
+        "em que cômodo",
+        "em que zona",
+        "posição"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.sound_level",
+      "group": "metric",
+      "canonical": "noise",
+      "forms": [
+        "ruído",
+        "barulho",
+        "nível de som",
+        "decibéis",
+        "volume ambiente"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.speed",
+      "group": "metric",
+      "canonical": "speed",
+      "forms": [
+        "velocidade",
+        "rotação",
+        "RPM",
+        "força do vento",
+        "nível de ventilação"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.brightness",
+      "group": "metric",
+      "canonical": "brightness",
+      "forms": [
+        "brilho",
+        "intensidade luminosa",
+        "claridade",
+        "luz forte",
+        "luminosidade da lâmpada"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.color",
+      "group": "metric",
+      "canonical": "color",
+      "forms": [
+        "cor",
+        "tonalidade",
+        "RGB",
+        "matiz",
+        "cor da luz"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.color_temperature",
+      "group": "metric",
+      "canonical": "color_temperature",
+      "forms": [
+        "temperatura de cor",
+        "branco quente",
+        "branco frio",
+        "luz amarelada",
+        "luz branca"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.volume",
+      "group": "metric",
+      "canonical": "volume",
+      "forms": [
+        "volume",
+        "som",
+        "nível do áudio",
+        "intensidade sonora"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.percentage",
+      "group": "metric",
+      "canonical": "percentage",
+      "forms": [
+        "por cento",
+        "percentual",
+        "porcentagem",
+        "percentagem",
+        "%"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.duration",
+      "group": "metric",
+      "canonical": "duration",
+      "forms": [
+        "duração",
+        "quanto tempo",
+        "tempo restante",
+        "tempo decorrido",
+        "minutos faltando"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.price",
+      "group": "metric",
+      "canonical": "cost",
+      "forms": [
+        "preço",
+        "custo",
+        "valor gasto",
+        "gasto em reais",
+        "tarifa",
+        "despesa"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "metric.water_level",
+      "group": "metric",
+      "canonical": "water_level",
+      "forms": [
+        "nível da água",
+        "altura da água",
+        "porcentagem do reservatório",
+        "volume do tanque"
+      ],
+      "relation": "contextual_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Exigir unidade, device_class, state_class e disponibilidade compatíveis; termos de temperatura e consumo são polissêmicos.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.on",
+      "group": "state",
+      "canonical": "on",
+      "forms": [
+        "ligado",
+        "ligada",
+        "ligados",
+        "ligadas",
+        "aceso",
+        "acesa",
+        "acesos",
+        "acesas",
+        "ativado",
+        "ativada",
+        "em funcionamento",
+        "funcionando"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.off",
+      "group": "state",
+      "canonical": "off",
+      "forms": [
+        "desligado",
+        "desligada",
+        "desligados",
+        "desligadas",
+        "apagado",
+        "apagada",
+        "apagados",
+        "apagadas",
+        "inativo",
+        "inativa",
+        "parado",
+        "parada"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.open",
+      "group": "state",
+      "canonical": "open",
+      "forms": [
+        "aberto",
+        "aberta",
+        "abertos",
+        "abertas",
+        "escancarado",
+        "levantado",
+        "recolhido"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.closed",
+      "group": "state",
+      "canonical": "closed",
+      "forms": [
+        "fechado",
+        "fechada",
+        "fechados",
+        "fechadas",
+        "abaixado",
+        "abaixada"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.locked",
+      "group": "state",
+      "canonical": "locked",
+      "forms": [
+        "trancado",
+        "trancada",
+        "travado",
+        "travada",
+        "bloqueado",
+        "bloqueada"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.unlocked",
+      "group": "state",
+      "canonical": "unlocked",
+      "forms": [
+        "destrancado",
+        "destrancada",
+        "destravado",
+        "destravada",
+        "liberado",
+        "liberada"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.available",
+      "group": "state",
+      "canonical": "available",
+      "forms": [
+        "disponível",
+        "online",
+        "conectado",
+        "respondendo",
+        "acessível"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.unavailable",
+      "group": "state",
+      "canonical": "unavailable",
+      "forms": [
+        "indisponível",
+        "offline",
+        "desconectado",
+        "não responde",
+        "fora do ar"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.paused",
+      "group": "state",
+      "canonical": "paused",
+      "forms": [
+        "pausado",
+        "pausada",
+        "em pausa",
+        "temporariamente parado",
+        "suspenso"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.playing",
+      "group": "state",
+      "canonical": "playing",
+      "forms": [
+        "tocando",
+        "reproduzindo",
+        "em reprodução",
+        "rodando áudio"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.cleaning",
+      "group": "state",
+      "canonical": "cleaning",
+      "forms": [
+        "limpando",
+        "aspirando",
+        "fazendo faxina",
+        "em limpeza"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.docked",
+      "group": "state",
+      "canonical": "docked",
+      "forms": [
+        "na base",
+        "na doca",
+        "carregando na base",
+        "estacionado"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.arming",
+      "group": "state",
+      "canonical": "arming",
+      "forms": [
+        "armando",
+        "em contagem de armamento",
+        "ativando alarme"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.armed",
+      "group": "state",
+      "canonical": "armed",
+      "forms": [
+        "armado",
+        "monitorando",
+        "segurança ativa"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.disarmed",
+      "group": "state",
+      "canonical": "disarmed",
+      "forms": [
+        "desarmado",
+        "segurança desativada",
+        "alarme desligado"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "state.wet",
+      "group": "state",
+      "canonical": "wet",
+      "forms": [
+        "molhado",
+        "vazamento detectado",
+        "água detectada",
+        "inundado"
+      ],
+      "relation": "candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Estado é domínio-específico. Nunca transformar estado consultado em ação. Nem todos sinônimos são equivalência forte.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.all",
+      "group": "scope",
+      "canonical": "all",
+      "forms": [
+        "tudo",
+        "todos",
+        "todas",
+        "o conjunto inteiro",
+        "todas as coisas",
+        "todos os dispositivos",
+        "todos os equipamentos",
+        "todas as paradas",
+        "todos os aparelhos",
+        "geral",
+        "tudo de uma vez",
+        "as coisas todas"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "bulk_sensitive",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.all_in_area",
+      "group": "scope",
+      "canonical": "all_in_area",
+      "forms": [
+        "tudo na sala",
+        "tudo no cômodo",
+        "todos os equipamentos desse ambiente",
+        "todas as coisas daqui",
+        "todos desse quarto",
+        "a sala inteira",
+        "tudo aí dentro"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "bulk_sensitive",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.some",
+      "group": "scope",
+      "canonical": "some",
+      "forms": [
+        "alguns",
+        "algumas",
+        "parte dos",
+        "uns poucos",
+        "umas poucas",
+        "uma parte",
+        "certos dispositivos"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.only",
+      "group": "scope",
+      "canonical": "only",
+      "forms": [
+        "só",
+        "somente",
+        "apenas",
+        "exclusivamente",
+        "unicamente",
+        "não mexe nos outros"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.except",
+      "group": "scope",
+      "canonical": "except",
+      "forms": [
+        "menos",
+        "exceto",
+        "salvo",
+        "tirando",
+        "com exceção de",
+        "fora",
+        "mas não",
+        "excluindo"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.and",
+      "group": "scope",
+      "canonical": "and",
+      "forms": [
+        "e",
+        "junto com",
+        "mais",
+        "além de",
+        "também",
+        "juntamente com"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.or",
+      "group": "scope",
+      "canonical": "or",
+      "forms": [
+        "ou",
+        "ou então",
+        "senão",
+        "alternativamente"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.none",
+      "group": "scope",
+      "canonical": "none",
+      "forms": [
+        "nenhum",
+        "nenhuma",
+        "nem um",
+        "zero",
+        "não tem nenhum"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.one",
+      "group": "scope",
+      "canonical": "one",
+      "forms": [
+        "um",
+        "uma",
+        "apenas um",
+        "só um",
+        "um único",
+        "somente uma"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.other",
+      "group": "scope",
+      "canonical": "other",
+      "forms": [
+        "o outro",
+        "a outra",
+        "os demais",
+        "as demais",
+        "o restante",
+        "os outros"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.first",
+      "group": "scope",
+      "canonical": "first",
+      "forms": [
+        "primeiro",
+        "primeira",
+        "o inicial",
+        "o número um",
+        "a primeira opção"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.last",
+      "group": "scope",
+      "canonical": "last",
+      "forms": [
+        "último",
+        "última",
+        "o final",
+        "o de trás",
+        "o último da lista"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.nearby",
+      "group": "scope",
+      "canonical": "nearby",
+      "forms": [
+        "mais perto",
+        "o mais próximo",
+        "perto de mim",
+        "aqui perto",
+        "mais perto daqui"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.global",
+      "group": "scope",
+      "canonical": "global",
+      "forms": [
+        "na casa toda",
+        "em toda a casa",
+        "na residência inteira",
+        "em todos os cômodos",
+        "na casa inteira",
+        "em tudo da casa"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "bulk_sensitive",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "scope.group",
+      "group": "scope",
+      "canonical": "group",
+      "forms": [
+        "grupo",
+        "conjunto",
+        "todos do grupo",
+        "ambiente",
+        "zona",
+        "grupo de luzes"
+      ],
+      "relation": "operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Quantificadores e operadores nunca são apagados por stopword; efetividade depende de conjuntos e exclusões autorizados.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "spatial.origin",
+      "group": "spatial",
+      "canonical": "origin_area",
+      "forms": [
+        "aqui",
+        "daqui",
+        "neste quarto",
+        "nesse ambiente",
+        "onde eu estou",
+        "aqui na sala",
+        "nesse cômodo",
+        "em volta de mim"
+      ],
+      "relation": "reference_operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Referências indexicais exigem origem autenticada; nomes reais de áreas/andares são DINÂMICOS do HA, não deste catálogo.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "spatial.home",
+      "group": "spatial",
+      "canonical": "home",
+      "forms": [
+        "casa",
+        "residência",
+        "lar",
+        "minha casa",
+        "a casa inteira"
+      ],
+      "relation": "reference_operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Referências indexicais exigem origem autenticada; nomes reais de áreas/andares são DINÂMICOS do HA, não deste catálogo.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "spatial.area",
+      "group": "spatial",
+      "canonical": "area",
+      "forms": [
+        "cômodo",
+        "ambiente",
+        "aposento",
+        "quarto",
+        "divisão da casa",
+        "área"
+      ],
+      "relation": "reference_operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Referências indexicais exigem origem autenticada; nomes reais de áreas/andares são DINÂMICOS do HA, não deste catálogo.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "spatial.floor",
+      "group": "spatial",
+      "canonical": "floor",
+      "forms": [
+        "andar",
+        "piso",
+        "pavimento",
+        "térreo",
+        "primeiro andar",
+        "segundo andar"
+      ],
+      "relation": "reference_operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Referências indexicais exigem origem autenticada; nomes reais de áreas/andares são DINÂMICOS do HA, não deste catálogo.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "spatial.upstairs",
+      "group": "spatial",
+      "canonical": "upstairs",
+      "forms": [
+        "lá em cima",
+        "andar de cima",
+        "piso superior",
+        "parte de cima"
+      ],
+      "relation": "reference_operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Referências indexicais exigem origem autenticada; nomes reais de áreas/andares são DINÂMICOS do HA, não deste catálogo.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "spatial.downstairs",
+      "group": "spatial",
+      "canonical": "downstairs",
+      "forms": [
+        "lá embaixo",
+        "andar de baixo",
+        "piso inferior",
+        "térreo"
+      ],
+      "relation": "reference_operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Referências indexicais exigem origem autenticada; nomes reais de áreas/andares são DINÂMICOS do HA, não deste catálogo.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "spatial.there",
+      "group": "spatial",
+      "canonical": "there",
+      "forms": [
+        "aí",
+        "ali",
+        "lá",
+        "nesse lugar",
+        "naquele cômodo",
+        "lá na outra sala"
+      ],
+      "relation": "reference_operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Referências indexicais exigem origem autenticada; nomes reais de áreas/andares são DINÂMICOS do HA, não deste catálogo.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "spatial.previous",
+      "group": "spatial",
+      "canonical": "previous_area",
+      "forms": [
+        "naquele cômodo",
+        "onde estávamos falando",
+        "na sala anterior",
+        "no mesmo ambiente de antes"
+      ],
+      "relation": "reference_operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Referências indexicais exigem origem autenticada; nomes reais de áreas/andares são DINÂMICOS do HA, não deste catálogo.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "spatial.neighbor",
+      "group": "spatial",
+      "canonical": "neighbor_area",
+      "forms": [
+        "cômodo ao lado",
+        "sala vizinha",
+        "quarto ao lado",
+        "ambiente adjacente"
+      ],
+      "relation": "reference_operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Referências indexicais exigem origem autenticada; nomes reais de áreas/andares são DINÂMICOS do HA, não deste catálogo.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "spatial.zone",
+      "group": "spatial",
+      "canonical": "zone",
+      "forms": [
+        "em casa",
+        "fora de casa",
+        "no trabalho",
+        "no escritório",
+        "na escola"
+      ],
+      "relation": "reference_operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Referências indexicais exigem origem autenticada; nomes reais de áreas/andares são DINÂMICOS do HA, não deste catálogo.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "spatial.area_of",
+      "group": "spatial",
+      "canonical": "area_of_entity",
+      "forms": [
+        "onde fica o",
+        "onde está o",
+        "cômodo do",
+        "local do dispositivo"
+      ],
+      "relation": "reference_operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Referências indexicais exigem origem autenticada; nomes reais de áreas/andares são DINÂMICOS do HA, não deste catálogo.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "spatial.device_side",
+      "group": "spatial",
+      "canonical": "device_side",
+      "forms": [
+        "do lado da TV",
+        "perto da janela",
+        "próximo à porta",
+        "ao lado do sofá"
+      ],
+      "relation": "reference_operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Referências indexicais exigem origem autenticada; nomes reais de áreas/andares são DINÂMICOS do HA, não deste catálogo.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "spatial.orientation",
+      "group": "spatial",
+      "canonical": "orientation",
+      "forms": [
+        "esquerda",
+        "direita",
+        "na frente",
+        "atrás",
+        "perto da entrada"
+      ],
+      "relation": "reference_operator",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Referências indexicais exigem origem autenticada; nomes reais de áreas/andares são DINÂMICOS do HA, não deste catálogo.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.now",
+      "group": "temporal",
+      "canonical": "now",
+      "forms": [
+        "agora",
+        "já",
+        "imediatamente",
+        "nesse momento",
+        "neste instante",
+        "pra já"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.later",
+      "group": "temporal",
+      "canonical": "later",
+      "forms": [
+        "mais tarde",
+        "daqui a pouco",
+        "depois",
+        "daqui a um tempo",
+        "em breve"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.after_duration",
+      "group": "temporal",
+      "canonical": "after_duration",
+      "forms": [
+        "daqui a",
+        "dentro de",
+        "em cinco minutos",
+        "depois de",
+        "passados cinco minutos",
+        "daqui uns minutos"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.until",
+      "group": "temporal",
+      "canonical": "until",
+      "forms": [
+        "até",
+        "até às",
+        "até que",
+        "enquanto",
+        "por enquanto",
+        "até terminar"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.for_duration",
+      "group": "temporal",
+      "canonical": "for_duration",
+      "forms": [
+        "por",
+        "durante",
+        "por duas horas",
+        "ao longo de",
+        "pelo período de"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.at_time",
+      "group": "temporal",
+      "canonical": "at_time",
+      "forms": [
+        "às",
+        "as",
+        "na hora de",
+        "quando der",
+        "ao meio dia",
+        "à meia noite"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.today",
+      "group": "temporal",
+      "canonical": "today",
+      "forms": [
+        "hoje",
+        "neste dia",
+        "agora no dia de hoje"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.tomorrow",
+      "group": "temporal",
+      "canonical": "tomorrow",
+      "forms": [
+        "amanhã",
+        "no dia seguinte",
+        "dia de amanhã"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.yesterday",
+      "group": "temporal",
+      "canonical": "yesterday",
+      "forms": [
+        "ontem",
+        "dia anterior",
+        "dia de ontem"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.recurring",
+      "group": "temporal",
+      "canonical": "recurring",
+      "forms": [
+        "todo dia",
+        "diariamente",
+        "semanalmente",
+        "toda semana",
+        "todo mês",
+        "nos dias úteis",
+        "a cada hora"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.before",
+      "group": "temporal",
+      "canonical": "before",
+      "forms": [
+        "antes de",
+        "anterior a",
+        "até antes de"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.after",
+      "group": "temporal",
+      "canonical": "after",
+      "forms": [
+        "depois de",
+        "após",
+        "em seguida"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.recent",
+      "group": "temporal",
+      "canonical": "recent",
+      "forms": [
+        "últimos minutos",
+        "há pouco",
+        "recentemente",
+        "agora há pouco"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.historical",
+      "group": "temporal",
+      "canonical": "historical",
+      "forms": [
+        "semana passada",
+        "mês passado",
+        "antes de ontem",
+        "ano passado",
+        "há duas semanas"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.future",
+      "group": "temporal",
+      "canonical": "future",
+      "forms": [
+        "semana que vem",
+        "no próximo mês",
+        "daqui a um mês",
+        "no próximo fim de semana"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.clock_24h",
+      "group": "temporal",
+      "canonical": "clock_time",
+      "forms": [
+        "vinte e uma horas",
+        "21 horas",
+        "vinte e uma e trinta",
+        "21:30",
+        "nove e meia da noite"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.time_unit_seconds",
+      "group": "temporal",
+      "canonical": "seconds",
+      "forms": [
+        "segundo",
+        "segundos",
+        "seg",
+        "s"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.time_unit_minutes",
+      "group": "temporal",
+      "canonical": "minutes",
+      "forms": [
+        "minuto",
+        "minutos",
+        "min",
+        "mins"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.time_unit_hours",
+      "group": "temporal",
+      "canonical": "hours",
+      "forms": [
+        "hora",
+        "horas",
+        "h",
+        "horinhas"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "temporal.time_unit_days",
+      "group": "temporal",
+      "canonical": "days",
+      "forms": [
+        "dia",
+        "dias",
+        "24 horas"
+      ],
+      "relation": "temporal_parse_candidate",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Tempo pode ser comando agendado, histórico ou condição não suportada; parsear com precisão, não executar rotina contínua automaticamente.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.confirm",
+      "group": "dialogue",
+      "canonical": "confirm",
+      "forms": [
+        "sim",
+        "isso",
+        "exatamente",
+        "pode",
+        "confirmo",
+        "correto",
+        "é esse",
+        "é essa",
+        "isso mesmo",
+        "pode fazer"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.deny",
+      "group": "dialogue",
+      "canonical": "deny",
+      "forms": [
+        "não",
+        "nao",
+        "negativo",
+        "de jeito nenhum",
+        "não é esse",
+        "não quero",
+        "não faz",
+        "deixa"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.cancel",
+      "group": "dialogue",
+      "canonical": "cancel",
+      "forms": [
+        "cancela",
+        "cancele",
+        "esquece",
+        "deixa pra lá",
+        "não precisa",
+        "para tudo",
+        "pode cancelar"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.correction",
+      "group": "dialogue",
+      "canonical": "correct",
+      "forms": [
+        "quer dizer",
+        "na verdade",
+        "corrigindo",
+        "não, eu quis dizer",
+        "troca por",
+        "era",
+        "é que",
+        "eu falei"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.specify_target",
+      "group": "dialogue",
+      "canonical": "specify_target",
+      "forms": [
+        "a luz do",
+        "é a lâmpada do",
+        "o aparelho chamado",
+        "aquele que fica",
+        "a da",
+        "a que está"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.specify_action",
+      "group": "dialogue",
+      "canonical": "specify_action",
+      "forms": [
+        "é pra ligar",
+        "quis dizer desligar",
+        "pra apagar",
+        "quero que desligue",
+        "só ligar"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.specify_area",
+      "group": "dialogue",
+      "canonical": "specify_area",
+      "forms": [
+        "na sala",
+        "no quarto",
+        "na cozinha",
+        "aqui",
+        "no mesmo cômodo",
+        "naquele ambiente"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.specify_time",
+      "group": "dialogue",
+      "canonical": "specify_time",
+      "forms": [
+        "às sete",
+        "daqui a dez minutos",
+        "amanhã de manhã",
+        "às nove e meia"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.continuation",
+      "group": "dialogue",
+      "canonical": "continue",
+      "forms": [
+        "também",
+        "o outro também",
+        "agora o próximo",
+        "agora a da sala",
+        "faz igual no outro",
+        "e o da cozinha"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.repeat",
+      "group": "dialogue",
+      "canonical": "repeat",
+      "forms": [
+        "repete",
+        "repita",
+        "fala de novo",
+        "pode repetir",
+        "não escutei",
+        "repete a resposta"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.more_info",
+      "group": "dialogue",
+      "canonical": "more_info",
+      "forms": [
+        "explica melhor",
+        "como assim",
+        "me explica",
+        "detalha",
+        "fala mais",
+        "pode aprofundar"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.different",
+      "group": "dialogue",
+      "canonical": "different",
+      "forms": [
+        "outra",
+        "outro",
+        "faz diferente",
+        "uma diferente",
+        "me dá outra",
+        "sem repetir"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.restart",
+      "group": "dialogue",
+      "canonical": "restart",
+      "forms": [
+        "recomeça",
+        "começa de novo",
+        "esquece o anterior",
+        "novo pedido",
+        "muda de assunto"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.what_understood",
+      "group": "dialogue",
+      "canonical": "what_understood",
+      "forms": [
+        "o que você entendeu",
+        "qual foi o pedido",
+        "o que faltou",
+        "o que você ouviu"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.choice_index",
+      "group": "dialogue",
+      "canonical": "choice_index",
+      "forms": [
+        "a primeira",
+        "a segunda",
+        "a terceira",
+        "a última",
+        "opção dois",
+        "a do meio"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.pronoun_ellipsis",
+      "group": "dialogue",
+      "canonical": "referent",
+      "forms": [
+        "essa",
+        "esse",
+        "aquele",
+        "aquela",
+        "dela",
+        "dele",
+        "daí",
+        "isso",
+        "esse aí",
+        "o mesmo"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.polite",
+      "group": "dialogue",
+      "canonical": "politeness",
+      "forms": [
+        "por favor",
+        "por gentileza",
+        "poderia",
+        "pode",
+        "se puder",
+        "faz favor",
+        "por obséquio"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.filler",
+      "group": "dialogue",
+      "canonical": "filler",
+      "forms": [
+        "é",
+        "eh",
+        "hum",
+        "ahn",
+        "tipo",
+        "assim",
+        "né",
+        "bom",
+        "pera",
+        "olha só"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "dialogue.general_conversation",
+      "group": "dialogue",
+      "canonical": "conversation",
+      "forms": [
+        "conta uma piada",
+        "me conta algo",
+        "me explica",
+        "me diz uma curiosidade",
+        "escreve uma história",
+        "me ajuda a entender",
+        "vamos conversar"
+      ],
+      "relation": "dialogue_act",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Uma resposta de esclarecimento preenche somente o slot pendente preservando a intenção original, se mesma sessão autenticada; não dispara comando isolado por default.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.imperative",
+      "group": "syntax",
+      "canonical": "imperative",
+      "forms": [
+        "ligue a luz",
+        "liga a luz",
+        "quero a luz ligada",
+        "pode ligar a luz",
+        "deixa a luz ligada"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.interrogative_request",
+      "group": "syntax",
+      "canonical": "polite_request",
+      "forms": [
+        "você consegue ligar",
+        "poderia desligar",
+        "tem como acender",
+        "dá para apagar",
+        "será que pode ligar"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.topic_fronting",
+      "group": "syntax",
+      "canonical": "topic_fronting",
+      "forms": [
+        "a luz da sala, desliga",
+        "na sala desliga os aparelhos",
+        "quanto à TV, liga",
+        "o ventilador, deixa ligado"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.postposed_area",
+      "group": "syntax",
+      "canonical": "area_after",
+      "forms": [
+        "liga as luzes da sala",
+        "liga as luzes aqui",
+        "desliga o ventilador no quarto"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.preposed_area",
+      "group": "syntax",
+      "canonical": "area_before",
+      "forms": [
+        "na sala, desliga as luzes",
+        "no quarto liga o ventilador",
+        "da cozinha apaga a luz"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.indirect_command",
+      "group": "syntax",
+      "canonical": "indirect_command",
+      "forms": [
+        "queria deixar a sala escura",
+        "tá muito claro aqui",
+        "tá calor aqui",
+        "dá pra deixar mais frio"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.nominal_request",
+      "group": "syntax",
+      "canonical": "nominal_request",
+      "forms": [
+        "luz da sala apagada",
+        "ventilador no máximo",
+        "TV desligada",
+        "volume dez"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.state_question",
+      "group": "syntax",
+      "canonical": "state_question",
+      "forms": [
+        "a luz está acesa",
+        "tem luz ligada",
+        "estão ligadas as lâmpadas",
+        "quantos estão ligados"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.negative_polarity",
+      "group": "syntax",
+      "canonical": "negative_polarity",
+      "forms": [
+        "não liga",
+        "não desligue",
+        "não acenda",
+        "não apaga",
+        "não mexa",
+        "deixe como está"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.excluded_component",
+      "group": "syntax",
+      "canonical": "excluded_component",
+      "forms": [
+        "tudo menos a tv",
+        "luzes exceto a do teto",
+        "todas as coisas salvo o ar",
+        "todos menos o quarto"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.multi_action",
+      "group": "syntax",
+      "canonical": "multi_action",
+      "forms": [
+        "liga a luz e desliga a tv",
+        "abre a persiana depois liga a lâmpada",
+        "acende e abaixa o brilho"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.embedded_quotation",
+      "group": "syntax",
+      "canonical": "quoted_not_command",
+      "forms": [
+        "ele disse para apagar",
+        "a frase é liga a luz",
+        "traduza desliga tudo",
+        "me explica a expressão ligar o ar"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.code_switch",
+      "group": "syntax",
+      "canonical": "code_switch",
+      "forms": [
+        "turn on a luz",
+        "liga o fan",
+        "play música",
+        "resume a TV",
+        "volume up",
+        "turn off o ar"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.contraction",
+      "group": "syntax",
+      "canonical": "contraction",
+      "forms": [
+        "pra",
+        "para",
+        "pro",
+        "para o",
+        "pras",
+        "para as",
+        "tá",
+        "está",
+        "tão",
+        "estão",
+        "cê",
+        "você"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.gender_number",
+      "group": "syntax",
+      "canonical": "gender_number",
+      "forms": [
+        "ligado",
+        "ligada",
+        "ligados",
+        "ligadas",
+        "aceso",
+        "acesa",
+        "acesos",
+        "acesas"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.degree_affection",
+      "group": "syntax",
+      "canonical": "degree_affection",
+      "forms": [
+        "luzinha",
+        "luzão",
+        "ventiladorzinho",
+        "abajurzinho",
+        "arzin",
+        "telão",
+        "caixinha"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    },
+    {
+      "id": "syntax.asr_disfluency",
+      "group": "syntax",
+      "canonical": "asr_disfluency",
+      "forms": [
+        "liga a ah luz da sala",
+        "desliga desliga as luzes",
+        "quero a TV não a luz",
+        "é pra desligar aquele",
+        "liga, quer dizer, desliga"
+      ],
+      "relation": "grammar_pattern_seed",
+      "domain_candidates": [],
+      "required_capability_candidates": [],
+      "safety": "normal",
+      "notes": "Frases nesta família ilustram transformações do parser. Não transformar em regex universal nem declarar todas equivalentes entre si.",
+      "provenance": "curadoria_ptbr"
+    }
+  ],
+  "ambiguities": [
+    {
+      "surface": "ar",
+      "candidate_senses": [
+        "climate",
+        "air_quality_sensor",
+        "fan",
+        "air_purifier"
+      ],
+      "notes": "'ar' é ambíguo fora de contexto; alvo depende de inventário e capacidades",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "termostato",
+      "candidate_senses": [
+        "climate",
+        "temperature_sensor",
+        "number_helper"
+      ],
+      "notes": "Termostato pode indicar controle de setpoint ou apenas leitura",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "luz",
+      "candidate_senses": [
+        "lighting",
+        "illuminance_sensor",
+        "switch"
+      ],
+      "notes": "Medir luz não é o mesmo que comandar iluminação",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "lâmpada",
+      "candidate_senses": [
+        "lighting",
+        "switch"
+      ],
+      "notes": "Tomada nomeada lâmpada pode ser alvo por alias, mas não tem features de light",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "som",
+      "candidate_senses": [
+        "media_player",
+        "sound_level"
+      ],
+      "notes": "Volume de caixa é comando; nível sonoro é sensor",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "volume",
+      "candidate_senses": [
+        "volume",
+        "water_level"
+      ],
+      "notes": "Volume de áudio versus quantidade/volume físico",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "porta",
+      "candidate_senses": [
+        "door_cover",
+        "lock",
+        "contact_sensor"
+      ],
+      "notes": "Abertura, travamento e sensor de abertura são ações e estados diferentes",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "janela",
+      "candidate_senses": [
+        "window_cover",
+        "contact_sensor"
+      ],
+      "notes": "Janela física não é necessariamente entidade cover",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "portão",
+      "candidate_senses": [
+        "garage",
+        "lock",
+        "contact_sensor"
+      ],
+      "notes": "Abertura de portão versus sensor e fechadura",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "interruptor",
+      "candidate_senses": [
+        "switch",
+        "lighting",
+        "boolean_helper"
+      ],
+      "notes": "Interruptor pode controlar luz ou circuito genérico",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "tomada",
+      "candidate_senses": [
+        "outlet",
+        "switch",
+        "power_sensor"
+      ],
+      "notes": "Tomada controlável vs medidor da mesma tomada",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "TV",
+      "candidate_senses": [
+        "television",
+        "media_player",
+        "remote",
+        "switch"
+      ],
+      "notes": "Televisor pode estar em media_player/remote/switch e ter múltiplas entidades",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "controle",
+      "candidate_senses": [
+        "remote",
+        "thermostat",
+        "number_helper"
+      ],
+      "notes": "Controle remoto vs controlador/slider",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "clima",
+      "candidate_senses": [
+        "climate_unit",
+        "weather",
+        "air_quality_sensor"
+      ],
+      "notes": "Clima externo vs climatização do cômodo",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "temperatura",
+      "candidate_senses": [
+        "temperature_sensor",
+        "climate_unit",
+        "thermostat",
+        "metric.temperature"
+      ],
+      "notes": "Temperatura medida vs temperatura desejada",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "aberto",
+      "candidate_senses": [
+        "state.open",
+        "lock",
+        "door_cover"
+      ],
+      "notes": "Aberto pode ser cover, porta não trancada ou estado de sensor",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "fechado",
+      "candidate_senses": [
+        "state.closed",
+        "lock",
+        "door_cover"
+      ],
+      "notes": "Fechado != trancado",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "para",
+      "candidate_senses": [
+        "action.media_stop",
+        "temporal.for_duration",
+        "syntax.contraction"
+      ],
+      "notes": "'para' verbo de parar ou preposição",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "toca",
+      "candidate_senses": [
+        "action.media_play",
+        "door_cover"
+      ],
+      "notes": "Tocar música vs contato físico",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "liga",
+      "candidate_senses": [
+        "action.turn_on",
+        "conversation"
+      ],
+      "notes": "Ligar aparelho vs telefonar para pessoa",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "desliga",
+      "candidate_senses": [
+        "action.turn_off",
+        "media_player",
+        "vacuum"
+      ],
+      "notes": "Desligar sem distinguir pausa/parada/retorno à base",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "apaga",
+      "candidate_senses": [
+        "action.turn_off",
+        "todo",
+        "script"
+      ],
+      "notes": "Apagar luz vs apagar item/dado",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "ativa",
+      "candidate_senses": [
+        "action.turn_on",
+        "scene",
+        "automation"
+      ],
+      "notes": "Ativar uma cena não é o mesmo que habilitar automação",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "inicia",
+      "candidate_senses": [
+        "action.media_play",
+        "vacuum",
+        "timer",
+        "script"
+      ],
+      "notes": "Iniciar depende do objeto",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "cancela",
+      "candidate_senses": [
+        "action.timer_cancel",
+        "reminder",
+        "automation",
+        "dialogue.cancel"
+      ],
+      "notes": "Cancelar tarefa/agendamento vs cancelar confirmação",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "timer",
+      "candidate_senses": [
+        "timer",
+        "alarm_clock",
+        "reminder"
+      ],
+      "notes": "Timer, alarme e lembrete não têm o mesmo ciclo de vida",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "alarme",
+      "candidate_senses": [
+        "alarm_panel",
+        "alarm_clock"
+      ],
+      "notes": "Alarme de segurança versus despertador",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "botão",
+      "candidate_senses": [
+        "button_helper",
+        "switch",
+        "input_boolean"
+      ],
+      "notes": "Botão momentâneo vs toggle persistente",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "estado",
+      "candidate_senses": [
+        "metric.state",
+        "zone",
+        "entity"
+      ],
+      "notes": "Estado de dispositivo vs localização geográfica",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "modo",
+      "candidate_senses": [
+        "scene",
+        "climate_unit",
+        "media_player",
+        "script"
+      ],
+      "notes": "Modo cena vs HVAC vs perfil de mídia",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "limpa",
+      "candidate_senses": [
+        "vacuum",
+        "todo",
+        "script"
+      ],
+      "notes": "Limpar chão vs limpar lista",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "grande",
+      "candidate_senses": [
+        "metric.brightness",
+        "metric.volume",
+        "metric.temperature"
+      ],
+      "notes": "Intensidade, volume e comparação relativa são contextuais",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "quente",
+      "candidate_senses": [
+        "metric.temperature",
+        "metric.color_temperature"
+      ],
+      "notes": "Iluminação quente != temperatura do ar",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "frio",
+      "candidate_senses": [
+        "metric.temperature",
+        "metric.color_temperature"
+      ],
+      "notes": "Luz fria != HVAC resfriando",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "todos",
+      "candidate_senses": [
+        "scope.all",
+        "query.all"
+      ],
+      "notes": "Quantificador de ação ou operador de consulta",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "ninguém",
+      "candidate_senses": [
+        "person",
+        "presence_sensor"
+      ],
+      "notes": "Ausência de presença vs lista de pessoas",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "casa",
+      "candidate_senses": [
+        "spatial.home",
+        "zone"
+      ],
+      "notes": "Residência/área versus zona de presença",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "sala",
+      "candidate_senses": [
+        "spatial.area",
+        "entity"
+      ],
+      "notes": "Área concreta é dinâmica, pode fazer parte de nome do dispositivo",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "abacate",
+      "candidate_senses": [
+        "entity.dynamic_alias",
+        "unknown_word"
+      ],
+      "notes": "Nome arbitrário só é vinculável ao inventário, nunca a uma categoria global",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "janela aberta",
+      "candidate_senses": [
+        "contact_sensor",
+        "window_cover"
+      ],
+      "notes": "Estado observado vs comando de fechar",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "energia",
+      "candidate_senses": [
+        "energy_sensor",
+        "power_sensor"
+      ],
+      "notes": "kWh acumulado não é W instantâneo",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    },
+    {
+      "surface": "ativo",
+      "candidate_senses": [
+        "state.on",
+        "automation",
+        "alarm_panel"
+      ],
+      "notes": "Habilitado != executando e armado != ligado",
+      "handling": "Use contexto, inventário autorizado, actions, device_class, area, estado, histórico da sessão; preserve incerteza quando não distinguir"
+    }
+  ],
+  "non_equivalences": [
+    {
+      "a": "sensor de temperatura",
+      "b": "termostato",
+      "reason": "Leitura ≠ ajuste de setpoint",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "ar-condicionado",
+      "b": "ventilador",
+      "reason": "Resfriamento ≠ ventilação",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "ar-condicionado",
+      "b": "purificador de ar",
+      "reason": "Refrigeração ≠ filtragem",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "desligar",
+      "b": "pausar",
+      "reason": "Desligar ≠ pausar reprodução ou robô",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "pausar",
+      "b": "retornar à base",
+      "reason": "Pause ≠ dock",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "fechar porta",
+      "b": "trancar porta",
+      "reason": "Fechar ≠ trancar",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "abrir portão",
+      "b": "destrancar fechadura",
+      "reason": "Operações distintas",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "câmera",
+      "b": "sensor de presença",
+      "reason": "Vídeo ≠ estado de presença",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "tocar música",
+      "b": "ligar televisão",
+      "reason": "Reprodução ≠ energia do dispositivo",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "luz quente",
+      "b": "aquecer o ar",
+      "reason": "Temperatura de cor ≠ HVAC",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "consumo em W",
+      "b": "consumo em kWh",
+      "reason": "Potência instantânea ≠ energia acumulada",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "alarme de segurança",
+      "b": "despertador",
+      "reason": "Segurança ≠ agendamento de horário",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "lembrete",
+      "b": "timer",
+      "reason": "Aviso com conteúdo ≠ contagem regressiva",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "ativar automação",
+      "b": "executar automação",
+      "reason": "Habilitar regra ≠ disparar agora",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "executar cena",
+      "b": "ativar automação",
+      "reason": "Scene activate ≠ automation enable",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "script",
+      "b": "automação",
+      "reason": "Mecanismos HA distintos",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "todos os equipamentos",
+      "b": "todos os equipamentos inclusive fechaduras",
+      "reason": "Bulk não amplia permissões/política",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "tudo da sala",
+      "b": "tudo da casa",
+      "reason": "Escopos distintos",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "mais alto",
+      "b": "aumentar temperatura",
+      "reason": "Mais alto sem atributo não autoriza escolha",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "tudo menos TV",
+      "b": "tudo inclusive TV",
+      "reason": "Exclusão é imutável",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "deixa como está",
+      "b": "liga",
+      "reason": "Comando negativo/estado preservado não deve executar",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "não apaga",
+      "b": "apaga",
+      "reason": "Polaridade invertida",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "câmera ligada",
+      "b": "câmera transmitindo",
+      "reason": "Atributos distintos",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "abajur da sala",
+      "b": "abajur de outro cômodo",
+      "reason": "Área explícita é restrição, não preferência",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "áudio alto",
+      "b": "luminosidade alta",
+      "reason": "Intensidades diferentes",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "sala desligada",
+      "b": "sala sem ninguém",
+      "reason": "Desligar aparelhos ≠ detecção de ocupação",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "lista de compras",
+      "b": "lista de tarefas",
+      "reason": "Listas distintas salvo inventário",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "apagar item",
+      "b": "marcar item concluído",
+      "reason": "Remover ≠ concluir",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "desliga o abacate",
+      "b": "desliga qualquer dispositivo da sala",
+      "reason": "Nome arbitrário não justifica substituição",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "sim",
+      "b": "executar sem contexto",
+      "reason": "Afirmação só confirma sessão pendente válida",
+      "expected": "not_unconditional_equivalent"
+    },
+    {
+      "a": "luz da abacate",
+      "b": "luz do abacate",
+      "reason": "Morfologia irregular não deve corromper nome próprio",
+      "expected": "not_unconditional_equivalent"
+    }
+  ],
+  "asr_families": [
+    {
+      "category": "phoneme",
+      "name": "troca fonética",
+      "forms": [
+        "ligua",
+        "ligga",
+        "ligna",
+        "liga"
+      ],
+      "strategy": "Corrigir ação apenas quando evidência de slot e transcrição favorecer"
+    },
+    {
+      "category": "phoneme",
+      "name": "supressão de sílaba",
+      "forms": [
+        "desliga",
+        "deslige",
+        "deslga",
+        "dizliga"
+      ],
+      "strategy": "Preservar negação e sufixos"
+    },
+    {
+      "category": "homophone",
+      "name": "homofonia de TV",
+      "forms": [
+        "teve",
+        "te vê",
+        "te ve",
+        "tevê",
+        "TV"
+      ],
+      "strategy": "Não corrigir a palavra teve em conversa genérica para aparelho TV"
+    },
+    {
+      "category": "prosody",
+      "name": "preposição reduzida",
+      "forms": [
+        "pra",
+        "para",
+        "pro",
+        "para o",
+        "pá",
+        "p/"
+      ],
+      "strategy": "Normalização sintática reversível"
+    },
+    {
+      "category": "prosody",
+      "name": "ser/estar reduzidos",
+      "forms": [
+        "tá",
+        "está",
+        "tão",
+        "estão",
+        "tavam",
+        "estavam"
+      ],
+      "strategy": "Não supor sujeito apenas pelo verbo"
+    },
+    {
+      "category": "inflection",
+      "name": "número verbal",
+      "forms": [
+        "liga",
+        "ligue",
+        "liguem",
+        "ligar",
+        "ligasse"
+      ],
+      "strategy": "Não converter condição em imperativo"
+    },
+    {
+      "category": "inflection",
+      "name": "plural leve",
+      "forms": [
+        "luz",
+        "luzes",
+        "lâmpada",
+        "lâmpadas",
+        "luminária",
+        "luminárias"
+      ],
+      "strategy": "Plural como operador de conjunto"
+    },
+    {
+      "category": "orthography",
+      "name": "diacríticos",
+      "forms": [
+        "lampada",
+        "lâmpada",
+        "lampadas",
+        "lâmpadas"
+      ],
+      "strategy": "Preservar grafia original em nomes próprios"
+    },
+    {
+      "category": "orthography",
+      "name": "hífen",
+      "forms": [
+        "ar condicionado",
+        "ar-condicionado",
+        "arcondicionado"
+      ],
+      "strategy": "Uma equivalência lexical, não domínio fixo"
+    },
+    {
+      "category": "orthography",
+      "name": "siglas",
+      "forms": [
+        "tv",
+        "TV",
+        "tê vê",
+        "teve",
+        "T.V."
+      ],
+      "strategy": "Distinguir fala de homófono"
+    },
+    {
+      "category": "lexical",
+      "name": "nome inventado",
+      "forms": [
+        "abacate",
+        "lampada abacate",
+        "luz do abacate",
+        "luz abacate"
+      ],
+      "strategy": "Não forçar nome fora de vocabulário a palavra comum"
+    },
+    {
+      "category": "lexical",
+      "name": "múltiplas palavras",
+      "forms": [
+        "luz do abacate",
+        "a luz do abacate",
+        "abacate da sala"
+      ],
+      "strategy": "Alias por phrase trie dinâmico"
+    },
+    {
+      "category": "speech",
+      "name": "pausas",
+      "forms": [
+        "liga... é... a luz",
+        "desliga, desliga a luz",
+        "desliga é a luz"
+      ],
+      "strategy": "Não remover informação crítica"
+    },
+    {
+      "category": "speech",
+      "name": "autocorreção",
+      "forms": [
+        "liga não desliga",
+        "liga quer dizer desliga",
+        "não, apaga a luz"
+      ],
+      "strategy": "Última correção explícita revisa slot"
+    },
+    {
+      "category": "speech",
+      "name": "ruído",
+      "forms": [
+        "luga a tv",
+        "dilga o ar",
+        "apaga os pompeiros"
+      ],
+      "strategy": "Não forçar execução com evidência fraca"
+    },
+    {
+      "category": "speech",
+      "name": "coexistência marcas",
+      "forms": [
+        "Fire TV",
+        "Apple TV",
+        "Google TV",
+        "Alexa",
+        "Piper"
+      ],
+      "strategy": "Marcas como nome de catálogo, não token reservado"
+    },
+    {
+      "category": "code_switch",
+      "name": "mistura de idiomas",
+      "forms": [
+        "turn on luz",
+        "liga fan",
+        "play música",
+        "mute a TV"
+      ],
+      "strategy": "Manter semântica, sem tradução irrestrita"
+    }
+  ],
+  "morphological_rules": [
+    {
+      "class": "Unicode NFKC + casefold",
+      "rule": "Normalizar para busca, manter substring original e offsets Unicode."
+    },
+    {
+      "class": "diacríticos reversíveis",
+      "rule": "lampada/lâmpada para lookup; nunca alterar nome canônico em respostas/ações."
+    },
+    {
+      "class": "espaço e pontuação",
+      "rule": "Vírgulas, pausas, reticências, pontuação não devem derrubar a intenção."
+    },
+    {
+      "class": "hífen em compostos",
+      "rule": "ar-condicionado, ar condicionado, arcondicionado; preserve relação com nome próprio."
+    },
+    {
+      "class": "singular/plural regular e irregular",
+      "rule": "luz/luzes, papel/papéis, ventilador/ventiladores, portão/portões, dispositivo/dispositivos."
+    },
+    {
+      "class": "gênero concordância",
+      "rule": "ligado/ligada, aceso/acesa, aberto/aberta; preservar sujeito."
+    },
+    {
+      "class": "flexões verbais",
+      "rule": "liga/ligue/ligar/acende/acenda, pergunta vs intenção, tempos e modo imperativo."
+    },
+    {
+      "class": "concordância de quantificadores",
+      "rule": "tudo/todas/todos/alguns/nenhum; scope semantics independente do nome."
+    },
+    {
+      "class": "contrações",
+      "rule": "na/no/nas/nos, da/do/das/dos, pra/pro/para; recuperar span de local."
+    },
+    {
+      "class": "elipses",
+      "rule": "e a cozinha?, o outro também, só a luz azul; preencher slots de sessão."
+    },
+    {
+      "class": "diminutivos e aumentativos com bloqueio",
+      "rule": "luzinha, caixinha, telão podem ser apelidos; não stemmar nomes automaticamente."
+    },
+    {
+      "class": "permutação de constituintes",
+      "rule": "liga a TV da sala = na sala liga a TV, se mesmo escopo/ação."
+    },
+    {
+      "class": "negativas e exclusões",
+      "rule": "não, nem, menos, exceto, tirando são operadores preservados."
+    },
+    {
+      "class": "postos de cortesia",
+      "rule": "por favor, por gentileza, pode, queria; pode ser permissão ou contexto, não apagar cega."
+    },
+    {
+      "class": "ordinal e deíctico",
+      "rule": "primeiro, o do meio, aquele ali: só resolver com referente e fonte válidos."
+    },
+    {
+      "class": "números e decimais",
+      "rule": "20, vinte, vinte e cinco, 25%, 25 graus, 2 e meio; respeitar unidades e ranges."
+    },
+    {
+      "class": "comparativos",
+      "rule": "mais/menos/maior/menor/mais claro/mais alto devem anexar atributo."
+    },
+    {
+      "class": "expressões idiomáticas",
+      "rule": "bota pra rodar, dá uma ligada, deixa no máximo: interpretação contextual, nunca replace de token."
+    },
+    {
+      "class": "código alternado",
+      "rule": "turn on luz, mute TV, streaming: incorporar variantes sem criar dispositivos."
+    },
+    {
+      "class": "erros ASR corrigíveis",
+      "rule": "phonetic/edit/metadados do STT, mas manter hipótese e spans originais."
+    }
+  ],
+  "dynamic_sources": [
+    {
+      "source": "Home Assistant entity_registry",
+      "fields": [
+        "entity_id",
+        "name",
+        "original_name",
+        "aliases",
+        "device_id",
+        "platform"
+      ]
+    },
+    {
+      "source": "Home Assistant state machine",
+      "fields": [
+        "friendly_name",
+        "state",
+        "supported_features",
+        "device_class",
+        "state_class",
+        "unit_of_measurement"
+      ]
+    },
+    {
+      "source": "Home Assistant area_registry",
+      "fields": [
+        "area_id",
+        "name",
+        "aliases",
+        "floor_id"
+      ]
+    },
+    {
+      "source": "Home Assistant floor_registry",
+      "fields": [
+        "floor_id",
+        "name",
+        "aliases"
+      ]
+    },
+    {
+      "source": "Home Assistant device_registry",
+      "fields": [
+        "device_id",
+        "name",
+        "name_by_user",
+        "area_id",
+        "manufacturer",
+        "model"
+      ]
+    },
+    {
+      "source": "HACS configuration",
+      "fields": [
+        "exposed_entities",
+        "entity_preferences",
+        "device_mappings",
+        "allowed_actions",
+        "bulk_exclusions"
+      ]
+    },
+    {
+      "source": "Conversation Session",
+      "fields": [
+        "user_id",
+        "origin",
+        "conversation_id",
+        "pending_clarification",
+        "unresolved_slots",
+        "last_validated_catalog_generation"
+      ]
+    }
+  ],
+  "expected_resolution_order": [
+    "exact_authorized_alias_or_entity_name",
+    "morphological_normalization_and_phrase_match",
+    "semantic_concept_candidates_and_capability_filter",
+    "spatial_or_session_reference",
+    "decision_multifield_ranking",
+    "llm_independent_grounded_graph_retrieval",
+    "nlu_review_and_ha_authorization"
+  ]
+}

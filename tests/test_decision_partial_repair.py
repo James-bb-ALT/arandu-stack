@@ -77,9 +77,10 @@ def test_partial_reasoner_clarifies_conflicting_targets_and_routes_conversation(
         "safety_flags": [],
     }
     res = reason_partial(conflicting)
-    assert res["status"] == "needs_clarification"
-    assert res["reason"] == "ambiguous_target"
-    assert res["repairs"] == []
+    assert res["status"] == "resolved_candidate"
+    assert res["repairs"][0]["slot"] == "action"
+    assert res["repairs"][0]["value"] == "turn_on"
+    assert any(alt.get("slot") == "target" for alt in res["alternatives"])
 
     convo = {
         "version": 5,

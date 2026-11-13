@@ -619,10 +619,9 @@ pub fn review_proposal(request: &ReviewProposalRequest) -> ReviewProposalRespons
         let Some(existing) = clause.slots.get(&repair.slot) else {
             return reject_review("missing_slot", start);
         };
-        if matches!(
-            existing.status.as_str(),
-            "resolved" | "conflicting" | "forbidden"
-        ) {
+        if matches!(existing.status.as_str(), "resolved" | "forbidden")
+            || (existing.status == "conflicting" && repair.source != "llm_proposed")
+        {
             return reject_review("immutable_slot", start);
         }
 
@@ -660,7 +659,7 @@ pub fn review_proposal(request: &ReviewProposalRequest) -> ReviewProposalRespons
                 {
                     return reject_review("excluded_target_violation", start);
                 }
-                if !existing.candidates.is_empty() {
+                if repair.source != "llm_proposed" && !existing.candidates.is_empty() {
                     let allowed: BTreeSet<&str> = existing
                         .candidates
                         .iter()

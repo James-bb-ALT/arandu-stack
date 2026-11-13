@@ -102,11 +102,11 @@ class Routing(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.last_payload['nlu'], {'status': 'no_match', 'reason': 'unknown_intent'})
         self.assertEqual(self.last_payload['decision']['decision_status'], 'uncalibrated')
 
-    async def test_clarification_never_calls_models(self):
+    async def test_clarification_ambiguous_target_escalates_to_models(self):
         self.policy(True,True)
         self.client.response={'version':4,'status':'clarification','reason':'ambiguous_target','candidates':['reg_light']}
-        self.assertEqual((await self.runtime.process(input_())).code,'missing_slot')
-        self.assertEqual(self.calls,[])
+        self.assertEqual((await self.runtime.process(input_())).code,'success')
+        self.assertIn('decision', self.calls)
 
     async def test_invalid_target_or_action_never_executes(self):
         self.policy(False,True)
@@ -199,6 +199,6 @@ class Routing(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result['stages']['decision']['status'],'skipped')
 
     def test_security_statuses_are_not_semantic_fallback(self):
-        for status,reason in [('invalid_request',None),('stale',None),('unavailable',None),
-                              ('clarification','ambiguous_target'),('no_match','permission_denied'),('no_match','no_compatible_capability')]:
+        for status,reason in [('invalid_request',None),('stale',None),('no_match','permission_denied'),
+                              ('no_match','semantic_negation'),('no_match','prompt_injection')]:
             self.assertFalse(eligible(Outcome(status,reason=reason)))

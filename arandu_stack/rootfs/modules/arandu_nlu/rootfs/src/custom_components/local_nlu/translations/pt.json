@@ -1,0 +1,151 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "O Local NLU já está configurado.",
+      "single_instance_allowed": "Somente uma instância do Local NLU é permitida.",
+      "invalid_discovery": "O anúncio não corresponde a uma instalação válida do Arandu Stack."
+    },
+    "error": {
+      "cannot_connect": "Não foi possível conectar ao add-on local."
+    },
+    "step": {
+      "user": {
+        "data": {
+          "endpoint": "Endpoint NLU (automático, porta 11555)",
+          "stack_endpoint": "Endpoint Arandu Stack (opcional, porta 8099)"
+        },
+        "description": "O endereço é preenchido a partir do app instalado no Supervisor. Deixe vazio para detectar automaticamente; fora do HA OS, informe o endereço manualmente.",
+        "title": "Conectar Arandu Assistant"
+      },
+      "hassio_confirm": {
+        "title": "Arandu Assistant",
+        "description": "O app Arandu Assistant foi encontrado em {endpoint}. Confirme para adicionar o agente de conversa. Os endereços NLU e painel serão preenchidos automaticamente."
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configurar Arandu Assistant",
+        "description": "Escolha o que deseja configurar. As associações de áudio e identidade podem ser revisadas e cadastradas em sequência.",
+        "menu_options": {
+          "voice_output": "Saídas de áudio — ver e editar associações",
+          "identity_binding": "Identidade de voz — usuários e associações",
+          "announcements": "Avisos por voz (Intercom) — áreas e satélites",
+          "intelligence": "Camadas de inteligência",
+          "settings": "Outras configurações",
+          "performance": "Filas e limites"
+        }
+      },
+      "announcements": {
+        "title": "Avisos por voz (Intercom)",
+        "description": "**Destinos de aviso configurados**\n\n{destinations}\n\nEscolha uma área e associe um satélite Assist OU media player para receber anúncios dirigidos. Para remover, selecione um destino existente. Mensagens para toda a casa requerem confirmação de uso único.",
+        "data": {
+          "announcements_enabled": "Ativar avisos por voz direcionados",
+          "announcements_allow_all": "Permitir avisos para toda a casa (transmissão geral)",
+          "announcements_chime": "Tocar sinal sonoro antes do anúncio",
+          "announcements_cooldown_s": "Intervalo mínimo entre anúncios da mesma origem (segundos)",
+          "announcements_tts_entity": "Entidade TTS para media players",
+          "quiet_hours_start": "Início do horário silencioso (HH:MM, opcional)",
+          "quiet_hours_end": "Fim do horário silencioso (HH:MM, opcional)",
+          "area_id": "Área de destino",
+          "satellite_id": "Satélite Assist",
+          "media_player_id": "Media Player de destino",
+          "save_and_finish": "Salvar e concluir",
+          "existing_mapping": "Destino existente a remover"
+        }
+      },
+      "intelligence": {
+        "title": "Camadas de inteligência",
+        "description": "NLU primeiro. Decision resolve ação explícita e alvo único sem embeddings; erros de grafia inequívocos pedem confirmação. Hipóteses semânticas automáticas exigem calibração conjunta >=80% e margem. O LLM responde conversa geral em PT-BR e auxilia na automação quando necessário. Negação, conflitos e permissões permanecem protegidos. Inicie os processos no app; alterações valem para novos pedidos. Selecione modelo e CPU/GPU Intel no app. GPU exige inferência verificada pelo runtime e não troca silenciosamente para CPU.",
+        "data": {
+          "decision_enabled": "Usar Decision Engine",
+          "llm_enabled": "Usar LLM para conversa geral e fallback"
+        }
+      },
+      "voice_output": {
+        "title": "Saída de áudio do satélite",
+        "description": "**Associações atuais (inclui alterações deste cadastro)**\n\n{bindings}\n\nEscolha um satélite OU dispositivo e sua saída para adicionar ou substituir a associação. A saída deve estar exposta ao Assist e oferecer volume. As permissões do usuário da voz são verificadas na execução. Para remover, escolha apenas uma associação existente. Ao enviar, a lista é atualizada e o formulário continua aberto. Envie sem preencher nada para salvar todas as alterações e fechar, ou marque Salvar e concluir. As alterações desta sessão só entram em vigor ao concluir.",
+        "data": {
+          "satellite_id": "Satélite Assist",
+          "device_id": "Dispositivo de origem",
+          "output_player": "Saída de áudio",
+          "save_and_finish": "Salvar e concluir",
+          "existing_binding": "Associação existente a remover"
+        }
+      },
+      "identity_binding": {
+        "title": "Associações de identidade de voz",
+        "description": "**Associações atuais (inclui alterações deste cadastro)**\n\n{bindings}\n\nEscolha um satélite OU dispositivo e um usuário para adicionar ou substituir uma associação. Para remover, escolha apenas uma associação existente. Ao enviar, a lista é atualizada e você pode cadastrar o próximo. Envie sem preencher nada para salvar todas as alterações e fechar, ou marque Salvar e concluir. As alterações só entram em vigor ao concluir. A identidade define permissões; não define a saída de áudio. Contas autenticadas sempre prevalecem.",
+        "data": {
+          "satellite_id": "Satélite Assist",
+          "device_id": "Dispositivo de origem",
+          "identity_user_id": "Usuário associado",
+          "save_and_finish": "Salvar e concluir",
+          "existing_binding": "Associação existente a remover"
+        }
+      },
+      "settings": {
+        "title": "Outras configurações",
+        "description": "Defina um cômodo padrão somente quando ele for conhecido. Dispositivos de acesso exigem política explícita e confirmação.",
+        "data": {
+          "contextual_enabled": "Ativar Arandu NLU 2.0",
+          "stack_endpoint": "Endpoint Arandu Stack (opcional, porta 8099)",
+          "session_ttl": "Validade do contexto (segundos)",
+          "default_area": "ID do cômodo padrão",
+          "wake_words": "Prefixos exatos de ativação (lista opcional)",
+          "increments": "Incrementos dos ajustes relativos",
+          "entity_preferences": "Sensores preferidos e categorias semânticas",
+          "sensitive_entities": "Dispositivos de acesso permitidos com confirmação",
+          "energy_sources": "Fontes de consumo verificadas, sem sobreposição",
+          "device_mappings": "Mapeamentos de TV e controle remoto",
+          "intent_bindings": "Adaptadores de scripts e botões registrados",
+          "v2_enabled": "Ativar v3 legado quando o modo contextual estiver desativado",
+          "shadow_enabled": "Ativar diagnóstico do resolvedor legado",
+          "person_device_bindings": "Aliases de pessoas e aparelhos vinculados",
+          "device_sensor_bindings": "Sensores vinculados a aparelhos",
+          "excluded_from_bulk_actions": "Excluir de ações coletivas",
+          "low_battery_threshold": "Limite de bateria baixa (%)",
+          "fallback_user_id": "Usuário para pipelines sem identidade",
+          "delivery_media_player": "Reprodutor de áudio para alarmes e lembretes (opcional)",
+          "delivery_tts_engine": "Entidade TTS para avisos por voz (opcional)",
+          "endpoint": "Endpoint NLU (vazio para detectar automaticamente)"
+        },
+        "data_description": {
+          "fallback_user_id": "Usuário cujas permissões serão utilizadas quando o Home Assistant não informar a identidade da pipeline de voz. Selecione — para desativar."
+        }
+      },
+      "performance": {
+        "title": "Filas e limites",
+        "description": "Limites conservadores. Inferência não ocupa os slots NLU. Alterar limites recarrega a integração e cancela requisições ativas; agendamentos persistem. Nenhuma ação HA é repetida automaticamente.",
+        "data": {
+          "performance_concurrency": "Interpretações NLU simultâneas (1–8)",
+          "performance_waiting": "Pedidos adicionais admitidos (0–32)",
+          "performance_model_waiting": "Fila de modelo (0–8)",
+          "performance_timeout": "Orçamento total em segundos (5–90)",
+          "performance_scheduler_concurrency": "Entregas agendadas simultâneas",
+          "performance_scheduler_timeout": "Prazo de entrega agendada (segundos)",
+          "performance_scheduler_jobs": "Máximo de agendamentos ativos"
+        }
+      }
+    },
+    "error": {
+      "invalid_identity_user": "Escolha um usuário ativo.",
+      "choose_one_identity_origin": "Escolha apenas um satélite ou dispositivo.",
+      "invalid_identity_origin": "A origem selecionada não está disponível.",
+      "invalid_identity_configuration": "As associações de identidade são inválidas ou excedem o limite.",
+      "cannot_connect": "Não foi possível detectar o app ou acessar o NLU. Confirme se o módulo está ativo.",
+      "invalid_voice_output": "Escolha um media player disponível; são permitidas até 128 associações de saída.",
+      "voice_output_unavailable": "A saída está indisponível, foi removida ou está desativada.",
+      "voice_output_not_exposed": "Exponha a saída ao Assist em Configurações → Assistentes de voz → Expor entidades e tente novamente.",
+      "voice_output_no_volume": "Este media player não oferece controle de volume no Home Assistant.",
+      "invalid_announcement_origin": "O dispositivo selecionado não está disponível ou foi desativado.",
+      "announcement_not_exposed": "A entidade selecionada não está exposta ao Assist.",
+      "choose_one_announcement_target": "Escolha apenas um satélite ou um media player por vez.",
+      "announcement_area_required": "Selecione uma área para associar o dispositivo de aviso.",
+      "announcement_limit_reached": "Limite de destinos atingido (máximo de 32 áreas e 2 entidades por área).",
+      "invalid_quiet_hours": "Horário silencioso inválido (use o formato HH:MM)."
+    }
+  },
+  "title": "Arandu Assistant"
+}

@@ -157,7 +157,7 @@ class ProgressiveOrchestrator:
                 trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
                 return ProgressiveResult("safety_refusal", reason=decision_out.get("reason"), trace=trace)
 
-            if d_status == "needs_clarification":
+            if d_status == "needs_clarification" and not (llm_enabled and llm_handoff is not None):
                 trace["final_outcome"] = "clarification"
                 trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
                 msg = (

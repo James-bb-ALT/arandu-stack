@@ -1,0 +1,315 @@
+{
+  "digest": "df40e175c33a08aec1d5d8079c384f045c4126f7a27f4980d8ba5dd9c477b0e9",
+  "concept_count": 260,
+  "surface_collision_count": 74,
+  "ambiguity_count": 42,
+  "non_equivalence_count": 31,
+  "non_equivalence_violations": [],
+  "non_equivalence_domain_notes": [
+    {
+      "a": "lista de compras",
+      "b": "lista de tarefas",
+      "shared_domain_concepts": "entity.todo"
+    }
+  ],
+  "collisions": {
+    "acesa": [
+      "state.on",
+      "syntax.gender_number"
+    ],
+    "acesas": [
+      "state.on",
+      "syntax.gender_number"
+    ],
+    "aceso": [
+      "state.on",
+      "syntax.gender_number"
+    ],
+    "acesos": [
+      "state.on",
+      "syntax.gender_number"
+    ],
+    "ambiente": [
+      "scope.group",
+      "spatial.area"
+    ],
+    "aqui": [
+      "dialogue.specify_area",
+      "spatial.origin"
+    ],
+    "autonomia": [
+      "entity.battery_sensor",
+      "metric.battery"
+    ],
+    "bateria": [
+      "entity.battery_sensor",
+      "metric.battery"
+    ],
+    "blackout": [
+      "entity.blind",
+      "entity.cover_generic"
+    ],
+    "branco frio": [
+      "action.color_temperature_set",
+      "metric.color_temperature"
+    ],
+    "branco quente": [
+      "action.color_temperature_set",
+      "metric.color_temperature"
+    ],
+    "carga restante": [
+      "entity.battery_sensor",
+      "metric.battery"
+    ],
+    "casa": [
+      "entity.zone",
+      "spatial.home"
+    ],
+    "claridade": [
+      "metric.brightness",
+      "metric.illuminance"
+    ],
+    "clima": [
+      "entity.climate_unit",
+      "entity.weather"
+    ],
+    "como esta": [
+      "action.query",
+      "query.status"
+    ],
+    "cortina": [
+      "entity.cover_generic",
+      "entity.curtain"
+    ],
+    "cortinas": [
+      "entity.cover_generic",
+      "entity.curtain"
+    ],
+    "depois de": [
+      "temporal.after",
+      "temporal.after_duration"
+    ],
+    "desligado": [
+      "metric.state",
+      "state.off"
+    ],
+    "dioxido de carbono": [
+      "entity.co2_sensor",
+      "metric.co2"
+    ],
+    "e": [
+      "dialogue.filler",
+      "scope.and"
+    ],
+    "fora de casa": [
+      "entity.zone",
+      "spatial.zone"
+    ],
+    "gas carbonico": [
+      "entity.co2_sensor",
+      "metric.co2"
+    ],
+    "higrometro": [
+      "entity.humidity_sensor",
+      "metric.humidity"
+    ],
+    "iluminancia": [
+      "entity.illuminance_sensor",
+      "metric.illuminance"
+    ],
+    "inativo": [
+      "metric.state",
+      "state.off"
+    ],
+    "isso": [
+      "dialogue.confirm",
+      "dialogue.pronoun_ellipsis"
+    ],
+    "kwh": [
+      "entity.energy_sensor",
+      "metric.energy"
+    ],
+    "ligada": [
+      "state.on",
+      "syntax.gender_number"
+    ],
+    "ligadas": [
+      "state.on",
+      "syntax.gender_number"
+    ],
+    "ligado": [
+      "metric.state",
+      "state.on",
+      "syntax.gender_number"
+    ],
+    "ligados": [
+      "state.on",
+      "syntax.gender_number"
+    ],
+    "localizacao": [
+      "entity.zone",
+      "metric.location"
+    ],
+    "luminosidade": [
+      "entity.illuminance_sensor",
+      "metric.illuminance"
+    ],
+    "lux": [
+      "entity.illuminance_sensor",
+      "metric.illuminance"
+    ],
+    "luz ambiente": [
+      "entity.lighting",
+      "metric.illuminance"
+    ],
+    "mais alto": [
+      "action.volume_up",
+      "query.maximum"
+    ],
+    "mais baixo": [
+      "action.volume_down",
+      "query.minimum"
+    ],
+    "me explica": [
+      "dialogue.general_conversation",
+      "dialogue.more_info"
+    ],
+    "movimento": [
+      "entity.motion_sensor",
+      "metric.motion"
+    ],
+    "nao tem nenhum": [
+      "query.none",
+      "scope.none"
+    ],
+    "naquele comodo": [
+      "spatial.previous",
+      "spatial.there"
+    ],
+    "nenhum": [
+      "query.none",
+      "scope.none"
+    ],
+    "nenhuma": [
+      "query.none",
+      "scope.none"
+    ],
+    "ocupacao": [
+      "entity.presence_sensor",
+      "metric.occupancy"
+    ],
+    "ontem": [
+      "query.history",
+      "temporal.yesterday"
+    ],
+    "para": [
+      "action.media_stop",
+      "syntax.contraction"
+    ],
+    "persiana": [
+      "entity.blind",
+      "entity.cover_generic"
+    ],
+    "persianas": [
+      "entity.blind",
+      "entity.cover_generic"
+    ],
+    "pm2 5": [
+      "entity.air_quality_sensor",
+      "metric.pm25"
+    ],
+    "pode": [
+      "dialogue.confirm",
+      "dialogue.polite"
+    ],
+    "porta motorizada": [
+      "entity.cover_generic",
+      "entity.door_cover"
+    ],
+    "potencia": [
+      "entity.power_sensor",
+      "metric.power"
+    ],
+    "presenca": [
+      "entity.presence_sensor",
+      "metric.occupancy"
+    ],
+    "previsao": [
+      "entity.weather",
+      "query.forecast"
+    ],
+    "qualidade do ar": [
+      "entity.air_quality_sensor",
+      "metric.co2",
+      "metric.voc"
+    ],
+    "quilowatt hora": [
+      "entity.energy_sensor",
+      "metric.energy"
+    ],
+    "rolo": [
+      "entity.blind",
+      "entity.cover_generic"
+    ],
+    "semana passada": [
+      "query.history",
+      "temporal.historical"
+    ],
+    "sensor de fumaca": [
+      "entity.air_quality_sensor",
+      "entity.smoke_sensor"
+    ],
+    "setpoint": [
+      "entity.thermostat",
+      "metric.target_temperature"
+    ],
+    "som": [
+      "entity.media_player",
+      "metric.volume"
+    ],
+    "status": [
+      "metric.state",
+      "query.status"
+    ],
+    "tambem": [
+      "dialogue.continuation",
+      "scope.and"
+    ],
+    "temperatura ambiente": [
+      "entity.temperature_sensor",
+      "metric.temperature"
+    ],
+    "terreo": [
+      "spatial.downstairs",
+      "spatial.floor"
+    ],
+    "tranca": [
+      "action.lock",
+      "entity.lock"
+    ],
+    "umidade do ar": [
+      "entity.humidity_sensor",
+      "metric.humidity"
+    ],
+    "umidade relativa": [
+      "entity.humidity_sensor",
+      "metric.humidity"
+    ],
+    "veneziana": [
+      "entity.blind",
+      "entity.cover_generic"
+    ],
+    "voc": [
+      "entity.air_quality_sensor",
+      "metric.voc"
+    ],
+    "watts": [
+      "entity.power_sensor",
+      "metric.power"
+    ],
+    "zona": [
+      "entity.zone",
+      "scope.group"
+    ]
+  }
+}

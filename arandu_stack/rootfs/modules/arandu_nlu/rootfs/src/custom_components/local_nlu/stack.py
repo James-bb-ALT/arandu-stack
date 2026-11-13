@@ -14,6 +14,10 @@ def expand(text, rows):
     return matches[0] if matches else text
 
 async def prepare(hass, entry, user_input):
+    from .voice_controls import cancellation
+    if type(getattr(user_input, 'text', None)) is str and cancellation(user_input.text):
+        # Never let remote phrase expansion or an unavailable NLU delay cancellation.
+        return user_input, None
     endpoint = entry.options.get('stack_endpoint', entry.data.get('stack_endpoint', ''))
     if not endpoint:
         entry.runtime_data._stack_options = {}
@@ -23,6 +27,9 @@ async def prepare(hass, entry, user_input):
     from homeassistant.helpers.aiohttp_client import async_get_clientsession
     try:
         state = await local_request(async_get_clientsession(hass), endpoint, '/runtime', timeout=3)
+        from .request_trace import CURRENT
+        if trace := CURRENT.get():
+            trace.include_text = state.get('trace_text') is True
         if state.get('nlu_enabled') is not True:
             return user_input, RuntimeResult(code='unavailable', response_text='O módulo NLU está desativado no Arandu Stack.')
         options = state.get('nlu_options', {})
@@ -48,6 +55,9 @@ async def prepare(hass, entry, user_input):
         rows = state.get('phrases', [])
         if not isinstance(rows, list) or len(rows) > 200:
             raise ValueError('Configuração de frases inválida')
+        from .voice_controls import volume
+        if volume(user_input.text)[0]:
+            return user_input, None
         rewritten = expand(user_input.text, rows)
         if rewritten == user_input.text:
             return user_input, None

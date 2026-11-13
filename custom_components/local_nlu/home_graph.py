@@ -416,3 +416,58 @@ def build_graph_context(
         "entities": matched_entities[:12],
         "areas": list(areas_seen.values()),
     }
+
+
+def expand_graph_context(
+    graph: HomeGraph,
+    seed_ids: list[str] | tuple[str, ...],
+    *,
+    depth: int = 2,
+    limit: int = 24,
+    allowed_domains: set[str] | frozenset[str] | None = None,
+    live_state_reader: Callable[[str], dict[str, Any] | None] | None = None,
+) -> dict[str, Any]:
+    """Expand authorized HomeGraph neighborhood around seed entity/area IDs."""
+    bounded_depth = max(1, min(int(depth), MAX_DEPTH))
+    bounded_limit = max(1, min(int(limit), MAX_LIMIT))
+    seen: set[str] = set()
+    entities: list[dict[str, Any]] = []
+    frontier = list(seed_ids)
+
+    for _ in range(bounded_depth):
+        next_frontier: list[str] = []
+        for node_id in frontier:
+            ent = graph.get_entity(node_id)
+            if ent:
+                attrs = dict(ent["attributes"])
+                eid = attrs.get("entity_id")
+                dom = attrs.get("domain")
+                if eid and eid not in seen and (allowed_domains is None or dom in allowed_domains):
+                    seen.add(eid)
+                    if live_state_reader is not None:
+                        st = graph.get_state(eid, live_state_reader=live_state_reader)
+                        if st:
+                            attrs["live_state"] = st
+                    entities.append(attrs)
+                    if len(entities) >= bounded_limit:
+                        return {"summary": graph.get_graph_summary(), "entities": entities, "depth_used": bounded_depth}
+                area_id = attrs.get("area_id")
+                if area_id:
+                    for edge in graph._adj.get(f"area:{area_id}", ()):
+                        dst = graph._nodes.get(edge.dst)
+                        if dst and dst.node_type in {"Entity", "Scene", "Script", "Automation", "Sensor", "Person"}:
+                            peid = dst.attributes.get("entity_id")
+                            if peid and peid in graph._entity_ids and peid not in seen:
+                                next_frontier.append(peid)
+            else:
+                for edge in graph._adj.get(f"area:{node_id}", ()):
+                    dst = graph._nodes.get(edge.dst)
+                    if dst and dst.node_type in {"Entity", "Scene", "Script", "Automation", "Sensor", "Person"}:
+                        peid = dst.attributes.get("entity_id")
+                        if peid and peid in graph._entity_ids and peid not in seen:
+                            next_frontier.append(peid)
+        frontier = next_frontier
+        if not frontier:
+            break
+
+    return {"summary": graph.get_graph_summary(), "entities": entities, "depth_used": bounded_depth}

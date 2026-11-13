@@ -28,9 +28,9 @@ class TestFallbackRoutePolicy(unittest.TestCase):
             ),
             (
                 dict(nlu_status="clarification", reason="target_not_found", command={"action": "turn_off"}, candidates=("light.a", "light.b"), options=(), pending=False),
-                RouteCategory.CLARIFY,
-                False,
-                False,
+                RouteCategory.RECOVERABLE,
+                True,
+                True,
             ),
             (
                 dict(nlu_status="clarification", reason="no_compatible_capability", command={"action": "light.query", "domain": "light"}, candidates=(), options=(), pending=False),
@@ -78,7 +78,7 @@ class TestFallbackRoutePolicy(unittest.TestCase):
                 dict(nlu_status="clarification", reason="missing_origin_area", command={"action": "turn_on"}, candidates=(), options=(), pending=False),
                 RouteCategory.CLARIFY,
                 True,
-                False,
+                True,
             ),
             (
                 dict(nlu_status="clarification", reason="missing_origin_area", command={"action": "query", "scope": "global"}, candidates=(), options=(), pending=False),

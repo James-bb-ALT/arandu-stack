@@ -1,5 +1,6 @@
 //! Local, passive capability-driven interpretation. Wire v4 is additive to v1-v3.
 pub mod contract;
+pub mod generated_semantics_ptbr;
 mod grammar;
 pub mod progressive;
 mod resolver;

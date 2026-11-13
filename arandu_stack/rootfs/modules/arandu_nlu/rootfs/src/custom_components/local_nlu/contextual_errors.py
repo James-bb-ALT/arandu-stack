@@ -5,6 +5,15 @@ import re
 from .contextual_protocol import normalize
 
 MESSAGES = {
+    'history_unavailable':'O histórico não está disponível nesta configuração ou versão do Home Assistant.',
+    'history_timeout':'A consulta ao histórico excedeu o tempo permitido.',
+    'history_busy':'Já há uma consulta ao histórico em andamento. Tente novamente em instantes.',
+    'insufficient_history':'Não há dados suficientes e contínuos para responder sobre esse período.',
+    'power_or_energy':'Você quer comparar potência instantânea em W ou energia consumida em kWh?',
+    'todo_item_not_unique':'Não encontrei um único item com esse nome nessa lista. Especifique o item e a lista.',
+    'todo_completed_set_changed':'Os itens concluídos mudaram após a confirmação. Faça o pedido novamente.',
+    'undo_state_changed':'O estado mudou depois da última operação. Não vou sobrescrever essa mudança.',
+    'undo_unavailable':'Não há uma mudança reversível válida nesta conversa.',
     "missing_user": "Este dispositivo de voz ainda não está associado a um usuário.",
     "inactive_or_missing_configured_user": "O usuário associado a este dispositivo de voz está indisponível. Confira a configuração do ARANDU NLU.",
     "identity_origin_unavailable": "O dispositivo de voz associado está indisponível. Confira a configuração do ARANDU NLU.",

@@ -73,11 +73,11 @@ def _hostname_is_local(host: str) -> bool:
 
 
 def _is_store_hostname(host: str) -> bool:
-    """Match <8-hex-repo-hash>-ptbr-nlu exactly, nothing else."""
+    """Accept the legacy NLU and unified Stack slugs; DNS must still be local."""
     prefix, separator, slug = host.partition("-")
     return (
         separator == "-"
-        and slug == "ptbr-nlu"
+        and slug in {"ptbr-nlu", "arandu-stack"}
         and len(prefix) == 8
         and all(character in "0123456789abcdef" for character in prefix)
     )
@@ -187,9 +187,33 @@ class LocalNluClient:
     async def async_catalog_v4(self, payload: dict[str, Any]) -> Any:
         return await self._async_json("POST", "/v4/catalog", payload)
 
+    async def async_phase5_supported(self) -> bool:
+        """An empty, credential-free v4 probe works with the previous strict reader."""
+        import hashlib
+        generation=hashlib.sha256(b'arandu-phase5-capability-probe-v1').hexdigest()
+        response=await self.async_catalog_v4({'version':4,'generation':generation,'entities':[],'areas':[],'groups':[]})
+        if type(response) is not dict or response.get('status')!='catalog_ready' or response.get('generation')!=generation:
+            raise ClientError('phase5_capability_probe')
+        return response.get('reason')=='phase5_supported'
+
     async def async_interpret_v4(self, payload: dict[str, Any]) -> Any:
         self._last_interpret_protocol = 4
         return await self._async_json("POST", "/v4/interpret", payload)
+
+    async def async_v5_supported(self) -> bool:
+        try:
+            diag = await self.async_diagnostics()
+        except ClientError:
+            return False
+        protocols = diag.get("protocols") if isinstance(diag, dict) else None
+        return isinstance(protocols, list) and 5 in protocols
+
+    async def async_interpret_v5(self, payload: dict[str, Any]) -> Any:
+        self._last_interpret_protocol = 5
+        return await self._async_json("POST", "/v5/interpret", payload)
+
+    async def async_review_v5(self, payload: dict[str, Any]) -> Any:
+        return await self._async_json("POST", "/v5/review", payload)
 
     async def _async_json(
         self,

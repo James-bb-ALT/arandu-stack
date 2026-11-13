@@ -257,8 +257,12 @@ async function renderLlmManager(){
       status.textContent='Configurado: '+result.configured_model+' | Política: '+policy+' | Modelo ativo: '+(result.active_model||'nenhum')+' | Em RAM: '+inRam+state+rss+'.';
       list.replaceChildren();
       for(const model of result.models){
-        const row=el('div',undefined,'setting-row');row.append(el('span',model.name+' · '+(model.loaded?('carregado'+(model.integrity_verified?' e verificado':' · integridade não verificada')):model.installed===true?'instalado':model.installed===false?'não instalado':'instalação não verificada')));
-        const button=el('button',model.installed?'Verificar pesos':'Instalar pesos ('+(model.id==='qwen3'?'640':'306')+' MB)','secondary');button.type='button';
+        const row=el('div',undefined,'setting-row');
+        const sizeMb=model.disk_bytes?Math.ceil(model.disk_bytes/1e6)+' MB':'tamanho não verificado';
+        const stateText=model.lifecycle_state||(model.loaded?'loaded':model.installed?'installed':'catalogued');
+        row.append(el('span',model.name+' · '+sizeMb+' · '+stateText+(model.reason?' · '+model.reason:'')));
+        const button=el('button',model.downloadable===false?'Fonte não verificada':(model.installed?'Verificar pesos':'Instalar pesos ('+sizeMb+')'),'secondary');button.type='button';
+        button.disabled=model.downloadable===false;
         button.onclick=async()=>{button.disabled=true;status.textContent='Instalando/verificando '+model.name+'…';
           try{await api('llm/install',{model:model.id});await update();}catch(e){status.textContent=e.message;button.disabled=false;}};
         row.append(button);list.append(row);
@@ -269,7 +273,7 @@ async function renderLlmManager(){
   model?.addEventListener('change',()=>{
     const profile=profiles[model.value];
     if(profile)for(const [key,value] of Object.entries(profile)){const input=settingInput(key);if(input)input.value=String(value);}
-    if(model.value==='qwen3'&&settingInput('contract_version').value==='1')settingInput('contract_version').value='2';
+    if(model.value!=='tucano'&&settingInput('contract_version').value==='1')settingInput('contract_version').value='2';
   });
   await update();
 }
@@ -327,18 +331,30 @@ async function renderSttManager(){
   settingInput('model_variant').addEventListener('change',update);await update();
 }
 async function renderTtsManager(){
-  const group=el('fieldset',undefined,'setting-section tts-manager');group.append(el('legend','Residência e vozes carregadas'));
-  const status=el('p','Consultando TTS…');status.setAttribute('role','status');group.append(status);
+  const group=el('fieldset',undefined,'setting-section tts-manager');group.append(el('legend','Residência e vozes TTS'));
+  const status=el('p','Consultando TTS…');status.setAttribute('role','status');
+  const list=el('div');group.append(status,list);
   $('configFields').append(group);
-  try{
-    const st=await api('tts/status');
-    const stateLabels={waiting_first_use:'Aguardando primeira síntese',loading:'Carregando',ready:'Pronto em RAM',off:'Desativado (OFF)',load_failed:'Falha na carga',stopped:'Parado',unavailable:'Indisponível'};
-    const policy=st.resident_policy||'RESIDENT';
-    const primaryLoaded=st.primary_voice_loaded===true?'Sim':st.primary_voice_loaded===false?'Não':'Desconhecido';
-    const pocketLoaded=st.pocket_loaded===true?'Sim':st.pocket_loaded===false?'Não':'Desconhecido';
-    const rssText=typeof st.process_rss_mb==='number'?st.process_rss_mb.toFixed(0)+' MiB':'N/D';
-    const voices=(st.loaded_voices&&st.loaded_voices.length)?st.loaded_voices.join(', '):'nenhuma';
-    const errText=st.last_error?' | Erro: '+st.last_error:'';
-    status.textContent='Política: '+policy+' | Voz principal: '+(st.configured_primary_voice||'N/D')+' | Voz principal carregada?: '+primaryLoaded+' | Pocket carregado: '+pocketLoaded+' | Vozes em RAM: '+voices+' | Estado: '+(stateLabels[st.state]||st.state)+' | RAM do processo: '+rssText+errText;
-  }catch(e){status.textContent=e.message;}
+  async function update(){
+    try{
+      const [st,modelsResp]=await Promise.all([api('tts/status'),api('tts/models').catch(()=>({models:[]}))]);
+      const stateLabels={waiting_first_use:'Aguardando primeira síntese',loading:'Carregando',ready:'Pronto em RAM',off:'Desativado (OFF)',load_failed:'Falha na carga',stopped:'Parado',unavailable:'Indisponível'};
+      const policy=st.resident_policy||'RESIDENT';
+      const primaryLoaded=st.primary_voice_loaded===true?'Sim':st.primary_voice_loaded===false?'Não':'Desconhecido';
+      const pocketLoaded=st.pocket_loaded===true?'Sim':st.pocket_loaded===false?'Não':'Desconhecido';
+      const rssText=typeof st.process_rss_mb==='number'?st.process_rss_mb.toFixed(0)+' MiB':'N/D';
+      const voices=(st.loaded_voices&&st.loaded_voices.length)?st.loaded_voices.join(', '):'nenhuma';
+      const errText=st.last_error?' | Erro: '+st.last_error:'';
+      status.textContent='Política: '+policy+' | Voz principal: '+(st.configured_primary_voice||'N/D')+' | Voz principal carregada?: '+primaryLoaded+' | Pocket carregado: '+pocketLoaded+' | Vozes em RAM: '+voices+' | Estado: '+(stateLabels[st.state]||st.state)+' | RAM do processo: '+rssText+errText;
+      list.replaceChildren();
+      for(const v of (modelsResp.models||[])){
+        const row=el('div',undefined,'setting-row');
+        row.append(el('span',v.name+' · '+(v.lifecycle_state||'catalogued')+(v.reason?' · '+v.reason:'')));
+        const btn=el('button',v.selected?'Ativa':'Selecionar','secondary');btn.type='button';btn.disabled=Boolean(v.selected);
+        btn.onclick=async()=>{btn.disabled=true;try{await api('tts/apply',{voice:v.id});await update();}catch(e){status.textContent=e.message;btn.disabled=false;}};
+        row.append(btn);list.append(row);
+      }
+    }catch(e){status.textContent=e.message;}
+  }
+  await update();
 }

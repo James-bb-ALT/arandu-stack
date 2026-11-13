@@ -264,9 +264,16 @@ class ProgressiveOrchestrator:
             if mode in {"clarification", "refusal"}:
                 trace["final_outcome"] = mode
                 trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
+                plan = llm_out.get("plan") if isinstance(llm_out.get("plan"), dict) else {}
+                speech_text = (
+                    llm_out.get("response_text")
+                    or llm_out.get("question")
+                    or plan.get("question")
+                    or "Não consegui confirmar uma ação segura para esse pedido."
+                )
                 return ProgressiveResult(
                     mode,
-                    speech=llm_out.get("response_text") or "Não consegui confirmar uma ação segura para esse pedido.",
+                    speech=speech_text,
                     reason=llm_out.get("reason"),
                     trace=trace,
                 )

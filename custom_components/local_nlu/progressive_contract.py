@@ -369,3 +369,57 @@ def build_llm_handoff(
         "session_state": dict(session_state) if isinstance(session_state, dict) else None,
         "allowed_domains": list(allowed_domains) if allowed_domains else None,
     }
+
+
+@dataclass
+class UnderstandingFrameV2:
+    """Typed multi-turn understanding frame (frame_version=2) replacing string concatenation."""
+
+    frame_version: int = 2
+    intent: str | None = None
+    action: str | None = None
+    domain: str | None = None
+    area: str | None = None
+    targets: tuple[str, ...] = ()
+    parameters: dict[str, Any] = field(default_factory=dict)
+    missing_slots: tuple[str, ...] = ()
+    candidate_ids: tuple[str, ...] = ()
+    turn_count: int = 1
+    history: tuple[str, ...] = ()
+
+    def merge_slots(self, *, action: str | None = None, area: str | None = None, targets: tuple[str, ...] = (), text: str | None = None) -> "UnderstandingFrameV2":
+        next_targets = targets or self.targets
+        next_missing = tuple(
+            slot for slot in self.missing_slots
+            if not (slot == "area" and (area or self.area))
+            and not (slot == "target" and next_targets)
+            and not (slot == "action" and (action or self.action))
+        )
+        next_history = (*self.history[-4:], text.strip()) if isinstance(text, str) and text.strip() else self.history
+        return UnderstandingFrameV2(
+            frame_version=2,
+            intent=self.intent,
+            action=action or self.action,
+            domain=self.domain,
+            area=area or self.area,
+            targets=next_targets,
+            parameters=dict(self.parameters),
+            missing_slots=next_missing,
+            candidate_ids=self.candidate_ids,
+            turn_count=self.turn_count + 1,
+            history=next_history,
+        )
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "frame_version": self.frame_version,
+            "intent": self.intent,
+            "action": self.action,
+            "domain": self.domain,
+            "area": self.area,
+            "targets": list(self.targets),
+            "parameters": dict(self.parameters),
+            "missing_slots": list(self.missing_slots),
+            "candidate_ids": list(self.candidate_ids),
+            "turn_count": self.turn_count,
+        }

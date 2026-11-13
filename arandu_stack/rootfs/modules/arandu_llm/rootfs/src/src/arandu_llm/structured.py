@@ -85,7 +85,7 @@ def context_for(text,catalog,analysis,context,decision,partial_understanding=Non
             if type(hints.get(row['entity_id'])) in (int,float):item['decision_hint']=hints[row['entity_id']]
             rows.append(item)
     content={'comando':text,'devices':rows,'clauses':[
-        {k:c[k] for k in ('clause','action','parameters')} for c in analysis['analysis']['clauses']]}
+        {k:c[k] for k in ('clause','action','parameters') if k in c} for c in (analysis.get('analysis') or {}).get('clauses',())]}
     if context:content['context']={k:v for k,v in context.items() if k in {'origin_area','last_area','last_targets','last_action','temperature_unit'}}
     content['areas']=[a for a in catalog['areas'] if a['area_id'] in {r.get('area_id') for r in rows}]
     if isinstance(partial_understanding, dict):
@@ -179,7 +179,10 @@ async def infer(adapter,payload,catalog):
     if isinstance(partial_understanding, dict) and (partial_understanding.get('safety_flags') or partial_understanding.get('request_kind') == 'safety_refusal'):
         return {**base,'kind':'clarification','mode':'refusal','reason':'safety_locked',
                 'retrieval_ms':(time.perf_counter()-started)*1000}
-    if analysis['type']=='clarification':
+    if analysis['type']=='clarification' and analysis.get('reason') in {
+        'semantic_negation','semantic_condition','semantic_compound','unsupported_exclusion',
+        'untrusted_inventory','prompt_injection','sensitive_domain'
+    }:
         return {**base,'kind':'clarification','mode':'clarification','plan':analysis,'reason':analysis['reason'],
                 'retrieval_ms':(time.perf_counter()-started)*1000}
     general=(analysis['type']=='conversation') or (isinstance(decision, dict) and decision.get('route')=='general_conversation')
@@ -194,13 +197,25 @@ async def infer(adapter,payload,catalog):
     if not (0.7 <= conversation_temp <= 0.85):
         conversation_temp = 0.78
     automation_temp = min(float(adapter.settings.get("temperature", 0.1)), 0.25)
+    from collections import deque
+    history_msgs = []
+    if general:
+        recent = getattr(adapter, '_recent_replies', None)
+        if recent is None:
+            recent = deque(maxlen=16)
+            adapter._recent_replies = recent
+        for prev in list(recent)[-4:]:
+            history_msgs.append({'role': 'assistant', 'content': prev})
     request={'messages':[{'role':'system','content':CONVERSATION_PROMPT if general else SYSTEM},
+        *history_msgs,
         {'role':'user','content':text if general else encoded}],
         'temperature': conversation_temp if general else automation_temp,
         'max_tokens':adapter.settings['max_tokens']}
     if general:
         request['top_p'] = 0.9
-        request['repeat_penalty'] = 1.1
+        request['repeat_penalty'] = 1.15
+        request['frequency_penalty'] = 0.5
+        request['presence_penalty'] = 0.4
         base['profile'] = 'conversation_profile'
     else:
         base['profile'] = 'automation_profile'
@@ -220,6 +235,8 @@ async def infer(adapter,payload,catalog):
     adapter.phase='validation';validation_started=time.perf_counter()
     if general:
         proposal,reply=parse_conversation({'choices':[{'finish_reason':'stop','message':{'content':raw}}]},adapter.settings['max_tokens'])
+        if reply:
+            adapter._recent_replies.append(reply)
         base.update(proposal=proposal,response_text=reply,kind='conversation',mode='conversation_response')
     else:
         try:
@@ -235,8 +252,12 @@ async def infer(adapter,payload,catalog):
                     repairs.append({'clause_id': idx, 'slot': 'action', 'value': op['action'], 'source': 'llm_proposed', 'evidence': ['llm_structured_v2']})
                 if op.get('targets'):
                     repairs.append({'clause_id': idx, 'slot': 'target', 'value': op['targets'][0] if len(op['targets'])==1 else op['targets'], 'source': 'llm_proposed', 'evidence': ['llm_structured_v2']})
+                elif op.get('entity_id'):
+                    repairs.append({'clause_id': idx, 'slot': 'target', 'value': op['entity_id'], 'source': 'llm_proposed', 'evidence': ['llm_structured_v2']})
             mode='repair_proposal' if repairs else ('read_query' if value.get('type')=='query' else 'clarification')
             base.update(plan=value,kind=value['type'],mode=mode,repairs=repairs,validated_json=value,raw_json_validated=True)
+            if value.get('question'):
+                base['question']=value['question']
         except (ValueError,TypeError,KeyError) as exc:
             base.update(plan=clarification('model_plan_rejected',analysis['analysis']),kind='clarification',mode='clarification',reason='model_plan_rejected',validation_reason=str(exc))
     return {**base,'validation_ms':(time.perf_counter()-validation_started)*1000,'total_ms':(time.perf_counter()-started)*1000}

@@ -38,6 +38,34 @@ class PendingRequest:
         current = time.monotonic() if now is None else now
         return (current - self.created_at) <= self.ttl_s
 
+    def merge_into_frame(self, reply_text: str) -> dict[str, Any]:
+        """Fill missing typed slots from a follow-up reply without parenthetical concatenation."""
+        from .progressive_contract import UnderstandingFrameV2
+
+        clean = (reply_text or "").strip()
+        slots = dict(self.preserved_slots)
+        missing = list(self.missing_slots)
+        if clean:
+            if "area" in missing and not slots.get("area"):
+                slots["area"] = clean
+                missing = [s for s in missing if s != "area"]
+            elif "target" in missing and not slots.get("target"):
+                slots["target"] = clean
+                missing = [s for s in missing if s != "target"]
+            elif "action" in missing and not slots.get("action"):
+                slots["action"] = clean
+                missing = [s for s in missing if s != "action"]
+        frame = UnderstandingFrameV2(
+            action=slots.get("action"),
+            domain=slots.get("domain"),
+            area=slots.get("area"),
+            targets=(slots["target"],) if isinstance(slots.get("target"), str) else (),
+            missing_slots=tuple(missing),
+            candidate_ids=tuple(self.candidates),
+            history=(self.original_text, clean) if clean else (self.original_text,),
+        )
+        return {"slots": slots, "missing_slots": tuple(missing), "frame": frame.as_dict()}
+
     def merge_reply(self, reply_text: str) -> str:
         """Merge a short clarification reply with preserved context without overwriting non-empty slots."""
         clean = (reply_text or "").strip()

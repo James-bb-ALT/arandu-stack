@@ -294,7 +294,7 @@ class Service(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(result['generated_tokens'],0)
             status=await client.get('/status',headers=headers)
             models=(await status.json())['models']
-            self.assertEqual({m['id'] for m in models},{'tucano','qwen3'})
+            self.assertEqual({m['id'] for m in models},{'tucano','qwen3','lfm2.5-1.2b','lfm3-1.7b','qwen3-1.7b'})
             self.assertTrue(all(not m['installed'] and not m['loaded'] for m in models))
 
     async def test_sse_measures_real_first_content_and_rejects_truncation(self):

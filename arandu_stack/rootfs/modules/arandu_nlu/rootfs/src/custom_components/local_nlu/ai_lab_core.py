@@ -288,6 +288,19 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30, gen
             (result["proposal"] or {}).get("clarification_question") or
             (None if result["proposal"] or (result.get('plan') or {}).get('type')=='automation' else "Não entendi o que você deseja. Pode repetir dizendo o dispositivo e a ação?"))
     result["total_ms"] = (time.perf_counter() - started) * 1000
+    dec_out = stages["decision"].get("output") if isinstance(stages["decision"].get("output"), dict) else {}
+    llm_out = stages["llm"].get("output") if isinstance(stages["llm"].get("output"), dict) else {}
+    result["diagnostics"] = {
+        "nlu_status": (nl or {}).get("status"),
+        "route_reason": (result.get("route_diagnostic") or {}).get("reason") or (nl or {}).get("reason"),
+        "decision_status": dec_out.get("decision_status") or dec_out.get("status"),
+        "llm_called": stages["llm"]["status"] == "executed",
+        "llm_generated_tokens": llm_out.get("generated_tokens", 0),
+        "final_stage": result.get("source") or ("nlu" if stages["nlu"]["status"] == "executed" else "none"),
+        "terminal_reason": result.get("reason") or (result.get("route_diagnostic") or {}).get("reason") or (nl or {}).get("reason"),
+        "conversation_id": None,
+        "timings_ms": {k: v.get("latency_ms") for k, v in stages.items() if v.get("latency_ms") is not None},
+    }
     return result
 
 

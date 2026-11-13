@@ -13,7 +13,7 @@ REPO = "csukuangfj/sherpa-onnx-nemo-stt_pt_fastconformer_hybrid_large_pc-int8"
 MODEL = "model.int8.onnx"
 UPSTREAM = "nvidia/stt_pt_fastconformer_hybrid_large_pc"
 ADAPTED_VERSION = "arandu-ctc-20261014-continued-fp32"
-ADAPTED_URL = "https://github.com/jaimevictor/arandu-stack/releases/download/stt-model-v2.2.0"
+ADAPTED_URL = "https://github.com/James-bb-ALT/arandu-stack/releases/download/stt-model-v2.2.0"
 ADAPTED_HASHES = {
     "model.onnx": "68fff73a46efa49914df12fa74e83e3e36803ab80a8fbea86b6f7c8684e3c112",
     "tokens.txt": "c79cd022b6b04e090901e1acce380ad9476bb6a3694112199b835256bb079b9b",

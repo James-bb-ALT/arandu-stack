@@ -174,19 +174,25 @@ class ModuleManager:
                 self.failures['decision']='Seleção Decision inválida; E5 Small/CPU recuperado. Salve para recuperar.'
         if self.llm_policy_file.exists():
             try:
+                try:
+                    from .model_registry import model_ids, resolve_legacy_id
+                except ImportError:
+                    from model_registry import model_ids, resolve_legacy_id
+                allowed_llm = model_ids('llm', downloadable_only=True)
                 policy=json.loads(self.llm_policy_file.read_text(encoding='utf-8'))
-                if (type(policy) is not dict or policy.get('version')!=1 or policy.get('llm_model') not in {'tucano','qwen3'}
+                if (type(policy) is not dict or policy.get('version')!=1 or resolve_legacy_id(policy.get('llm_model')) not in allowed_llm
                         or type(policy.get('contract_version')) is not int or policy['contract_version'] not in (1,2)
-                        or type(policy.get('profiles')) is not dict or set(policy['profiles'])-{'tucano','qwen3'}):
+                        or type(policy.get('profiles')) is not dict or {resolve_legacy_id(k) for k in policy['profiles']}-allowed_llm):
                     raise ValueError('Política LLM inválida')
                 for model,profile in policy['profiles'].items():
                     if type(profile) is not dict or set(profile)-{'threads','context_size','max_tokens','temperature'}:
                         raise ValueError('Perfil LLM inválido')
                     checked=validate_options('llm',{**self.config['llm'],**profile},data)
-                    self.llm_profiles[model]={k:checked[k] for k in ('threads','context_size','max_tokens','temperature')}
-                if policy['contract_version']==1 and policy['llm_model']!='tucano':raise ValueError('Contrato legado exige Tucano')
-                self.config['llm'].update(llm_model=policy['llm_model'],contract_version=policy['contract_version'])
-                self.config['llm'].update(self.llm_profiles.get(policy['llm_model'],{}))
+                    self.llm_profiles[resolve_legacy_id(model)]={k:checked[k] for k in ('threads','context_size','max_tokens','temperature')}
+                resolved_model = resolve_legacy_id(policy['llm_model'])
+                if policy['contract_version']==1 and resolved_model!='tucano':raise ValueError('Contrato legado exige Tucano')
+                self.config['llm'].update(llm_model=resolved_model,contract_version=policy['contract_version'])
+                self.config['llm'].update(self.llm_profiles.get(resolved_model,{}))
             except (ValueError,TypeError,OSError):
                 self.llm_profiles={}
                 self.config['llm'].update(llm_model='tucano',contract_version=1)

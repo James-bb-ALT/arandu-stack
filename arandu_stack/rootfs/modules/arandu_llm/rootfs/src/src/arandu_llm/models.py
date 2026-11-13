@@ -22,7 +22,28 @@ MODELS = {
         'file':'Qwen3-0.6B-Q8_0.gguf','size':639446688,
         'sha256':'9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031',
         'runtime':'llama.cpp / CPU','thinking':True,'experimental':True},
+    'lfm2.5-1.2b':{'name':'LFM2.5-1.2B-Instruct QAD-Q4_0','kind':'llm','license':'LFM Open License',
+        'repo':'LiquidAI/LFM2.5-1.2B-Instruct-GGUF','revision':'8ed288026e23958ad9dfa92d53ed773a8eee7125',
+        'file':'LFM2.5-1.2B-Instruct-QAD-Q4_0.gguf','size':695755488,
+        'sha256':'bb741ebb106d543e9de114b843a3d3d73d51c74b5801e69da2abde821a0cb3e1',
+        'runtime':'llama.cpp / CPU','thinking':False,'experimental':False},
+    'lfm3-1.7b':{'name':'LFM3-1.7B QAD-Q4_0','kind':'llm','license':'LFM Open License',
+        'repo':'LiquidAI/LFM3-1.7B-GGUF','revision':'cd0c74c575b5c416f3011b5b4c298077f26ca8c2',
+        'file':'LFM3-1.7B-QAD-Q4_0.gguf','size':1049615680,
+        'sha256':'43a7d09a0e9cba91b63eb7052488b9564569bddfd65754d2e426465e572a7452',
+        'runtime':'llama.cpp / CPU','thinking':False,'experimental':False},
+    'qwen3-1.7b':{'name':'Qwen3-1.7B Q4_K_M','kind':'llm','license':'Apache-2.0',
+        'repo':'bartowski/Qwen_Qwen3-1.7B-GGUF','revision':'dcb19155b962dbb6389f4691a982043a8e651022',
+        'file':'Qwen_Qwen3-1.7B-Q4_K_M.gguf','size':1282439584,
+        'sha256':'72c5c3cb38fa32d5256e2fe30d03e7a64c6c79e668ad84057e3bd66e250b24fb',
+        'runtime':'llama.cpp / CPU','thinking':True,'experimental':True},
 }
+
+ALIASES = {'qwen3-0.6b': 'qwen3'}
+
+
+def resolve_model_key(key):
+    return ALIASES.get(key, key)
 
 
 def validate_generation(value):
@@ -48,16 +69,19 @@ def verify(path, info):
 
 
 def installed(root,key):
+    key=resolve_model_key(key)
     info=MODELS[key];path=Path(root)/key/info['file']
     return path.is_file() and path.stat().st_size==info['size']
 
 
 def model_path(root,key):
+    key=resolve_model_key(key)
     if key not in MODELS:raise ValueError('Modelo LLM desconhecido')
     return verify(Path(root)/key/MODELS[key]['file'],MODELS[key])
 
 
 def install(root,key='tucano'):
+    key=resolve_model_key(key)
     if key not in MODELS:raise ValueError('Modelo LLM desconhecido')
     info=MODELS[key];root=Path(root);root.mkdir(parents=True,exist_ok=True)
     if installed(root,key):

@@ -1,0 +1,1177 @@
+{
+  "version": 1,
+  "counts": {
+    "stt": 9,
+    "tts": 6,
+    "decision": 3,
+    "llm": 7
+  },
+  "items": [
+    {
+      "id": "fastconformer-original",
+      "legacy_ids": [
+        "fastconformer_original"
+      ],
+      "kind": "stt",
+      "display_name": "Arandu FastConformer INT8 original",
+      "vendor": "csukuangfj",
+      "repo_id": "csukuangfj/sherpa-onnx-nemo-stt_pt_fastconformer_hybrid_large_pc-int8",
+      "revision_immutable": "f5df0c1e1db4a779d106f4722886557f3466cc42",
+      "files": [
+        {
+          "path": "model.int8.onnx",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "tokens.txt",
+          "size": null,
+          "sha256": null
+        }
+      ],
+      "license": "CC-BY-NC-4.0",
+      "terms_url": "https://huggingface.co/csukuangfj/sherpa-onnx-nemo-stt_pt_fastconformer_hybrid_large_pc-int8",
+      "needs_auth": false,
+      "runtime": "sherpa-onnx",
+      "architecture": "fastconformer",
+      "format": "onnx",
+      "quantization": "onnx-int8",
+      "language": "pt-BR",
+      "disk_bytes": null,
+      "ram_estimate_mb": 450,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "4.0.2",
+      "downloadable": true,
+      "testable": true,
+      "recommended": true,
+      "restrictions": [
+        "CC-BY-NC-4.0 non-commercial"
+      ],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "fastconformer-adapted",
+      "legacy_ids": [
+        "fastconformer",
+        "fastconformer_adapted"
+      ],
+      "kind": "stt",
+      "display_name": "Arandu FastConformer adaptado 2.2.0",
+      "vendor": "James-bb-ALT",
+      "repo_id": "James-bb-ALT/arandu-stack",
+      "revision_immutable": "stt-model-v2.2.0",
+      "files": [
+        {
+          "path": "model.onnx",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "tokens.txt",
+          "size": null,
+          "sha256": null
+        }
+      ],
+      "license": "CC-BY-NC-4.0",
+      "terms_url": "https://github.com/James-bb-ALT/arandu-stack/releases/tag/stt-model-v2.2.0",
+      "needs_auth": false,
+      "runtime": "sherpa-onnx",
+      "architecture": "fastconformer",
+      "format": "onnx",
+      "quantization": "onnx-fp32",
+      "language": "pt-BR",
+      "disk_bytes": null,
+      "ram_estimate_mb": 450,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "4.0.2",
+      "downloadable": true,
+      "testable": true,
+      "recommended": true,
+      "restrictions": [
+        "CC-BY-NC-4.0 non-commercial"
+      ],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "whisper_tiny",
+      "legacy_ids": [],
+      "kind": "stt",
+      "display_name": "Faster Whisper tiny",
+      "vendor": "Systran",
+      "repo_id": "Systran/faster-whisper-tiny",
+      "revision_immutable": "d90ca5fe260221311c53c58e660288d3deb8d356",
+      "files": [
+        {
+          "path": "model.bin",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "config.json",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "tokenizer.json",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "vocabulary.txt",
+          "size": null,
+          "sha256": null
+        }
+      ],
+      "license": "MIT",
+      "terms_url": "https://huggingface.co/Systran/faster-whisper-tiny",
+      "needs_auth": false,
+      "runtime": "faster-whisper",
+      "architecture": "whisper",
+      "format": "ctranslate2-int8",
+      "quantization": "ctranslate2-int8",
+      "language": "pt-BR",
+      "disk_bytes": null,
+      "ram_estimate_mb": 450,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "4.0.2",
+      "downloadable": true,
+      "testable": true,
+      "recommended": true,
+      "restrictions": [],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "whisper_base",
+      "legacy_ids": [],
+      "kind": "stt",
+      "display_name": "Faster Whisper base",
+      "vendor": "Systran",
+      "repo_id": "Systran/faster-whisper-base",
+      "revision_immutable": "ebe41f70d5b6dfa9166e2c581c45c9c0cfc57b66",
+      "files": [
+        {
+          "path": "model.bin",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "config.json",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "tokenizer.json",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "vocabulary.txt",
+          "size": null,
+          "sha256": null
+        }
+      ],
+      "license": "MIT",
+      "terms_url": "https://huggingface.co/Systran/faster-whisper-base",
+      "needs_auth": false,
+      "runtime": "faster-whisper",
+      "architecture": "whisper",
+      "format": "ctranslate2-int8",
+      "quantization": "ctranslate2-int8",
+      "language": "pt-BR",
+      "disk_bytes": null,
+      "ram_estimate_mb": 450,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "4.0.2",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "whisper_small",
+      "legacy_ids": [],
+      "kind": "stt",
+      "display_name": "Faster Whisper small",
+      "vendor": "Systran",
+      "repo_id": "Systran/faster-whisper-small",
+      "revision_immutable": "536b0662742c02347bc0e980a01041f333bce120",
+      "files": [
+        {
+          "path": "model.bin",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "config.json",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "tokenizer.json",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "vocabulary.txt",
+          "size": null,
+          "sha256": null
+        }
+      ],
+      "license": "MIT",
+      "terms_url": "https://huggingface.co/Systran/faster-whisper-small",
+      "needs_auth": false,
+      "runtime": "faster-whisper",
+      "architecture": "whisper",
+      "format": "ctranslate2-int8",
+      "quantization": "ctranslate2-int8",
+      "language": "pt-BR",
+      "disk_bytes": null,
+      "ram_estimate_mb": 700,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "4.0.2",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "orukeet_int8",
+      "legacy_ids": [],
+      "kind": "stt",
+      "display_name": "Orukeet INT8",
+      "vendor": "oruk",
+      "repo_id": "oruk/orukeet",
+      "revision_immutable": "55a984d46f68323301837194ce647c702f55facc",
+      "files": [
+        {
+          "path": "onnx/sherpa-onnx-orukeet-v0.1.0-int8.tar.bz2",
+          "size": 486807585,
+          "sha256": null
+        }
+      ],
+      "license": "CC-BY-SA-4.0",
+      "terms_url": "https://huggingface.co/oruk/orukeet",
+      "needs_auth": false,
+      "runtime": "sherpa-onnx",
+      "architecture": "conformer",
+      "format": "onnx",
+      "quantization": "onnx-int8",
+      "language": "pt-BR",
+      "disk_bytes": 486807585,
+      "ram_estimate_mb": 450,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "4.0.2",
+      "downloadable": true,
+      "testable": true,
+      "recommended": true,
+      "restrictions": [],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "parakeet_ptbr_30s",
+      "legacy_ids": [],
+      "kind": "stt",
+      "display_name": "Parakeet Ptbr 30S",
+      "vendor": "alefiury",
+      "repo_id": "alefiury/parakeet-tdt-v3-ptBR-30s-onnx",
+      "revision_immutable": "ba4da45f60395f13b12da197d3448e66f6ec79c7",
+      "files": [
+        {
+          "path": "config.json",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "decoder_joint-model.onnx",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "encoder-model.onnx",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "encoder-model.onnx.data",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "nemo128.onnx",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "vocab.txt",
+          "size": null,
+          "sha256": null
+        }
+      ],
+      "license": "CC-BY-4.0",
+      "terms_url": "https://huggingface.co/alefiury/parakeet-tdt-v3-ptBR-30s-onnx",
+      "needs_auth": false,
+      "runtime": "sherpa-onnx",
+      "architecture": "parakeet-tdt",
+      "format": "onnx",
+      "quantization": "onnx-fp32",
+      "language": "pt-BR",
+      "disk_bytes": 2550017803,
+      "ram_estimate_mb": 3200,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "4.0.2",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [
+        "High RAM ~2.55 GB; do not co-load with large LLM"
+      ],
+      "verified": true,
+      "experimental": true
+    },
+    {
+      "id": "parakeet_tagarela",
+      "legacy_ids": [],
+      "kind": "stt",
+      "display_name": "Parakeet Tagarela",
+      "vendor": "alefiury",
+      "repo_id": "alefiury/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx",
+      "revision_immutable": "47586335c0b00ba273205f0ed3ef5a2cd651c143",
+      "files": [
+        {
+          "path": "config.json",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "decoder_joint-model.onnx",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "encoder-model.onnx",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "encoder-model.onnx.data",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "nemo128.onnx",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "vocab.txt",
+          "size": null,
+          "sha256": null
+        }
+      ],
+      "license": "CC-BY-4.0",
+      "terms_url": "https://huggingface.co/alefiury/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx",
+      "needs_auth": false,
+      "runtime": "sherpa-onnx",
+      "architecture": "parakeet-tdt",
+      "format": "onnx",
+      "quantization": "onnx-fp32",
+      "language": "pt-BR",
+      "disk_bytes": 2550017803,
+      "ram_estimate_mb": 3200,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "4.0.2",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [
+        "High RAM ~2.55 GB; do not co-load with large LLM"
+      ],
+      "verified": true,
+      "experimental": true
+    },
+    {
+      "id": "granite_turboctc_q4",
+      "legacy_ids": [],
+      "kind": "stt",
+      "display_name": "Granite Speech 5 TurboCTC 470M Q4_K_M",
+      "vendor": "vladers",
+      "repo_id": "vladers/granite-speech-5.0-470m-turboctc-GGUF",
+      "revision_immutable": "88845afaa7beadca4b9ec545df0dd7332349ab88",
+      "files": [
+        {
+          "path": "granite-speech-5.0-470m-turboctc-Q4_K_M.gguf",
+          "size": 279183655,
+          "sha256": null
+        },
+        {
+          "path": "LICENSE",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "NOTICE",
+          "size": null,
+          "sha256": null
+        }
+      ],
+      "license": "Apache-2.0",
+      "terms_url": "https://huggingface.co/vladers/granite-speech-5.0-470m-turboctc-GGUF",
+      "needs_auth": false,
+      "runtime": "transcribe.cpp",
+      "architecture": "granite-ctc",
+      "format": "gguf-Q4_K_M",
+      "quantization": "gguf-Q4_K_M",
+      "language": "pt-BR",
+      "disk_bytes": 279183655,
+      "ram_estimate_mb": 450,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "4.0.2",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [],
+      "verified": true,
+      "experimental": true
+    },
+    {
+      "id": "e5-small",
+      "legacy_ids": [],
+      "kind": "decision",
+      "display_name": "Multilingual E5 Small",
+      "vendor": "intfloat",
+      "repo_id": "intfloat/multilingual-e5-small",
+      "revision_immutable": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+      "files": [
+        {
+          "path": "1_Pooling/config.json",
+          "size": 200,
+          "sha256": "987f7a67a38fa564c849bb5d277c52ab9088a84368fc0be31a354125aebb12a0"
+        },
+        {
+          "path": "README.md",
+          "size": 497538,
+          "sha256": "0038de97aee16258cecbad7ffda4b4febd6953e747a00e0ddbc8e6ed241e9c1c"
+        },
+        {
+          "path": "config.json",
+          "size": 655,
+          "sha256": "69137736cab8b8903a07fe8afaafdda25aac55415a12a55d1bffa9f581abf959"
+        },
+        {
+          "path": "model.safetensors",
+          "size": 470641600,
+          "sha256": "1a55775f53449dac10a2bcbc312469fac40b96d53198c407081a831f81c98477"
+        },
+        {
+          "path": "modules.json",
+          "size": 387,
+          "sha256": "c6e29747481e8b5dd2b58401966aeac910de39092f90cda9a704b1545f902b04"
+        },
+        {
+          "path": "sentence_bert_config.json",
+          "size": 57,
+          "sha256": "948201d8329907aae938fa62f9ceeed53f5694dacc2b87b9f3b78b37ee986529"
+        },
+        {
+          "path": "special_tokens_map.json",
+          "size": 167,
+          "sha256": "d05497f1da52c5e09554c0cd874037a083e1dc1b9cfd48034d1c717f1afc07a7"
+        },
+        {
+          "path": "tokenizer.json",
+          "size": 17082730,
+          "sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "size": 443,
+          "sha256": "a1d6bc8734a6f635dc158508bef000f8e2e5a759c7d92f984b2c86e5ff53425b"
+        }
+      ],
+      "license": "mit",
+      "terms_url": "https://huggingface.co/intfloat/multilingual-e5-small",
+      "needs_auth": false,
+      "runtime": "onnxruntime / CPU",
+      "architecture": "transformer-encoder",
+      "format": "safetensors",
+      "quantization": "fp32",
+      "language": "multilingual",
+      "disk_bytes": 488223777,
+      "ram_estimate_mb": 550,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "3.0.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": true,
+      "restrictions": [
+        "GPU Intel experimental only if OpenVINO verified"
+      ],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "minilm-multilingual",
+      "legacy_ids": [],
+      "kind": "decision",
+      "display_name": "Multilingual MiniLM L12",
+      "vendor": "sentence-transformers",
+      "repo_id": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+      "revision_immutable": "e8f8c211226b894fcb81acc59f3b34ba3efd5f42",
+      "files": [
+        {
+          "path": "1_Pooling/config.json",
+          "size": 190,
+          "sha256": "4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23"
+        },
+        {
+          "path": "README.md",
+          "size": 3888,
+          "sha256": "1e98ea05b0de579fcaad3d625b62ea55647142ed674d5f5ebf1440e4bbbb6f23"
+        },
+        {
+          "path": "config.json",
+          "size": 645,
+          "sha256": "6300193cb75e01cf80c96decef7187dfb33094d97cc1490b7ead6ff134476e4e"
+        },
+        {
+          "path": "config_sentence_transformers.json",
+          "size": 122,
+          "sha256": "b8c64b5cece00d8424b4896ea75b512b6008576088497609dfeb6bd63e6d36b8"
+        },
+        {
+          "path": "model.safetensors",
+          "size": 470641600,
+          "sha256": "eaa086f0ffee582aeb45b36e34cdd1fe2d6de2bef61f8a559a1bbc9bd955917b"
+        },
+        {
+          "path": "modules.json",
+          "size": 229,
+          "sha256": "8f4b264b80206c830bebbdcae377e137925650a433b689343a63bdc9b3145460"
+        },
+        {
+          "path": "sentence_bert_config.json",
+          "size": 53,
+          "sha256": "70f4448f31320443fe3557cacea5abf2dcc4915dda8c80646bec9f3bb0aa5a1f"
+        },
+        {
+          "path": "special_tokens_map.json",
+          "size": 239,
+          "sha256": "378eb3bf733eb16e65792d7e3fda5b8a4631387ca04d2015199c4d4f22ae554d"
+        },
+        {
+          "path": "tokenizer.json",
+          "size": 9081518,
+          "sha256": "2c3387be76557bd40970cec13153b3bbf80407865484b209e655e5e4729076b8"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "size": 526,
+          "sha256": "5036ea374ffedd706e3bef33e2e0d6953cb868ef8a490e76e32ba0faa37a6b9b"
+        }
+      ],
+      "license": "apache-2.0",
+      "terms_url": "https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+      "needs_auth": false,
+      "runtime": "onnxruntime / CPU",
+      "architecture": "transformer-encoder",
+      "format": "safetensors",
+      "quantization": "fp32",
+      "language": "multilingual",
+      "disk_bytes": 479729010,
+      "ram_estimate_mb": 550,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "3.0.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [
+        "GPU Intel experimental only if OpenVINO verified"
+      ],
+      "verified": true,
+      "experimental": true
+    },
+    {
+      "id": "e5-base",
+      "legacy_ids": [],
+      "kind": "decision",
+      "display_name": "Multilingual E5 Base",
+      "vendor": "intfloat",
+      "repo_id": "intfloat/multilingual-e5-base",
+      "revision_immutable": "d128750597153bb5987e10b1c3493a34e5a4502a",
+      "files": [
+        {
+          "path": "1_Pooling/config.json",
+          "size": 200,
+          "sha256": "f586ab6c734af7b8d14d898bfa7faa886f23b46f86dd1730514309893af13d75"
+        },
+        {
+          "path": "README.md",
+          "size": 179345,
+          "sha256": "9d129cb0b912b55c7b5378f976a9c35ae4796c80466b659ad63930d8ca090fca"
+        },
+        {
+          "path": "config.json",
+          "size": 694,
+          "sha256": "9dab198f24c8c0879e481cf7822005d5ecbceedbacb390ffafa594e28d31bac4"
+        },
+        {
+          "path": "model.safetensors",
+          "size": 1112201288,
+          "sha256": "a18a44fad1d0b46ded15928144138cff1135d5cc8233bdd90be5f18822de09a7"
+        },
+        {
+          "path": "modules.json",
+          "size": 387,
+          "sha256": "c6e29747481e8b5dd2b58401966aeac910de39092f90cda9a704b1545f902b04"
+        },
+        {
+          "path": "sentence_bert_config.json",
+          "size": 57,
+          "sha256": "948201d8329907aae938fa62f9ceeed53f5694dacc2b87b9f3b78b37ee986529"
+        },
+        {
+          "path": "special_tokens_map.json",
+          "size": 280,
+          "sha256": "06e405a36dfe4b9604f484f6a1e619af1a7f7d09e34a8555eb0b77b66318067f"
+        },
+        {
+          "path": "tokenizer.json",
+          "size": 17082660,
+          "sha256": "62c24cdc13d4c9952d63718d6c9fa4c287974249e16b7ade6d5a85e7bbb75626"
+        },
+        {
+          "path": "tokenizer_config.json",
+          "size": 418,
+          "sha256": "efb5c0d09722e5fe59a462cd2a9976ee216d55b037597d997cd3fe833216da15"
+        }
+      ],
+      "license": "mit",
+      "terms_url": "https://huggingface.co/intfloat/multilingual-e5-base",
+      "needs_auth": false,
+      "runtime": "onnxruntime / CPU",
+      "architecture": "transformer-encoder",
+      "format": "safetensors",
+      "quantization": "fp32",
+      "language": "multilingual",
+      "disk_bytes": 1129465329,
+      "ram_estimate_mb": 1200,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "3.0.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [
+        "GPU Intel experimental only if OpenVINO verified"
+      ],
+      "verified": true,
+      "experimental": true
+    },
+    {
+      "id": "lfm2.5-1.2b",
+      "legacy_ids": [],
+      "kind": "llm",
+      "display_name": "LFM2.5-1.2B-Instruct QAD-Q4_0",
+      "vendor": "LiquidAI",
+      "repo_id": "LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+      "revision_immutable": "8ed288026e23958ad9dfa92d53ed773a8eee7125",
+      "files": [
+        {
+          "path": "LFM2.5-1.2B-Instruct-QAD-Q4_0.gguf",
+          "size": 695755488,
+          "sha256": "bb741ebb106d543e9de114b843a3d3d73d51c74b5801e69da2abde821a0cb3e1"
+        }
+      ],
+      "license": "LFM Open License",
+      "terms_url": "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF",
+      "needs_auth": false,
+      "runtime": "llama.cpp / CPU",
+      "architecture": "liquid",
+      "format": "gguf",
+      "quantization": "QAD-Q4_0",
+      "language": "pt-BR / multilingual",
+      "disk_bytes": 695755488,
+      "ram_estimate_mb": 1024,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "2.0.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": true,
+      "restrictions": [
+        "Requires llama.cpp Liquid support"
+      ],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "lfm3-1.7b",
+      "legacy_ids": [],
+      "kind": "llm",
+      "display_name": "LFM3-1.7B QAD-Q4_0",
+      "vendor": "LiquidAI",
+      "repo_id": "LiquidAI/LFM3-1.7B-GGUF",
+      "revision_immutable": "cd0c74c575b5c416f3011b5b4c298077f26ca8c2",
+      "files": [
+        {
+          "path": "LFM3-1.7B-QAD-Q4_0.gguf",
+          "size": 1049615680,
+          "sha256": "43a7d09a0e9cba91b63eb7052488b9564569bddfd65754d2e426465e572a7452"
+        }
+      ],
+      "license": "LFM Open License",
+      "terms_url": "https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF",
+      "needs_auth": false,
+      "runtime": "llama.cpp / CPU",
+      "architecture": "liquid",
+      "format": "gguf",
+      "quantization": "QAD-Q4_0",
+      "language": "pt-BR / multilingual",
+      "disk_bytes": 1049615680,
+      "ram_estimate_mb": 1536,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "2.0.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [
+        "Requires llama.cpp Liquid support"
+      ],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "qwen3-1.7b",
+      "legacy_ids": [],
+      "kind": "llm",
+      "display_name": "Qwen3-1.7B Q4_K_M",
+      "vendor": "bartowski",
+      "repo_id": "bartowski/Qwen_Qwen3-1.7B-GGUF",
+      "revision_immutable": "dcb19155b962dbb6389f4691a982043a8e651022",
+      "files": [
+        {
+          "path": "Qwen_Qwen3-1.7B-Q4_K_M.gguf",
+          "size": 1282439584,
+          "sha256": "72c5c3cb38fa32d5256e2fe30d03e7a64c6c79e668ad84057e3bd66e250b24fb"
+        }
+      ],
+      "license": "Apache-2.0",
+      "terms_url": "https://huggingface.co/bartowski/Qwen_Qwen3-1.7B-GGUF",
+      "needs_auth": false,
+      "runtime": "llama.cpp / CPU",
+      "architecture": "qwen",
+      "format": "gguf",
+      "quantization": "Q4_K_M",
+      "language": "pt-BR / multilingual",
+      "disk_bytes": 1282439584,
+      "ram_estimate_mb": 1800,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "2.0.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [],
+      "verified": true,
+      "experimental": true
+    },
+    {
+      "id": "tucano",
+      "legacy_ids": [],
+      "kind": "llm",
+      "display_name": "Tucano 2 Qwen 0.5B Instruct Q4_K_M",
+      "vendor": "2DTi",
+      "repo_id": "2DTi/tucano2-0.5b-instruct-gguf",
+      "revision_immutable": "cbb5318b66a49e20967623e946365bcc8594c29a",
+      "files": [
+        {
+          "path": "tucano2-0.5b-instruct-Q4_K_M.gguf",
+          "size": 305603296,
+          "sha256": "49f16e9d27db128a39a3d976271a297f1ef183b763c62ca9a0c0ba7c72c55c91"
+        }
+      ],
+      "license": "Apache-2.0",
+      "terms_url": "https://huggingface.co/2DTi/tucano2-0.5b-instruct-gguf",
+      "needs_auth": false,
+      "runtime": "llama.cpp / CPU",
+      "architecture": "tucano",
+      "format": "gguf",
+      "quantization": "Q4_K_M",
+      "language": "pt-BR / multilingual",
+      "disk_bytes": 305603296,
+      "ram_estimate_mb": 512,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "2.0.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "kind": "llm",
+      "id": "qwen3.5-2b",
+      "legacy_ids": [],
+      "display_name": "Qwen3.5 2B Q4_K_M",
+      "vendor": "bartowski",
+      "repo_id": "bartowski/Qwen_Qwen3.5-2B-GGUF",
+      "revision_immutable": null,
+      "files": [
+        {
+          "path": "Qwen3.5-2B-Q4_K_M.gguf",
+          "size": 1400000000,
+          "sha256": null
+        }
+      ],
+      "license": "Apache-2.0",
+      "terms_url": "https://huggingface.co/bartowski/Qwen_Qwen3.5-2B-GGUF",
+      "needs_auth": false,
+      "runtime": "llama.cpp / CPU",
+      "architecture": "qwen3.5",
+      "format": "gguf",
+      "quantization": "Q4_K_M",
+      "language": "multilingual",
+      "disk_bytes": 1400000000,
+      "ram_estimate_mb": 2100,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "2.0.0",
+      "downloadable": false,
+      "testable": false,
+      "recommended": false,
+      "restrictions": [
+        "source_unverified: requires immutable revision + SHA256 + llama.cpp compatibility check"
+      ],
+      "verified": false,
+      "experimental": true
+    },
+    {
+      "kind": "llm",
+      "id": "qwen3-4b-instruct-2507",
+      "legacy_ids": [],
+      "display_name": "Qwen3-4B-Instruct-2507 Q4_K_M",
+      "vendor": "bartowski",
+      "repo_id": "bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF",
+      "revision_immutable": null,
+      "files": [
+        {
+          "path": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+          "size": 2500000000,
+          "sha256": null
+        }
+      ],
+      "license": "Apache-2.0",
+      "terms_url": "https://huggingface.co/bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF",
+      "needs_auth": false,
+      "runtime": "llama.cpp / CPU",
+      "architecture": "qwen3",
+      "format": "gguf",
+      "quantization": "Q4_K_M",
+      "language": "multilingual",
+      "disk_bytes": 2500000000,
+      "ram_estimate_mb": 3400,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "2.0.0",
+      "downloadable": false,
+      "testable": false,
+      "recommended": false,
+      "restrictions": [
+        "source_unverified: requires immutable revision + SHA256; slow on i5-6500T"
+      ],
+      "verified": false,
+      "experimental": true
+    },
+    {
+      "id": "pt_BR-faber-medium",
+      "legacy_ids": [],
+      "kind": "tts",
+      "display_name": "Piper pt_BR-faber-medium",
+      "vendor": "rhasspy",
+      "repo_id": "rhasspy/piper-voices",
+      "revision_immutable": null,
+      "files": [
+        {
+          "path": "pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx.json",
+          "size": null,
+          "sha256": null
+        }
+      ],
+      "license": "per-voice / MODEL_CARD",
+      "terms_url": "https://huggingface.co/rhasspy/piper-voices",
+      "needs_auth": false,
+      "runtime": "piper / CPU",
+      "architecture": "vits-onnx",
+      "format": "onnx+json",
+      "quantization": "fp32",
+      "language": "pt_BR",
+      "disk_bytes": 65000000,
+      "ram_estimate_mb": 180,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "0.2.2",
+      "downloadable": false,
+      "testable": true,
+      "recommended": true,
+      "restrictions": [
+        "upstream-tree-confirmed-pin-required: pin commit SHA + SHA256 before auto-download"
+      ],
+      "verified": false,
+      "experimental": false
+    },
+    {
+      "id": "pt_BR-edresson-low",
+      "legacy_ids": [],
+      "kind": "tts",
+      "display_name": "Piper pt_BR-edresson-low",
+      "vendor": "rhasspy",
+      "repo_id": "rhasspy/piper-voices",
+      "revision_immutable": null,
+      "files": [
+        {
+          "path": "pt/pt_BR/edresson/low/pt_BR-edresson-low.onnx",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "pt/pt_BR/edresson/low/pt_BR-edresson-low.onnx.json",
+          "size": null,
+          "sha256": null
+        }
+      ],
+      "license": "per-voice / MODEL_CARD",
+      "terms_url": "https://huggingface.co/rhasspy/piper-voices",
+      "needs_auth": false,
+      "runtime": "piper / CPU",
+      "architecture": "vits-onnx",
+      "format": "onnx+json",
+      "quantization": "fp32",
+      "language": "pt_BR",
+      "disk_bytes": 65000000,
+      "ram_estimate_mb": 180,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "0.2.2",
+      "downloadable": false,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [
+        "upstream-tree-confirmed-pin-required: pin commit SHA + SHA256 before auto-download"
+      ],
+      "verified": false,
+      "experimental": false
+    },
+    {
+      "id": "pt_BR-cadu-medium",
+      "legacy_ids": [],
+      "kind": "tts",
+      "display_name": "Piper pt_BR-cadu-medium",
+      "vendor": "rhasspy",
+      "repo_id": "rhasspy/piper-voices",
+      "revision_immutable": null,
+      "files": [
+        {
+          "path": "pt/pt_BR/cadu/medium/pt_BR-cadu-medium.onnx",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "pt/pt_BR/cadu/medium/pt_BR-cadu-medium.onnx.json",
+          "size": null,
+          "sha256": null
+        }
+      ],
+      "license": "per-voice / MODEL_CARD",
+      "terms_url": "https://huggingface.co/rhasspy/piper-voices",
+      "needs_auth": false,
+      "runtime": "piper / CPU",
+      "architecture": "vits-onnx",
+      "format": "onnx+json",
+      "quantization": "fp32",
+      "language": "pt_BR",
+      "disk_bytes": 65000000,
+      "ram_estimate_mb": 180,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "0.2.2",
+      "downloadable": false,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [
+        "upstream-tree-confirmed-pin-required: pin commit SHA + SHA256 before auto-download"
+      ],
+      "verified": false,
+      "experimental": false
+    },
+    {
+      "id": "pt_BR-jeff-medium",
+      "legacy_ids": [],
+      "kind": "tts",
+      "display_name": "Piper pt_BR-jeff-medium",
+      "vendor": "rhasspy",
+      "repo_id": "rhasspy/piper-voices",
+      "revision_immutable": null,
+      "files": [
+        {
+          "path": "pt/pt_BR/jeff/medium/pt_BR-jeff-medium.onnx",
+          "size": null,
+          "sha256": null
+        },
+        {
+          "path": "pt/pt_BR/jeff/medium/pt_BR-jeff-medium.onnx.json",
+          "size": null,
+          "sha256": null
+        }
+      ],
+      "license": "per-voice / MODEL_CARD",
+      "terms_url": "https://huggingface.co/rhasspy/piper-voices",
+      "needs_auth": false,
+      "runtime": "piper / CPU",
+      "architecture": "vits-onnx",
+      "format": "onnx+json",
+      "quantization": "fp32",
+      "language": "pt_BR",
+      "disk_bytes": 65000000,
+      "ram_estimate_mb": 180,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "0.2.2",
+      "downloadable": false,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [
+        "upstream-tree-confirmed-pin-required: pin commit SHA + SHA256 before auto-download"
+      ],
+      "verified": false,
+      "experimental": false
+    },
+    {
+      "id": "pocket-rafael",
+      "legacy_ids": [],
+      "kind": "tts",
+      "display_name": "Pocket TTS Portuguese Rafael",
+      "vendor": "kyutai",
+      "repo_id": "kyutai/pocket-tts",
+      "revision_immutable": null,
+      "files": [],
+      "license": "CC-BY-4.0 (gated)",
+      "terms_url": "https://huggingface.co/kyutai/pocket-tts",
+      "needs_auth": true,
+      "runtime": "pocket-tts / CPU",
+      "architecture": "kyutai-pocket",
+      "format": "safetensors",
+      "quantization": "fp32",
+      "language": "pt_BR",
+      "disk_bytes": null,
+      "ram_estimate_mb": 900,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "0.2.2",
+      "downloadable": false,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [
+        "GATED: requires Hugging Face license acceptance and user token"
+      ],
+      "verified": false,
+      "experimental": true
+    },
+    {
+      "id": "piper-custom-installed",
+      "legacy_ids": [
+        "pt_BR-arandu-medium"
+      ],
+      "kind": "tts",
+      "display_name": "Piper voz customizada existente (ex. pt_BR-arandu-medium)",
+      "vendor": "local",
+      "repo_id": null,
+      "revision_immutable": null,
+      "files": [],
+      "license": "local user-provided",
+      "terms_url": null,
+      "needs_auth": false,
+      "runtime": "piper / CPU",
+      "architecture": "vits-onnx",
+      "format": "onnx+json",
+      "quantization": "fp32",
+      "language": "pt_BR",
+      "disk_bytes": null,
+      "ram_estimate_mb": 180,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "0.2.2",
+      "downloadable": false,
+      "testable": true,
+      "recommended": true,
+      "restrictions": [
+        "LOCAL_DISCOVERY_ONLY"
+      ],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "qwen3",
+      "legacy_ids": [
+        "qwen3-0.6b"
+      ],
+      "kind": "llm",
+      "display_name": "Qwen3 0.6B Q8_0",
+      "vendor": "Qwen",
+      "repo_id": "Qwen/Qwen3-0.6B-GGUF",
+      "revision_immutable": "23749fefcc72300e3a2ad315e1317431b06b590a",
+      "files": [
+        {
+          "path": "Qwen3-0.6B-Q8_0.gguf",
+          "size": 639446688,
+          "sha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031"
+        }
+      ],
+      "license": "Apache-2.0",
+      "terms_url": "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF",
+      "needs_auth": false,
+      "runtime": "llama.cpp / CPU",
+      "architecture": "qwen3",
+      "format": "gguf",
+      "quantization": "Q8_0",
+      "language": "pt-BR / multilingual",
+      "disk_bytes": 639446688,
+      "ram_estimate_mb": 1024,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "2.0.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [],
+      "verified": true,
+      "experimental": true
+    }
+  ]
+}

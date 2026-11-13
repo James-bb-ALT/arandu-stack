@@ -318,11 +318,29 @@ def validate(value, text, catalog, context=None, allowed=None):
     if type(value['version']) is not int or value['version']!=VERSION or value['type'] not in {'automation','conversation','clarification'}:
         raise ValueError('LLM v2 versão/tipo inválido')
     expected=analyze(text,catalog,context)
+    entities_by_id={row.get('entity_id'):row for row in catalog.get('entities',()) if isinstance(row,dict) and row.get('entity_id')}
     if value['type']=='automation':
-        if value['question'] is not None or value['response_text'] is not None or expected['type']!='automation':
-            raise ValueError('Plano sem evidência determinística')
-        if value['operations']!=expected['operations']:
+        if value['question'] is not None or value['response_text'] is not None:
+            raise ValueError('Automação não deve misturar texto livre')
+        ops = value.get('operations')
+        if type(ops) is not list or not 1 <= len(ops) <= 4:
+            raise ValueError('Operações ausentes ou acima do limite')
+        if expected['type']=='automation' and ops!=expected['operations']:
             raise ValueError('Plano/valor/alvo diverge das evidências')
+        allowed_ids = set(allowed) if allowed is not None else set(entities_by_id)
+        for op in ops:
+            if type(op) is not dict:
+                raise ValueError('Operação inválida')
+            action = op.get('action')
+            if action not in ACTIONS:
+                raise ValueError('Ação não permitida')
+            targets = op.get('targets') if isinstance(op.get('targets'), list) else ([op.get('entity_id')] if op.get('entity_id') else [])
+            if not targets or any(t not in allowed_ids or t not in entities_by_id for t in targets):
+                raise ValueError('Alvo não autorizado no catálogo')
+            for t in targets:
+                caps = entities_by_id[t].get('capabilities') or entities_by_id[t].get('actions') or ()
+                if caps and action not in caps:
+                    raise ValueError('Capacidade incompatível com o alvo')
         for actual,wanted in zip(value['operations'],expected['operations']):
             if type(actual.get('evidence')) is not int:raise ValueError('Índice de evidência inválido')
             for key,operand in actual['parameters'].items():

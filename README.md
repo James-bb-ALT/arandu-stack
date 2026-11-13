@@ -1,5 +1,7 @@
 # Arandu Assistant
 
+**v11.2.0 — Pipeline Universal & Model Hub Unificado:** Orquestração progressiva NLU v5 -> Decision -> LLM + Home Graph sem bloqueios precoces, `UnderstandingFrameV2` multi-turno, `QuerySet` derivado de `generated_semantics_ptbr` e registro unificado de 25 modelos (STT, TTS, Decision e LLM) — veja [Resultados e Matriz v11.2.0](docs/PIPELINE_UNIVERSAL_MODEL_HUB_RESULTS.md).
+
 **Fases 5 e 6 Integradas:** NLU avançado com ações contextuais, automações estritas (`skip_condition: false`), gerenciamento de listas de afazeres (`todo.*`), consultas e histórico agregados sem sobreposição ([Documentação da Fase 5](docs/PHASE-5-IMPLEMENTATION.md)); e sistema de Intercom e anúncios domésticos determinísticos unidirecionais por área e satélite via `assist_satellite.announce` e fallback `tts.speak`, com confirmação de transmissão geral e zero chamadas neurais ([Documentação da Fase 6](docs/PHASE-6-ANNOUNCEMENTS.md)).
 
 Preserva a [Fase 4 de concorrência e observabilidade](docs/PHASE-4-PERFORMANCE.md) e a Fase 3 integrada ([Decision multimodelo CPU/GPU Intel](docs/PHASE-3.1-DECISION-MULTIMODEL.md), LLM 2.0 e [NLU temporal](docs/FASE-3.2-NLU-TEMPORAL.md), com alarmes, lembretes, timers e exclusões coletivas).

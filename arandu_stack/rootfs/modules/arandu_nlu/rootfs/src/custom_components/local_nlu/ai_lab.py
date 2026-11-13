@@ -121,7 +121,7 @@ class Lab:
             action={'decision_prepare':'prepare','decision_apply':'apply'}.get(command,'install')
             return await local_request(session,llm_worker,'/api/decision/'+action,payload={'model':payload.get('model','e5-small'),
                 'backend':payload.get('backend','cpu'),'confirm':payload.get('confirm')},timeout=970 if action=='install' else 310)
-        if command=='install' and payload.get('model') in {'tucano','qwen3'}:
+        if command=='install' and payload.get('model') in {'tucano','qwen3','qwen3-0.6b','lfm2.5-1.2b','lfm3-1.7b','qwen3-1.7b'}:
             return await local_request(session,llm_worker,'/api/llm/install',payload={'model':payload['model']},timeout=360)
         if command=='llm_apply':
             if payload.get('confirm') is not True:raise ValueError('Confirmação explícita necessária')

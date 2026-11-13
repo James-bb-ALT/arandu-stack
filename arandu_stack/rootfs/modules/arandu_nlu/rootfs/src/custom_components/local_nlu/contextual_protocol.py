@@ -3,11 +3,25 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
+import copy
+import hashlib
+import json
 from typing import Any
 import unicodedata
 
 from .capabilities import ACTIONS
 from .protocol import ProtocolError
+
+PHASE5_ACTIONS=frozenset(('automation_trigger','todo_remove','todo_update','todo_remove_completed','history_query','contextual_undo'))
+
+
+def legacy_neural_catalog(payload):
+    """Expose only the pre-existing model contract; never teach neural new effects."""
+    value=copy.deepcopy(payload)
+    for row in value['entities']:
+        row['actions']=[action for action in row['actions'] if action not in PHASE5_ACTIONS]
+    value['generation']=hashlib.sha256(json.dumps({k:v for k,v in value.items() if k!='generation'},ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    return value
 
 
 def normalize(value: str) -> str:
@@ -46,23 +60,53 @@ class Outcome:
     options: tuple[dict, ...] = ()
 
 
-PARAMETERS = frozenset(("value", "relative", "metric", "aggregate", "state_filter", "threshold", "area", "date", "provider", "secondary_targets", "scope", "category"))
-AGGREGATES = frozenset(("count", "any", "all", "none", "min", "max", "sum", "average", "compare", "filter"))
+PARAMETERS = frozenset((
+    "value", "relative", "metric", "aggregate", "state_filter", "threshold",
+    "area", "date", "provider", "secondary_targets", "scope", "category",
+    "name", "title", "time", "duration", "delay", "recurrence", "target_action",
+    "target_domain", "excluded_mentions", "excluded_targets", "excluded_device_ids",
+    "old_item", "new_item", "period", "order", "limit",
+))
+AGGREGATES = frozenset(("count", "any", "all", "none", "min", "max", "sum", "average", "compare", "filter", "rank", "trend", "peak", "state_duration"))
 METRICS = frozenset(("temperature", "target_temperature", "device_temperature", "humidity", "co2", "illuminance", "noise", "air_quality", "presence", "location", "opening", "power", "energy", "battery", "leak", "tank_level", "people_count", "remaining_time", "media", "inventory", "area", "remaining", "weather", "sunrise", "sunset", "next_event", "position", "speed"))
+
+
+METRICS = METRICS | {'power_state'}
 
 
 def validate_parameters(value: Any) -> dict:
     if type(value) is not dict or not set(value) <= PARAMETERS:
         raise ProtocolError("parameters")
     for key, item in value.items():
-        if key in ("relative", "threshold"):
+        if key == 'limit':
+            if type(item) is not int or not 1<=item<=8: raise ProtocolError(key)
+        elif key == 'period':
+            if type(item) is not str or item not in ('today','yesterday','last_hour','last_24h','this_week'): raise ProtocolError(key)
+        elif key == 'order':
+            if type(item) is not str or item not in ('asc','desc'): raise ProtocolError(key)
+        elif key in ("relative", "threshold"):
             if type(item) not in (int, float) or not math.isfinite(item) or abs(item) > 604_800:
                 raise ProtocolError(key)
+        elif key in ("duration", "delay"):
+            if type(item) not in (int, float) or not math.isfinite(item) or not 0 <= item <= 604_800:
+                raise ProtocolError(key)
+        elif key in ("name", "title", "time", "recurrence", "target_domain"):
+            if not text(item):
+                raise ProtocolError(key)
+        elif key == "target_action":
+            if item not in ACTIONS:
+                raise ProtocolError(key)
+        elif key == "excluded_mentions":
+            if type(item) is not list or len(item) > 32 or any(not text(m) for m in item):
+                raise ProtocolError(key)
+        elif key in ("excluded_targets", "excluded_device_ids"):
+            if type(item) is not list or len(item) > 32 or any(not identifier(t) for t in item):
+                raise ProtocolError(key)
         elif key == "aggregate":
-            if item not in AGGREGATES:
+            if type(item) is not str or item not in AGGREGATES:
                 raise ProtocolError(key)
         elif key == "metric":
-            if item not in METRICS:
+            if type(item) is not str or item not in METRICS:
                 raise ProtocolError(key)
         elif key == "scope":
             if item not in ("floor_group", "bulk_area", "bulk_floor_group", "bulk_global", "device_location"):
@@ -110,7 +154,16 @@ def parse(value: Any) -> Outcome:
         targets = operation["targets"]
         if type(targets) is not list or len(targets) > 32 or any(not identifier(target) for target in targets) or targets != sorted(set(targets)):
             raise ProtocolError("targets")
-        if not targets and action not in ("local_time", "local_date", "binding", "camera_view"):
+        NO_TARGET_ACTIONS = (
+            "local_time", "local_date", "binding", "camera_view",
+            "clock_alarm_create", "clock_alarm_list", "clock_alarm_query", "clock_alarm_cancel",
+            "clock_alarm_snooze", "clock_alarm_dismiss",
+            "reminder_create", "reminder_list", "reminder_query", "reminder_cancel",
+            "reminder_snooze", "reminder_complete",
+            "timer_query", "timer_list", "timer_start", "timer_cancel", "timer_pause", "timer_resume", "timer_change",
+            "scheduled_action_list", "scheduled_action_cancel",
+        )
+        if not targets and action not in NO_TARGET_ACTIONS:
             raise ProtocolError("empty_targets")
         dependencies = operation["depends_on"]
         if type(dependencies) is not list or any(type(item) is not int or not 0 <= item < number for item in dependencies) or dependencies != sorted(set(dependencies)):
@@ -118,7 +171,20 @@ def parse(value: Any) -> Outcome:
         evidence = operation["evidence"]
         if type(evidence) is not list or len(evidence) > 8 or any(not text(item, 64) for item in evidence):
             raise ProtocolError("evidence")
-        parsed.append(Operation(operation["intent"], action, tuple(targets), validate_parameters(operation["parameters"]), tuple(dependencies), tuple(evidence)))
+        params=validate_parameters(operation['parameters'])
+        required={'automation_trigger':set(),'todo_remove':{'value'},'todo_update':{'old_item','new_item'},
+            'todo_remove_completed':set(),'contextual_undo':set()}
+        if action in required and (set(params)!=required[action] or len(targets)!=1):
+            raise ProtocolError('phase5_action_parameters')
+        if action=='todo_remove' and not text(params.get('value')):raise ProtocolError('todo_item')
+        if action=='history_query':
+            if not {'metric','aggregate','period'}<=set(params)<= {'metric','aggregate','period','limit','order'} or not 1<=len(targets)<=8:
+                raise ProtocolError('history_parameters')
+            if (params['metric'],params['aggregate']) not in {('temperature','trend'),('temperature','peak'),('humidity','trend'),('humidity','peak'),('power','peak'),('power_state','state_duration'),('energy','sum')}:
+                raise ProtocolError('history_aggregate')
+        if action not in ('query','history_query') and set(params).intersection({'period','order','limit'}):raise ProtocolError('read_only_parameters')
+        if action!='todo_update' and set(params).intersection({'old_item','new_item'}):raise ProtocolError('todo_only_parameters')
+        parsed.append(Operation(operation["intent"], action, tuple(targets), params, tuple(dependencies), tuple(evidence)))
     candidates = value.get("candidates", [])
     if type(candidates) is not list or len(candidates) > 32 or any(not identifier(item) for item in candidates) or candidates != sorted(set(candidates)):
         raise ProtocolError("candidates")

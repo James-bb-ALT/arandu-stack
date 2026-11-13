@@ -136,6 +136,10 @@ def read(hass: Any, row: dict, state: Any, params: dict) -> dict:
     units = {"temperature": {"°C", "°F", "K"}, "target_temperature": {"°C", "°F", "K"}, "device_temperature": {"°C", "°F", "K"}, "humidity": {"%"}, "battery": {"%"}, "illuminance": {"lx", "lux"}, "co2": {"ppm"}, "noise": {"dB", "dBA"}, "air_quality": {"AQI"}}
     if metric in units and unit not in units[metric]:
         raise QueryError("incompatible_units")
+    if metric in ('power','energy'):
+        conversion={'W':1,'kW':1000} if metric=='power' else {'Wh':.001,'kWh':1}
+        if unit not in conversion:raise QueryError('incompatible_units')
+        value*=conversion[unit];unit='W' if metric=='power' else 'kWh'
     if metric in ("humidity", "battery") and not 0 <= value <= 100:
         raise QueryError("invalid_measurement")
     if metric in ("illuminance", "co2", "air_quality") and value < 0:
@@ -184,6 +188,10 @@ def render(values: list[dict], params: dict, options: dict) -> str:
         return "Sim, nenhuma." if not selected else "Não. " + render_list(selected)
     if aggregate == "filter":
         return render_list(selected) if selected else "Nenhum dispositivo corresponde à consulta."
+    if aggregate == 'rank':
+        if len({row['unit'] for row in selected})!=1:raise QueryError('incompatible_units')
+        ranked=sorted(selected,key=lambda row:((-1 if params.get('order')=='desc' else 1)*number(row['value']),row['entity_id']))
+        return '; '.join(render_one(row) for row in ranked[:params.get('limit',8)])+'.'
     if aggregate in ("sum", "average", "min", "max", "compare"):
         units = {row["unit"] for row in values}
         if len(units) != 1:

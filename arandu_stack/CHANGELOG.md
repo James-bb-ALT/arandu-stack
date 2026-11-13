@@ -1,3 +1,16 @@
+# 11.1.4 — Semântica universal PT-BR, roteamento unificado e fallback progressivo V3 (2026-11-12)
+
+- **Ontologia semântica PT-BR compartilhada (`arandu_stack/shared/semantics/pt_BR/concepts.json` + `scripts/generate_semantics.py`):**
+  - 260 conceitos canônicos, 1.620 formas de superfície, 42 ambiguidades rastreadas, 31 não-equivalências validadas por gerador e 17 famílias ASR compilados de forma idêntica para Rust (`generated_semantics_ptbr.rs`) e Python (`generated_semantics_ptbr.py` em HACS, NLU, Decision, LLM e STT).
+- **Roteamento unificado e remoção de bloqueios precoces antes do LLM:**
+  - `fallback_policy.py` trata `unavailable + target_not_found` e `clarification + target_not_found` (inclusive com candidatos) como `RECOVERABLE` mantendo `SAFETY_BLOCK` e `PENDING_DIALOGUE` intocados.
+  - `progressive_orchestrator.py`, `intelligence.py`, `ai_lab_core.py`, `arandu_decision/partial_reasoner.py`, `progressive_contract.py` e `progressive.rs` escalam ambiguidades e `needs_clarification` ao LLM com evidências do Decision e permitem alvos autorizados fora dos candidatos iniciais do NLU.
+  - `contextual_runtime.py` integra `ProgressiveOrchestrator` (`async_interpret_v5` / `async_review_v5`), `PendingRequestStore` multi-turno e `QuerySet` genérico por domínio (`queries_set.py`).
+- **LLM Handoff, `HomeGraph` expansível, perfil conversacional e STT aberto:**
+  - `build_llm_handoff(...)`, `expand_graph_context(...)`, separação `conversation_profile` (`temperature` 0.70–0.85) vs `automation_profile` (`temperature <= 0.25`) em `arandu_llm/structured.py`, e `closed_vocabulary: false` em `arandu_stt/config/lexical.json`.
+- **Auditorias, docs e matriz de testes:**
+  - `docs/nlu/{LEXICAL_SOURCE_AUDIT,SEMANTIC_EQUIVALENCE_COVERAGE,PROGRESSIVE_FLOW}.md` + 664 casos da matriz + 300 negativos/contrafactuais + 100 aliases dinâmicos inventados.
+
 # 11.0.1 — Correção de consistência do NLU pós-merge 5+6 (2026-11-12)
 
 - **Anúncios e Intercom (P0):**

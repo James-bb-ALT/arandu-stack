@@ -10,7 +10,11 @@ CONF_FALLBACK_USER_ID = "fallback_user_id"
 CONF_VOICE_IDENTITY_BINDINGS = "voice_identity_bindings"
 CONF_DEVICE_IDENTITY_BINDINGS = "device_identity_bindings"
 CONF_SHADOW_ENABLED = "shadow_enabled"
-DEFAULT_ENDPOINT = "http://local-ptbr-nlu:11555"
+CONF_DECISION_ENABLED = "decision_enabled"
+CONF_LLM_ENABLED = "llm_enabled"
+CONF_DELIVERY_MEDIA_PLAYER = "delivery_media_player"
+CONF_DELIVERY_TTS_ENGINE = "delivery_tts_engine"
+DEFAULT_ENDPOINT = "http://local-arandu-stack:11555"
 
 PROTOCOL_VERSION = 1
 RESOLVE_VERSION = 2

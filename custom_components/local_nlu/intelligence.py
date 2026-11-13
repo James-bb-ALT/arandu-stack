@@ -219,8 +219,7 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
                 trace[source]["status"] = response.get("decision_status", "rejected")
                 if (response.get('algorithm') == 'structured-v3' and response.get('decision_status') == 'ambiguous'
                         and (response.get('analysis') or {}).get('device', {}).get('candidate_count', 0) > 1):
-                    trace['llm'] = {'status':'skipped','reason':'true_entity_ambiguity'}
-                    return (), trace
+                    trace['decision']['ambiguity_evidence'] = True
             else:
                 if response.get('kind') == 'conversation':
                     reply = response.get('response_text')

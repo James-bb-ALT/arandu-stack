@@ -190,9 +190,20 @@ async def infer(adapter,payload,catalog):
     base['retrieval_ms']=(time.perf_counter()-started)*1000
     base['load_ms']=await ensure(adapter,key)
     base['integrity_ms']=adapter.last_integrity_ms
+    conversation_temp = float(payload.get("conversation_temperature", 0.78))
+    if not (0.7 <= conversation_temp <= 0.85):
+        conversation_temp = 0.78
+    automation_temp = min(float(adapter.settings.get("temperature", 0.1)), 0.25)
     request={'messages':[{'role':'system','content':CONVERSATION_PROMPT if general else SYSTEM},
         {'role':'user','content':text if general else encoded}],
-        'temperature':adapter.settings['temperature'],'max_tokens':adapter.settings['max_tokens']}
+        'temperature': conversation_temp if general else automation_temp,
+        'max_tokens':adapter.settings['max_tokens']}
+    if general:
+        request['top_p'] = 0.9
+        request['repeat_penalty'] = 1.1
+        base['profile'] = 'conversation_profile'
+    else:
+        base['profile'] = 'automation_profile'
     if MODELS[key]['thinking']:request['chat_template_kwargs']={'enable_thinking':False}
     if not general:request['response_format']={'type':'json_schema','json_schema':{'name':'arandu_automation_v2','strict':True,'schema':schema(catalog,ids,analysis)}}
     adapter.phase='inference'

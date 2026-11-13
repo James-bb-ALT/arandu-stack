@@ -160,11 +160,11 @@ class Production(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(self.hass.services.calls),1)
         self.assertEqual([r['action'] for r in self.requests],['decision','decision'])
 
-    async def test_ambiguity_does_not_spend_llm_or_execute(self):
+    async def test_ambiguity_escalates_to_llm_without_unsafe_execution(self):
         fixtures.add(self.hass,'other','fan.other','Ventilador',{'supported_features':49,'percentage':50},area='area_quarto')
         result=await self.say('liga ventilador')
         self.assertNotEqual(result.code,'success')
-        self.assertEqual([r['action'] for r in self.requests],['decision'])
+        self.assertEqual([r['action'] for r in self.requests],['decision', 'llm'])
         self.assertEqual(self.hass.services.calls,[])
 
     async def test_revoked_permission_during_inference_invalidates_result(self):

@@ -245,16 +245,29 @@ class LocalNluRuntime:
         self._contextual_options = contextual_options or (lambda: {})
         self._contextual = None
 
+    def invalidate_pending(self, conversation_id: str | None) -> None:
+        if isinstance(conversation_id, str):
+            self._pending.pop(conversation_id, None)
+
     async def async_process(self, user_input: Any) -> RuntimeResult:
-        from .semantic_context import semantic_refusal
+        routing = self._contextual_options()
+        from .voice_controls import cancellation, volume
         text = getattr(user_input, 'text', None)
+        if type(text) is str and routing.get('wake_words'):
+            from .voice_input import without_wake_word
+            try:
+                text = without_wake_word(user_input, routing, True).text
+            except ValueError:
+                return RuntimeResult(code='invalid_request')
+        control = type(text) is str and (cancellation(text) or volume(text)[0])
+        from .semantic_context import semantic_refusal
         safety_route = type(text) is str and semantic_refusal(text) is not None
-        if safety_route or self._contextual_enabled():
+        if control or safety_route or self._contextual_enabled() or routing.get("decision_enabled") is True or routing.get("llm_enabled") is True:
             if self._contextual is None:
                 from .contextual_runtime import ContextualRuntime
                 self._contextual = ContextualRuntime(self._hass, self._client, self._contextual_options)
             result = await self._contextual.process(user_input)
-            if safety_route and result.code in ('success', 'cancelled', 'unavailable'):
+            if (control or safety_route) and result.code in ('success', 'cancelled', 'unavailable'):
                 self._pending.pop(getattr(user_input, 'conversation_id', None), None)
             return result
         conversation_id = getattr(user_input, "conversation_id", None)

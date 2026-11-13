@@ -261,9 +261,9 @@ def validate_repair_proposal(
         slot = clause["slots"].get(slot_name)
         if slot is None:
             return False, "missing_slot"
-        if slot["status"] in {"resolved", "conflicting", "forbidden"}:
+        if slot["status"] in {"resolved", "forbidden"} or (slot["status"] == "conflicting" and source != "llm_proposed"):
             return False, f"immutable_slot:{slot_name}"
-        if slot_name not in clause.get("unresolved", []) and slot["status"] not in {"unknown", "candidate"}:
+        if slot_name not in clause.get("unresolved", []) and slot["status"] not in {"unknown", "candidate", "conflicting"}:
             return False, f"slot_not_repairable:{slot_name}"
 
         value = repair.get("value")
@@ -281,7 +281,7 @@ def validate_repair_proposal(
             if any(t in excluded for t in targets):
                 return False, "excluded_target_violation"
             candidates = set(slot.get("candidates") or ())
-            if candidates and any(t not in candidates for t in targets):
+            if source != "llm_proposed" and candidates and any(t not in candidates for t in targets):
                 return False, "target_not_in_candidates"
             if authorized_targets is not None and any(t not in authorized_targets for t in targets):
                 return False, "unauthorized_target"
@@ -308,3 +308,64 @@ def build_origin_context(
 
 def normalize_repair_text(value: str) -> str:
     return normalize(value)
+
+
+def build_llm_handoff(
+    partial: dict[str, Any],
+    decision_out: dict[str, Any] | None = None,
+    graph_ctx: dict[str, Any] | None = None,
+    *,
+    session_state: dict[str, Any] | None = None,
+    allowed_domains: tuple[str, ...] | list[str] | None = None,
+) -> dict[str, Any]:
+    """Pure deterministic builder for LLM handoff payloads.
+
+    Preserves frozen slots, constraints, Decision ranked evidence, HomeGraph context,
+    and active multi-turn PendingRequest state without mutating inputs or executing HA.
+    """
+    clauses_out: list[dict[str, Any]] = []
+    preserved_slots: dict[str, Any] = {}
+    for clause in partial.get("clauses") or ():
+        slots = clause.get("slots") or {}
+        frozen = {
+            k: v.get("value")
+            for k, v in slots.items()
+            if isinstance(v, dict) and v.get("status") == "resolved"
+        }
+        preserved_slots.update(frozen)
+        clauses_out.append(
+            {
+                "clause_id": clause.get("clause_id", 0),
+                "original_text": clause.get("original_text", ""),
+                "frozen_slots": frozen,
+                "unresolved": list(clause.get("unresolved") or ()),
+                "allowed_actions": list(clause.get("allowed_actions") or ()),
+                "constraints": dict(clause.get("constraints") or {}),
+            }
+        )
+    is_convo = bool(
+        (decision_out and decision_out.get("route") == "general_conversation")
+        or partial.get("request_kind") == "general_conversation"
+    )
+    return {
+        "version": PROGRESSIVE_PROTOCOL_VERSION,
+        "request_id": partial.get("request_id"),
+        "generation": partial.get("generation"),
+        "request_kind": partial.get("request_kind"),
+        "profile": "conversation" if is_convo else "automation",
+        "clauses": clauses_out,
+        "preserved_slots": preserved_slots,
+        "decision_evidence": (
+            {
+                "route": decision_out.get("route"),
+                "status": decision_out.get("status") or decision_out.get("decision_status"),
+                "reason": decision_out.get("reason"),
+                "alternatives": list((decision_out.get("alternatives") or ())[:4]),
+            }
+            if isinstance(decision_out, dict)
+            else None
+        ),
+        "graph_context": graph_ctx,
+        "session_state": dict(session_state) if isinstance(session_state, dict) else None,
+        "allowed_domains": list(allowed_domains) if allowed_domains else None,
+    }

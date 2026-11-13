@@ -65,64 +65,25 @@ def reason_partial(payload: dict[str, Any], *, encoder=None) -> dict[str, Any]:
 
         target_slot = slots.get("target") or {}
         if target_slot.get("status") == "conflicting":
-            return {
-                "decision_contract": DECISION_PARTIAL_CONTRACT,
-                "route": "possible_action",
-                "status": "needs_clarification",
-                "repairs": [],
-                "alternatives": [{"value": c, "score": None} for c in target_slot.get("candidates") or ()],
-                "confidence": None,
-                "margin": 0.0,
-                "calibration_valid": False,
-                "requires_confirmation": True,
-                "reason": "ambiguous_target",
-            }
+            alternatives.extend(
+                {"slot": "target", "value": c, "score": None}
+                for c in (target_slot.get("candidates") or ())
+            )
 
         if "action" in unresolved and (slots.get("action") or {}).get("status") in {"unknown", "candidate"}:
             allowed_actions = list(clause.get("allowed_actions") or ())
             if not allowed_actions:
-                return {
-                    "decision_contract": DECISION_PARTIAL_CONTRACT,
-                    "route": route,
-                    "status": "abstain",
-                    "repairs": [],
-                    "alternatives": [],
-                    "confidence": None,
-                    "margin": None,
-                    "calibration_valid": False,
-                    "requires_confirmation": False,
-                    "reason": "no_allowed_actions",
-                }
+                continue
             ranked = rank_action_candidates(clause.get("original_text", ""), allowed_actions, encoder=encoder)
             if not ranked or ranked[0]["score"] < 0.65:
-                return {
-                    "decision_contract": DECISION_PARTIAL_CONTRACT,
-                    "route": route,
-                    "status": "needs_clarification",
-                    "repairs": [],
-                    "alternatives": [{"value": r["value"], "score": r["score"]} for r in ranked[:3]],
-                    "confidence": None,
-                    "margin": None,
-                    "calibration_valid": False,
-                    "requires_confirmation": True,
-                    "reason": "no_confident_action_match",
-                }
+                alternatives.extend({"slot": "action", "value": r["value"], "score": r["score"]} for r in ranked[:3])
+                continue
             top = ranked[0]
             margin = round(top["score"] - ranked[1]["score"], 4) if len(ranked) > 1 else 1.0
             margins.append(margin)
             if margin < 0.08:
-                return {
-                    "decision_contract": DECISION_PARTIAL_CONTRACT,
-                    "route": "possible_action",
-                    "status": "needs_clarification",
-                    "repairs": [],
-                    "alternatives": [{"value": r["value"], "score": r["score"]} for r in ranked[:3]],
-                    "confidence": None,
-                    "margin": margin,
-                    "calibration_valid": False,
-                    "requires_confirmation": True,
-                    "reason": "insufficient_margin",
-                }
+                alternatives.extend({"slot": "action", "value": r["value"], "score": r["score"]} for r in ranked[:3])
+                continue
             evidence = list(top.get("evidence") or [])
             if "capability_compatible" not in evidence:
                 evidence.append("capability_compatible")
@@ -138,18 +99,35 @@ def reason_partial(payload: dict[str, Any], *, encoder=None) -> dict[str, Any]:
             )
             alternatives.extend({"value": r["value"], "score": r["score"]} for r in ranked[1:4])
 
+        # Multi-slot repair: if target is unknown/candidate (not conflicting) and single candidate exists
+        if "target" in unresolved and target_slot.get("status") in {"unknown", "candidate"}:
+            cands = list(target_slot.get("candidates") or ())
+            if len(cands) == 1:
+                repairs.append(
+                    {
+                        "clause_id": cid,
+                        "slot": "target",
+                        "value": cands[0],
+                        "source": "decision_ranked",
+                        "evidence": ["single_authorized_candidate"],
+                        "raw_score": 0.9,
+                    }
+                )
+            elif len(cands) > 1:
+                alternatives.extend({"slot": "target", "value": c, "score": None} for c in cands[:4])
+
     if not repairs:
         return {
             "decision_contract": DECISION_PARTIAL_CONTRACT,
             "route": route,
             "status": "abstain",
             "repairs": [],
-            "alternatives": [],
+            "alternatives": alternatives[:4],
             "confidence": None,
             "margin": None,
             "calibration_valid": False,
             "requires_confirmation": False,
-            "reason": "no_repair_produced",
+            "reason": "ambiguous_target" if any(a.get("slot") == "target" for a in alternatives) else "no_repair_produced",
         }
 
     return {

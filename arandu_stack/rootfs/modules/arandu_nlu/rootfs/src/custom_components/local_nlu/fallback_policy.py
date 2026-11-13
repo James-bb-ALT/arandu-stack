@@ -162,18 +162,6 @@ def classify_fallback(
     # 4. Clarification states
     if nlu_status == "clarification":
         if reason == "target_not_found":
-            if candidates or options:
-                return FallbackRoute(
-                    category=RouteCategory.CLARIFY,
-                    decision_allowed=False,
-                    llm_allowed=False,
-                    execution_allowed=False,
-                    clarification_only=True,
-                    reason="target_not_found",
-                    preserve_slots=slots,
-                    missing_slots=missing,
-                    escalation_blocked_by="candidates_present",
-                )
             return FallbackRoute(
                 category=RouteCategory.RECOVERABLE,
                 decision_allowed=True,
@@ -213,6 +201,17 @@ def classify_fallback(
             )
 
         if reason in CLARIFY_REASONS:
+            if reason in ("ambiguous_target", "missing_slot"):
+                return FallbackRoute(
+                    category=RouteCategory.RECOVERABLE,
+                    decision_allowed=True,
+                    llm_allowed=True,
+                    execution_allowed=True,
+                    clarification_only=False,
+                    reason=reason,
+                    preserve_slots=slots,
+                    missing_slots=missing,
+                )
             if reason == "missing_origin_area" and (
                 slots.get("scope") in ("global", "bulk_global") or slots.get("area") in ("casa", "global")
             ):
@@ -229,7 +228,7 @@ def classify_fallback(
             return FallbackRoute(
                 category=RouteCategory.CLARIFY,
                 decision_allowed=True,
-                llm_allowed=False,
+                llm_allowed=True,
                 execution_allowed=False,
                 clarification_only=True,
                 reason=reason,
@@ -238,15 +237,15 @@ def classify_fallback(
                 escalation_blocked_by="clarification_required",
             )
 
-    # 5. Recoverable no_match
-    if nlu_status == "no_match" and reason in RECOVERABLE_NO_MATCH_REASONS:
+    # 5. Recoverable no_match / unavailable
+    if nlu_status in ("no_match", "unavailable") and reason in (*RECOVERABLE_NO_MATCH_REASONS, "target_not_found"):
         return FallbackRoute(
             category=RouteCategory.RECOVERABLE,
             decision_allowed=True,
             llm_allowed=True,
             execution_allowed=True,
             clarification_only=False,
-            reason=reason or "no_match",
+            reason=reason or nlu_status or "no_match",
             preserve_slots=slots,
             missing_slots=missing,
         )

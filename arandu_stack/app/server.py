@@ -16,7 +16,7 @@ from logs import LogStore, SOURCES, LOGGER
 from request_traces import TraceStore
 from admission import Gate, Busy
 
-APP_VERSION = '11.3.0'
+APP_VERSION = '11.3.1'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""

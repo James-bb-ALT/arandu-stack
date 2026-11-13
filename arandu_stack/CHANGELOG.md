@@ -1,3 +1,8 @@
+# 11.3.1 — Correção de HTTP 503 no LLM/Model Registry e lista de download no AI Lab (2026-11-13)
+
+- **`arandu_stack/Dockerfile`:** Adicionado `COPY model_registry /opt/model_registry` (com verificação de build para `/opt/model_registry/models.json`), corrigindo `FileNotFoundError` (que retornava HTTP 503 em `/api/llm/models`, `/api/tts/models` e `/api/infer` LLM dentro do container).
+- **AI Lab (`ai_lab_panel.js` + `ai_lab.py`):** Adicionados `lfm2.5-1.2b`, `lfm3-1.7b` e `qwen3-1.7b` aos seletores de LLM e instalação sob demanda.
+
 # 11.3.0 — STT Multimodelo + Silero VAD v6.2 + WebRTC Audio Processing (2026-11-13)
 
 - **Novos Modelos STT (catálogo unificado com 29 modelos / 13 STT):**

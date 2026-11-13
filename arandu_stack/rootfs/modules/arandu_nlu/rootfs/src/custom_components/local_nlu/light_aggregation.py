@@ -13,7 +13,7 @@ def _norm(text: str) -> str:
 
 
 _LIGHT_QUERY_RE = re.compile(
-    r"\b(?:quantas?\s+luz(?:es)?|quais\s+luz(?:es)?|tem\s+alguma\s+luz|alguma\s+luz\s+(?:acesa|ligada))\b"
+    r"\b(?:quantas?\s+luz(?:es)?|qua(?:l|is)\s+luz(?:es)?|tem\s+alguma\s+luz|alguma\s+luz\s+(?:acesa|ligada))\b"
 )
 
 
@@ -156,7 +156,7 @@ def evaluate_aggregated_light_query(
         verb = "Há"
         speech = f"{verb} {count_off} {noun}{scope_suffix}{unavail_note}."
         mode = "count_off"
-    elif "quais" in norm:
+    elif "quais" in norm or re.search(r"\bqual\s+luz\b", norm):
         if count_on == 0:
             speech = f"Nenhuma luz está ligada{scope_suffix}{unavail_note}."
         else:

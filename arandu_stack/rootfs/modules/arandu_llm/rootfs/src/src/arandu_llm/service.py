@@ -9,7 +9,7 @@ import shutil
 import sys
 import time
 from .contracts import candidates, digest
-from .models import MODELS, installed, install, validate_generation
+from .models import MODELS, installed, install, model_path, validate_generation
 from .adapter import Llama, LlmOutputError
 from .inference_slot import inference_slot
 from .semantic_context import resolve_device, decomposition, clearly_conversational
@@ -198,8 +198,27 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
 
     app.on_startup.append(warm)
 
+    def _verify_weights_on_disk(model_key: str) -> tuple[bool, float]:
+        t0 = time.perf_counter()
+        cache = getattr(adapter, "_verified_disk_weights", None)
+        if cache is None:
+            cache = {}
+            adapter._verified_disk_weights = cache
+        info = MODELS[model_key]
+        gguf = Path(root) / model_key / info["file"]
+        if not gguf.is_file():
+            raise FileNotFoundError(f"Pesos do modelo '{model_key}' não encontrados")
+        st = gguf.stat()
+        sig = (st.st_size, st.st_mtime_ns)
+        if cache.get(model_key) == sig:
+            return True, round((time.perf_counter() - t0) * 1000, 3)
+        model_path(root, model_key)
+        cache[model_key] = sig
+        return True, round((time.perf_counter() - t0) * 1000, 3)
+
     async def status(request):
         proc_alive = adapter.process is not None and adapter.process.returncode is None
+        runtime_ok = bool(executable and Path(executable).is_file())
         if residency["resident_policy"] == "OFF":
             effective_state = "off"
         elif proc_alive and adapter.active_model:
@@ -209,18 +228,30 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
         else:
             effective_state = "unloaded"
         rows=[]
+        configured = adapter.settings.get('llm_model', KEY)
         for key,info in MODELS.items():
             present=installed(root,key)
             loaded=adapter.active_model==key and proc_alive
-            rows.append({'id':key,**info,'installed':present,'available':present and bool(executable and Path(executable).is_file()),
-                'loaded':loaded,'integrity_verified':loaded and (getattr(adapter,'_model_identity',()) or ())[:3] in getattr(adapter,'verified_models',set()),'selected':key==adapter.settings.get('llm_model','tucano'),
+            verified = loaded and (getattr(adapter,'_model_identity',()) or ())[:3] in getattr(adapter,'verified_models',set())
+            if not verified and present:
+                verified = key in getattr(adapter, '_verified_disk_weights', {})
+            rows.append({'id':key,**info,'installed':present,'weights_installed':present,
+                'weights_verified':verified,'runtime_available':runtime_ok,
+                'available':present and runtime_ok,
+                'loaded':loaded,'model_loaded':loaded,'model_ready':loaded and effective_state=='ready',
+                'integrity_verified':verified,'selected':key==configured,
                 'reason':None if present else 'Pesos ausentes; instalação explícita necessária'})
         pid = adapter.process.pid if proc_alive else None
+        selected_row = next((r for r in rows if r['id'] == configured), {})
         return web.json_response({"package": "arandu-llm", "version": "2.1.0", "protocol": "arandu-inference-v1",
-            'models':rows,'configured_model':adapter.settings.get('llm_model',KEY),
+            'models':rows,'configured_model':configured,
             'active_model':adapter.active_model if proc_alive else None,'profiles':adapter.settings.get('profiles',{}),
             'resident_policy':residency['resident_policy'],'is_model_loaded':bool(proc_alive and adapter.active_model),
+            'model_loaded':bool(proc_alive and adapter.active_model),
             'model_ready':bool(proc_alive and adapter.active_model and effective_state=='ready'),
+            'weights_installed':bool(selected_row.get('weights_installed')),
+            'weights_verified':bool(selected_row.get('weights_verified')),
+            'runtime_available':runtime_ok,
             'load_state':effective_state,'load_error_code':residency['load_error_code'],
             'loaded_since':residency['loaded_since'],'last_load_ms':residency['last_load_ms'],
             'process_rss_mb':_process_rss_mb(pid),'available_memory_mb':_available_memory_mb(),
@@ -242,133 +273,167 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
         async def work():
             if action=='install':
                 async with lock:return await asyncio.to_thread(install,root,selected)
-            async with lock, inference_slot():
-                acquired=time.perf_counter()
-                if action == "unload":
-                    await adapter.unload()
-                    residency["load_state"] = "off" if residency["resident_policy"] == "OFF" else "unloaded"
-                    residency["loaded_since"] = None
-                    return {"unloaded": True}
-                if action in {'load','apply'}:
-                    from .structured import ensure
-                    old_settings=dict(adapter.settings);old_threads=adapter.threads;previous=adapter.active_model
-                    old_policy=residency["resident_policy"]
-                    requested_policy=body.get("resident_policy", old_policy)
-                    if requested_policy not in RESIDENCY_POLICIES:
-                        raise ValueError("Política de RAM do LLM inválida")
-                    try:
-                        if action=='apply':
-                            generation=validate_generation(body.get('generation',{}))
-                            adapter.settings.update(generation,llm_model=selected,contract_version=body.get('contract_version',2))
-                            if type(adapter.settings['contract_version']) is not int or adapter.settings['contract_version'] not in (1,2):raise ValueError('Contrato LLM inválido')
-                            adapter.threads=generation.get('threads',adapter.threads)
-                            profile={k:(adapter.threads if k=='threads' else adapter.settings[k]) for k in ('threads','context_size','max_tokens','temperature')}
-                            profiles=dict(adapter.settings.get('profiles',{}));profiles[selected]=profile
-                            adapter.settings['profiles']=profiles
-                            residency["resident_policy"] = requested_policy
-                        if requested_policy == "OFF" and action == "apply":
-                            await adapter.unload()
-                            residency["load_state"] = "off"
-                            residency["loaded_since"] = None
-                            return {'loaded':False,'model':selected,'load_ms':0.0,'integrity_verified':False,'resident_policy':'OFF','load_state':'off'}
-                        if requested_policy == "LAZY" and action == "apply" and body.get("preload") is not True:
-                            # Keep warm if same model & settings already loaded; otherwise unload cleanly without forcing load
-                            proc_alive = adapter.process is not None and adapter.process.returncode is None
-                            if proc_alive and adapter.active_model == selected:
-                                residency["load_state"] = "ready"
-                                return {'loaded':True,'model':selected,'load_ms':0.0,'integrity_verified':True,'resident_policy':'LAZY','load_state':'ready'}
-                            await adapter.unload()
-                            residency["load_state"] = "unloaded"
-                            residency["loaded_since"] = None
-                            return {'loaded':False,'model':selected,'load_ms':0.0,'integrity_verified':False,'resident_policy':'LAZY','load_state':'unloaded'}
-                        avail = _available_memory_mb()
-                        if avail is not None and (avail - _estimated_footprint_mb(root, selected)) < MIN_HEADROOM_MB:
-                            residency["load_state"] = "degraded"
-                            residency["load_error_code"] = "memory_pressure"
-                            raise ValueError("Memória disponível insuficiente (memory_pressure)")
-                        load_ms=await ensure(adapter,selected)
-                        residency["load_state"] = "ready"
-                        residency["load_error_code"] = None
-                        residency["last_load_ms"] = round(load_ms, 1)
-                        residency["loaded_since"] = time.time()
-                        return {'loaded':True,'model':selected,'load_ms':load_ms,'integrity_verified':True,'resident_policy':residency['resident_policy'],'load_state':'ready'}
-                    except BaseException:
-                        adapter.settings=old_settings;adapter.threads=old_threads;residency["resident_policy"]=old_policy
-                        if previous and old_policy != "OFF":
-                            try:await ensure(adapter,previous)
-                            except Exception:pass
-                        raise
-                if action=='llm_compare':
-                    models=body.get('models')
-                    if type(models) is not list or not 1<=len(models)<=2 or len(set(models))!=len(models) or any(k not in MODELS for k in models):
-                        raise ValueError('Selecione 1–2 modelos LLM conhecidos')
-                    catalog=validate_catalog(body.get('catalog'));text=validate_text(body.get('text'))
-                    results=[];previous=adapter.active_model;previous_settings=dict(adapter.settings);previous_threads=adapter.threads
-                    try:
-                        for key in models:
-                            try:results.append(await adapter.infer({**body,'text':text,'llm_model':key,'contract_version':2},catalog))
-                            except Exception as exc:
-                                results.append({'model':key,'kind':'error','error_type':type(exc).__name__,'reason':'model_or_generation_unavailable'})
-                    finally:
-                        adapter.settings=previous_settings;adapter.threads=previous_threads
-                        if previous:
-                            from .structured import ensure
-                            await ensure(adapter,previous)
-                        else:await adapter.unload()
-                    return {'comparisons':results,'dry_run':True,'proposal':None,'home_assistant_actions':0,'queue_ms':(acquired-enqueued)*1000}
-                if action not in {"llm"}:
-                    raise ValueError("Ação indisponível neste pacote")
-                if residency["resident_policy"] == "OFF":
-                    raise LlmOutputError("llm_disabled_by_residency", "LLM desativado pela política de RAM (OFF).")
-                if residency["resident_policy"] == "RESIDENT" and adapter.process is not None and adapter.process.returncode is not None:
-                    if residency["recoveries_count"] >= 1:
-                        residency["load_state"] = "error"
-                        residency["load_error_code"] = "resident_process_died"
-                        raise LlmOutputError("resident_process_died", "Processo residente do LLM encerrou após recuperação.")
-                    residency["recoveries_count"] += 1
-                was_loaded = adapter.process is not None and adapter.process.returncode is None and adapter.active_model == selected
-                residency["cold_start_last_request"] = not was_loaded
-                catalog = validate_catalog(body.get("catalog"))
-                text = validate_text(body.get('text'))
-                before = time.perf_counter()
-                if 'contract_version' not in body:
-                    accepted=body.get('accept_contracts',[1])
-                    if type(accepted) is not list or not 1<=len(accepted)<=2 or any(type(v) is not int or v not in (1,2) for v in accepted):
-                        raise ValueError('Negociação de contrato inválida')
-                    version=adapter.settings.get('contract_version',1)
-                    if version not in accepted:
-                        if 1 in accepted and selected=='tucano':version=1
-                        else:raise ValueError('Cliente precisa suportar contrato LLM 2')
-                    body['contract_version']=version
-                if body.get('contract_version',adapter.settings.get('contract_version',1))==2:
-                    result=await adapter.infer({**body,'text':text,'llm_model':selected},catalog)
-                    if adapter.process is not None and adapter.process.returncode is None:
-                        residency["load_state"] = "ready"
-                        residency["loaded_since"] = residency["loaded_since"] or time.time()
-                    result.update(service='arandu-llm',catalog_entities=len(catalog['entities']),queue_ms=(acquired-enqueued)*1000,
-                        request_total_ms=(time.perf_counter()-received)*1000,
-                        resident_policy=residency['resident_policy'],cold_start=residency['cold_start_last_request'],
-                        pid=adapter.process.pid if adapter.process and adapter.process.returncode is None else None)
+            slot_timings = {}
+            async with lock:
+                service_acquired = time.perf_counter()
+                async with inference_slot(slot_timings):
+                    acquired=time.perf_counter()
+                    if action == "unload":
+                        await adapter.unload()
+                        residency["load_state"] = "off" if residency["resident_policy"] == "OFF" else "unloaded"
+                        residency["loaded_since"] = None
+                        return {"unloaded": True}
+                    if action in {'load','apply'}:
+                        from .structured import ensure
+                        old_settings=dict(adapter.settings);old_threads=adapter.threads;previous=adapter.active_model
+                        old_policy=residency["resident_policy"]
+                        requested_policy=body.get("resident_policy", old_policy)
+                        if requested_policy not in RESIDENCY_POLICIES:
+                            raise ValueError("Política de RAM do LLM inválida")
+                        runtime_ok = bool(executable and Path(executable).is_file())
+                        try:
+                            if action=='apply':
+                                generation=validate_generation(body.get('generation',{}))
+                                adapter.settings.update(generation,llm_model=selected,contract_version=body.get('contract_version',2))
+                                if type(adapter.settings['contract_version']) is not int or adapter.settings['contract_version'] not in (1,2):raise ValueError('Contrato LLM inválido')
+                                adapter.threads=generation.get('threads',adapter.threads)
+                                profile={k:(adapter.threads if k=='threads' else adapter.settings[k]) for k in ('threads','context_size','max_tokens','temperature')}
+                                profiles=dict(adapter.settings.get('profiles',{}));profiles[selected]=profile
+                                adapter.settings['profiles']=profiles
+                                residency["resident_policy"] = requested_policy
+                            if requested_policy == "OFF" and action == "apply":
+                                await adapter.unload()
+                                residency["load_state"] = "off"
+                                residency["loaded_since"] = None
+                                return {'loaded':False,'model_loaded':False,'model_ready':False,'model':selected,'load_ms':0.0,
+                                        'integrity_verified':False,'weights_installed':installed(root,selected),'weights_verified':False,
+                                        'runtime_available':runtime_ok,'resident_policy':'OFF','load_state':'off'}
+                            if requested_policy == "LAZY" and action == "apply" and body.get("preload") is not True:
+                                verified, integrity_check_ms = await asyncio.to_thread(_verify_weights_on_disk, selected)
+                                proc_alive = adapter.process is not None and adapter.process.returncode is None
+                                if proc_alive and adapter.active_model == selected:
+                                    residency["load_state"] = "ready"
+                                    return {'loaded':True,'model_loaded':True,'model_ready':True,'model':selected,'load_ms':0.0,
+                                            'integrity_check_ms':integrity_check_ms,'integrity_verified':verified,
+                                            'weights_installed':True,'weights_verified':verified,'runtime_available':runtime_ok,
+                                            'resident_policy':'LAZY','load_state':'ready'}
+                                await adapter.unload()
+                                residency["load_state"] = "unloaded"
+                                residency["loaded_since"] = None
+                                return {'loaded':False,'model_loaded':False,'model_ready':False,'model':selected,'load_ms':0.0,
+                                        'integrity_check_ms':integrity_check_ms,'integrity_verified':verified,
+                                        'weights_installed':True,'weights_verified':verified,'runtime_available':runtime_ok,
+                                        'resident_policy':'LAZY','load_state':'unloaded'}
+                            avail = _available_memory_mb()
+                            if avail is not None and (avail - _estimated_footprint_mb(root, selected)) < MIN_HEADROOM_MB:
+                                residency["load_state"] = "degraded"
+                                residency["load_error_code"] = "memory_pressure"
+                                raise ValueError("Memória disponível insuficiente (memory_pressure)")
+                            residency["load_state"] = "loading"
+                            load_ms=await ensure(adapter,selected)
+                            residency["load_state"] = "ready"
+                            residency["load_error_code"] = None
+                            residency["last_load_ms"] = round(load_ms, 1)
+                            residency["loaded_since"] = time.time()
+                            return {'loaded':True,'model_loaded':True,'model_ready':True,'model':selected,'load_ms':load_ms,
+                                    'integrity_check_ms':adapter.last_integrity_ms,'integrity_verified':True,
+                                    'weights_installed':True,'weights_verified':True,'runtime_available':runtime_ok,
+                                    'resident_policy':residency['resident_policy'],'load_state':'ready'}
+                        except BaseException:
+                            adapter.settings=old_settings;adapter.threads=old_threads;residency["resident_policy"]=old_policy
+                            residency["load_state"] = "off" if old_policy == "OFF" else ("ready" if (adapter.process is not None and adapter.process.returncode is None and adapter.active_model) else "unloaded")
+                            if previous and old_policy != "OFF":
+                                try:await ensure(adapter,previous)
+                                except Exception:pass
+                            raise
+                    if action=='llm_compare':
+                        models=body.get('models')
+                        if type(models) is not list or not 1<=len(models)<=2 or len(set(models))!=len(models) or any(k not in MODELS for k in models):
+                            raise ValueError('Selecione 1–2 modelos LLM conhecidos')
+                        catalog=validate_catalog(body.get('catalog'));text=validate_text(body.get('text'))
+                        results=[];previous=adapter.active_model;previous_settings=dict(adapter.settings);previous_threads=adapter.threads
+                        try:
+                            for key in models:
+                                try:results.append(await adapter.infer({**body,'text':text,'llm_model':key,'contract_version':2},catalog))
+                                except Exception as exc:
+                                    results.append({'model':key,'kind':'error','error_type':type(exc).__name__,'reason':'model_or_generation_unavailable'})
+                        finally:
+                            adapter.settings=previous_settings;adapter.threads=previous_threads
+                            if previous:
+                                from .structured import ensure
+                                await ensure(adapter,previous)
+                            else:await adapter.unload()
+                        return {'comparisons':results,'dry_run':True,'proposal':None,'home_assistant_actions':0,
+                                'queue_ms':(acquired-enqueued)*1000,'service_queue_ms':(service_acquired-enqueued)*1000,
+                                'inference_slot_wait_ms':slot_timings.get('inference_slot_wait_ms',0.0)}
+                    if action not in {"llm"}:
+                        raise ValueError("Ação indisponível neste pacote")
+                    if residency["resident_policy"] == "OFF":
+                        raise LlmOutputError("llm_disabled_by_residency", "LLM desativado pela política de RAM (OFF).")
+                    if residency["resident_policy"] == "RESIDENT" and adapter.process is not None and adapter.process.returncode is not None:
+                        if residency["recoveries_count"] >= 1:
+                            residency["load_state"] = "error"
+                            residency["load_error_code"] = "resident_process_died"
+                            raise LlmOutputError("resident_process_died", "Processo residente do LLM encerrou após recuperação.")
+                        residency["recoveries_count"] += 1
+                    was_loaded = adapter.process is not None and adapter.process.returncode is None and adapter.active_model == selected
+                    residency["cold_start_last_request"] = not was_loaded
+                    catalog = validate_catalog(body.get("catalog"))
+                    text = validate_text(body.get('text'))
+                    before = time.perf_counter()
+                    if 'contract_version' not in body:
+                        accepted=body.get('accept_contracts',[1])
+                        if type(accepted) is not list or not 1<=len(accepted)<=2 or any(type(v) is not int or v not in (1,2) for v in accepted):
+                            raise ValueError('Negociação de contrato inválida')
+                        version=adapter.settings.get('contract_version',1)
+                        if version not in accepted:
+                            if 1 in accepted and selected=='tucano':version=1
+                            else:raise ValueError('Cliente precisa suportar contrato LLM 2')
+                        body['contract_version']=version
+                    if body.get('contract_version',adapter.settings.get('contract_version',1))==2:
+                        result=await adapter.infer({**body,'text':text,'llm_model':selected},catalog)
+                        if adapter.process is not None and adapter.process.returncode is None:
+                            residency["load_state"] = "ready"
+                            residency["loaded_since"] = residency["loaded_since"] or time.time()
+                        pid = adapter.process.pid if adapter.process and adapter.process.returncode is None else None
+                        result.update(service='arandu-llm',catalog_entities=len(catalog['entities']),
+                            queue_ms=(acquired-enqueued)*1000,
+                            service_queue_ms=(service_acquired-enqueued)*1000,
+                            inference_slot_wait_ms=slot_timings.get('inference_slot_wait_ms',0.0),
+                            gateway_queue_ms=body.get('gateway_queue_ms'),
+                            request_total_ms=(time.perf_counter()-received)*1000,
+                            resident_policy=residency['resident_policy'],cold_start=residency['cold_start_last_request'],
+                            available_memory_mb=_available_memory_mb(),
+                            process_rss_mb=result.get('process_rss_mb') if result.get('process_rss_mb') is not None else _process_rss_mb(pid),
+                            pid=pid)
+                        return result
+                    if selected!='tucano':raise ValueError('Contrato legado suporta somente Tucano')
+                    if clearly_conversational(text, catalog):
+                        result = await adapter.infer({**body, 'llm_model': KEY, 'decision': {}}, catalog)
+                        result.update(retrieval={'ranking': [], 'retrieval': 'general_conversation'}, retrieval_ms=0,
+                                      catalog_fingerprint=digest(catalog), catalog_entities=len(catalog['entities']), service='arandu-llm',
+                                      service_queue_ms=(service_acquired-enqueued)*1000,
+                                      inference_slot_wait_ms=slot_timings.get('inference_slot_wait_ms',0.0),
+                                      request_total_ms=(time.perf_counter()-received)*1000,
+                                      cold_start=residency['cold_start_last_request'])
+                        return result
+                    external = body.get("decision") or {}
+                    resolved = resolve_device(text, catalog, body.get("context"))
+                    external_ids = {r["entity_id"] for r in external.get("ranking", [])}
+                    retrieval = external if external_ids and (resolved is None or resolved["entity_id"] in external_ids) else retrieve(text, catalog, body.get("context"))
+                    retrieval = {**retrieval, "analysis": external.get("analysis") or decomposition(text, catalog, body.get("context")),
+                                 "decision_status": external.get("decision_status"), "reason": external.get("reason"),
+                                 "confidence": external.get("confidence")}
+                    retrieval_ms = (time.perf_counter() - before) * 1000
+                    result = await adapter.infer({**body, "llm_model": KEY, "decision": retrieval}, catalog)
+                    result["retrieval"] = retrieval
+                    result["retrieval_ms"] = retrieval_ms
+                    result.update(catalog_fingerprint=digest(catalog), catalog_entities=len(catalog["entities"]), service="arandu-llm",
+                                  service_queue_ms=(service_acquired-enqueued)*1000,
+                                  inference_slot_wait_ms=slot_timings.get('inference_slot_wait_ms',0.0),
+                                  request_total_ms=(time.perf_counter()-received)*1000,
+                                  cold_start=residency['cold_start_last_request'])
                     return result
-                if selected!='tucano':raise ValueError('Contrato legado suporta somente Tucano')
-                if clearly_conversational(text, catalog):
-                    result = await adapter.infer({**body, 'llm_model': KEY, 'decision': {}}, catalog)
-                    result.update(retrieval={'ranking': [], 'retrieval': 'general_conversation'}, retrieval_ms=0,
-                                  catalog_fingerprint=digest(catalog), catalog_entities=len(catalog['entities']), service='arandu-llm')
-                    return result
-                external = body.get("decision") or {}
-                resolved = resolve_device(text, catalog, body.get("context"))
-                external_ids = {r["entity_id"] for r in external.get("ranking", [])}
-                retrieval = external if external_ids and (resolved is None or resolved["entity_id"] in external_ids) else retrieve(text, catalog, body.get("context"))
-                retrieval = {**retrieval, "analysis": external.get("analysis") or decomposition(text, catalog, body.get("context")),
-                             "decision_status": external.get("decision_status"), "reason": external.get("reason"),
-                             "confidence": external.get("confidence")}
-                retrieval_ms = (time.perf_counter() - before) * 1000
-                result = await adapter.infer({**body, "llm_model": KEY, "decision": retrieval}, catalog)
-                result["retrieval"] = retrieval
-                result["retrieval_ms"] = retrieval_ms
-                result.update(catalog_fingerprint=digest(catalog), catalog_entities=len(catalog["entities"]), service="arandu-llm")
-                return result
         task = asyncio.create_task(work())
         tasks.add(task)
         task.add_done_callback(tasks.discard)

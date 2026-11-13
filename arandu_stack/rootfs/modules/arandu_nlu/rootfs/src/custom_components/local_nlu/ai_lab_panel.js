@@ -6,7 +6,7 @@ class AranduAILab extends HTMLElement {
   }
   set hass(value) { this._hass = value; if (!this.ready) { this.ready = true; this.mount(); } }
   connectedCallback() { this.disconnected=false;if (this._hass && !this.ready) { this.ready = true; this.mount(); } else if(this.ready&&this.sttDisposed)this.mountStt(); }
-  disconnectedCallback() { this.disconnected=true;this.sttGeneration=(this.sttGeneration||0)+1;this.sttDisposed=true;this.sttDispose?.();this.demoStopRequested=true;clearInterval(this.demoTimer);this.stopRecording(); if (this.audioUrl) URL.revokeObjectURL(this.audioUrl); }
+  disconnectedCallback() { this.disconnected=true;this.sttGeneration=(this.sttGeneration||0)+1;this.ttsGeneration=(this.ttsGeneration||0)+1;this.sttDisposed=true;this.sttDispose?.();this.demoStopRequested=true;clearInterval(this.demoTimer);this.stopRecording(); this.clearAudio(); }
   $(id) { return this.shadowRoot.getElementById(id); }
   saved(key, fallback) { try { return JSON.parse(localStorage.getItem('arandu-lab-' + key)) ?? fallback; } catch { return fallback; } }
   store(key, value) { localStorage.setItem('arandu-lab-' + key, JSON.stringify(value)); }
@@ -19,6 +19,8 @@ class AranduAILab extends HTMLElement {
       algorithm: this.$('decisionAlgorithm')?.value || 'structured-v3',
       llm_contract:Number(this.$('llmContract')?.value || '2'),
       test_area_id: this.$('testArea').value,
+      session_id: (this.sessionId ||= 'lab-' + Math.random().toString(36).slice(2, 10)),
+      keep_context: Boolean(this.$('keepContext')?.checked),
       threshold: Number(this.$('threshold').value), min_margin: Number(this.$('margin').value), ...extra}});
   }
   async task(fn) {
@@ -27,7 +29,7 @@ class AranduAILab extends HTMLElement {
     this.shadowRoot.querySelectorAll('button').forEach(b => { b.disabled = true; });
     try { await fn(); this.$('status').textContent = 'Teste finalizado.'; }
     catch (e) { this.$('status').textContent = 'Falha: ' + (e.message || e); this.$('status').setAttribute('role', 'alert'); }
-    finally { this.busy = false; this.shadowRoot.querySelectorAll('button').forEach(b => { b.disabled = false; }); this.executionState();this.sttControls?.(); }
+    finally { this.busy = false; this.shadowRoot.querySelectorAll('button').forEach(b => { b.disabled = false; }); this.executionState();this.sttControls?.();this.updateTtsUi?.(); }
   }
   mount() {
     this.attachShadow({mode: 'open'});
@@ -86,6 +88,7 @@ class AranduAILab extends HTMLElement {
       <section class="card"><h2>Comando em português</h2><label for="text">Texto ou transcrição editável</label><textarea id="text" placeholder="Acende a luz perto da televisão."></textarea>
         <div class="row"><button id="record">Gravar microfone</button><button class="primary" id="run">Processar comando</button><button id="repeat">Repetir teste</button></div>
         <label><input type="checkbox" id="autoTts"> Sintetizar resposta ao final pelo TTS existente</label>
+        <label><input type="checkbox" id="keepContext"> Manter contexto nesta sessão de teste</label>
         <p id="transcription" class="muted"></p><p id="status" aria-live="polite">Pronto. Nenhuma ação real será executada.</p>
         <label><input type="checkbox" id="real"> Habilitar execução real com revisão de cada proposta</label>
         <button id="execute" disabled>Executar ação revisada (30 s)</button>
@@ -96,7 +99,7 @@ class AranduAILab extends HTMLElement {
         <details><summary>Modo avançado · ranking e diagnósticos completos</summary>
         <div class="scroll"><table><thead><tr><th>Posição</th><th>Dispositivo</th><th>Cômodo</th><th>Ação</th><th>Similaridade bruta</th><th>Elegibilidade</th></tr></thead><tbody id="ranking"></tbody></table></div>
         <pre id="output">Nenhum teste executado.</pre></details>
-        <div class="row"><button id="speak">Testar resposta TTS</button><button id="json">Exportar JSON</button><button id="csv">Exportar CSV</button></div><audio id="player" controls></audio>
+        <div class="row"><button id="speak">Testar resposta TTS</button><button id="playAudio" disabled>Tocar áudio</button><button id="json">Exportar JSON</button><button id="csv">Exportar CSV</button></div><p id="ttsStatus" class="muted" aria-live="polite"></p><audio id="player" controls></audio>
       </section>
       <section class="card"><h2>Suíte de comandos e benchmark</h2><p class="muted">Edite o JSON. Exemplos sem rótulo não entram na acurácia. Informe entidades reais; nunca use resultados do modelo como gabarito.</p>
         <label for="examples">Exemplos editáveis (máximo 20 por lote)</label><textarea id="examples" spellcheck="false" style="min-height:220px"></textarea>
@@ -159,6 +162,14 @@ class AranduAILab extends HTMLElement {
     });
     this.$('record').onclick = () => this.recorder ? this.stopRecording() : this.startRecording();
     this.$('speak').onclick = () => this.task(() => this.speak());
+    this.$('playAudio').onclick = () => this.playAudio({autoplay: false});
+    const player = this.$('player');
+    if (player) {
+      player.onplay = () => { if (!this.disconnected) { this.playbackState = 'playing'; this.updateTtsUi(); } };
+      player.onpause = () => { if (!this.disconnected && this.playbackState === 'playing') { this.playbackState = 'paused'; this.updateTtsUi(); } };
+      player.onended = () => { if (!this.disconnected) { this.playbackState = 'idle'; this.updateTtsUi(); } };
+      player.onerror = () => { if (!this.disconnected && this.audioUrl) { this.playbackState = 'playback_error'; this.updateTtsUi(); } };
+    }
     this.$('clear').onclick = () => { this.store('history', []); this.history(); };
     this.$('saveExamples').onclick = () => this.task(async () => { this.store('examples', JSON.parse(this.$('examples').value)); });
     this.$('batch').onclick = () => this.task(async () => {
@@ -245,7 +256,71 @@ class AranduAILab extends HTMLElement {
       if(button.dataset.labTab===name)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
     }
   }
+  clearAudio() {
+    const player = this.shadowRoot ? this.$('player') : null;
+    if (player) {
+      try { player.pause?.(); } catch {}
+      player.removeAttribute?.('src');
+      player.src = '';
+    }
+    if (this.audioUrl) {
+      URL.revokeObjectURL(this.audioUrl);
+      this.audioUrl = null;
+    }
+    this.playbackState = 'idle';
+  }
+  updateTtsUi() {
+    if (!this.shadowRoot) return;
+    const playBtn = this.$('playAudio');
+    if (playBtn) playBtn.disabled = !this.audioUrl || this.ttsState === 'synthesizing';
+    const statusEl = this.$('ttsStatus');
+    if (!statusEl) return;
+    const synthMessages = {
+      idle: '',
+      synthesizing: 'Sintetizando áudio TTS…',
+      synthesis_error: 'Falha ao sintetizar áudio TTS.',
+      ready: {
+        idle: 'Áudio sintetizado e pronto para reprodução.',
+        playing: 'Reproduzindo áudio sintetizado.',
+        paused: 'Reprodução pausada. Clique em Tocar áudio para continuar.',
+        blocked_by_browser: 'Áudio sintetizado pronto. Reprodução automática bloqueada pelo navegador; clique em Tocar áudio.',
+        playback_error: 'Áudio sintetizado pronto, mas houve erro ao reproduzir no navegador.',
+      }[this.playbackState || 'idle'] || 'Áudio sintetizado pronto.',
+    };
+    statusEl.textContent = synthMessages[this.ttsState || 'idle'] || '';
+  }
+  async playAudio({autoplay = false, generation = null} = {}) {
+    const player = this.shadowRoot ? this.$('player') : null;
+    if (!player || !this.audioUrl) return false;
+    try {
+      await player.play();
+      if (this.disconnected || (generation != null && generation !== this.ttsGeneration)) {
+        try { player.pause?.(); } catch {}
+        return false;
+      }
+      this.playbackState = 'playing';
+      if (this.last?.stages?.tts && this.last.stages.tts.status === 'executed') {
+        this.last.stages.tts.playback_state = 'playing';
+      }
+      this.updateTtsUi();
+      return true;
+    } catch (err) {
+      if (this.disconnected || (generation != null && generation !== this.ttsGeneration)) return false;
+      const msg = String(err?.message || err || '');
+      const isNotAllowed = err?.name === 'NotAllowedError' || /NotAllowedError|user didn't interact/i.test(msg);
+      this.playbackState = isNotAllowed ? 'blocked_by_browser' : 'playback_error';
+      if (this.last?.stages?.tts && this.last.stages.tts.status === 'executed') {
+        this.last.stages.tts.playback_state = this.playbackState;
+        this.render(this.last);
+        this.persist();
+      }
+      this.updateTtsUi();
+      return false;
+    }
+  }
   async speak() {
+    this.ttsGeneration = (this.ttsGeneration || 0) + 1;
+    const generation = this.ttsGeneration;
     try {
       const isConv = this.last?.kind === 'conversation' || this.last?.final_kind === 'conversation_response';
       const convText = this.last?.execution?.response_text || this.last?.response_text;
@@ -256,21 +331,57 @@ class AranduAILab extends HTMLElement {
         ? convText
         : (this.last?.execution?.response_text || this.last?.response_text || this.last?.clarification_question || '');
       if (!text || !String(text).trim()) {
+        this.ttsState = 'idle';
+        this.playbackState = 'idle';
         if (this.last) {
-          this.last.stages.tts = {status:'skipped', reason:'Ação simples conclui sem fala TTS (som padrão do Assist).'};
+          this.last.stages.tts = {status:'skipped', synthesis_state:'idle', playback_state:'idle', reason:'Ação simples conclui sem fala TTS (som padrão do Assist).'};
           this.render(this.last);
           this.persist();
         }
+        this.updateTtsUi();
         return;
       }
+      this.ttsState = 'synthesizing';
+      this.playbackState = 'idle';
+      this.updateTtsUi();
       const r = await this.call('tts', {text, tts_model:this.$('tts').value});
-      if (this.audioUrl) URL.revokeObjectURL(this.audioUrl);
-      this.audioUrl = URL.createObjectURL(new Blob([Uint8Array.from(atob(r.audio), c=>c.charCodeAt(0))], {type:'audio/wav'}));
-      this.$('player').src = this.audioUrl;
-      if (this.last) { this.last.stages.tts = {status:'executed', model:r.model, latency_ms:r.latency_ms, first_chunk_ms:r.first_chunk_ms}; this.render(this.last); this.persist(); }
-      await this.$('player').play();
+      if (this.disconnected || generation !== this.ttsGeneration) return;
+      if (!r || typeof r.audio !== 'string' || !r.audio.trim()) {
+        throw new Error('Resposta TTS sem áudio válido (empty_audio).');
+      }
+      let bytes;
+      try {
+        const raw = atob(r.audio);
+        bytes = Uint8Array.from(raw, c => c.charCodeAt(0));
+      } catch {
+        throw new Error('Áudio TTS base64 inválido (invalid_audio_base64).');
+      }
+      if (!bytes.length) {
+        throw new Error('Áudio TTS vazio (invalid_audio_blob).');
+      }
+      const blob = new Blob([bytes], {type: 'audio/wav'});
+      if (!blob || !blob.size) {
+        throw new Error('Falha ao criar Blob de áudio WAV.');
+      }
+      this.clearAudio();
+      this.audioUrl = URL.createObjectURL(blob);
+      const player = this.$('player');
+      player.src = this.audioUrl;
+      player.load?.();
+      this.ttsState = 'ready';
+      this.playbackState = 'idle';
+      if (this.last) {
+        this.last.stages.tts = {status:'executed', synthesis_state:'ready', playback_state:'idle', model:r.model, latency_ms:r.latency_ms, first_chunk_ms:r.first_chunk_ms};
+        this.render(this.last);
+        this.persist();
+      }
+      this.updateTtsUi();
+      await this.playAudio({autoplay: true, generation});
     } catch(e) {
-      if(this.last){this.last.stages.tts={status:'error',error:e.message||String(e)};this.render(this.last);this.persist();}
+      if (this.disconnected || generation !== this.ttsGeneration) return;
+      this.ttsState = 'synthesis_error';
+      if(this.last){this.last.stages.tts={status:'error',synthesis_state:'synthesis_error',playback_state:this.playbackState||'idle',error:e.message||String(e)};this.render(this.last);this.persist();}
+      this.updateTtsUi();
       throw new Error('TTS: '+(e.message||String(e))+'. O resultado da interpretação foi preservado.');
     }
   }

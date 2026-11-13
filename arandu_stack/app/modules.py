@@ -17,13 +17,15 @@ DEFAULTS = {
     'nlu': {'enabled': True, 'custom_phrases_enabled': True, 'max_input_chars': 512, 'session_ttl': 60, 'low_battery_threshold': 20},
     'wake': {'enabled': False, 'wake_word': 'alexa', 'threshold': .5, 'trigger_level': 1, 'refractory_seconds': 2.0},
     'stt': {'enabled': False, 'auto_download': False, 'stt_model': 'orukeet_int8', 'whisper_profile': 'normalize_only', 'model_variant': 'adapted', 'threads': 2,
+            'resident_policy': 'RESIDENT',
             'padding_ms': 0, 'profile': 'full', 'debug_text': False, 'refresh_inventory': False,
             'lexical_enabled': True, 'closed_vocabulary': True, 'generic_weight': 7,
             'home_assistant_weight': 10, 'inventory_refresh_seconds': 0},
     'decision': {'enabled': False, 'auto_download': False, 'threads': 2, 'threshold': .8, 'min_margin': .08, 'algorithm': 'structured-v3', 'model':'e5-small', 'backend':'cpu', 'resident_policy': 'RESIDENT', 'auto_resolve_level': 'conservative'},
     'llm': {'enabled': False, 'auto_download': False, 'threads': 2, 'context_size': 4096, 'max_tokens': 384, 'temperature': 0.0, 'llm_model':'tucano', 'contract_version':2, 'resident_policy': 'LAZY'},
     'tts': {'enabled': False, 'voice': 'pt_BR-arandu-medium', 'auto_download': False, 'max_chars': 3000,
-            'preload': True, 'cpu_threads': 2, 'pocket_enabled': False, 'pocket_preload': False,
+            'resident_policy': 'RESIDENT',
+            'cpu_threads': 2, 'pocket_enabled': False, 'pocket_preload': False,
             'pocket_threads': 2, 'pocket_fallback': False, 'fallback_voice': 'pt_BR-faber-medium',
             'remote_fallback': False, 'remote_url': '', 'remote_token': '', 'hf_token': '', 'log_level': 'INFO'},
 }
@@ -34,6 +36,17 @@ DEFAULTS['tts']['piper_thread_budget'] = False
 PORTS = {'nlu': 11555, 'wake': 10400, 'stt': 10350, 'tts': 10212, 'decision': 11557, 'llm': 11558}
 
 def validate_options(key, options, data=Path('/data')):
+    if key == 'tts' and isinstance(options, dict) and 'preload' in options:
+        options = dict(options)
+        legacy_preload = options.pop('preload')
+        if type(legacy_preload) is not bool:
+            raise ValueError('Valor inválido: preload')
+        if 'resident_policy' not in options:
+            v = str(options.get('voice', DEFAULTS['tts']['voice']))
+            if v.startswith('pocket-'):
+                options['resident_policy'] = 'RESIDENT' if options.get('pocket_preload', False) else 'LAZY'
+            else:
+                options['resident_policy'] = 'RESIDENT' if legacy_preload else 'LAZY'
     if key not in DEFAULTS or not isinstance(options, dict) or set(options) - set(DEFAULTS[key]):
         raise ValueError('Módulo ou opção desconhecida')
     for name, value in options.items():
@@ -57,6 +70,10 @@ def validate_options(key, options, data=Path('/data')):
         raise ValueError('Contrato legado exige Tucano')
     if key == 'llm' and merged.get('resident_policy') not in {'RESIDENT', 'LAZY', 'OFF'}:
         raise ValueError('Política de RAM do LLM inválida')
+    if key == 'stt' and merged.get('resident_policy') not in {'RESIDENT', 'LAZY', 'OFF'}:
+        raise ValueError('Política de RAM do STT inválida')
+    if key == 'tts' and merged.get('resident_policy') not in {'RESIDENT', 'LAZY', 'OFF'}:
+        raise ValueError('Política de RAM do TTS inválida')
     for row in schema(key, merged, data):
         value = merged[row['id']]
         if row['type'] == 'number' and (value < row['min'] or value > row['max']):
@@ -128,6 +145,13 @@ class ModuleManager:
                 # Preserve pre-multimodel installations; only new installations change default.
                 if key == 'stt' and 'stt_model' not in options:
                     options = {**options, 'stt_model': 'fastconformer'}
+                if key == 'tts' and 'resident_policy' not in options:
+                    v = str(options.get('voice', 'pt_BR-arandu-medium'))
+                    if v.startswith('pocket-'):
+                        inferred = 'RESIDENT' if options.get('pocket_preload', False) else 'LAZY'
+                    else:
+                        inferred = 'RESIDENT' if options.get('preload', True) else 'LAZY'
+                    options = {**options, 'resident_policy': inferred}
                 if migrated and key == 'tts' and options.get('voice') == 'pt_BR-faber-medium':
                     options = {**options, 'voice': 'pt_BR-arandu-medium'}
                 self.config[key] = validate_options(key, options, self.data)
@@ -258,7 +282,14 @@ class ModuleManager:
         if key == 'llm':
             environment['ARANDU_LLM_RESIDENCY'] = str(self.config['llm'].get('resident_policy', 'LAZY'))
         if key == 'stt':
-            environment.update(OMP_NUM_THREADS=str(self.config[key]['threads']), MKL_NUM_THREADS=str(self.config[key]['threads']), OMP_WAIT_POLICY='PASSIVE')
+            environment.update(
+                ARANDU_STT_RESIDENCY=str(self.config['stt'].get('resident_policy', 'RESIDENT')),
+                OMP_NUM_THREADS=str(self.config[key]['threads']),
+                MKL_NUM_THREADS=str(self.config[key]['threads']),
+                OMP_WAIT_POLICY='PASSIVE',
+            )
+        if key == 'tts':
+            environment['ARANDU_TTS_RESIDENCY'] = str(self.config['tts'].get('resident_policy', 'RESIDENT'))
         if key == 'stt' and self.config[key].get('refresh_inventory') and os.environ.get('SUPERVISOR_TOKEN'):
             environment['SUPERVISOR_TOKEN'] = os.environ['SUPERVISOR_TOKEN']
         command = ['/usr/bin/local-nlu', 'serve', '--listen', '0.0.0.0:11555'] if key == 'nlu' else [f'/opt/venvs/{key}/bin/python', '/opt/assistant/module_worker.py', key]

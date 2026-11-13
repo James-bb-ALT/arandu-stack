@@ -1,3 +1,17 @@
+# 11.3.0 — STT Multimodelo + Silero VAD v6.2 + WebRTC Audio Processing (2026-11-13)
+
+- **Novos Modelos STT (catálogo unificado com 29 modelos / 13 STT):**
+  - `parakeet_ultra_q8` e `parakeet_ultra_q4` via `transcribe.cpp` persistente em CPU (`parakeet_ultra_backend.py`).
+  - `phonon_2_5` via `fermion-research` persistente em memória (`phonon_backend.py`).
+  - `nemotron_unified_0_6b` via NVIDIA NeMo opcional/isolado com modo offline e perfis streaming (`precision`, `balanced`, `fast`, `experimental`) (`nemotron_unified_backend.py`), preservando termos OpenMDW-1.1.
+- **Silero VAD ONNX v6.2 (`vad_processor.py`):**
+  - Runtime ONNX CPU sem PyTorch, SHA-256 fixado (`1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3`), estado recorrente isolado por sessão, pre-roll de 300 ms em ring buffer, post-roll de 200 ms, min speech 180 ms e min silence 450 ms.
+- **WebRTC Audio Processing (`audio_processor.py`):**
+  - Framing 10 ms @ 16 kHz mono com resampling de 8/16/32/44.1/48 kHz, High-pass filter, Noise Suppression (0–3), AGC2 e AEC3 com validação estrita de referência `far_end_pcm` real.
+- **Dashboard & AI Lab:**
+  - Tudo desativado por padrão em produção (`orukeet_int8` preservado); seção `Processamento de áudio` nas configurações STT, remoção de modelos (`POST /api/stt/remove`), presets `original`, `vad`, `balanced` e `custom` no AI Lab com audição do WAV pós-processado (`processed_wav_b64`).
+  - Documentação e matriz de validação em [`docs/STT_MULTIMODEL_VAD_WEBRTC_RESULTS.md`](docs/STT_MULTIMODEL_VAD_WEBRTC_RESULTS.md).
+
 # 11.2.0 — Pipeline Universal v11.2 & Model Hub Unificado (2026-11-13)
 
 - **Model Hub Unificado (`arandu_stack/model_registry/models.json` + `arandu_stack/app/model_registry.py`):**

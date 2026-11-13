@@ -95,6 +95,23 @@ def main() -> None:
         cmd.append('--open-vocabulary')
     if not cfg.get('refresh_inventory', True):
         cmd.append('--no-ha-refresh')
+    if cfg.get('vad_enabled', False):
+        cmd.extend([
+            '--vad-enabled',
+            '--vad-threshold', str(float(cfg.get('vad_threshold', 0.50))),
+            '--vad-min-speech-ms', str(int(cfg.get('vad_min_speech_ms', 180))),
+            '--vad-min-silence-ms', str(int(cfg.get('vad_min_silence_ms', 450))),
+            '--vad-pre-roll-ms', str(int(cfg.get('vad_pre_roll_ms', 300))),
+            '--vad-post-roll-ms', str(int(cfg.get('vad_post_roll_ms', 200))),
+        ])
+    if cfg.get('high_pass_filter', False):
+        cmd.append('--high-pass-filter')
+    if cfg.get('noise_suppression', False):
+        cmd.extend(['--noise-suppression', '--ns-level', str(int(cfg.get('ns_level', 1)))])
+    if cfg.get('auto_gain_control', False):
+        cmd.extend(['--auto-gain-control', '--agc-gain-db', str(float(cfg.get('agc_gain_db', 0.0)))])
+    if cfg.get('echo_cancellation', False):
+        cmd.append('--echo-cancellation')
     print("[ARANDU] Iniciando servidor Wyoming", flush=True)
     os.execv(sys.executable, cmd)
 

@@ -1,5 +1,5 @@
 name: Arandu STT
-version: "4.0.2"
+version: "4.1.0"
 slug: arandu_stt
 description: "STT local multimodelo com correção contextual, Wyoming, captura limitada e métricas de áudio"
 arch:

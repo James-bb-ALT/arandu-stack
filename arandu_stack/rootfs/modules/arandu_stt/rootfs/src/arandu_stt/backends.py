@@ -48,9 +48,18 @@ def create_backend(model, directory, threads=2):
         factory = FastConformerBackend
     elif model.startswith('whisper_'):
         factory = WhisperBackend
+    elif model in ('parakeet_ultra_q8', 'parakeet_ultra_q4'):
+        from parakeet_ultra_backend import ParakeetUltraBackend
+        return ParakeetUltraBackend(directory, threads, model_id=model)
     elif model.startswith('parakeet_'):
         from parakeet_backend import ParakeetBackend
         factory = ParakeetBackend
+    elif model == 'phonon_2_5':
+        from phonon_backend import PhononBackend
+        factory = PhononBackend
+    elif model == 'nemotron_unified_0_6b':
+        from nemotron_unified_backend import NemotronUnifiedBackend
+        factory = NemotronUnifiedBackend
     elif model == 'orukeet_int8':
         from orukeet_backend import OrukeetBackend
         factory = OrukeetBackend

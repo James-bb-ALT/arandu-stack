@@ -156,7 +156,7 @@ class Comparison(unittest.IsolatedAsyncioTestCase):
                 return {'model':body['model'],'state':'ready','raw_transcript':'teste','final_transcript':'teste'}
             with patch.object(lab,'worker',side_effect=infer),patch('stt_lab.decode_audio',AsyncMock(return_value=(b'\0\0'*8000,1))):
                 result=await lab.test({'audio':base64.b64encode(wav()).decode(),'models':list(catalog.CATALOG)},True)
-            self.assertEqual(len(result['results']),8)
+            self.assertEqual(len(result['results']),len(catalog.CATALOG))
             self.assertEqual(len(set(inputs)),1)
             self.assertEqual(json.dumps(manager.config,sort_keys=True),before)
             self.assertTrue(result['dry_run'])

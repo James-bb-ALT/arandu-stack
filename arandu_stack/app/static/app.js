@@ -320,9 +320,26 @@ async function renderSttManager(){
       list.replaceChildren();
       const labels={not_installed:'Não instalado',installed:'Instalado',downloading:'Baixando',verifying:'Verificando',loading:'Carregando',ready:'Pronto',waiting_first_use:'Aguardando primeira transcrição',off:'Desativado (OFF)',error:'Erro'};
       for(const model of result.models){
-        const line=el('div',undefined,'stt-model-row');line.append(el('span',model.name+(model.download_bytes?' · download '+(model.download_bytes/1000000).toFixed(0)+' MB':'')+' · '+(labels[model.state]||model.state)+(model.error?' · '+model.error:'')));
+        const line=el('div',undefined,'stt-model-row');
+        const meta=[
+          model.name,
+          model.runtime?`runtime ${model.runtime}`:'',
+          model.license||'',
+          model.download_bytes?`download ${(model.download_bytes/1000000).toFixed(0)} MB`:'',
+          model.estimated_ram_mb?`RAM est. ~${model.estimated_ram_mb} MB`:'',
+          typeof model.load_ms==='number'?`carga ${model.load_ms.toFixed(0)} ms`:'',
+          labels[model.state]||model.state,
+          model.error||''
+        ].filter(Boolean).join(' · ');
+        line.append(el('span',meta));
         const button=el('button',model.installed?'Verificar / reinstalar':'Baixar','secondary');button.type='button';button.disabled=['downloading','verifying','loading'].includes(model.state);
-        button.onclick=async()=>{button.disabled=true;try{await api('stt/install',{model:model.id,variant:settingInput('model_variant')?.value||'adapted'});await update();}catch(e){status.textContent=e.message;button.disabled=false;}};line.append(button);list.append(line);
+        button.onclick=async()=>{button.disabled=true;try{await api('stt/install',{model:model.id,variant:settingInput('model_variant')?.value||'adapted'});await update();}catch(e){status.textContent=e.message;button.disabled=false;}};line.append(button);
+        if(model.installed&&result.configured!==model.id){
+          const rm=el('button','Remover','secondary');rm.type='button';rm.disabled=['downloading','verifying','loading'].includes(model.state);
+          rm.onclick=async()=>{rm.disabled=true;try{await api('stt/remove',{model:model.id,variant:settingInput('model_variant')?.value||'adapted'});await update();}catch(e){status.textContent=e.message;rm.disabled=false;}};
+          line.append(rm);
+        }
+        list.append(line);
       }
       if(result.models.some(row=>['downloading','verifying','loading'].includes(row.state)))setTimeout(update,2000);
     }catch(e){status.textContent=e.message;}

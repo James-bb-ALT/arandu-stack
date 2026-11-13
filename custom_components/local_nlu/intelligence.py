@@ -7,6 +7,7 @@ import time
 
 from .ai_lab_core import digest, finite, validate_proposal
 from .contextual_protocol import Operation
+from .fallback_policy import RouteCategory, classify_fallback, route_diagnostic
 from .semantic_context import resolve_device, understood_action, hypothesis_allowed, conversation_allowed, clearly_conversational, semantic_refusal, read_only_question, speech_only_request
 from .request_trace import CURRENT
 from .workload import Saturated
@@ -18,10 +19,15 @@ TIMEOUT = 30
 def eligible(outcome, *, pending=False):
     # Clarifications, permission failures, unsupported capabilities and stale
     # requests must never be reinterpreted as authorization by another model.
-    return (not pending and (
-        (outcome.status == "no_match" and outcome.reason in (None, "no_match", "unsupported_intent", "unknown_intent"))
-        or (outcome.status == "clarification" and outcome.reason == "target_not_found"
-            and not outcome.candidates and not outcome.options)))
+    route = classify_fallback(
+        nlu_status=getattr(outcome, "status", "no_match"),
+        reason=getattr(outcome, "reason", None),
+        command=getattr(outcome, "command", None),
+        candidates=getattr(outcome, "candidates", ()) or (),
+        options=getattr(outcome, "options", ()) or (),
+        pending=pending,
+    )
+    return route.category == RouteCategory.RECOVERABLE
 
 
 def operations(proposal, snapshot, source):
@@ -154,7 +160,7 @@ def nlu_summary(outcome):
     if outcome.reason:
         summary['reason'] = outcome.reason[:128]
     command = outcome.command or {}
-    for key in ('action', 'mention', 'area'):
+    for key in ('action', 'intent', 'domain', 'area', 'mention', 'scope', 'metric'):
         value = command.get(key)
         if isinstance(value, str) and value:
             summary[key] = value[:128]
@@ -164,9 +170,22 @@ def nlu_summary(outcome):
 async def fallback(text, snapshot, options, request, context=None, nlu=None):
     """Snapshot policy per request; bounded calls; no effects or late callbacks."""
     refusal = semantic_refusal(text, snapshot.payload)
-    if refusal or (nlu and not eligible_summary(nlu)):
-        return (), {'safety': {'status': 'rejected', 'reason': refusal or 'nlu_not_eligible'}}
-    trace = {}
+    route = classify_fallback(
+        nlu_status=(nlu or {}).get("status", "no_match"),
+        reason=(nlu or {}).get("reason"),
+        command=nlu,
+        candidates=(nlu or {}).get("candidates") or (),
+        options=(nlu or {}).get("options") or (),
+        pending=False,
+        safety_flags=(refusal,) if refusal else (),
+        explicitly_denied=bool(refusal),
+    )
+    if refusal or (nlu and route.category != RouteCategory.RECOVERABLE):
+        return (), {
+            'safety': {'status': 'rejected', 'reason': refusal or route.reason or 'nlu_not_eligible'},
+            'diagnostic': route_diagnostic(route),
+        }
+    trace = {'diagnostic': route_diagnostic(route)}
     decision = None
     for source in ("decision", "llm"):
         if source == 'decision' and options.get('llm_enabled') is True and clearly_conversational(text, snapshot.payload):
@@ -279,9 +298,15 @@ async def fallback(text, snapshot, options, request, context=None, nlu=None):
 
 def eligible_summary(summary):
     """A caller cannot reinterpret an explicit NLU refusal as a neural request."""
-    return (summary.get('status') == 'no_match' and summary.get('reason') in
-            (None, 'no_match', 'unsupported_intent', 'unknown_intent')) or (
-            summary.get('status') == 'clarification' and summary.get('reason') == 'target_not_found')
+    route = classify_fallback(
+        nlu_status=(summary or {}).get('status', 'no_match'),
+        reason=(summary or {}).get('reason'),
+        command=summary,
+        candidates=(summary or {}).get('candidates') or (),
+        options=(summary or {}).get('options') or (),
+        pending=False,
+    )
+    return route.category == RouteCategory.RECOVERABLE
 
 
 def llm_hint(decision):

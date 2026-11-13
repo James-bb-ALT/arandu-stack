@@ -20,7 +20,7 @@ MODEL_DIR = DATA / "models" / "int8"
 
 
 def options() -> dict:
-    defaults = {"stt_model": "orukeet_int8", "auto_download": False, "whisper_profile": "normalize_only", "model_variant": "adapted", "threads": 2, "padding_ms": 0, "profile": "full", "debug_text": False, "refresh_inventory": True,
+    defaults = {"stt_model": "orukeet_int8", "auto_download": False, "whisper_profile": "normalize_only", "model_variant": "adapted", "threads": 2, "resident_policy": "RESIDENT", "padding_ms": 0, "profile": "full", "debug_text": False, "refresh_inventory": True,
                 "lexical_enabled": True, "closed_vocabulary": True, "generic_weight": 7,
                 "home_assistant_weight": 10, "inventory_refresh_seconds": 60}
     if OPTIONS.is_file():
@@ -59,17 +59,22 @@ def main() -> None:
     cfg = options()
     variant = str(cfg.get("model_variant", "adapted"))
     model = cfg.get('stt_model', 'orukeet_int8')
+    policy = str(cfg.get("resident_policy") or os.environ.get("ARANDU_STT_RESIDENCY", "RESIDENT"))
+    if policy not in {"RESIDENT", "LAZY", "OFF"}:
+        policy = "RESIDENT"
     validate(model, variant)
     model_dir = location(DATA / 'models', model, variant)
-    if cfg.get('auto_download', False):
-        install(DATA / 'models', model, variant)
-    verify(DATA / 'models', model, variant)
+    if policy != "OFF":
+        if cfg.get('auto_download', False):
+            install(DATA / 'models', model, variant)
+        verify(DATA / 'models', model, variant)
     refresh_inventory(bool(cfg.get("refresh_inventory", True)))
 
     cmd = [
         sys.executable, str(Path(__file__).with_name('server.py')),
         "--model-dir", str(model_dir),
         "--stt-model", model, "--model-variant", variant,
+        "--resident-policy", policy,
         "--inventory", str(INVENTORY),
         "--uri", "tcp://0.0.0.0:10350",
         *(["--no-discovery"] if os.environ.get('ARANDU_MODULE_DATA') else []),

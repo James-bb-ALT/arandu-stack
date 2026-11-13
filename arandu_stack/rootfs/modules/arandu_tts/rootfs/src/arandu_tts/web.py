@@ -47,8 +47,26 @@ def create_app(cfg: Config, engine: SpeechEngine) -> web.Application:
 
     async def status(request):
         voices = available()
+        try:
+            import psutil
+            rss_mb = psutil.Process(os.getpid()).memory_info().rss / 1048576
+        except Exception:
+            rss_mb = None
+        primary_loaded = getattr(engine, 'is_primary_voice_loaded', False)
+        loaded_voices = engine.loaded_voices_list() if hasattr(engine, 'loaded_voices_list') else ([getattr(engine, '_loaded_name', None)] if getattr(engine, '_loaded_name', None) else [])
+        primary_backend = 'pocket' if cfg.default_voice.startswith('pocket-') else 'piper'
+        backend_loaded = engine.pocket_loaded if primary_backend == 'pocket' else bool(getattr(engine, '_loaded_model', None) is not None or getattr(engine, '_piper_cache', {}))
         return web.json_response({
             'version': '0.2.2',
+            'resident_policy': cfg.resident_policy,
+            'configured_primary_voice': cfg.default_voice,
+            'primary_voice_loaded': primary_loaded,
+            'backend_loaded': backend_loaded,
+            'loaded_voices': loaded_voices,
+            'state': 'off' if cfg.resident_policy == 'OFF' else ('busy' if getattr(engine, '_requests', 0) > 0 else getattr(engine, 'state', 'waiting_first_use')),
+            'load_ms': getattr(engine, 'load_ms', None),
+            'last_error': getattr(engine, 'last_error', None),
+            'process_rss_mb': rss_mb,
             'voices': [dict(id=v.name, label=v.description or v.name, engine=v.backend, language=v.language)
                        for v in voices.values()],
             'piper_available': any(v.backend == 'piper' for v in voices.values()),
@@ -67,6 +85,8 @@ def create_app(cfg: Config, engine: SpeechEngine) -> web.Application:
         }, headers={'Cache-Control': 'no-store'})
 
     async def warmup(request):
+        if cfg.resident_policy == 'OFF':
+            raise web.HTTPServiceUnavailable(text='tts_disabled')
         if not cfg.pocket_enabled:
             raise web.HTTPConflict(text='Pocket desativado')
         started = time.perf_counter()
@@ -78,6 +98,8 @@ def create_app(cfg: Config, engine: SpeechEngine) -> web.Application:
         return web.json_response({'loaded': True, 'elapsed_ms': round(1000 * (time.perf_counter() - started))})
 
     async def synthesize(request):
+        if cfg.resident_policy == 'OFF':
+            raise web.HTTPServiceUnavailable(text='tts_disabled')
         try:
             payload = await request.json()
         except (ValueError, json.JSONDecodeError):

@@ -93,6 +93,7 @@ function openSettings(module){
   if(apply.disabled)apply.dataset.unavailable='true';else delete apply.dataset.unavailable;
   updateDependencies();$('configDialog').showModal();
   if(module.id==='stt')renderSttManager();
+  if(module.id==='tts')renderTtsManager();
   if(module.id==='llm')renderLlmManager();
   if(module.id==='decision')renderDecisionManager();
 }
@@ -303,9 +304,17 @@ async function renderSttManager(){
     try{
       const result=await api('stt/models?variant='+encodeURIComponent(settingInput('model_variant')?.value||'adapted'));
       const active=result.active;
-      status.textContent=active?'Ativo no Assist: '+active.model+' · '+(active.model==='fastconformer'?active.variant:'multilíngue')+' · '+active.backend+' · CPU '+active.compute+' · '+active.threads+' threads · '+active.process_rss_mb.toFixed(0)+' MiB'+(Number.isFinite(active.recent?.inference_ms)?' · '+active.recent.inference_ms.toFixed(1)+' ms':''):'Modelo ativo ainda não confirmado.';
+      const stateLabels={waiting_first_use:'Aguardando primeira transcrição',loading:'Carregando',ready:'Pronto em RAM',off:'Desativado (OFF)',load_failed:'Falha na carga',degraded:'Degradado',stopped:'Parado',unknown:'Desconhecido'};
+      const policy=result.resident_policy||active?.resident_policy||'RESIDENT';
+      const loadedFlag=result.model_loaded===true?'Sim':'Não';
+      const stateText=stateLabels[result.state]||result.state||'Desconhecido';
+      const rssText=typeof result.process_rss_mb==='number'?result.process_rss_mb.toFixed(0)+' MiB':'N/D';
+      const loadMs=typeof result.load_ms==='number'?result.load_ms.toFixed(0)+' ms':'N/D';
+      const cold=Number.isFinite(result.cold_start_count)?result.cold_start_count:0;
+      const errText=result.last_load_error?' | Erro: '+result.last_load_error:'';
+      status.textContent='Política: '+policy+' | Carregado realmente?: '+loadedFlag+' | Selecionado: '+result.configured+' | Ativo: '+(active?.active_model||'nenhum')+' | Estado: '+stateText+' | RAM do processo: '+rssText+' | Carga: '+loadMs+' | Cold starts: '+cold+errText;
       list.replaceChildren();
-      const labels={not_installed:'Não instalado',installed:'Instalado',downloading:'Baixando',verifying:'Verificando',loading:'Carregando',ready:'Pronto',error:'Erro'};
+      const labels={not_installed:'Não instalado',installed:'Instalado',downloading:'Baixando',verifying:'Verificando',loading:'Carregando',ready:'Pronto',waiting_first_use:'Aguardando primeira transcrição',off:'Desativado (OFF)',error:'Erro'};
       for(const model of result.models){
         const line=el('div',undefined,'stt-model-row');line.append(el('span',model.name+(model.download_bytes?' · download '+(model.download_bytes/1000000).toFixed(0)+' MB':'')+' · '+(labels[model.state]||model.state)+(model.error?' · '+model.error:'')));
         const button=el('button',model.installed?'Verificar / reinstalar':'Baixar','secondary');button.type='button';button.disabled=['downloading','verifying','loading'].includes(model.state);
@@ -316,4 +325,20 @@ async function renderSttManager(){
   }
   const link=el('a','Testar STT no Home Assistant');link.href='/arandu-ai-lab#stt';link.target='_top';group.append(link);
   settingInput('model_variant').addEventListener('change',update);await update();
+}
+async function renderTtsManager(){
+  const group=el('fieldset',undefined,'setting-section tts-manager');group.append(el('legend','Residência e vozes carregadas'));
+  const status=el('p','Consultando TTS…');status.setAttribute('role','status');group.append(status);
+  $('configFields').append(group);
+  try{
+    const st=await api('tts/status');
+    const stateLabels={waiting_first_use:'Aguardando primeira síntese',loading:'Carregando',ready:'Pronto em RAM',off:'Desativado (OFF)',load_failed:'Falha na carga',stopped:'Parado',unavailable:'Indisponível'};
+    const policy=st.resident_policy||'RESIDENT';
+    const primaryLoaded=st.primary_voice_loaded===true?'Sim':st.primary_voice_loaded===false?'Não':'Desconhecido';
+    const pocketLoaded=st.pocket_loaded===true?'Sim':st.pocket_loaded===false?'Não':'Desconhecido';
+    const rssText=typeof st.process_rss_mb==='number'?st.process_rss_mb.toFixed(0)+' MiB':'N/D';
+    const voices=(st.loaded_voices&&st.loaded_voices.length)?st.loaded_voices.join(', '):'nenhuma';
+    const errText=st.last_error?' | Erro: '+st.last_error:'';
+    status.textContent='Política: '+policy+' | Voz principal: '+(st.configured_primary_voice||'N/D')+' | Voz principal carregada?: '+primaryLoaded+' | Pocket carregado: '+pocketLoaded+' | Vozes em RAM: '+voices+' | Estado: '+(stateLabels[st.state]||st.state)+' | RAM do processo: '+rssText+errText;
+  }catch(e){status.textContent=e.message;}
 }

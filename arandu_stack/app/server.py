@@ -421,10 +421,42 @@ def create_app(data_dir, local=False):
         await manager.close()
     app.on_startup.append(startup)
     app.on_cleanup.append(cleanup)
+    async def tts_status(request):
+        cfg_tts = manager.config['tts']
+        try:
+            async with ClientSession(timeout=ClientTimeout(total=2), trust_env=False) as session:
+                async with session.get('http://127.0.0.1:11559/api/status', allow_redirects=False) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return web.json_response(data)
+                    return web.json_response({
+                        'resident_policy': cfg_tts.get('resident_policy', 'RESIDENT'),
+                        'configured_primary_voice': cfg_tts.get('voice'),
+                        'primary_voice_loaded': None,
+                        'backend_loaded': None,
+                        'loaded_voices': [],
+                        'pocket_enabled': cfg_tts.get('pocket_enabled', False),
+                        'pocket_loaded': None,
+                        'state': 'unavailable',
+                        'last_error': f'HTTP {response.status}',
+                    }, status=200)
+        except Exception as exc:
+            return web.json_response({
+                'resident_policy': cfg_tts.get('resident_policy', 'RESIDENT'),
+                'configured_primary_voice': cfg_tts.get('voice'),
+                'primary_voice_loaded': None,
+                'backend_loaded': None,
+                'loaded_voices': [],
+                'pocket_enabled': cfg_tts.get('pocket_enabled', False),
+                'pocket_loaded': None,
+                'state': 'stopped' if manager.processes.get('tts') is None else 'unavailable',
+                'last_error': type(exc).__name__,
+            }, status=200)
     app.router.add_get('/', index)
     app.router.add_get('/api/state', state)
     app.router.add_get('/api/stt/models', stt_models)
     app.router.add_post('/api/stt/{action}', stt_action)
+    app.router.add_get('/api/tts/status', tts_status)
     app.router.add_get('/api/logs', logs)
     app.router.add_post('/api/modules/{key}/{action}', control)
     app.router.add_get('/api/decision/{action}',decision_control)

@@ -80,14 +80,25 @@ async def serve(cfg: Config) -> None:
     from wyoming.tts import Synthesize, SynthesizeStart, SynthesizeChunk, SynthesizeStop, SynthesizeStopped
 
     engine = SpeechEngine(cfg)
-    ensure_default_model(cfg)
-    if cfg.preload:
-        available = catalogue(cfg.voices_dir, pocket_enabled=cfg.pocket_enabled)
-        if cfg.default_voice in available:
-            await asyncio.to_thread(engine.preload, available[cfg.default_voice])
-
-    if cfg.pocket_preload and cfg.pocket_enabled:
-        await asyncio.to_thread(engine.warm_pocket)
+    if cfg.resident_policy == 'OFF':
+        engine.state = 'off'
+    else:
+        ensure_default_model(cfg)
+        if cfg.resident_policy == 'RESIDENT':
+            available = catalogue(cfg.voices_dir, pocket_enabled=cfg.pocket_enabled)
+            if cfg.default_voice in available:
+                try:
+                    await asyncio.to_thread(engine.preload, available[cfg.default_voice])
+                except Exception as exc:
+                    LOG.exception("Falha ao pré-carregar voz principal %s: %s", cfg.default_voice, exc)
+            else:
+                engine.state = 'load_failed'
+                engine.last_error = f'Voz principal {cfg.default_voice} indisponível'
+            if cfg.pocket_preload and cfg.pocket_enabled and not cfg.default_voice.startswith('pocket-'):
+                try:
+                    await asyncio.to_thread(engine.warm_pocket)
+                except Exception as exc:
+                    LOG.warning("Falha ao pré-carregar Pocket secundário: %s", exc)
 
     class AranduHandler(AsyncEventHandler):
         def __init__(self, reader, writer):
@@ -102,6 +113,9 @@ async def serve(cfg: Config) -> None:
             return available[name]
 
         async def _emit(self, text: str, voice_name: str | None, final: bool) -> None:
+            if cfg.resident_policy == 'OFF':
+                from .engine import TtsDisabledError
+                raise TtsDisabledError('TTS desativado pela política de RAM (OFF)')
             if self.state is None:
                 self.state = _State()
             voice = self._select(voice_name)
@@ -189,7 +203,7 @@ async def serve(cfg: Config) -> None:
             except Exception as exc:
                 LOG.exception("Falha na requisição Wyoming")
                 self.state = None
-                await self.write_event(Error(text=str(exc), code=type(exc).__name__).event())
+                await self.write_event(Error(text=str(exc), code=getattr(exc, 'code', type(exc).__name__)).event())
                 return False
 
     srv = AsyncServer.from_uri(cfg.uri)
@@ -203,6 +217,7 @@ async def serve(cfg: Config) -> None:
     finally:
         if runner is not None:
             await runner.cleanup()
+        engine.close()
 
 
 def main() -> None:

@@ -136,10 +136,24 @@ class STTLab:
                         row['state'] = 'verifying'
                 except (OSError, ValueError):
                     pass
-            if active and row['id'] == active['model'] and (row['id'] != 'fastconformer' or variant == active['variant']):
-                row.update(state='ready', ready=True, active=True)
-        return {'models': rows, 'active': active, 'configured': self.manager.config['stt']['stt_model'],
-                'configured_variant': self.manager.config['stt']['model_variant']}
+            if active and row['id'] == active.get('configured_model', active.get('model')) and (row['id'] != 'fastconformer' or variant == active.get('variant')):
+                if active.get('model_loaded') is True:
+                    row.update(state='ready', ready=True, active=True)
+                else:
+                    row.update(state=active.get('state', 'waiting_first_use'), ready=False, active=False)
+        return {
+            'models': rows,
+            'active': active,
+            'configured': self.manager.config['stt']['stt_model'],
+            'configured_variant': self.manager.config['stt']['model_variant'],
+            'resident_policy': (active or {}).get('resident_policy', self.manager.config['stt'].get('resident_policy', 'RESIDENT')),
+            'model_loaded': bool(active and active.get('model_loaded') is True),
+            'state': (active or {}).get('state', 'stopped' if active is None else 'unknown'),
+            'load_ms': (active or {}).get('load_ms'),
+            'cold_start_count': (active or {}).get('cold_start_count', 0),
+            'process_rss_mb': (active or {}).get('process_rss_mb'),
+            'last_load_error': (active or {}).get('last_load_error'),
+        }
 
     def start_install(self, model, variant):
         validate(model, variant)

@@ -71,30 +71,82 @@ def build_info(model='fastconformer') -> Info:
     )])
 
 
+class SttDisabledError(RuntimeError):
+    code = 'stt_disabled'
+
+
 class Engine:
-    def __init__(self, model_dir: Path, threads: int, model='fastconformer', variant='adapted'):
-        from backends import create_backend
+    def __init__(self, model_dir: Path, threads: int, model='fastconformer', variant='adapted', resident_policy='RESIDENT'):
+        if resident_policy not in {'RESIDENT', 'LAZY', 'OFF'}:
+            raise ValueError(f'Política STT inválida: {resident_policy}')
+        self.model_dir = Path(model_dir)
         self.model, self.variant, self.threads = model, variant, threads
-        manifest_path = Path(model_dir) / 'manifest.json'
+        self.resident_policy = resident_policy
+        manifest_path = self.model_dir / 'manifest.json'
         self.manifest = json.loads(manifest_path.read_text(encoding='utf-8')) if manifest_path.exists() else {}
-        self.backend = create_backend(model, model_dir, threads).load()
-        import os
-        import psutil
-        if psutil.Process(os.getpid()).memory_info().rss > CATALOG[model]['memory_limit_mb'] * 1024**2:
-            self.backend.close()
-            raise MemoryError('STT excedeu o orçamento de RAM do modelo')
+        self.backend = None
+        self.load_ms = None
+        self.cold_start_count = 0
+        self.last_load_error = None
+        self.state = 'off' if resident_policy == 'OFF' else 'waiting_first_use'
+        self._load_lock = threading.Lock()
         self._lock = threading.Lock()
         self.clients = 0
         self.client_limit = 16
         self.recent = {}
+        if resident_policy == 'RESIDENT':
+            self.ensure_loaded()
+
+    def ensure_loaded(self):
+        if self.resident_policy == 'OFF':
+            self.state = 'off'
+            raise SttDisabledError('STT desativado pela política de RAM (OFF)')
+        if self.backend is not None:
+            return self.backend
+        with self._load_lock:
+            if self.backend is not None:
+                return self.backend
+            from backends import create_backend
+            import os
+            import psutil
+            self.state = 'loading'
+            self.last_load_error = None
+            try:
+                backend = create_backend(self.model, self.model_dir, self.threads).load()
+                if psutil.Process(os.getpid()).memory_info().rss > CATALOG[self.model]['memory_limit_mb'] * 1024**2:
+                    backend.close()
+                    self.state = 'degraded'
+                    self.last_load_error = 'memory_pressure'
+                    raise MemoryError('STT excedeu o orçamento de RAM do modelo')
+                self.backend = backend
+                self.load_ms = getattr(backend, 'load_ms', None)
+                self.cold_start_count += 1
+                self.state = 'ready'
+                return self.backend
+            except Exception as exc:
+                if self.state != 'degraded':
+                    self.state = 'load_failed'
+                    self.last_load_error = str(exc) or type(exc).__name__
+                raise
+
+    def close(self):
+        with self._load_lock:
+            if self.backend is not None:
+                with suppress(Exception):
+                    self.backend.close()
+                self.backend = None
+            self.state = 'off' if self.resident_policy == 'OFF' else 'unloaded'
 
     def recognize(self, audio):
+        if self.resident_policy == 'OFF':
+            raise SttDisabledError('STT desativado pela política de RAM (OFF)')
+        backend = self.ensure_loaded()
         if not self._lock.acquire(blocking=False):
             raise RuntimeError('STT ocupado; tente novamente')
         try:
             if not np.any(audio):
                 return '', 0.0, 0.0
-            text, milliseconds = self.backend.recognize(audio)
+            text, milliseconds = backend.recognize(audio)
             self.recent = {'inference_ms': milliseconds, 'audio_duration_ms': len(audio)/16}
             return text, milliseconds / 1000, 0.0
         finally:
@@ -105,11 +157,44 @@ class Engine:
         import psutil
         from model_catalog import CATALOG
         manifest = self.manifest
-        return {'revision': manifest.get('revision') or manifest.get('version'), 'model_path': str(self.backend.model_dir), 'model': self.model, 'variant': self.variant, 'backend': CATALOG[self.model]['runtime'],
-                'public_service_id': NAME, 'state': 'busy' if self._lock.locked() else 'ready', 'threads': self.threads, 'device': 'cpu',
-                'compute': 'fp32' if self.model == 'fastconformer' and self.variant == 'adapted' else CATALOG[self.model]['compute'],
-                'model_load_ms': self.backend.load_ms, 'process_rss_mb': psutil.Process(os.getpid()).memory_info().rss/1048576,
-                'recent': self.recent, 'clients': self.clients, 'client_limit': self.client_limit}
+        model_loaded = self.backend is not None
+        if self.resident_policy == 'OFF':
+            state = 'off'
+        elif self._lock.locked():
+            state = 'busy'
+        elif model_loaded:
+            state = 'ready'
+        else:
+            state = self.state
+        try:
+            rss_mb = psutil.Process(os.getpid()).memory_info().rss / 1048576
+        except Exception:
+            rss_mb = None
+        return {
+            'resident_policy': self.resident_policy,
+            'configured_model': self.model,
+            'active_model': self.model if model_loaded else None,
+            'model_loaded': model_loaded,
+            'is_model_loaded': model_loaded,
+            'state': state,
+            'load_ms': self.load_ms,
+            'cold_start_count': self.cold_start_count,
+            'process_rss_mb': rss_mb,
+            'last_load_error': self.last_load_error,
+            'revision': manifest.get('revision') or manifest.get('version'),
+            'model_path': str(self.model_dir),
+            'model': self.model,
+            'variant': self.variant,
+            'backend': CATALOG[self.model]['runtime'],
+            'public_service_id': NAME,
+            'threads': self.threads,
+            'device': 'cpu',
+            'compute': 'fp32' if self.model == 'fastconformer' and self.variant == 'adapted' else CATALOG[self.model]['compute'],
+            'model_load_ms': self.load_ms,
+            'recent': self.recent,
+            'clients': self.clients,
+            'client_limit': self.client_limit,
+        }
 
 
 class Metrics:
@@ -291,6 +376,9 @@ class Handler(AsyncEventHandler):
             error = None
             if self.invalid:
                 outcome = 'invalid'
+            elif getattr(self.engine, 'resident_policy', 'RESIDENT') == 'OFF':
+                outcome = 'disabled'
+                error = Error(text='STT desativado pela política de RAM (OFF)', code='stt_disabled')
             elif duration >= .35:
                 try:
                     audio = pcm16_to_float32(pcm)
@@ -303,6 +391,9 @@ class Handler(AsyncEventHandler):
                     correction_ms = float(resolved['correction_ms'])
                     changes = len(resolved['changes'])
                     outcome = 'ok'
+                except SttDisabledError as exc:
+                    outcome = 'disabled'
+                    error = Error(text=str(exc), code='stt_disabled')
                 except LexicalError as exc:
                     outcome = 'failure'
                     error = Error(text=str(exc), code=exc.code)
@@ -333,6 +424,7 @@ def parse_args(argv=None):
     p = argparse.ArgumentParser(description='Arandu STT multimodelo - Wyoming + lexical resolver')
     p.add_argument('--stt-model', choices=tuple(CATALOG), default='orukeet_int8')
     p.add_argument('--model-variant', choices=('adapted','original'), default='adapted')
+    p.add_argument('--resident-policy', choices=('RESIDENT', 'LAZY', 'OFF'), default='RESIDENT')
     p.add_argument('--diagnostics-port', type=int, default=11560)
     p.add_argument('--model-dir', type=Path, default=Path('/data/models/orukeet_int8'))
     p.add_argument('--inventory', type=Path, default=Path('/data/arandu_ha_inventory.json'))
@@ -379,7 +471,7 @@ async def main(argv=None):
     resolver = ContextualResolver(a.inventory, HERE/'resources', config_path=a.lexical_config, overrides=overrides)
     LOG.info('Carregando %s | threads=%s | profile=%s | padding=%sms', a.stt_model, a.threads, a.profile, a.padding_ms)
     LOG.info('Resolver: %s', resolver.stats())
-    engine = Engine(a.model_dir, a.threads, a.stt_model, a.model_variant)
+    engine = Engine(a.model_dir, a.threads, a.stt_model, a.model_variant, resident_policy=a.resident_policy)
     engine.client_limit = a.max_clients
     metrics = Metrics(a.metrics, a.debug_text, a.stt_model, a.model_variant)
     server = AsyncServer.from_uri(a.uri)
@@ -400,7 +492,7 @@ async def main(argv=None):
         await serve(server, handler_factory, a.no_discovery)
     finally:
         await runner.cleanup()
-        engine.backend.close()
+        engine.close()
         if refresh_task:
             refresh_task.cancel()
             with suppress(asyncio.CancelledError):

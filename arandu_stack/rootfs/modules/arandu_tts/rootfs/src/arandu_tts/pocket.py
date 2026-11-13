@@ -59,6 +59,19 @@ class PocketEngine:
         with self.lock:
             self.states.pop(name, None)
 
+    def has_voice_loaded(self, name: str) -> bool:
+        return self.loaded and name in self.states
+
+    def preload_voice(self, voice: VoiceSpec) -> None:
+        with self.lock:
+            self.load()
+            self._state(voice)
+
+    def unload(self) -> None:
+        with self.lock:
+            self.states.clear()
+            self.model = None
+
     def prepare_voice(self, wav: Path, target: Path) -> None:
         """Clona amostra (consentida), exporta estado reutilizável de inferência."""
         if not wav.is_file() or wav.is_symlink():

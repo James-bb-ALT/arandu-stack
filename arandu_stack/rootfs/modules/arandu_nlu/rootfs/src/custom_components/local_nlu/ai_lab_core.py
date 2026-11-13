@@ -211,23 +211,53 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30, gen
 
     stages["nlu"]["model"] = "Arandu Rust v4"
     nl = await run("nlu", nlu, text) if mode in ("pipeline", "nlu") else None
+    route = None
+    blocked_by_route = False
     if nl and nl.get("status") == "plan":
         result.update(proposal=nl, source="nlu")
-    elif mode == 'pipeline' and nl and (nl.get('status') not in {'no_match','clarification'}
-            or (nl.get('status') == 'no_match' and nl.get('reason') not in (None,'no_match','unsupported_intent','unknown_intent'))
-            or (nl.get('status') == 'clarification' and (nl.get('reason') != 'target_not_found' or nl.get('candidates') or nl.get('options')))):
-        stages['decision']['reason'] = 'nlu_safety_or_dialogue_refusal'
-        stages['llm']['reason'] = 'nlu_safety_or_dialogue_refusal'
-    elif mode != "nlu":
-        stages["decision"]["fallback_reason"] = (nl or {}).get("reason") or (nl or {}).get("status") or "isolated_mode"
-        de = await run("decision", decision, {"text": text, "nlu": nl}) if mode != "llm" and not (general and mode == "pipeline") else None
+    elif mode == 'pipeline' and nl:
+        from .fallback_policy import RouteCategory, classify_fallback, route_diagnostic
+        nl_cmd = nl.get("command") if isinstance(nl.get("command"), dict) else nl
+        route = classify_fallback(
+            nlu_status=nl.get("status", "no_match"),
+            reason=nl.get("reason"),
+            command=nl_cmd,
+            candidates=nl.get("candidates") or (),
+            options=nl.get("options") or (),
+            pending=bool(nl.get("pending")),
+            safety_flags=nl.get("safety_flags") or (),
+            explicitly_denied=bool(nl.get("explicitly_denied")),
+            user_scope_known=nl.get("user_scope_known", True),
+        )
+        result["route_diagnostic"] = route_diagnostic(route)
+        if route.category != RouteCategory.RECOVERABLE:
+            blocked_by_route = True
+            skip_reason = (
+                "nlu_safety_or_dialogue_refusal"
+                if route.category in (RouteCategory.SAFETY_BLOCK, RouteCategory.PENDING_DIALOGUE)
+                else (route.escalation_blocked_by or route.reason or route.category.value.lower())
+            )
+            stages["decision"]["reason"] = skip_reason
+            stages["llm"]["reason"] = skip_reason
+            if route.category == RouteCategory.SAFETY_BLOCK:
+                stages["decision"]["status"] = "blocked"
+                stages["llm"]["status"] = "blocked"
+    if not (nl and nl.get("status") == "plan") and not blocked_by_route and mode != "nlu":
+        stages["decision"]["fallback_reason"] = (route.reason if route else None) or (nl or {}).get("reason") or (nl or {}).get("status") or "isolated_mode"
+        dec_payload = {"text": text, "nlu": nl}
+        if route is not None:
+            dec_payload["preserved_slots"] = route.preserve_slots
+        de = await run("decision", decision, dec_payload) if mode != "llm" and not (general and mode == "pipeline") else None
         if mode != "llm" and de and de.get("decision_status") in {"accepted", "resolved", "confirmation_required"} and de.get("proposal"):
             result.update(proposal=de["proposal"], source="decision")
         elif de and de.get('algorithm') == 'structured-v3' and de.get('decision_status') == 'ambiguous' and (de.get('analysis') or {}).get('device',{}).get('candidate_count',0) > 1:
             stages['llm']['reason'] = 'true_entity_ambiguity'
         elif mode != "decision":
             stages["llm"]["fallback_reason"] = (de or {}).get("reason") or "decision_unavailable"
-            output = await run("llm", llm, {"text": text, "nlu": nl, "decision": de})
+            llm_payload = {"text": text, "nlu": nl, "decision": de}
+            if route is not None:
+                llm_payload["preserved_slots"] = route.preserve_slots
+            output = await run("llm", llm, llm_payload)
             if output:
                 typed=output.get('contract_version')==2 and 'plan' in output
                 kind=output.get('kind')
@@ -250,6 +280,9 @@ async def pipeline(text, nlu, decision, llm, *, mode="pipeline", timeout=30, gen
                 else:
                     result.update(proposal=None if typed else output.get("proposal", output),plan=output.get('plan'),kind=kind,
                         source="llm", response_text=output.get("response_text"), requires_review=not bool(output.get("response_text")))
+        if result.get("route_diagnostic"):
+            result["route_diagnostic"]["decision_called"] = stages["decision"]["status"] == "executed"
+            result["route_diagnostic"]["llm_called"] = stages["llm"]["status"] == "executed"
     if result.get("kind") != "conversation":
         result["clarification_question"] = ((result.get('plan') or {}).get('question') or
             (result["proposal"] or {}).get("clarification_question") or

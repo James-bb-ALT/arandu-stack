@@ -564,6 +564,19 @@ class ContextualRuntime:
                     session.pending,session.selection,session.confirmation,session.candidates=None,None,(),()
                     return self.result('cancelled' if remaining=='semantic_negation' else 'unavailable',user_input,reason=remaining,
                         speech='Não executei: o pedido contém uma restrição que não consigo aplicar com segurança.')
+            from .light_aggregation import evaluate_aggregated_light_query, is_aggregated_light_query
+            if outcome.status != "plan" and pending is None and not session.candidates and is_aggregated_light_query(user_input.text):
+                current_user = await self.revalidate(identity, user_input, options)
+                from .contextual_catalog import build
+                current_snapshot = build(self.hass, current_user, options)
+                if current_snapshot.payload["generation"] != generation:
+                    raise ExecutionError("stale", "semantic_catalog_changed")
+                agg = evaluate_aggregated_light_query(user_input.text, current_snapshot, self.hass)
+                if agg is not None:
+                    session.pending = None
+                    session.candidates = ()
+                    session.response = agg["speech"]
+                    return self.result("query_success", user_input, speech=agg["speech"], reason="light_aggregation")
             from .intelligence import eligible, fallback, nlu_summary
             if not reserved(user_input.text) and (options.get("decision_enabled") is True or options.get("llm_enabled") is True) and eligible(outcome, pending=pending is not None or bool(session.candidates)):
                 from .ai_lab import local_request
@@ -681,6 +694,42 @@ class ContextualRuntime:
                     if action_missing:
                         session.last_targets = tuple(key for key, row in snapshot.by_id.items() if row["entity_id"] in partial["target_entities"])
                         session.last_area = partial["target_area"]
+                    if not partial["target_entities"] and outcome.reason == "target_not_found" and outcome.command is not None:
+                        cmd_action = outcome.command.get("action")
+                        cmd_area = outcome.command.get("area") or partial.get("target_area")
+                        if cmd_action == "turn_off" and cmd_area:
+                            protected = {"lock", "alarm_control_panel", "cover", "siren", "valve"}
+                            eligible_rows = [
+                                row for row in snapshot.by_id.values()
+                                if row.get("area_id") == cmd_area
+                                and row.get("domain") not in protected
+                                and "turn_off" in (row.get("actions") or ())
+                                and (row.get("attributes") or {}).get("available") is True
+                            ]
+                            if eligible_rows:
+                                domains = {r.get("domain") for r in eligible_rows}
+                                labels = []
+                                if "light" in domains:
+                                    labels.append("as luzes")
+                                if "switch" in domains or "outlet" in domains:
+                                    labels.append("as tomadas")
+                                if not labels:
+                                    labels.append("os dispositivos")
+                                area_obj = next((a for a in snapshot.payload.get("areas", []) if a.get("area_id") == cmd_area), None)
+                                area_name = (area_obj.get("names") or [cmd_area])[0] if area_obj else cmd_area
+                                return self.result(
+                                    "missing_slot",
+                                    user_input,
+                                    speech=f"Quer desligar {' e '.join(labels)} de {area_name}?",
+                                    followup=True,
+                                    reason="bulk_clarification",
+                                )
+                            return self.result(
+                                "no_match",
+                                user_input,
+                                speech="Não encontrei dispositivos elegíveis para desligar nessa área.",
+                                reason="no_eligible_targets",
+                            )
                     return self.result("missing_slot" if action_missing else "no_match", user_input,
                         speech=partial["clarification_question"], followup=True, reason="semantic_clarification")
                 if outcome.reason == "target_not_found" and outcome.command is not None:

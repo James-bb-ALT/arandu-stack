@@ -1,3 +1,7 @@
+# 11.3.3 — Ações simples sem fala TTS (som padrão de conclusão no Assist) (2026-11-13)
+
+- **Assist & AI Lab (`contextual_runtime.py`, `conversation.py`, `ai_lab_panel.js`):** Ações simples executadas com sucesso não enviam mais `"Pronto."` para o TTS, permitindo que o Home Assistant toque apenas o som padrão de conclusão. O TTS continua sendo acionado normalmente para confirmações complexas (alarmes nomeados, lembretes, timers, confirmações de segurança), esclarecimentos com continuidade de conversa, consultas e respostas conversacionais do LLM.
+
 # 11.3.2 — Remoção de código interno `proposal.reason` do TTS no AI Lab (2026-11-13)
 
 - **AI Lab (`ai_lab_panel.js`):** Removido o fallback `this.last?.proposal?.reason` na síntese TTS (`speak()`), evitando que códigos internos do Decision como `explicit_fields_and_unique_target` sejam falados em voz alta quando a ação é resolvida sem resposta personalizada; usa `'Pronto.'` quando a operação é validada.

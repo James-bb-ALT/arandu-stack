@@ -1338,7 +1338,7 @@ class ContextualRuntime:
         target_areas={snapshot.by_id[t].get('area_id') for t in session.last_targets}
         session.last_area = next(iter(target_areas)) if len(target_areas)==1 else None
         session.signature, session.last_execution = signature, time.monotonic()
-        speech = " ".join(responses) if responses else "Pronto." if completed == 1 else f"Pronto, executei {completed} operações."
+        speech = " ".join(responses) if responses else ""
         if len(speech.encode()) > 8192:
             speech = "A resposta excedeu o limite permitido. Peça uma consulta mais específica."
         session.response = speech

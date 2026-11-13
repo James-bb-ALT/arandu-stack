@@ -77,7 +77,8 @@ class LocalNluConversationEntity(
         response = intent.IntentResponse(language=user_input.language)
         speech, error_code, query = _render(result)
         if error_code is None:
-            response.async_set_speech(speech)
+            if speech:
+                response.async_set_speech(speech)
             if query:
                 response.response_type = intent.IntentResponseType.QUERY_ANSWER
         else:
@@ -99,13 +100,7 @@ def _render(
         error = None if result.code in ("success", "query_success", "missing_slot", "confirmation_required", "cancelled") else intent.IntentResponseErrorCode.UNKNOWN
         return result.response_text, error, result.code == "query_success"
     if result.code == "success":
-        if result.operation_count == 1:
-            return ("Pronto.", None, False)
-        return (
-            f"Pronto, executei {result.operation_count} comandos.",
-            None,
-            False,
-        )
+        return ("", None, False)
     if result.code == "query_success":
         values = "; ".join(_render_state(state) for state in result.states)
         return (f"{values}.", None, True)

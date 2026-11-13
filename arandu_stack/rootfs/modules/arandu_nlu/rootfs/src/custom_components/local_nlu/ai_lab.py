@@ -374,9 +374,13 @@ class Lab:
                     # LLM service performs its own retrieval when Decision was not called.
                     from .intelligence import llm_hint
                     data = {**data,'decision':llm_hint(data.get('decision'))}
-                    raw = await local_request(session, options.get('stack_endpoint') or worker, "/infer", payload={**data, "action": "llm", "catalog": catalog, "context": semantic_context, "llm_model": payload.get("llm_model", "tucano"),'contract_version':payload.get('llm_contract',2)})
-                    if raw.get('contract_version')==2 and raw.get('kind') in {'automation','clarification','conversation'}:
-                        if raw['kind']=='automation':
+                    llm_req = {**data, "action": "llm", "catalog": catalog, "context": semantic_context, "llm_model": payload.get("llm_model", "tucano"),'contract_version':payload.get('llm_contract',2)}
+                    for opt_key in ("session_id", "keep_context", "cache_prompt", "reset_session"):
+                        if opt_key in payload and payload[opt_key] is not None:
+                            llm_req[opt_key] = payload[opt_key]
+                    raw = await local_request(session, options.get('stack_endpoint') or worker, "/infer", payload=llm_req)
+                    if raw.get('contract_version')==2 and raw.get('kind') in {'automation','query','clarification','conversation'}:
+                        if raw['kind'] in {'automation', 'query'}:
                             from .intelligence import typed_operations
                             typed_operations(raw,text,snapshot,semantic_context)
                         return raw
@@ -405,7 +409,7 @@ class Lab:
                         proposal = clarification(text, catalog, semantic_context, reason="action_or_target_unresolved")
                         result.update(proposal=proposal, clarification_question=proposal["clarification_question"])
                 operations = ()
-                if result.get('plan') and result.get('kind')=='automation':
+                if result.get('plan') and result.get('kind') in {'automation', 'query'}:
                     from .intelligence import typed_operations
                     operations=typed_operations(result['stages']['llm']['output'],text,snapshot,semantic_context)
                 elif proposal and result["source"] == "nlu":
@@ -430,15 +434,44 @@ class Lab:
                         result["stages"]["validation"] = {"status": "error", "error": type(exc).__name__, "phase": "validation", "reason": str(exc)[:256]}
                         operations = ()
                     result["stages"]["validation"]["latency_ms"] = (time.perf_counter() - validation_started) * 1000
+                    if operations and all(op.action in ("query", "history_query") for op in operations):
+                        query_started = time.perf_counter()
+                        query_input = SimpleNamespace(text=text, context=Context(user_id=user.id), conversation_id=secrets.token_hex(16), device_id=None, satellite_id=None, language="pt-BR")
+                        exec_res = await runtime.execute(operations, snapshot, query_input, Session(now + 30), options, ResolvedIdentity(user.id, user, "context"))
+                        exec_dict = asdict(exec_res)
+                        result["execution"] = exec_dict
+                        result["response_text"] = exec_res.response_text
+                        result["kind"] = "query"
+                        result["stages"]["ha"] = {
+                            "status": "executed" if exec_res.code in ("success", "query_success") else "rejected",
+                            "read_only": True,
+                            "latency_ms": (time.perf_counter() - query_started) * 1000,
+                            "output": exec_dict,
+                        }
                 else:
                     result["stages"]["validation"] = {"status": "skipped", "reason": "Nenhuma ação HA proposta" if result.get("kind") == "conversation" else "Nenhuma operação proposta"}
+                    if result.get("kind") != "conversation":
+                        from .light_aggregation import evaluate_aggregated_light_query, is_aggregated_light_query
+                        from .queries_set import detect_queryset_domain, evaluate_queryset
+                        q_res = None
+                        q_reason = None
+                        if is_aggregated_light_query(text):
+                            q_res = evaluate_aggregated_light_query(text, snapshot, self.hass)
+                            q_reason = "light_aggregation"
+                        elif detect_queryset_domain(text) is not None:
+                            q_res = evaluate_queryset(text, snapshot, self.hass)
+                            q_reason = f"queryset_{q_res['domain']}" if q_res else None
+                        if q_res is not None and q_res.get("speech"):
+                            result["response_text"] = q_res["speech"]
+                            result["kind"] = "query"
+                            result["stages"]["ha"] = {"status": "executed", "read_only": True, "reason": q_reason, "output": {"code": "query_success", "response_text": q_res["speech"]}}
                 if result.get("kind") == "conversation":
                     if result.get("response_text"):
                         result["stages"]["response"] = {"status": "executed", "reason": "Resposta gerada pelo LLM"}
                     else:
                         result["stages"]["response"] = {"status": "error", "reason": result.get("reason") or "llm_conversation_empty"}
                 else:
-                    result["stages"]["response"] = {"status": "executed", "reason": result["clarification_question"] or "Diagnóstico concluído"}
+                    result["stages"]["response"] = {"status": "executed", "reason": result.get("response_text") or result["clarification_question"] or "Diagnóstico concluído"}
                 result["stages"] = {name: result["stages"][name] for name in ("vad", "stt", "nlu", "decision", "llm", "validation", "ha", "response", "tts")}
                 result["operations_validated"] = bool(operations)
                 return result, operations

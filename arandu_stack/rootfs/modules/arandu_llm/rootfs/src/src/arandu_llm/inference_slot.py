@@ -5,12 +5,14 @@ import errno
 import os
 from pathlib import Path
 import tempfile
+import time
 
 
 @asynccontextmanager
-async def inference_slot():
+async def inference_slot(timings=None):
     path = Path(os.environ.get('ARANDU_INFERENCE_LOCK', str(Path(tempfile.gettempdir()) / 'arandu-intelligence.lock')))
     # Both independent services use the same file; the OS releases it on exit.
+    before = time.perf_counter()
     with path.open('a+b') as handle:
         if os.name == 'nt':
             import msvcrt
@@ -37,7 +39,10 @@ async def inference_slot():
                 if exc.errno not in (errno.EACCES, errno.EAGAIN):
                     raise
                 await asyncio.sleep(.05)
+        wait_ms = (time.perf_counter() - before) * 1000
+        if isinstance(timings, dict):
+            timings['inference_slot_wait_ms'] = wait_ms
         try:
-            yield
+            yield wait_ms
         finally:
             release()

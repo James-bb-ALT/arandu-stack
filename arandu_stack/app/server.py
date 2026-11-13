@@ -16,7 +16,7 @@ from logs import LogStore, SOURCES, LOGGER
 from request_traces import TraceStore
 from admission import Gate, Busy
 
-APP_VERSION = '11.3.6'
+APP_VERSION = '11.3.7'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""
@@ -360,8 +360,8 @@ def create_app(data_dir, local=False):
                     raise ValueError('O serviço não confirmou a identidade do modelo solicitado')
                 if policy=='RESIDENT' and (result.get('loaded') is not True or result.get('integrity_verified') is not True):
                     raise ValueError(result.get('error') or 'O serviço não confirmou carga residente e integridade do modelo solicitado')
-                if policy=='LAZY' and result.get('integrity_verified') is not True:
-                    raise ValueError(result.get('error') or 'O serviço não confirmou integridade do modelo solicitado')
+                if policy=='LAZY' and (result.get('weights_verified') is not True and result.get('integrity_verified') is not True):
+                    raise ValueError(result.get('error') or 'O serviço não confirmou integridade dos pesos do modelo solicitado')
                 if policy=='OFF' and result.get('loaded') is True:
                     raise ValueError('O serviço manteve o modelo carregado apesar da política OFF')
                 await manager.configure('llm',candidate)

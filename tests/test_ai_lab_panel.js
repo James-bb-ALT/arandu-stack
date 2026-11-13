@@ -9,9 +9,22 @@ class Element {
   replaceChildren(...children) { this.children=children; this.textContent=''; }
 }
 let Panel;
+const vmUrls = [];
 vm.runInNewContext(fs.readFileSync('custom_components/local_nlu/ai_lab_panel.js','utf8'), {
   HTMLElement:class {}, customElements:{get:()=>undefined,define:(_name,cls)=>{Panel=cls;}},
-  document:{createElement:()=>new Element(),createTextNode:text=>({textContent:text})}
+  document:{createElement:()=>new Element(),createTextNode:text=>({textContent:text})},
+  atob: (s) => {
+    if (!/^[A-Za-z0-9+/=]+$/.test(s) || s.length % 4 !== 0) throw new Error('Invalid base64');
+    return Buffer.from(s, 'base64').toString('latin1');
+  },
+  Blob: globalThis.Blob,
+  Uint8Array: globalThis.Uint8Array,
+  clearInterval: globalThis.clearInterval,
+  clearTimeout: globalThis.clearTimeout,
+  URL: {
+    createObjectURL: () => { const u = `blob:vm-${vmUrls.length + 1}`; vmUrls.push(u); return u; },
+    revokeObjectURL: (u) => { vmUrls.push(`revoked:${u}`); },
+  },
 });
 const text=node=>node.textContent+' '+(node.children || []).map(text).join(' ');
 
@@ -181,4 +194,151 @@ test('structured Decision shows fields, cache and separate scores without invent
   assert.match(rendered,/Intenção: 0.8100/);
   assert.match(rendered,/Entidade: 0.7300/);
   assert.match(rendered,/sem interpretação como probabilidade/);
+});
+
+function makeTtsPanel({playFn, ttsFn} = {}) {
+  const nodes = {
+    tts: {value: 'piper'},
+    player: {src: '', play: playFn || (async () => {}), pause() {}, load() {}, removeAttribute() {}},
+    playAudio: {disabled: true},
+    ttsStatus: {textContent: ''},
+    keepContext: {checked: false},
+    worker: {value: 'http://127.0.0.1:11555'},
+    entry: {value: 'entry-1'},
+    ttsEndpoint: {value: ''},
+    ttsToken: {value: ''},
+    decision: {value: 'e5-small'},
+    mode: {value: 'pipeline'},
+    llm: {value: 'tucano'},
+    testArea: {value: ''},
+    threshold: {value: '0.8'},
+    margin: {value: '0.08'},
+  };
+  const revoked = [];
+  const prevCreate = URL.createObjectURL;
+  const prevRevoke = URL.revokeObjectURL;
+  let seq = 0;
+  URL.createObjectURL = () => `blob:test-${++seq}`;
+  URL.revokeObjectURL = (u) => revoked.push(u);
+  const p = new Panel();
+  p.shadowRoot = {getElementById: (id) => nodes[id] || {textContent: '', replaceChildren() {}, append() {}, disabled: false}};
+  p.render = () => {};
+  p.persist = () => {};
+  p.last = fixture();
+  p.last.response_text = 'Luz acesa com sucesso.';
+  p.call = ttsFn || (async () => ({audio: Buffer.from('RIFF\x00\x00\x00\x00WAVEfmt ').toString('base64'), model: 'piper', latency_ms: 42}));
+  return {
+    panel: p,
+    nodes,
+    revoked,
+    restore() { URL.createObjectURL = prevCreate; URL.revokeObjectURL = prevRevoke; },
+  };
+}
+
+test('TTS NotAllowedError preserves synthesized audio and sets blocked_by_browser without synthesis error', async () => {
+  let ttsCalls = 0;
+  let shouldBlock = true;
+  const err = new Error('play() failed because the user didn\'t interact with the document first.');
+  err.name = 'NotAllowedError';
+  const ctx = makeTtsPanel({
+    playFn: async () => { if (shouldBlock) throw err; },
+    ttsFn: async () => { ttsCalls++; return {audio: Buffer.from('RIFF0000WAVE').toString('base64'), model: 'pocket', latency_ms: 30}; },
+  });
+  try {
+    await ctx.panel.speak();
+    assert.equal(ttsCalls, 1);
+    assert.equal(ctx.panel.ttsState, 'ready');
+    assert.equal(ctx.panel.playbackState, 'blocked_by_browser');
+    assert.equal(ctx.panel.last.stages.tts.status, 'executed');
+    assert.equal(ctx.panel.last.stages.tts.playback_state, 'blocked_by_browser');
+    assert.equal(ctx.nodes.playAudio.disabled, false);
+    assert.ok(ctx.panel.audioUrl);
+    // Manual play reuses existing WAV without re-synthesizing
+    shouldBlock = false;
+    const played = await ctx.panel.playAudio({autoplay: false});
+    assert.equal(played, true);
+    assert.equal(ttsCalls, 1);
+    assert.equal(ctx.panel.playbackState, 'playing');
+  } finally {
+    ctx.restore();
+  }
+});
+
+test('TTS authorized autoplay plays cleanly and updates states', async () => {
+  const ctx = makeTtsPanel();
+  try {
+    await ctx.panel.speak();
+    assert.equal(ctx.panel.ttsState, 'ready');
+    assert.equal(ctx.panel.playbackState, 'playing');
+    assert.equal(ctx.panel.last.stages.tts.status, 'executed');
+    assert.equal(ctx.panel.last.stages.tts.synthesis_state, 'ready');
+  } finally {
+    ctx.restore();
+  }
+});
+
+test('TTS HTTP 502 and invalid base64 mark synthesis_error and preserve interpretation', async () => {
+  const ctx502 = makeTtsPanel({ttsFn: async () => { throw new Error('HTTP 502 Bad Gateway'); }});
+  try {
+    await assert.rejects(() => ctx502.panel.speak(), /HTTP 502/);
+    assert.equal(ctx502.panel.ttsState, 'synthesis_error');
+    assert.equal(ctx502.panel.last.stages.tts.status, 'error');
+    assert.equal(ctx502.panel.last.text, 'FIXTURE_TECNICA');
+  } finally {
+    ctx502.restore();
+  }
+  const ctxBad = makeTtsPanel({ttsFn: async () => ({audio: '!!!not-base64!!!', model: 'piper'})});
+  try {
+    await assert.rejects(() => ctxBad.panel.speak(), /inválido/);
+    assert.equal(ctxBad.panel.ttsState, 'synthesis_error');
+    assert.equal(ctxBad.panel.last.stages.tts.status, 'error');
+  } finally {
+    ctxBad.restore();
+  }
+});
+
+test('TTS skips simple action without speech and errors on empty conversation', async () => {
+  const ctx = makeTtsPanel();
+  try {
+    ctx.panel.last.response_text = '';
+    ctx.panel.last.clarification_question = null;
+    await ctx.panel.speak();
+    assert.equal(ctx.panel.last.stages.tts.status, 'skipped');
+    ctx.panel.last.kind = 'conversation';
+    ctx.panel.last.response_text = '   ';
+    await assert.rejects(() => ctx.panel.speak(), /llm_conversation_empty/);
+    assert.equal(ctx.panel.ttsState, 'synthesis_error');
+  } finally {
+    ctx.restore();
+  }
+});
+
+test('TTS consecutive speak revokes previous objectURL and ignores stale response; disconnect cancels', async () => {
+  let resolveFirst;
+  let callNum = 0;
+  const ctx = makeTtsPanel({
+    ttsFn: () => {
+      callNum++;
+      if (callNum === 1) return new Promise((r) => { resolveFirst = r; });
+      return Promise.resolve({audio: Buffer.from('RIFF2222WAVE').toString('base64'), model: 'pocket', latency_ms: 15});
+    },
+  });
+  try {
+    const first = ctx.panel.speak();
+    const second = ctx.panel.speak();
+    await second;
+    assert.equal(ctx.panel.last.stages.tts.model, 'pocket');
+    const urlAfterSecond = ctx.panel.audioUrl;
+    resolveFirst({audio: Buffer.from('RIFF1111WAVE').toString('base64'), model: 'piper', latency_ms: 99});
+    await first;
+    // Stale first response must not overwrite second
+    assert.equal(ctx.panel.audioUrl, urlAfterSecond);
+    assert.equal(ctx.panel.last.stages.tts.model, 'pocket');
+    // Disconnecting revokes active URL
+    ctx.panel.disconnectedCallback();
+    assert.ok(vmUrls.includes(`revoked:${urlAfterSecond}`));
+    assert.equal(ctx.panel.audioUrl, null);
+  } finally {
+    ctx.restore();
+  }
 });

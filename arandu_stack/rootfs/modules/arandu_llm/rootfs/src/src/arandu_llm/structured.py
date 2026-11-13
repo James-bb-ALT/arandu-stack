@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from pathlib import Path
 import socket
 import time
@@ -118,12 +119,12 @@ def context_for(text,catalog,analysis,context,decision,partial_understanding=Non
     return content,ids
 
 
-async def completion(adapter,request):
+async def completion(adapter,request,*,cache_prompt=False):
     """Bounded SSE; TTFT is time to first nonempty content delta, not HTTP headers."""
     import aiohttp
     from .adapter import LlmOutputError
     started=time.perf_counter();first=None;content=[];size=0;finish=None;usage={};timings={}
-    request={**request,'stream':True,'stream_options':{'include_usage':True},'cache_prompt':False}
+    request={**request,'stream':True,'stream_options':{'include_usage':True},'cache_prompt':bool(cache_prompt)}
     async with aiohttp.ClientSession(trust_env=False,timeout=aiohttp.ClientTimeout(total=90)) as session:
         async with session.post(f'http://127.0.0.1:{adapter.port}/v1/chat/completions',json=request) as response:
             if response.status!=200:raise ValueError('Runtime recusou schema/template LLM')
@@ -151,12 +152,75 @@ async def completion(adapter,request):
     if finish!='stop':
         raise LlmOutputError('llm_output_truncated' if finish=='length' else 'llm_response_incomplete','Geração incompleta; nenhuma ação autorizada.')
     n=usage.get('completion_tokens')
+    cached_tokens=(usage.get('prompt_tokens_details') or {}).get('cached_tokens')
+    if cached_tokens is None and 'cache_n' in timings:
+        cached_tokens=timings.get('cache_n')
     metrics={'inference_ms':total,'first_token_ms':(first-started)*1000 if first else None,
         'prompt_tokens':usage.get('prompt_tokens'),'generated_tokens':n,
+        'prompt_eval_ms':timings.get('prompt_ms'),'decode_ms':timings.get('predicted_ms'),
         'tokens_per_second':n/(total/1000) if type(n) is int and total>0 else None,
-        'decode_tokens_per_second':timings.get('predicted_per_second'),'prefix_cache_requested':False,
-        'cached_prompt_tokens':(usage.get('prompt_tokens_details') or {}).get('cached_tokens')}
+        'decode_tokens_per_second':timings.get('predicted_per_second'),'prefix_cache_requested':bool(cache_prompt),
+        'cached_prompt_tokens':cached_tokens,'cache_hit':bool(cached_tokens and cached_tokens>0)}
     return ''.join(content),metrics
+
+
+def _validated_session_key(payload, context):
+    import re
+    session_id = payload.get('session_id')
+    if session_id is None:
+        return None
+    if not isinstance(session_id, str) or not re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}', session_id):
+        raise ValueError('session_id inválido')
+    user_id = (context or {}).get('user_id') or payload.get('user_id') or 'default'
+    if not isinstance(user_id, str) or not user_id.strip() or len(user_id) > 128:
+        raise ValueError('user_id inválido')
+    return (user_id, session_id)
+
+
+def _session_history_messages(adapter, key, *, reset=False, ttl_s=600.0, max_turns=4, max_chars=1200):
+    from collections import deque
+    store = getattr(adapter, '_session_histories', None)
+    if store is None:
+        store = {}
+        adapter._session_histories = store
+    now = time.monotonic()
+    for k in [k for k, v in store.items() if now - v['updated_at'] > ttl_s]:
+        del store[k]
+    if key is None:
+        return []
+    if reset:
+        store.pop(key, None)
+        return []
+    entry = store.get(key)
+    if not entry:
+        return []
+    entry['updated_at'] = now
+    msgs = []
+    total_chars = 0
+    for user_msg, assistant_msg in reversed(list(entry['turns'])[-max_turns:]):
+        cost = len(user_msg) + len(assistant_msg)
+        if msgs and total_chars + cost > max_chars:
+            break
+        msgs.insert(0, {'role': 'assistant', 'content': assistant_msg})
+        msgs.insert(0, {'role': 'user', 'content': user_msg})
+        total_chars += cost
+    return msgs
+
+
+def _record_session_turn(adapter, key, user_text, reply, *, max_turns=4):
+    from collections import deque
+    if key is None or not reply:
+        return
+    store = getattr(adapter, '_session_histories', None)
+    if store is None:
+        store = {}
+        adapter._session_histories = store
+    entry = store.get(key)
+    if entry is None:
+        entry = {'turns': deque(maxlen=max_turns), 'updated_at': time.monotonic()}
+        store[key] = entry
+    entry['turns'].append((user_text, reply))
+    entry['updated_at'] = time.monotonic()
 
 
 async def infer(adapter,payload,catalog):
@@ -192,20 +256,26 @@ async def infer(adapter,payload,catalog):
     base['retrieval'].update(ranking=[{'entity_id':e} for e in sorted(ids)],eligible_entities=len(catalog['entities']),candidates=len(ids))
     base['retrieval_ms']=(time.perf_counter()-started)*1000
     base['load_ms']=await ensure(adapter,key)
+    base['model_load_ms']=base['load_ms']
     base['integrity_ms']=adapter.last_integrity_ms
+    base['integrity_check_ms']=adapter.last_integrity_ms
+    prompt_build_started=time.perf_counter()
     conversation_temp = float(payload.get("conversation_temperature", 0.78))
     if not (0.7 <= conversation_temp <= 0.85):
         conversation_temp = 0.78
     automation_temp = min(float(adapter.settings.get("temperature", 0.1)), 0.25)
-    from collections import deque
+    keep_context = bool(payload.get('keep_context', False))
+    session_key = _validated_session_key(payload, context) if (keep_context or payload.get('reset_session')) else None
     history_msgs = []
-    if general:
-        recent = getattr(adapter, '_recent_replies', None)
-        if recent is None:
-            recent = deque(maxlen=16)
-            adapter._recent_replies = recent
-        for prev in list(recent)[-4:]:
-            history_msgs.append({'role': 'assistant', 'content': prev})
+    if general and keep_context and session_key is not None:
+        history_msgs = _session_history_messages(
+            adapter,
+            session_key,
+            reset=bool(payload.get('reset_session')),
+            ttl_s=float(payload.get('history_ttl_s', 600.0)),
+        )
+    elif payload.get('reset_session') and session_key is not None:
+        _session_history_messages(adapter, session_key, reset=True)
     request={'messages':[{'role':'system','content':CONVERSATION_PROMPT if general else SYSTEM},
         *history_msgs,
         {'role':'user','content':text if general else encoded}],
@@ -221,22 +291,25 @@ async def infer(adapter,payload,catalog):
         base['profile'] = 'automation_profile'
     if MODELS[key]['thinking']:request['chat_template_kwargs']={'enable_thinking':False}
     if not general:request['response_format']={'type':'json_schema','json_schema':{'name':'arandu_automation_v2','strict':True,'schema':schema(catalog,ids,analysis)}}
+    base['prompt_build_ms']=(time.perf_counter()-prompt_build_started)*1000
+    cache_prompt = bool(payload['cache_prompt']) if 'cache_prompt' in payload else bool(adapter.settings.get('cache_prompt', os.environ.get('ARANDU_LLM_CACHE_PROMPT', '0') == '1'))
     adapter.phase='inference'
     import psutil
     try:process=psutil.Process(adapter.process.pid);before=process.cpu_times()
     except psutil.Error:process=None;before=None
-    raw,metrics=await completion(adapter,request)
+    raw,metrics=await completion(adapter,request,cache_prompt=cache_prompt)
     base.update(metrics,cpu_measurement='request_delta')
     if process and before:
         try:
             after=process.cpu_times()
-            base.update(memory_bytes=process.memory_info().rss,cpu_ms=((after.user+after.system)-(before.user+before.system))*1000)
+            rss=process.memory_info().rss
+            base.update(memory_bytes=rss,process_rss_mb=round(rss/(1024*1024),1),cpu_ms=((after.user+after.system)-(before.user+before.system))*1000)
         except psutil.Error:pass
     adapter.phase='validation';validation_started=time.perf_counter()
     if general:
         proposal,reply=parse_conversation({'choices':[{'finish_reason':'stop','message':{'content':raw}}]},adapter.settings['max_tokens'])
-        if reply:
-            adapter._recent_replies.append(reply)
+        if reply and keep_context and session_key is not None:
+            _record_session_turn(adapter, session_key, text, reply)
         base.update(proposal=proposal,response_text=reply,kind='conversation',mode='conversation_response')
     else:
         try:

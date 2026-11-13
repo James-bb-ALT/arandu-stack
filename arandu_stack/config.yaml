@@ -1,6 +1,6 @@
 name: Arandu Assistant
 slug: arandu_stack
-version: "11.1.4"
+version: "11.1.5"
 description: Assist local PT-BR com intercom/anúncios determinísticos, listas e automações contextuais, filas e concorrência segura
 url: https://github.com/jaimevictor/arandu-stack
 arch: [amd64]

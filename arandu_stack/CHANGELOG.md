@@ -1,3 +1,7 @@
+# 11.1.5 — Correção do fallback de ambiguidade no AI Lab (`ai_lab_core.py`) (2026-11-12)
+
+- Corrige `NameError: name '_timed' is not defined` em `custom_components/local_nlu/ai_lab_core.py` quando o Decision retorna `structured-v3` `ambiguous` com múltiplos candidatos, roteando diretamente para `run("llm", llm, llm_payload)` com `ambiguity_evidence = True`.
+
 # 11.1.4 — Semântica universal PT-BR, roteamento unificado e fallback progressivo V3 (2026-11-12)
 
 - **Ontologia semântica PT-BR compartilhada (`arandu_stack/shared/semantics/pt_BR/concepts.json` + `scripts/generate_semantics.py`):**

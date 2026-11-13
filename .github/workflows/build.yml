@@ -80,7 +80,7 @@ jobs:
           python -m pip install -r tests/requirements-test.txt playwright
           python -m playwright install --with-deps chromium
       - name: Run Chromium E2E tests (Desktop and Android Mobile viewports)
-        run: pytest -v --tb=short tests/test_ai_lab_browser_e2e.py
+        run: PYTHONPATH=. python -m pytest -v --tb=short tests/test_ai_lab_browser_e2e.py
 
   docker-build:
     name: Job 3 — Docker Build (Production Dockerfile)

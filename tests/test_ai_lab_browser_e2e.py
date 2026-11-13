@@ -158,6 +158,11 @@ def _launch_chromium(p):
 
 
 def test_real_chromium_and_android_mobile_layout_and_tts_autoplay():
+    from pathlib import Path
+    import sys
+    repo_root = str(Path(__file__).resolve().parent.parent)
+    if repo_root not in sys.path:
+        sys.path.insert(0, repo_root)
     from playwright.sync_api import sync_playwright
 
     httpd, url, expected_tag = _start_fixture_server()

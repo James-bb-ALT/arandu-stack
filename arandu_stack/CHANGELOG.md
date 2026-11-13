@@ -1,3 +1,8 @@
+# 11.3.4 — Desambiguação de área por origem do satélite e esclarecimento sem recusa falsa (2026-11-13)
+
+- **NLU (`resolver.rs`):** Quando um nome de cômodo é ambíguo (ex.: `"escritório"` correspondendo a múltiplos cômodos como `"Escritório de Jaime"`), verifica `request.origin_area` para desambiguar automaticamente se o satélite estiver em uma das áreas candidatas; caso contrário, retorna `clarification` (`ambiguous_area`).
+- **Decision & Orquestração (`partial_reasoner.py`, `progressive_orchestrator.py`):** Impede que `ambiguous_area`, `unknown_area` e `ambiguous_target` sejam convertidos em recusa de segurança (`"o pedido contém uma restrição..."`), devolvendo esclarecimento com continuidade de conversa (`"Há mais de um cômodo com esse nome. Em qual cômodo?"`) e permitindo que o Decision VNext resolva a área usando `origin.area_id`.
+
 # 11.3.3 — Ações simples sem fala TTS (som padrão de conclusão no Assist) (2026-11-13)
 
 - **Assist & AI Lab (`contextual_runtime.py`, `conversation.py`, `ai_lab_panel.js`):** Ações simples executadas com sucesso não enviam mais `"Pronto."` para o TTS, permitindo que o Home Assistant toque apenas o som padrão de conclusão. O TTS continua sendo acionado normalmente para confirmações complexas (alarmes nomeados, lembretes, timers, confirmações de segurança), esclarecimentos com continuidade de conversa, consultas e respostas conversacionais do LLM.

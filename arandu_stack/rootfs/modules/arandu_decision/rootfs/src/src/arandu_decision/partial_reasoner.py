@@ -99,6 +99,25 @@ def reason_partial(payload: dict[str, Any], *, encoder=None) -> dict[str, Any]:
             )
             alternatives.extend({"value": r["value"], "score": r["score"]} for r in ranked[1:4])
 
+        # Area disambiguation via satellite origin_area when ambiguous
+        area_slot = slots.get("area") or {}
+        origin_area = (partial.get("origin") or {}).get("area_id")
+        if area_slot.get("status") in {"conflicting", "candidate", "unknown"}:
+            area_cands = list(area_slot.get("candidates") or ())
+            if origin_area and origin_area in area_cands:
+                repairs.append(
+                    {
+                        "clause_id": cid,
+                        "slot": "area",
+                        "value": origin_area,
+                        "source": "origin_context",
+                        "evidence": ["origin_area_match"],
+                        "raw_score": 0.95,
+                    }
+                )
+            elif len(area_cands) > 1:
+                alternatives.extend({"slot": "area", "value": c, "score": None} for c in area_cands[:4])
+
         # Multi-slot repair: if target is unknown/candidate (not conflicting) and single candidate exists
         if "target" in unresolved and target_slot.get("status") in {"unknown", "candidate"}:
             cands = list(target_slot.get("candidates") or ())
@@ -117,6 +136,20 @@ def reason_partial(payload: dict[str, Any], *, encoder=None) -> dict[str, Any]:
                 alternatives.extend({"slot": "target", "value": c, "score": None} for c in cands[:4])
 
     if not repairs:
+        v4_reason = (partial.get("v4_outcome") or {}).get("reason")
+        if v4_reason in {"ambiguous_area", "unknown_area", "ambiguous_target"}:
+            return {
+                "decision_contract": DECISION_PARTIAL_CONTRACT,
+                "route": route,
+                "status": "needs_clarification",
+                "repairs": [],
+                "alternatives": alternatives[:4],
+                "confidence": None,
+                "margin": None,
+                "calibration_valid": False,
+                "requires_confirmation": False,
+                "reason": v4_reason,
+            }
         return {
             "decision_contract": DECISION_PARTIAL_CONTRACT,
             "route": route,

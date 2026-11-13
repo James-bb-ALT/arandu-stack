@@ -95,3 +95,121 @@ def test_conversation_render_silent_on_simple_actions_speaks_on_complex_and_llm(
     assert _render(RuntimeResult(code='missing_slot', response_text='Qual luz você quer ligar?')) == ('Qual luz você quer ligar?', None, False)
     # LLM conversation: speaks
     assert _render(RuntimeResult(code='query_success', response_text='Tudo bem por aqui!')) == ('Tudo bem por aqui!', None, True)
+
+
+def test_ambiguous_area_from_other_room_clarifies_not_safety_refusal():
+    import asyncio
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from custom_components.local_nlu.progressive_orchestrator import ProgressiveOrchestrator
+
+    orch = ProgressiveOrchestrator()
+    snapshot = {'generation': 'g1', 'areas': [], 'entities': []}
+
+    async def _interpret_v5(_req):
+        return {
+            'request_kind': 'needs_repair',
+            'safety_flags': [],
+            'origin': {'area_id': 'sala'},
+            'v4_outcome': {'status': 'clarification', 'reason': 'ambiguous_area', 'operations': []},
+            'clauses': [
+                {
+                    'clause_id': 0,
+                    'original_text': 'desliga a luz do escritorio',
+                    'slots': {
+                        'action': {'status': 'resolved', 'value': 'turn_off'},
+                        'area': {'status': 'conflicting', 'candidates': ['escritorio_de_jaime', 'escritorio_ana']},
+                    },
+                    'unresolved': ['area', 'target'],
+                    'allowed_actions': ['turn_off'],
+                    'constraints': {'negated': False, 'conditional': False, 'quoted_content': False},
+                }
+            ],
+        }
+
+    async def _decision_denied(_payload):
+        return {'route': 'denied', 'status': 'denied', 'reason': 'safety_or_constraint_locked'}
+
+    async def _review_v5(_payload):
+        return {'accepted': False}
+
+    res = asyncio.run(
+        orch.resolve(
+            text='desliga a luz do escritorio',
+            snapshot_payload=snapshot,
+            snapshot_by_id={},
+            origin_area='sala',
+            origin_source='satellite',
+            origin_context_id=None,
+            user_id='u1',
+            interpret_v5=_interpret_v5,
+            decision_partial=_decision_denied,
+            review_v5=_review_v5,
+        )
+    )
+    assert res.outcome_kind == 'clarification'
+    assert res.reason == 'ambiguous_area'
+    assert 'Em qual cômodo?' in (res.speech or '')
+
+    async def _decision_clarify(_payload):
+        return {'route': 'possible_action', 'status': 'needs_clarification', 'reason': 'ambiguous_area'}
+
+    async def _llm_refusal(_partial, _dec, _graph):
+        return {'mode': 'refusal', 'reason': 'ambiguous'}
+
+    res2 = asyncio.run(
+        orch.resolve(
+            text='desliga a luz do escritorio',
+            snapshot_payload=snapshot,
+            snapshot_by_id={},
+            origin_area='sala',
+            origin_source='satellite',
+            origin_context_id=None,
+            user_id='u1',
+            interpret_v5=_interpret_v5,
+            decision_partial=_decision_clarify,
+            llm_handoff=_llm_refusal,
+            review_v5=_review_v5,
+            llm_enabled=True,
+        )
+    )
+    assert res2.outcome_kind == 'clarification'
+    assert res2.reason == 'ambiguous_area'
+    assert 'Em qual cômodo?' in (res2.speech or '')
+
+
+def test_partial_reasoner_resolves_ambiguous_area_from_origin_area():
+    dec_src = str(ROOT / 'arandu_stack' / 'rootfs' / 'modules' / 'arandu_decision' / 'rootfs' / 'src' / 'src')
+    if dec_src not in sys.path:
+        sys.path.insert(0, dec_src)
+    from arandu_decision.partial_reasoner import reason_partial
+
+    base_partial = {
+        'request_kind': 'needs_repair',
+        'safety_flags': [],
+        'v4_outcome': {'status': 'clarification', 'reason': 'ambiguous_area'},
+        'clauses': [
+            {
+                'clause_id': 0,
+                'original_text': 'desliga a luz do escritorio',
+                'slots': {
+                    'action': {'status': 'resolved', 'value': 'turn_off'},
+                    'area': {'status': 'conflicting', 'candidates': ['escritorio_de_jaime', 'escritorio_ana']},
+                    'target': {'status': 'unknown', 'candidates': []},
+                },
+                'unresolved': ['area', 'target'],
+                'allowed_actions': ['turn_off'],
+                'constraints': {'negated': False, 'conditional': False, 'quoted_content': False},
+            }
+        ],
+    }
+
+    # Same room satellite breaks ambiguity
+    res_same = reason_partial({**base_partial, 'origin': {'area_id': 'escritorio_de_jaime'}})
+    assert res_same['status'] == 'resolved_candidate'
+    assert any(r['slot'] == 'area' and r['value'] == 'escritorio_de_jaime' for r in res_same['repairs'])
+
+    # Different room satellite asks for clarification instead of denying
+    res_other = reason_partial({**base_partial, 'origin': {'area_id': 'sala'}})
+    assert res_other['status'] == 'needs_clarification'
+    assert res_other['reason'] == 'ambiguous_area'

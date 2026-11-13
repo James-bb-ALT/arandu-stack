@@ -83,7 +83,64 @@ CATALOG.update({'parakeet_ptbr_30s': {'name': 'Parakeet TDT V3 pt-BR 30s',
                          'files': ['granite-speech-5.0-470m-turboctc-Q4_K_M.gguf', 'LICENSE', 'NOTICE'],
                          'sha256': {'granite-speech-5.0-470m-turboctc-Q4_K_M.gguf': '959646de88d43100a82459da1c0c9d3a2b1a7536b54338b9c4fc9535bdb30970'},
                          'download_bytes': 279183655,
-                         'installed_bytes': 279183655}})
+                         'installed_bytes': 279183655},
+ 'parakeet_ultra_q8': {'name': 'Parakeet Ultra Q8_0 (recomendado)',
+                       'repo': 'handy-computer/parakeet-ultra-gguf',
+                       'runtime': 'transcribe.cpp',
+                       'architecture': 'Parakeet Ultra CTC/TDT',
+                       'compute': 'Q8_0',
+                       'license': 'CC-BY-4.0',
+                       'languages': ['pt', 'en', 'es', 'fr', 'de'],
+                       'revision': 'a1539be1b849ea7463b88343e5277b373d0c4ea9',
+                       'files': ['parakeet-ultra-Q8_0.gguf', 'LICENSE'],
+                       'sha256': {'parakeet-ultra-Q8_0.gguf': '007a59761e9258779f189df396b50d12b83bb5b79e66df4b955c230d2f2a0a59'},
+                       'memory_limit_mb': 1600,
+                       'estimated_ram_mb': 950,
+                       'download_bytes': 740381825,
+                       'installed_bytes': 740381825},
+ 'parakeet_ultra_q4': {'name': 'Parakeet Ultra Q4_K_M (variante compacta)',
+                       'repo': 'handy-computer/parakeet-ultra-gguf',
+                       'runtime': 'transcribe.cpp',
+                       'architecture': 'Parakeet Ultra CTC/TDT',
+                       'compute': 'Q4_K_M',
+                       'license': 'CC-BY-4.0',
+                       'languages': ['pt', 'en', 'es', 'fr', 'de'],
+                       'revision': 'a1539be1b849ea7463b88343e5277b373d0c4ea9',
+                       'files': ['parakeet-ultra-Q4_K_M.gguf', 'LICENSE'],
+                       'sha256': {'parakeet-ultra-Q4_K_M.gguf': 'c69b7a5f9071a7afd8a1818ef7ae542c386c4b01ed0cac380c19a99947646bf9'},
+                       'memory_limit_mb': 1200,
+                       'estimated_ram_mb': 650,
+                       'download_bytes': 486298753,
+                       'installed_bytes': 486298753},
+ 'phonon_2_5': {'name': 'Phonon 2.5 (CPU compacto)',
+                'repo': 'FermionResearch/Phonon-2.5',
+                'runtime': 'fermion-research',
+                'architecture': 'Phonon 2.5 FSQ',
+                'compute': 'fsq',
+                'license': 'CC-BY-4.0',
+                'languages': ['auto', 'pt'],
+                'revision': '2af4bb8ccceb66a8ce06c4081bb968f1802c1e58',
+                'files': ['phonon-2.5.fsq'],
+                'sha256': {'phonon-2.5.fsq': '49da2dbe8301433caf7486368afa98c8d1a0e0477fbbc465895713ff6b510a66'},
+                'memory_limit_mb': 1024,
+                'estimated_ram_mb': 420,
+                'download_bytes': 156181652,
+                'installed_bytes': 156181652},
+ 'nemotron_unified_0_6b': {'name': 'NVIDIA Nemotron Unified ASR 0.6B (experimental)',
+                           'repo': 'nvidia/nemotron-labs-unified-asr-0.6b',
+                           'runtime': 'nvidia-nemo-isolated',
+                           'architecture': 'FastConformer-RNNT',
+                           'compute': 'fp32',
+                           'license': 'OpenMDW-1.1',
+                           'languages': ['pt', 'auto'],
+                           'revision': '023ce907267a09a308a5cb69239447cb3d0c1597',
+                           'files': ['nemotron-labs-unified-asr-0.6b.nemo'],
+                           'sha256': {'nemotron-labs-unified-asr-0.6b.nemo': '1718cc1b44fb8597b2356328d706a8d89f31c389ca6f2256c2e3f743c0246936'},
+                           'memory_limit_mb': 4608,
+                           'estimated_ram_mb': 3600,
+                           'experimental': True,
+                           'download_bytes': 2507735040,
+                           'installed_bytes': 2507735040}})
 for _id, _entry in CATALOG.items():
     _entry.setdefault("architecture", "CTC" if _id == "fastconformer" else "Whisper encoder-decoder")
     _entry.setdefault("compute", "int8")
@@ -245,6 +302,19 @@ def _install_locked(root, model, variant='adapted', *, progress=None, validator=
         if backup.exists():
             shutil.rmtree(backup)
     return manifest
+
+
+def remove(root, model, variant='adapted'):
+    """Remove installed weights for one model without affecting other models."""
+    validate(model, variant)
+    directory = location(root, model, variant)
+    if directory.exists():
+        shutil.rmtree(directory)
+    backup = directory.with_name(directory.name + '.previous')
+    if backup.exists():
+        shutil.rmtree(backup)
+    (Path(root) / ('.install-' + model + '.json')).unlink(missing_ok=True)
+    return {'removed': True, 'model': model}
 
 
 def extract_archive(archive, destination, required, max_bytes):

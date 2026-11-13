@@ -1,7 +1,7 @@
 {
   "version": 1,
   "counts": {
-    "stt": 9,
+    "stt": 13,
     "tts": 6,
     "decision": 3,
     "llm": 7
@@ -1170,6 +1170,158 @@
       "testable": true,
       "recommended": false,
       "restrictions": [],
+      "verified": true,
+      "experimental": true
+    },
+    {
+      "id": "parakeet_ultra_q8",
+      "legacy_ids": [],
+      "kind": "stt",
+      "display_name": "Parakeet Ultra Q8_0 (recomendado)",
+      "vendor": "handy-computer",
+      "repo_id": "handy-computer/parakeet-ultra-gguf",
+      "revision_immutable": "a1539be1b849ea7463b88343e5277b373d0c4ea9",
+      "files": [
+        {
+          "path": "parakeet-ultra-Q8_0.gguf",
+          "size": 740363168,
+          "sha256": "007a59761e9258779f189df396b50d12b83bb5b79e66df4b955c230d2f2a0a59"
+        },
+        {
+          "path": "LICENSE",
+          "size": 18657,
+          "sha256": null
+        }
+      ],
+      "license": "CC-BY-4.0",
+      "terms_url": "https://huggingface.co/handy-computer/parakeet-ultra-gguf",
+      "needs_auth": false,
+      "runtime": "transcribe.cpp",
+      "architecture": "Parakeet Ultra",
+      "format": "gguf",
+      "quantization": "Q8_0",
+      "language": "pt-BR",
+      "disk_bytes": 740381825,
+      "ram_estimate_mb": 950,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "4.1.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": true,
+      "restrictions": [],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "parakeet_ultra_q4",
+      "legacy_ids": [],
+      "kind": "stt",
+      "display_name": "Parakeet Ultra Q4_K_M (variante compacta)",
+      "vendor": "handy-computer",
+      "repo_id": "handy-computer/parakeet-ultra-gguf",
+      "revision_immutable": "a1539be1b849ea7463b88343e5277b373d0c4ea9",
+      "files": [
+        {
+          "path": "parakeet-ultra-Q4_K_M.gguf",
+          "size": 486280096,
+          "sha256": "c69b7a5f9071a7afd8a1818ef7ae542c386c4b01ed0cac380c19a99947646bf9"
+        },
+        {
+          "path": "LICENSE",
+          "size": 18657,
+          "sha256": null
+        }
+      ],
+      "license": "CC-BY-4.0",
+      "terms_url": "https://huggingface.co/handy-computer/parakeet-ultra-gguf",
+      "needs_auth": false,
+      "runtime": "transcribe.cpp",
+      "architecture": "Parakeet Ultra",
+      "format": "gguf",
+      "quantization": "Q4_K_M",
+      "language": "pt-BR",
+      "disk_bytes": 486298753,
+      "ram_estimate_mb": 650,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "4.1.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "phonon_2_5",
+      "legacy_ids": [],
+      "kind": "stt",
+      "display_name": "Phonon 2.5 (CPU compacto)",
+      "vendor": "FermionResearch",
+      "repo_id": "FermionResearch/Phonon-2.5",
+      "revision_immutable": "2af4bb8ccceb66a8ce06c4081bb968f1802c1e58",
+      "files": [
+        {
+          "path": "phonon-2.5.fsq",
+          "size": 156181652,
+          "sha256": "49da2dbe8301433caf7486368afa98c8d1a0e0477fbbc465895713ff6b510a66"
+        }
+      ],
+      "license": "CC-BY-4.0",
+      "terms_url": "https://huggingface.co/FermionResearch/Phonon-2.5",
+      "needs_auth": false,
+      "runtime": "fermion-research",
+      "architecture": "Phonon 2.5",
+      "format": "fsq",
+      "quantization": "fsq",
+      "language": "pt-BR",
+      "disk_bytes": 156181652,
+      "ram_estimate_mb": 420,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "4.1.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "nemotron_unified_0_6b",
+      "legacy_ids": [],
+      "kind": "stt",
+      "display_name": "NVIDIA Nemotron Unified ASR 0.6B (experimental)",
+      "vendor": "nvidia",
+      "repo_id": "nvidia/nemotron-labs-unified-asr-0.6b",
+      "revision_immutable": "023ce907267a09a308a5cb69239447cb3d0c1597",
+      "files": [
+        {
+          "path": "nemotron-labs-unified-asr-0.6b.nemo",
+          "size": 2507735040,
+          "sha256": "1718cc1b44fb8597b2356328d706a8d89f31c389ca6f2256c2e3f743c0246936"
+        }
+      ],
+      "license": "OpenMDW-1.1",
+      "terms_url": "https://huggingface.co/nvidia/nemotron-labs-unified-asr-0.6b",
+      "needs_auth": false,
+      "runtime": "nvidia-nemo-isolated",
+      "architecture": "FastConformer-RNNT",
+      "format": "nemo",
+      "quantization": "fp32",
+      "language": "pt-BR",
+      "disk_bytes": 2507735040,
+      "ram_estimate_mb": 3600,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "4.1.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [
+        "OpenMDW-1.1 terms"
+      ],
       "verified": true,
       "experimental": true
     }

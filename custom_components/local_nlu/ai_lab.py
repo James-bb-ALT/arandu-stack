@@ -126,7 +126,7 @@ class Lab:
         if command=='llm_apply':
             if payload.get('confirm') is not True:raise ValueError('Confirmação explícita necessária')
             return await local_request(session,llm_worker,'/api/llm/apply',payload={'model':payload.get('llm_model'),'confirm':True},timeout=180)
-        if command in {'transcribe', 'stt_models', 'stt_test', 'stt_compare', 'stt_install', 'stt_apply'}:
+        if command in {'transcribe', 'stt_models', 'stt_test', 'stt_compare', 'stt_install', 'stt_apply', 'stt_remove'}:
             if not stack_endpoint:
                 raise ValueError('Configure o endpoint Arandu Stack nas opções da integração')
             if command == 'stt_models':
@@ -140,11 +140,18 @@ class Lab:
             # Legacy selector remains compatible while the panel migrates.
             if model in ('original', 'adapted'):
                 variant, model = model, 'fastconformer'
-            allowed = {'fastconformer', 'whisper_tiny', 'whisper_base', 'whisper_small', 'parakeet_ptbr_30s', 'parakeet_tagarela', 'orukeet_int8', 'granite_turboctc_q4'}
+            allowed = {
+                'fastconformer', 'whisper_tiny', 'whisper_base', 'whisper_small',
+                'parakeet_ptbr_30s', 'parakeet_tagarela', 'orukeet_int8', 'granite_turboctc_q4',
+                'parakeet_ultra_q8', 'parakeet_ultra_q4', 'phonon_2_5', 'nemotron_unified_0_6b',
+            }
             if type(model) is not str or model not in allowed or variant not in ('original', 'adapted'):
                 raise ValueError('Modelo STT inválido')
             body = {'model': model, 'variant': variant}
-            for key in ('audio', 'models', 'threads', 'profile', 'reference', 'entity_reference', 'confirm'):
+            for key in (
+                'audio', 'models', 'threads', 'profile', 'reference', 'entity_reference',
+                'confirm', 'preset', 'audio_processing', 'nemotron_profile',
+            ):
                 if key in payload:
                     body[key] = payload[key]
             if action in ('test', 'compare'):
@@ -154,8 +161,8 @@ class Lab:
                 decoded = base64.b64decode(audio, validate=True)
                 if not 1 <= len(decoded) <= 1_400_000:
                     raise ValueError('Áudio vazio ou excedeu 1,4 MB')
-                if action == 'compare' and (type(body.get('models')) is not list or not 1 <= len(body['models']) <= 8 or any(type(m) is not str or m not in allowed for m in body['models'])):
-                    raise ValueError('Selecione 1–8 modelos STT válidos')
+                if action == 'compare' and (type(body.get('models')) is not list or not 1 <= len(body['models']) <= 12 or any(type(m) is not str or m not in allowed for m in body['models'])):
+                    raise ValueError('Selecione 1–12 modelos STT válidos')
             if self.lock.locked():
                 raise ValueError('Laboratório ocupado; aguarde')
             async with self.lock:

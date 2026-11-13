@@ -173,6 +173,18 @@ class STTLab:
         self.install_task = asyncio.create_task(install_one())
         return {'state': 'downloading', 'model': model}
 
+    async def remove(self, model, variant='adapted'):
+        validate(model, variant)
+        if self.busy.locked():
+            raise ValueError('STT ocupado; aguarde a operação atual')
+        active = await self.active()
+        if active and active.get('active_model') == model and active.get('model_loaded'):
+            raise ValueError('Não é possível remover o modelo ativo em RAM; troque ou desative antes')
+        async with self.busy:
+            result = await self.worker({'command': 'remove', 'model': model, 'variant': variant}, 60)
+            self.operations.pop((model, variant), None)
+            return result
+
     def parameters(self, body):
         model, variant = body.get('model', self.manager.config['stt']['stt_model']), body.get('variant', 'adapted')
         validate(model, variant)
@@ -185,8 +197,8 @@ class STTLab:
     async def test(self, body, compare=False):
         model, variant, threads = self.parameters(body)
         models = body.get('models', [model]) if compare else [model]
-        if type(models) is not list or not 1 <= len(models) <= 8 or any(type(item) is not str for item in models) or len(set(models)) != len(models):
-            raise ValueError('Selecione de 1 a 8 modelos distintos')
+        if type(models) is not list or not 1 <= len(models) <= 12 or any(type(item) is not str for item in models) or len(set(models)) != len(models):
+            raise ValueError('Selecione de 1 a 12 modelos distintos')
         for selected in models:
             validate(selected, variant)
         reference = body.get('reference', '')
@@ -211,6 +223,9 @@ class STTLab:
                 try:
                     row = await self.worker({'command': 'test', 'model': selected, 'variant': variant,
                         'threads': threads, 'profile': body.get('profile'), 'reference': reference, 'entity_reference': entity_reference,
+                        'preset': body.get('preset', 'original'),
+                        'audio_processing': body.get('audio_processing') if isinstance(body.get('audio_processing'), dict) else None,
+                        'nemotron_streaming_profile': body.get('nemotron_streaming_profile'),
                         'options': self.manager.config['stt'], 'pcm': base64.b64encode(pcm).decode(),
                         'inventory': str(self.root.parent/'arandu_ha_inventory.json')})
                     row.update(audio_decode_ms=decode_ms, audio_sha256=digest,

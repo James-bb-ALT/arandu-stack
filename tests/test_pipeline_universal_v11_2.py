@@ -62,8 +62,8 @@ def test_model_registry_25_items_and_lifecycle():
     from arandu_stt import model_download as stt_dl
 
     reg = model_registry.load_registry()
-    assert reg["counts"] == {"stt": 9, "tts": 6, "decision": 3, "llm": 7}
-    assert len(reg["items"]) == 25
+    assert reg["counts"] == {"stt": 13, "tts": 6, "decision": 3, "llm": 7}
+    assert len(reg["items"]) == 29
 
     # R12: 5 downloadable LLMs unlocked in arandu_llm.models + legacy alias qwen3-0.6b
     for key in ("tucano", "qwen3", "lfm2.5-1.2b", "lfm3-1.7b", "qwen3-1.7b"):

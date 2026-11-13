@@ -16,7 +16,7 @@ from logs import LogStore, SOURCES, LOGGER
 from request_traces import TraceStore
 from admission import Gate, Busy
 
-APP_VERSION = '11.2.0'
+APP_VERSION = '11.3.0'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""
@@ -424,6 +424,8 @@ def create_app(data_dir, local=False):
         action = request.match_info['action']
         if action == 'install':
             result = stt_lab.start_install(body.get('model'), body.get('variant', 'adapted'))
+        elif action == 'remove':
+            result = await stt_lab.remove(body.get('model'), body.get('variant', 'adapted'))
         elif action in {'test', 'compare'}:
             result = await stt_lab.test(body, compare=action == 'compare')
         elif action == 'apply':

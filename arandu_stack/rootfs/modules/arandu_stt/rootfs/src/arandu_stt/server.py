@@ -37,7 +37,7 @@ NAME = 'arandu-fastconformer-ptbr-int8'  # Preserve Assist's existing selected m
 UPSTREAM = 'https://huggingface.co/nvidia/stt_pt_fastconformer_hybrid_large_pc'
 MAX_SECONDS = 35
 MAX_INPUT_BYTES = 2 * 16000 * MAX_SECONDS
-VERSION = '4.0.2'
+VERSION = '4.1.0'
 
 
 def pcm16_to_float32(pcm: bytes) -> np.ndarray:
@@ -271,13 +271,17 @@ class Handler(AsyncEventHandler):
             self.engine.clients -= 1
 
     def __init__(self, engine: Engine, resolver: ContextualResolver, metrics: Metrics,
-                 padding_ms: int, profile: str, *args, **kwargs):
+                 padding_ms: int, profile: str, *args, audio_cfg: dict | None = None, vad_processor=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.engine = engine
         self.resolver = resolver
         self.metrics = metrics
         self.padding_ms = padding_ms
         self.profile = profile
+        self.audio_cfg = dict(audio_cfg or {})
+        self.vad_processor = vad_processor
+        self.audio_processor = None
+        self._init_audio_processor()
         self.converter = AudioChunkConverter(rate=16000, width=2, channels=1)
         self.parts: list[bytes] = []
         self.total = 0
@@ -290,8 +294,28 @@ class Handler(AsyncEventHandler):
         self.conversion_ms = 0.0
         LOG.info('[WYOMING] client connected')
 
+    def _init_audio_processor(self):
+        if self.audio_processor is not None:
+            self.audio_processor.close()
+            self.audio_processor = None
+        if any(self.audio_cfg.get(k) for k in ('high_pass_filter', 'noise_suppression', 'auto_gain_control', 'echo_cancellation')):
+            from audio_processor import AudioProcessor, AudioProcessorConfig
+            self.audio_processor = AudioProcessor(AudioProcessorConfig(
+                sample_rate=16000,
+                num_channels=1,
+                high_pass_filter=bool(self.audio_cfg.get('high_pass_filter', False)),
+                noise_suppression=bool(self.audio_cfg.get('noise_suppression', False)),
+                ns_level=int(self.audio_cfg.get('ns_level', 1)),
+                auto_gain_control=bool(self.audio_cfg.get('auto_gain_control', False)),
+                agc_gain_db=float(self.audio_cfg.get('agc_gain_db', 0.0)),
+                echo_cancellation=bool(self.audio_cfg.get('echo_cancellation', False)),
+            ))
+
     async def disconnect(self):
         self.parts.clear()
+        if self.audio_processor is not None:
+            self.audio_processor.close()
+            self.audio_processor = None
         if self.writer is not None:
             self.writer.close()
             with suppress(OSError):
@@ -299,6 +323,7 @@ class Handler(AsyncEventHandler):
 
     def reset(self) -> None:
         self.converter = AudioChunkConverter(rate=16000, width=2, channels=1)
+        self._init_audio_processor()
         self.parts.clear()
         self.total = 0
         self.invalid = False
@@ -381,16 +406,28 @@ class Handler(AsyncEventHandler):
                 error = Error(text='STT desativado pela política de RAM (OFF)', code='stt_disabled')
             elif duration >= .35:
                 try:
-                    audio = pcm16_to_float32(pcm)
-                    if self.padding_ms:
-                        audio = np.concatenate((audio, np.zeros(round(16000*self.padding_ms/1000), dtype=np.float32)))
-                    raw, infer, wait = await asyncio.wait_for(asyncio.to_thread(self.engine.recognize, audio), 60)
-                    from stt_processing import correct
-                    resolved = await asyncio.to_thread(correct, self.resolver, raw, self.profile)
-                    final = resolved['text']
-                    correction_ms = float(resolved['correction_ms'])
-                    changes = len(resolved['changes'])
-                    outcome = 'ok'
+                    if self.audio_processor is not None:
+                        audio, _ap_stats = await asyncio.to_thread(self.audio_processor.process_pcm16, pcm, sample_rate=16000, channels=1)
+                        tail = self.audio_processor.flush()
+                        if len(tail):
+                            audio = np.concatenate((audio, tail))
+                    else:
+                        audio = pcm16_to_float32(pcm)
+                    if self.vad_processor is not None and len(audio):
+                        vres = await asyncio.to_thread(self.vad_processor.process_audio, audio)
+                        audio = vres.audio if vres.speech_detected else np.empty(0, dtype=np.float32)
+                    if not len(audio):
+                        outcome = 'silence_vad'
+                    else:
+                        if self.padding_ms:
+                            audio = np.concatenate((audio, np.zeros(round(16000*self.padding_ms/1000), dtype=np.float32)))
+                        raw, infer, wait = await asyncio.wait_for(asyncio.to_thread(self.engine.recognize, audio), 60)
+                        from stt_processing import correct
+                        resolved = await asyncio.to_thread(correct, self.resolver, raw, self.profile)
+                        final = resolved['text']
+                        correction_ms = float(resolved['correction_ms'])
+                        changes = len(resolved['changes'])
+                        outcome = 'ok'
                 except SttDisabledError as exc:
                     outcome = 'disabled'
                     error = Error(text=str(exc), code='stt_disabled')
@@ -443,6 +480,18 @@ def parse_args(argv=None):
     p.add_argument('--metrics', type=Path, default=Path('/data/metrics.jsonl'))
     p.add_argument('--debug-text', action='store_true')
     p.add_argument('--no-discovery', action='store_true')
+    p.add_argument('--vad-enabled', action='store_true')
+    p.add_argument('--vad-threshold', type=float, default=0.50)
+    p.add_argument('--vad-min-speech-ms', type=int, default=180)
+    p.add_argument('--vad-min-silence-ms', type=int, default=450)
+    p.add_argument('--vad-pre-roll-ms', type=int, default=300)
+    p.add_argument('--vad-post-roll-ms', type=int, default=200)
+    p.add_argument('--high-pass-filter', action='store_true')
+    p.add_argument('--noise-suppression', action='store_true')
+    p.add_argument('--ns-level', type=int, default=1)
+    p.add_argument('--auto-gain-control', action='store_true')
+    p.add_argument('--agc-gain-db', type=float, default=0.0)
+    p.add_argument('--echo-cancellation', action='store_true')
     a = p.parse_args(argv)
     if not 1 <= a.threads <= 4:
         p.error('--threads precisa estar entre 1 e 4')
@@ -476,7 +525,26 @@ async def main(argv=None):
     metrics = Metrics(a.metrics, a.debug_text, a.stt_model, a.model_variant)
     server = AsyncServer.from_uri(a.uri)
     LOG.info('PRONTO: Arandu STT Wyoming %s | profile=%s | padding=%sms', a.uri, a.profile, a.padding_ms)
-    handler_factory = partial(Handler, engine, resolver, metrics, a.padding_ms, a.profile)
+    audio_cfg = {
+        'high_pass_filter': a.high_pass_filter,
+        'noise_suppression': a.noise_suppression,
+        'ns_level': a.ns_level,
+        'auto_gain_control': a.auto_gain_control,
+        'agc_gain_db': a.agc_gain_db,
+        'echo_cancellation': a.echo_cancellation,
+    }
+    vad_processor = None
+    if a.vad_enabled:
+        from vad_processor import SileroVADProcessor, VadConfig, ensure_silero_vad
+        vad_path = ensure_silero_vad(a.model_dir.parent / '_vad', allow_download=True)
+        vad_processor = SileroVADProcessor(vad_path, VadConfig(
+            threshold=a.vad_threshold,
+            min_speech_ms=a.vad_min_speech_ms,
+            min_silence_ms=a.vad_min_silence_ms,
+            pre_roll_ms=a.vad_pre_roll_ms,
+            post_roll_ms=a.vad_post_roll_ms,
+        ))
+    handler_factory = partial(Handler, engine, resolver, metrics, a.padding_ms, a.profile, audio_cfg=audio_cfg, vad_processor=vad_processor)
     refresh_task = asyncio.create_task(refresh_loop(resolver, a.inventory_refresh_seconds, query_ha=not a.no_ha_refresh)) if a.inventory_refresh_seconds else None
     from aiohttp import web
     diagnostics = web.Application()

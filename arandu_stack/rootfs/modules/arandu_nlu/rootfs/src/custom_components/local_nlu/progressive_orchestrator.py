@@ -15,6 +15,19 @@ from .progressive_contract import (
 )
 
 
+_AMBIGUITY_REASONS = {"ambiguous_area", "unknown_area", "ambiguous_target"}
+
+
+def _ambiguity_clarification_speech(reason: str | None) -> str:
+    if reason == "ambiguous_area":
+        return "Há mais de um cômodo com esse nome. Em qual cômodo?"
+    if reason == "unknown_area":
+        return "Não encontrei esse cômodo. Em qual cômodo você quer executar?"
+    if reason == "ambiguous_target":
+        return "Encontrei mais de um dispositivo compatível. Qual deles você quer controlar?"
+    return "Não tenho certeza da ação desejada. Pode confirmar o que quer fazer?"
+
+
 @dataclass
 class ProgressiveResult:
     outcome_kind: str  # "nlu_direct" | "safety_refusal" | "execute_plan" | "confirmation_required" | "clarification" | "conversation_response" | "refusal"
@@ -123,13 +136,14 @@ class ProgressiveOrchestrator:
         }
 
         kind = partial.get("request_kind")
+        v4_reason = (partial.get("v4_outcome") or {}).get("reason")
         if kind == "resolved_plan":
             ops = tuple((partial.get("v4_outcome") or {}).get("operations") or ())
             trace["final_outcome"] = "nlu_direct"
             trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
             return ProgressiveResult("nlu_direct", operations=ops, trace=trace)
 
-        if kind == "safety_refusal" or partial.get("safety_flags"):
+        if (kind == "safety_refusal" or partial.get("safety_flags")) and v4_reason not in _AMBIGUITY_REASONS:
             flags = partial.get("safety_flags") or []
             reason = flags[0] if flags else "safety_refusal"
             trace["final_outcome"] = "safety_refusal"
@@ -153,6 +167,15 @@ class ProgressiveOrchestrator:
         if decision_out:
             d_status = decision_out.get("status")
             if d_status == "denied":
+                if v4_reason in _AMBIGUITY_REASONS:
+                    trace["final_outcome"] = "clarification"
+                    trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
+                    return ProgressiveResult(
+                        "clarification",
+                        speech=_ambiguity_clarification_speech(v4_reason),
+                        reason=v4_reason,
+                        trace=trace,
+                    )
                 trace["final_outcome"] = "safety_refusal"
                 trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
                 return ProgressiveResult("safety_refusal", reason=decision_out.get("reason"), trace=trace)
@@ -160,12 +183,13 @@ class ProgressiveOrchestrator:
             if d_status == "needs_clarification" and not (llm_enabled and llm_handoff is not None):
                 trace["final_outcome"] = "clarification"
                 trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
-                msg = (
-                    "Encontrei mais de um dispositivo compatível. Qual deles você quer controlar?"
-                    if decision_out.get("reason") == "ambiguous_target"
-                    else "Não tenho certeza da ação desejada. Pode confirmar o que quer fazer?"
+                clarify_reason = decision_out.get("reason") or v4_reason
+                return ProgressiveResult(
+                    "clarification",
+                    speech=_ambiguity_clarification_speech(clarify_reason),
+                    reason=clarify_reason,
+                    trace=trace,
                 )
-                return ProgressiveResult("clarification", speech=msg, reason=decision_out.get("reason"), trace=trace)
 
             if d_status == "resolved_candidate" and decision_out.get("repairs"):
                 repairs = decision_out["repairs"]
@@ -262,19 +286,28 @@ class ProgressiveOrchestrator:
                     trace["nlu_review"] = {"accepted": False, "reason": reason}
 
             if mode in {"clarification", "refusal"}:
-                trace["final_outcome"] = mode
+                resolved_mode = "clarification" if (mode == "refusal" and v4_reason in _AMBIGUITY_REASONS) else mode
+                trace["final_outcome"] = resolved_mode
                 trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
                 plan = llm_out.get("plan") if isinstance(llm_out.get("plan"), dict) else {}
                 speech_text = (
                     llm_out.get("response_text")
                     or llm_out.get("question")
                     or plan.get("question")
-                    or "Não consegui confirmar uma ação segura para esse pedido."
+                    or (
+                        _ambiguity_clarification_speech(v4_reason)
+                        if v4_reason in _AMBIGUITY_REASONS
+                        else "Não consegui confirmar uma ação segura para esse pedido."
+                    )
                 )
                 return ProgressiveResult(
-                    mode,
+                    resolved_mode,
                     speech=speech_text,
-                    reason=llm_out.get("reason"),
+                    reason=(
+                        v4_reason
+                        if resolved_mode == "clarification" and v4_reason in _AMBIGUITY_REASONS
+                        else llm_out.get("reason")
+                    ),
                     trace=trace,
                 )
 
@@ -282,7 +315,11 @@ class ProgressiveOrchestrator:
         trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
         return ProgressiveResult(
             "clarification",
-            speech="Não entendi exatamente o que você quer fazer. Pode repetir ou especificar o dispositivo?",
-            reason="unresolved_progressive_pipeline",
+            speech=(
+                _ambiguity_clarification_speech(v4_reason)
+                if v4_reason in _AMBIGUITY_REASONS
+                else "Não entendi exatamente o que você quer fazer. Pode repetir ou especificar o dispositivo?"
+            ),
+            reason=v4_reason if v4_reason in _AMBIGUITY_REASONS else "unresolved_progressive_pipeline",
             trace=trace,
         )

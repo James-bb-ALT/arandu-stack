@@ -834,15 +834,15 @@ impl Index {
                 group_id = Some(groups[0].0.clone());
                 group_areas = Some(groups[0].1.clone());
                 explicit = true;
+            } else if let Some(id) = self.area_with_origin(&name, request.origin_area.as_deref()) {
+                area = Some(id);
+                explicit = true;
             } else if self.areas.get(&name).is_some_and(|ids| ids.len() > 1) {
                 return Err(Response::failure(
                     "clarification",
                     &command.intent,
                     "ambiguous_area",
                 ));
-            } else if let Some(id) = self.area(&name) {
-                area = Some(id);
-                explicit = true;
             } else {
                 let full = format!("{mention} {name}");
                 if self
@@ -903,9 +903,12 @@ impl Index {
             matches.sort_by_key(|name| std::cmp::Reverse(name.len()));
             if let Some(name) = matches.first() {
                 bare_area = mention == **name;
-                area = Some(self.area(name).ok_or_else(|| {
-                    Response::failure("clarification", &command.intent, "ambiguous_area")
-                })?);
+                area = Some(
+                    self.area_with_origin(name, request.origin_area.as_deref())
+                        .ok_or_else(|| {
+                            Response::failure("clarification", &command.intent, "ambiguous_area")
+                        })?,
+                );
                 if !registered_whole
                     || (bare_area && matches!(command.action.as_str(), "turn_on" | "turn_off"))
                 {
@@ -1102,14 +1105,21 @@ impl Index {
                     .filter(|(name, _)| qualifiers.is_subset(&lexical_tokens(name)))
                     .flat_map(|(_, ids)| ids.iter().cloned())
                     .collect();
-                if areas.len() > 1 {
+                let chosen = if areas.len() == 1 {
+                    areas.iter().next().cloned()
+                } else if let Some(origin) = request.origin_area.as_deref() {
+                    areas.iter().find(|id| id.as_str() == origin).cloned()
+                } else {
+                    None
+                };
+                if chosen.is_none() && areas.len() > 1 {
                     return Err(Response::failure(
                         "clarification",
                         &command.intent,
                         "ambiguous_area",
                     ));
                 }
-                if let Some(id) = areas.iter().next() {
+                if let Some(id) = chosen {
                     let spatial: BTreeSet<_> = self
                         .catalog
                         .entities
@@ -1465,6 +1475,19 @@ impl Index {
         (matches.len() == 1)
             .then(|| matches.iter().next().cloned())
             .flatten()
+    }
+
+    fn area_with_origin(&self, name: &str, origin_area: Option<&str>) -> Option<String> {
+        let matches = self.areas.get(name)?;
+        if matches.len() == 1 {
+            return matches.iter().next().cloned();
+        }
+        if let Some(origin) = origin_area {
+            if matches.iter().any(|id| id == origin) {
+                return Some(origin.to_owned());
+            }
+        }
+        None
     }
 
     pub fn cleaning_area(&self, name: &str) -> Option<String> {

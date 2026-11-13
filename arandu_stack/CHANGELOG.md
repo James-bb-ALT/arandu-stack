@@ -1,3 +1,7 @@
+# 11.3.5 — Correção de build Rust em `resolver.rs` (2026-11-13)
+
+- **NLU (`resolver.rs`):** Corrigido empréstimo de `chosen` (`if let Some(ref id) = chosen`) e comparação explícita `id.as_str() == origin` em `area_with_origin`, corrigindo o erro de compilação (`exit code: 101`) no `cargo build --release` dentro do container do add-on.
+
 # 11.3.4 — Desambiguação de área por origem do satélite e esclarecimento sem recusa falsa (2026-11-13)
 
 - **NLU (`resolver.rs`):** Quando um nome de cômodo é ambíguo (ex.: `"escritório"` correspondendo a múltiplos cômodos como `"Escritório de Jaime"`), verifica `request.origin_area` para desambiguar automaticamente se o satélite estiver em uma das áreas candidatas; caso contrário, retorna `clarification` (`ambiguous_area`).

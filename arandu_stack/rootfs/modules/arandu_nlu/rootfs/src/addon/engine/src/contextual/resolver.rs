@@ -1119,7 +1119,7 @@ impl Index {
                         "ambiguous_area",
                     ));
                 }
-                if let Some(id) = chosen {
+                if let Some(ref id) = chosen {
                     let spatial: BTreeSet<_> = self
                         .catalog
                         .entities
@@ -1483,7 +1483,7 @@ impl Index {
             return matches.iter().next().cloned();
         }
         if let Some(origin) = origin_area {
-            if matches.iter().any(|id| id == origin) {
+            if matches.iter().any(|id| id.as_str() == origin) {
                 return Some(origin.to_owned());
             }
         }

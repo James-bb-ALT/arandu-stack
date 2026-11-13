@@ -113,6 +113,9 @@ class ContextualRuntime:
         self.execution_handler = ScheduledExecutionHandler(hass, options, self._execute_scheduled)
         endpoint=limits.get('stack_endpoint','')
         self._scheduler_publisher=TracePublisher(hass,endpoint) if endpoint else None
+        from .progressive_orchestrator import ProgressiveOrchestrator
+        self._progressive_orchestrator = ProgressiveOrchestrator()
+        self.last_v5_error: str | None = None
         self.scheduler = ScheduledJobManager(hass, self.delivery_handler, self.execution_handler,
             self._scheduler_publisher.submit if self._scheduler_publisher else None,
             concurrency=bounded(limits,'performance_scheduler_concurrency',2,1,4),
@@ -170,17 +173,20 @@ class ContextualRuntime:
                 session.dialogue = None
                 session.temporal_clarification = None
 
-    def result(self, code: str, user_input: Any, *, speech: str | None = None, count: int = 0, followup: bool = False, reason: str | None = None, timings: dict | None = None) -> Any:
+    def result(self, code: str, user_input: Any, *, speech: str | None = None, count: int = 0, followup: bool = False, reason: str | None = None, timings: dict | None = None, preserve_clarification: bool = False) -> Any:
         from .runtime import RuntimeResult
         from .contextual_errors import speech as failure_speech
         from .response_profile import FAILURES, short_failure_origin
         if code in FAILURES and not count and short_failure_origin(self.hass, user_input):
-            # End this dialogue, including any clarification/selection retained
-            # by NLU or semantic fallback. A later "sim" must not revive it.
-            owner = (getattr(user_input.context, 'user_id', None), request_origin(user_input),
-                     user_input.conversation_id)
-            self.sessions.pop(owner, None)
-            code, speech, followup = 'no_match', 'Não entendi.', False
+            if preserve_clarification and (speech or followup):
+                followup = True
+            else:
+                # End this dialogue, including any clarification/selection retained
+                # by NLU or semantic fallback. A later "sim" must not revive it.
+                owner = (getattr(user_input.context, 'user_id', None), request_origin(user_input),
+                         user_input.conversation_id)
+                self.sessions.pop(owner, None)
+                code, speech, followup = 'no_match', 'Não entendi.', False
         reason = reason or {"denied": "permission_denied", "stale": "stale", "invalid_request": "invalid_request", "no_match": "no_match", "unsupported_intent": "unsupported_intent", "partial_failure": "partial_failure"}.get(code)
         stage = getattr(self, "stage", "normalization")
         if reason in ("missing_origin_area", "unknown_area", "ambiguous_area", "ambiguous_group", "origin_area_changed"):
@@ -602,7 +608,7 @@ class ContextualRuntime:
             )
             effective_text = active_pending_req.merge_reply(user_input.text) if (active_pending_req is not None and outcome.status != "plan") else user_input.text
             from .intelligence import eligible, fallback, nlu_summary
-            if not reserved(user_input.text) and (options.get("decision_enabled") is True or options.get("llm_enabled") is True) and eligible(outcome, pending=pending is not None or bool(session.candidates)):
+            if outcome.status != "plan" and not reserved(user_input.text) and (options.get("decision_enabled") is True or options.get("llm_enabled") is True):
                 from .ai_lab import local_request
                 from homeassistant.helpers.aiohttp_client import async_get_clientsession
                 endpoint = options.get("stack_endpoint", "")
@@ -619,11 +625,11 @@ class ContextualRuntime:
                 model_snapshot=Snapshot(model_payload,{row['registry_id']:row for row in model_payload['entities']})
                 # Try unified Progressive V5 orchestrator when client supports v5 interpret & review
                 v5_result = None
+                self.last_v5_error = None
                 if options.get("progressive_v5", True) and hasattr(self.client, "async_interpret_v5") and hasattr(self.client, "async_review_v5"):
                     try:
-                        from .progressive_orchestrator import ProgressiveOrchestrator
                         from .progressive_contract import build_llm_handoff
-                        orchestrator = ProgressiveOrchestrator()
+                        orchestrator = self._progressive_orchestrator
                         async def _decision_partial(req_body):
                             return await infer({"action": "decision_partial", "catalog": model_payload, **req_body})
                         async def _llm_handoff(partial_u, dec_out, graph_ctx):
@@ -659,7 +665,9 @@ class ContextualRuntime:
                             decision_enabled=options.get("decision_enabled") is True,
                             llm_enabled=options.get("llm_enabled") is True,
                         )
-                    except Exception:
+                    except Exception as exc:
+                        self.last_v5_error = f"{type(exc).__name__}: {exc}"
+                        LOGGER.warning("Progressive V5 failed (%s): %s", type(exc).__name__, exc)
                         v5_result = None
                 if v5_result is not None and v5_result.outcome_kind in ("conversation_response", "safety_refusal"):
                     self._pending_requests.pop(conv_id)
@@ -693,8 +701,8 @@ class ContextualRuntime:
                                 original_text=effective_text,
                             )
                         )
-                    return self.result("missing_slot", user_input, speech=v5_result.speech, reason=v5_result.reason or "clarification")
-                else:
+                    return self.result("missing_slot", user_input, speech=v5_result.speech, reason=v5_result.reason or "clarification", preserve_clarification=True)
+                elif eligible(outcome, pending=pending is not None or bool(session.candidates)):
                     proposed, trace = await fallback(effective_text, model_snapshot, options, infer,
                         {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets), "last_action":session.last_action,
                          'temperature_unit':getattr(getattr(getattr(self.hass,'config',None),'units',None),'temperature_unit',None)},

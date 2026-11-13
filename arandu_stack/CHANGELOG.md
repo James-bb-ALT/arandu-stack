@@ -1,3 +1,16 @@
+# 11.2.0 — Pipeline Universal v11.2 & Model Hub Unificado (2026-11-13)
+
+- **Model Hub Unificado (`arandu_stack/model_registry/models.json` + `arandu_stack/app/model_registry.py`):**
+  - Registro único de 25 modelos (9 STT, 6 TTS, 3 Decision, 7 LLM) com estados de ciclo de vida explícitos (`catalogued`, `source_verified`, `downloadable`, `installed`, `integrity_verified`, `runtime_compatible`, `load_tested`, `selectable`, `active`, `resident`, `error`).
+  - Desbloqueio completo dos 5 LLMs públicos pinados (`tucano`, `qwen3`/`qwen3-0.6b`, `lfm2.5-1.2b`, `lfm3-1.7b`, `qwen3-1.7b`) em `arandu_llm/models.py`, `modules.py`, `settings.py`, `request_traces.py`, `server.py` e `app.js`; modelos sem pinagem (`qwen3.5-2b`, `qwen3-4b-instruct-2507`) e vozes protegidas (`pocket-rafael`) ficam explicitamente bloqueados para download automático (`downloadable=false` / `needs_auth=true`).
+  - Endpoints TTS `GET /api/tts/models` e `POST /api/tts/{action}` integrados à WebUI (`renderTtsManager`) e correção da URL de release STT adaptada para `James-bb-ALT/arandu-stack`.
+- **Pipeline Progressivo End-to-End (R01–R11, R16):**
+  - Remoção do gate `eligible()` antes do orquestrador V5 em `contextual_runtime.py`, instância persistente de `ProgressiveOrchestrator` compartilhando `HomeGraphCache`, logging explícito de falhas V5 (`last_v5_error`), preservação de esclarecimentos `missing_slot` (`preserve_clarification=True`) e roteamento `RECOVERABLE` genérico em `fallback_policy.py` (mantendo `SAFETY_BLOCK`, `PENDING_DIALOGUE` e `invalid_request` fechados).
+  - `arandu_llm/structured.py` e `automation_contract.py` liberam fallback para `clarification` recuperável e propostas de entidades autorizadas pelo catálogo/capacidades, além de histórico conversacional anti-repetição (`frequency_penalty`, `presence_penalty`).
+  - `progressive_orchestrator.py` lê `question`/`plan.question`; `UnderstandingFrameV2` (`frame_version=2`) e `PendingRequest.merge_into_frame()` implementam preenchimento tipado de slots; `queries_set.py` consome tokens de `generated_semantics_ptbr`; `ai_lab_core.py` expõe `diagnostics` unificado.
+- **Matriz de Aceitação e Documentação:**
+  - Adicionados `tests/test_pipeline_universal_v11_2.py`, `tests/fixtures/pipeline_universal/` e [`docs/PIPELINE_UNIVERSAL_MODEL_HUB_RESULTS.md`](docs/PIPELINE_UNIVERSAL_MODEL_HUB_RESULTS.md).
+
 # 11.1.5 — Correção do fallback de ambiguidade no AI Lab (`ai_lab_core.py`) (2026-11-12)
 
 - Corrige `NameError: name '_timed' is not defined` em `custom_components/local_nlu/ai_lab_core.py` quando o Decision retorna `structured-v3` `ambiguous` com múltiplos candidatos, roteando diretamente para `run("llm", llm, llm_payload)` com `ambiguity_evidence = True`.

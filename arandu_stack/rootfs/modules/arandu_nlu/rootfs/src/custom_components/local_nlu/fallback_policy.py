@@ -113,7 +113,7 @@ def classify_fallback(
     missing = _missing_slots_for(slots, reason)
 
     # 1. Absolute precedence: security / permission / negative constraints / untrusted scope
-    if explicitly_denied or safety_flags or not user_scope_known or reason in SAFETY_REASONS:
+    if explicitly_denied or safety_flags or not user_scope_known or reason in SAFETY_REASONS or nlu_status in SAFETY_REASONS:
         rule = (
             (list(safety_flags)[0] if safety_flags else None)
             or (reason if reason in SAFETY_REASONS else None)
@@ -250,17 +250,29 @@ def classify_fallback(
             missing_slots=missing,
         )
 
-    # 6. Default unsupported
+    if nlu_status == "invalid_request":
+        return FallbackRoute(
+            category=RouteCategory.UNSUPPORTED,
+            decision_allowed=False,
+            llm_allowed=False,
+            execution_allowed=False,
+            clarification_only=False,
+            reason=reason or "invalid_request",
+            preserve_slots=slots,
+            missing_slots=missing,
+            escalation_blocked_by="invalid_request",
+        )
+
+    # 6. Generic recoverable default for any non-plan NLU outcome without safety block
     return FallbackRoute(
-        category=RouteCategory.UNSUPPORTED,
-        decision_allowed=False,
-        llm_allowed=False,
-        execution_allowed=False,
+        category=RouteCategory.RECOVERABLE,
+        decision_allowed=True,
+        llm_allowed=True,
+        execution_allowed=True,
         clarification_only=False,
-        reason=reason or nlu_status or "unsupported",
+        reason=reason or nlu_status or "recoverable",
         preserve_slots=slots,
         missing_slots=missing,
-        escalation_blocked_by="unsupported_status",
     )
 
 

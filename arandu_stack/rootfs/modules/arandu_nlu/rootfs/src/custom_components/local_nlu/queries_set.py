@@ -6,6 +6,32 @@ import unicodedata
 from typing import Any
 
 
+from .generated_semantics_ptbr import GROUP_FORMS, SURFACE_TO_CONCEPTS
+
+_CONCEPT_TO_HA_DOMAIN: dict[str, str] = {
+    "entity.lighting": "light",
+    "entity.fan": "fan",
+    "entity.switch": "switch",
+    "entity.outlet": "switch",
+    "entity.lock": "lock",
+    "entity.cover_generic": "cover",
+    "entity.curtain": "cover",
+    "entity.blind": "cover",
+    "entity.garage": "cover",
+    "entity.contact_sensor": "binary_sensor",
+    "entity.climate_unit": "climate",
+    "entity.thermostat": "climate",
+}
+
+
+def _tokens_from_semantics(domain: str, fallback: tuple[str, ...]) -> tuple[str, ...]:
+    collected = set(fallback)
+    for surface, concepts in SURFACE_TO_CONCEPTS.items():
+        if any(_CONCEPT_TO_HA_DOMAIN.get(c) == domain for c in concepts):
+            collected.add(surface)
+    return tuple(sorted(collected, key=len, reverse=True))
+
+
 def _norm(text: str) -> str:
     nfkd = unicodedata.normalize("NFKD", text or "")
     plain = "".join(ch for ch in nfkd if not unicodedata.combining(ch))
@@ -14,7 +40,7 @@ def _norm(text: str) -> str:
 
 _DOMAIN_SPECS: dict[str, dict[str, Any]] = {
     "light": {
-        "tokens": ("luz", "luzes", "lampada", "lampadas", "luminaria", "luminarias", "iluminacao"),
+        "tokens": _tokens_from_semantics("light", ("luz", "luzes", "lampada", "lampadas", "luminaria", "luminarias", "iluminacao")),
         "active_states": ("on",),
         "inactive_states": ("off",),
         "plural": ("luz autorizada", "luzes autorizadas"),
@@ -22,7 +48,7 @@ _DOMAIN_SPECS: dict[str, dict[str, Any]] = {
         "inactive_label": ("apagada", "apagadas"),
     },
     "fan": {
-        "tokens": ("ventilador", "ventiladores", "ventoinha", "ventoinhas", "exaustor", "exaustores"),
+        "tokens": _tokens_from_semantics("fan", ("ventilador", "ventiladores", "ventoinha", "ventoinhas", "exaustor", "exaustores")),
         "active_states": ("on",),
         "inactive_states": ("off",),
         "plural": ("ventilador autorizado", "ventiladores autorizados"),
@@ -30,7 +56,7 @@ _DOMAIN_SPECS: dict[str, dict[str, Any]] = {
         "inactive_label": ("desligado", "desligados"),
     },
     "switch": {
-        "tokens": ("tomada", "tomadas", "interruptor", "interruptores"),
+        "tokens": _tokens_from_semantics("switch", ("tomada", "tomadas", "interruptor", "interruptores")),
         "active_states": ("on",),
         "inactive_states": ("off",),
         "plural": ("dispositivo autorizado", "dispositivos autorizados"),
@@ -38,7 +64,7 @@ _DOMAIN_SPECS: dict[str, dict[str, Any]] = {
         "inactive_label": ("desligado", "desligados"),
     },
     "lock": {
-        "tokens": ("fechadura", "fechaduras", "tranca", "trancas"),
+        "tokens": _tokens_from_semantics("lock", ("fechadura", "fechaduras", "tranca", "trancas")),
         "active_states": ("unlocked", "open"),
         "inactive_states": ("locked",),
         "plural": ("fechadura autorizada", "fechaduras autorizadas"),
@@ -46,7 +72,7 @@ _DOMAIN_SPECS: dict[str, dict[str, Any]] = {
         "inactive_label": ("trancada", "trancadas"),
     },
     "cover": {
-        "tokens": ("cortina", "cortinas", "persiana", "persianas", "portao", "portoes"),
+        "tokens": _tokens_from_semantics("cover", ("cortina", "cortinas", "persiana", "persianas", "portao", "portoes")),
         "active_states": ("open", "opening"),
         "inactive_states": ("closed", "closing"),
         "plural": ("abertura autorizada", "aberturas autorizadas"),
@@ -54,7 +80,7 @@ _DOMAIN_SPECS: dict[str, dict[str, Any]] = {
         "inactive_label": ("fechada", "fechadas"),
     },
     "binary_sensor": {
-        "tokens": ("porta", "portas", "janela", "janelas", "sensor de porta", "sensor de janela"),
+        "tokens": _tokens_from_semantics("binary_sensor", ("porta", "portas", "janela", "janelas", "sensor de porta", "sensor de janela")),
         "active_states": ("on", "open"),
         "inactive_states": ("off", "closed"),
         "plural": ("sensor autorizado", "sensores autorizados"),
@@ -62,7 +88,7 @@ _DOMAIN_SPECS: dict[str, dict[str, Any]] = {
         "inactive_label": ("fechada", "fechadas"),
     },
     "climate": {
-        "tokens": ("ar condicionado", "ar-condicionado", "termostato", "split", "climatizador"),
+        "tokens": _tokens_from_semantics("climate", ("ar condicionado", "ar-condicionado", "termostato", "split", "climatizador")),
         "active_states": ("cool", "heat", "heat_cool", "auto", "dry", "fan_only", "on"),
         "inactive_states": ("off",),
         "plural": ("climatizador autorizado", "climatizadores autorizados"),
@@ -71,6 +97,7 @@ _DOMAIN_SPECS: dict[str, dict[str, Any]] = {
     },
 }
 
+_SEMANTIC_QUERY_FORMS = tuple(sorted(set(GROUP_FORMS.get("query", ()))))
 _QUERY_PREFIX_RE = re.compile(
     r"\b(?:quantos?|quantas?|quais|tem\s+algum(?:a)?|algum(?:a)?\s+\w+\s+(?:aces[ao]|ligad[ao]|abert[ao]|fechad[ao]|destrancad[ao]|trancad[ao]))\b"
 )
@@ -78,7 +105,7 @@ _QUERY_PREFIX_RE = re.compile(
 
 def detect_queryset_domain(text: str) -> str | None:
     norm = _norm(text)
-    if not _QUERY_PREFIX_RE.search(norm):
+    if not (_QUERY_PREFIX_RE.search(norm) or any(re.search(rf"\b{re.escape(qf)}\b", norm) for qf in _SEMANTIC_QUERY_FORMS)):
         return None
     for domain, spec in _DOMAIN_SPECS.items():
         if any(re.search(rf"\b{re.escape(tok)}\b", norm) for tok in spec["tokens"]):

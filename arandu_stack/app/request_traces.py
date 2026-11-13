@@ -62,8 +62,13 @@ class TraceStore:
                 raise ValueError('Dados de etapa inválidos')
             if 'observation' in row and row['observation'] not in {'observed','not_observed','disabled','error','cancelled','unavailable'}:
                 raise ValueError('Observação inválida')
-            if 'model' in row and row['model'] not in {'e5-small','minilm-multilingual','e5-base','tucano','qwen3'}:
-                raise ValueError('Modelo inválido')
+            if 'model' in row:
+                try:
+                    from .model_registry import model_ids
+                except ImportError:
+                    from model_registry import model_ids
+                if row['model'] not in model_ids():
+                    raise ValueError('Modelo inválido')
             if 'backend' in row and row['backend'] not in {'cpu','gpu_intel'}:
                 raise ValueError('Backend inválido')
             if 'embedding_used' in row and type(row['embedding_used']) is not bool:

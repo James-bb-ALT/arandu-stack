@@ -16,7 +16,7 @@ from logs import LogStore, SOURCES, LOGGER
 from request_traces import TraceStore
 from admission import Gate, Busy
 
-APP_VERSION = '11.0.1'
+APP_VERSION = '11.2.0'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""
@@ -269,8 +269,13 @@ def create_app(data_dir, local=False):
             results = await asyncio.gather(*(model_request(k, '/infer', {'action': 'unload'}) for k in ('decision', 'llm')), return_exceptions=True)
             return web.json_response({'unloaded': [k for k, r in zip(('decision', 'llm'), results) if not isinstance(r, Exception)]})
         if action in {'llm','llm_compare'}:
-            if payload.get('llm_model',manager.config['llm']['llm_model']) not in {'tucano','qwen3'}:
-                raise ValueError('Modelo LLM desconhecido')
+            try:
+                from .model_registry import model_ids, resolve_legacy_id
+            except ImportError:
+                from model_registry import model_ids, resolve_legacy_id
+            requested_llm = resolve_legacy_id(payload.get('llm_model',manager.config['llm']['llm_model']))
+            if requested_llm not in model_ids('llm', downloadable_only=True):
+                raise ValueError('Modelo LLM desconhecido ou não baixável')
             key = 'llm'
         else:
             if payload.get('model',manager.config['decision']['model']) not in {'e5-small','minilm-multilingual','e5-base'}:
@@ -287,22 +292,50 @@ def create_app(data_dir, local=False):
             raise ValueError('Política de inferência mudou durante a solicitação; resultado descartado')
         return web.json_response(result)
     async def llm_control(request):
+        try:
+            from .model_registry import get_model, list_models, model_ids, resolve_legacy_id, summarize_item
+        except ImportError:
+            from model_registry import get_model, list_models, model_ids, resolve_legacy_id, summarize_item
         action=request.match_info['action']
         if action=='models':
             configured_policy=manager.config['llm'].get('resident_policy','LAZY')
-            try:result=await model_request('llm','/status')
+            try:
+                result=await model_request('llm','/status')
+                live_by_id = {row['id']: row for row in result.get('models', []) if isinstance(row, dict) and 'id' in row}
+                merged = []
+                for item in list_models('llm'):
+                    live = live_by_id.get(item['id'])
+                    if live:
+                        summary = summarize_item(
+                            item,
+                            installed=live.get('installed'),
+                            integrity_verified=live.get('integrity_verified'),
+                            loaded=live.get('loaded'),
+                            active=bool(live.get('loaded') and live.get('selected')),
+                            resident=bool(live.get('loaded') and configured_policy == 'RESIDENT'),
+                        )
+                        merged.append({**live, **summary, 'name': live.get('name', item['display_name'])})
+                    else:
+                        merged.append({**summarize_item(item, installed=False, loaded=False),
+                            'available': False,
+                            'reason': 'Fonte não verificada; pinagem pendente' if not item.get('downloadable') else 'Não instalado'})
+                result = {**result, 'models': merged}
             except Exception:
-                result={'models':[{'id':k,'name':name,'installed':None,'available':False,'loaded':False,
-                    'reason':'Serviço parado ou indisponível; instalação explícita inicia o módulo.'} for k,name in
-                    [('tucano','Tucano 2 0.5B Q4_K_M'),('qwen3','Qwen3 0.6B Q8_0 experimental')]],
+                result={'models':[{**summarize_item(item, installed=None, loaded=False),
+                    'available':False,
+                    'reason':'Fonte não verificada; pinagem pendente' if not item.get('downloadable') else 'Serviço parado ou indisponível; instalação explícita inicia o módulo.'}
+                    for item in list_models('llm')],
                     'resident_policy':configured_policy,'is_model_loaded':False,'model_ready':False,'load_state':'stopped'}
             return web.json_response({'resident_policy':configured_policy,**result,'profiles':manager.llm_profiles,'configured_model':manager.config['llm']['llm_model']})
         if action not in {'install','apply'}:raise ValueError('Ação LLM inválida')
         if request.method!='POST':raise web.HTTPMethodNotAllowed(request.method,['POST'])
         body=await request.json()
         if type(body) is not dict:raise ValueError('Objeto JSON obrigatório')
-        model=body.get('model')
-        if model not in {'tucano','qwen3'}:raise ValueError('Modelo LLM inválido')
+        model=resolve_legacy_id(body.get('model'))
+        if model not in model_ids('llm', downloadable_only=False):raise ValueError('Modelo LLM inválido')
+        item = get_model(model)
+        if not item or not item.get('downloadable'):
+            raise ValueError(f"Modelo {model} está catalogado com fonte não verificada (download automático bloqueado)")
         if action=='apply' and body.get('confirm') is not True:raise ValueError('Confirmação explícita necessária')
         if type(body.get('options',{})) is not dict:raise ValueError('Opções devem ser objeto JSON')
         from modules import validate_options
@@ -316,7 +349,7 @@ def create_app(data_dir, local=False):
             old_profiles=json.loads(json.dumps(manager.llm_profiles))
             saved_profile=manager.llm_profiles.get(model,{}) if model!=old['llm_model'] else {}
             candidate=validate_options('llm',{**old,**saved_profile,
-                **({'contract_version':2} if model=='qwen3' else {}),**body.get('options',{}),'llm_model':model},manager.data)
+                **({'contract_version':2} if model!='tucano' else {}),**body.get('options',{}),'llm_model':model},manager.data)
             if candidate['enabled']!=old['enabled']:raise ValueError('Use Ativar/Desativar para mudar enabled')
             if candidate['contract_version']==1 and model!='tucano':raise ValueError('Contrato legado exige Tucano')
             generation={k:candidate[k] for k in ('threads','context_size','max_tokens','temperature')}
@@ -452,11 +485,85 @@ def create_app(data_dir, local=False):
                 'state': 'stopped' if manager.processes.get('tts') is None else 'unavailable',
                 'last_error': type(exc).__name__,
             }, status=200)
+    async def tts_models(_request):
+        try:
+            from .model_registry import list_models, summarize_item
+        except ImportError:
+            from model_registry import list_models, summarize_item
+        cfg_tts = manager.config.get('tts', {})
+        configured_voice = cfg_tts.get('voice', 'pt_BR-faber-medium')
+        configured_policy = cfg_tts.get('resident_policy', 'RESIDENT')
+        live_status = {}
+        try:
+            async with ClientSession(timeout=ClientTimeout(total=3)) as session:
+                async with session.get(f'http://127.0.0.1:{MODULES["tts"][2]}/api/status') as resp:
+                    if resp.status == 200:
+                        live_status = await resp.json()
+        except Exception:
+            live_status = {}
+        loaded_voices = set(live_status.get('loaded_voices') or [])
+        available_voices = {v.get('id'): v for v in (live_status.get('voices') or []) if isinstance(v, dict) and v.get('id')}
+        rows = []
+        for item in list_models('tts'):
+            vid = item['id']
+            live_v = available_voices.get(vid, {})
+            is_loaded = vid in loaded_voices or (vid == 'pocket-rafael' and bool(live_status.get('pocket_loaded')))
+            is_installed = bool(live_v) or is_loaded or (False if item.get('downloadable') is False else None)
+            summary = summarize_item(
+                item,
+                installed=is_installed,
+                integrity_verified=bool(live_v.get('verified')) if live_v else None,
+                loaded=is_loaded,
+                active=(vid == configured_voice and is_loaded),
+                resident=(is_loaded and configured_policy == 'RESIDENT'),
+            )
+            summary['selected'] = (vid == configured_voice)
+            summary['reason'] = (
+                'Requer autenticação Hugging Face (gated)' if item.get('needs_auth')
+                else ('Descoberta local em /data/tts' if item.get('architecture') == 'piper-custom'
+                      else ('Fonte não verificada; pinagem pendente' if not item.get('downloadable') else None))
+            )
+            rows.append(summary)
+        return web.json_response({
+            'configured_primary_voice': configured_voice,
+            'resident_policy': configured_policy,
+            'state': live_status.get('state', 'unavailable' if manager.processes.get('tts') is None else 'unknown'),
+            'models': rows,
+        })
+    async def tts_action(request):
+        try:
+            from .model_registry import get_model, resolve_legacy_id
+        except ImportError:
+            from model_registry import get_model, resolve_legacy_id
+        from modules import validate_options
+        action = request.match_info['action']
+        if action not in {'apply', 'install'}:
+            raise ValueError('Ação TTS inválida')
+        body = await request.json()
+        if type(body) is not dict:
+            raise ValueError('Objeto JSON obrigatório')
+        voice = resolve_legacy_id(body.get('model') or body.get('voice'))
+        item = get_model(voice)
+        if not item or item.get('kind') != 'tts':
+            raise ValueError('Voz TTS desconhecida')
+        if action == 'install':
+            if item.get('needs_auth'):
+                raise ValueError('Voz protegida (gated); configure HF_TOKEN antes de baixar')
+            if not item.get('downloadable'):
+                raise ValueError(f'Voz {voice} requer pinagem de arquivo/SHA-256 ou instalação manual em /data/tts')
+            return web.json_response({'status': 'ready', 'voice': voice, 'installed': True})
+        async with lock:
+            candidate = validate_options('tts', {**manager.config['tts'], 'voice': voice}, manager.data)
+            manager.config['tts'] = candidate
+            manager.save()
+        return web.json_response({'status': 'applied', 'configured_primary_voice': voice})
     app.router.add_get('/', index)
     app.router.add_get('/api/state', state)
     app.router.add_get('/api/stt/models', stt_models)
     app.router.add_post('/api/stt/{action}', stt_action)
     app.router.add_get('/api/tts/status', tts_status)
+    app.router.add_get('/api/tts/models', tts_models)
+    app.router.add_post('/api/tts/{action}', tts_action)
     app.router.add_get('/api/logs', logs)
     app.router.add_post('/api/modules/{key}/{action}', control)
     app.router.add_get('/api/decision/{action}',decision_control)

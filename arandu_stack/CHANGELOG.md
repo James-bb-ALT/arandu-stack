@@ -1,3 +1,9 @@
+# 11.3.6 — Hotfix de dependências STT, isolamento Phonon/Nemotron e CI automática (2026-11-13)
+
+- **Dependências & Dockerfile (`requirements.txt`, `requirements-phonon.txt`, `Dockerfile`):** Removido `fermion-research` de `/opt/venvs/stt` (que puxava `transformers>=5.0` e conflitava com `huggingface_hub==0.36.0`, causando `ResolutionImpossible`), movendo-o para `/opt/venvs/phonon` isolado (`fermion-research==0.2.15` com `torch==2.9.1` CPU herdado). Adicionado `pip check` e smoke check de imports em todos os 6 venvs (`decision`, `llm`, `stt`, `phonon`, `tts`, `wake`).
+- **Backends & Observabilidade (`phonon_backend.py`, `nemotron_unified_backend.py`, `stt_errors.py`, `model_catalog.py`):** Corrigido `PhononBackend` para usar a API real `fermion.load_speech` + `transcribe_array` (com desempacotamento offline `.fsq` e worker persistente isolado via `/opt/venvs/phonon/bin/python` com timeout e limpeza de processo), diagnóstico `MODEL_RUNTIME_UNAVAILABLE` para Nemotron/Phonon e códigos estruturados `ARANDU_EVENT`.
+- **Prevenção de regressões (`scripts/check_dependencies.py`, `scripts/docker_smoke_test.py`, `.github/workflows/build.yml`, `tests/`):** Criado gate pré-build de dependências, smoke test de container isolado, suíte expandida de resiliência/segurança (`test_dependency_and_resilience.py`), correção de expectativas obsoletas em `stt_docker_check.py`, `docs/TROUBLESHOOTING.md` e CI automática em `push`/`pull_request`.
+
 # 11.3.5 — Correção de build Rust em `resolver.rs` (2026-11-13)
 
 - **NLU (`resolver.rs`):** Corrigido empréstimo de `chosen` (`if let Some(ref id) = chosen`) e comparação explícita `id.as_str() == origin` em `area_with_origin`, corrigindo o erro de compilação (`exit code: 101`) no `cargo build --release` dentro do container do add-on.

@@ -1,10 +1,116 @@
-name: Build manual Arandu Assistant
+name: Arandu Stack CI
+
 on:
+  push:
+  pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
-  build:
+  static-and-dependencies:
+    name: Job 1 — Static & Dependencies
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Construir sem testes ou inferência
-        run: docker build -t arandu/assistant:local ./arandu_stack
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check Python syntax across modules and tests
+        run: python -m compileall -q arandu_stack/app arandu_stack/rootfs/modules custom_components tests scripts
+      - name: Check dependency metadata & dry-run resolution
+        run: python scripts/check_dependencies.py --dry-run --json-out /tmp/dep-report.json
+      - name: Verify required repository files
+        run: |
+          test -f arandu_stack/config.yaml
+          test -f arandu_stack/Dockerfile
+          test -f arandu_stack/model_registry/models.json
+          test -f arandu_stack/rootfs/modules/arandu_stt/rootfs/src/arandu_stt/requirements.txt
+          test -f arandu_stack/rootfs/modules/arandu_stt/rootfs/src/arandu_stt/requirements-phonon.txt
+
+  unit-tests:
+    name: Job 2 — Unit & Security Tests
+    needs: static-and-dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest pytest-asyncio aiohttp numpy filelock
+      - name: Run Python unit, STT, security and resilience tests
+        run: |
+          pytest -q --tb=short \
+            tests/test_dependency_and_resilience.py \
+            tests/test_llm_503_regression.py \
+            tests/test_stt_multimodel.py \
+            tests/test_stt_residency.py \
+            tests/test_stt_v11_3_vad_webrtc.py \
+            tests/test_pipeline_universal_v11_2.py \
+            tests/test_fallback_route_policy.py \
+            tests/test_progressive_orchestrator.py \
+            tests/test_progressive_security.py \
+            tests/test_decision_partial_repair.py \
+            tests/test_home_graph.py
+      - name: Run frontend AI Lab tests
+        run: node tests/test_ai_lab_panel.js
+
+  docker-build:
+    name: Job 3 — Docker Build (Production Dockerfile)
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production Docker image
+        run: docker build --progress=plain -t arandu:preflight ./arandu_stack
+      - name: Export image artifact for runtime smoke
+        run: docker save arandu:preflight | gzip > /tmp/arandu-preflight.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arandu-preflight-image
+          path: /tmp/arandu-preflight.tar.gz
+          retention-days: 1
+
+  runtime-smoke:
+    name: Job 4 — Runtime Smoke & pip check
+    needs: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: arandu-preflight-image
+          path: /tmp
+      - name: Load Docker image
+        run: docker load < /tmp/arandu-preflight.tar.gz
+      - name: Run Docker static, pip check and isolated runtime smoke
+        run: python scripts/docker_smoke_test.py --image arandu:preflight
+
+  release-gate:
+    name: Job 5 — Release Gate
+    needs: [static-and-dependencies, unit-tests, docker-build, runtime-smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Emit release gate summary and block on failures
+        run: |
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "Python: 3.12 (container)"
+          grep '^version:' arandu_stack/config.yaml
+          echo "Jobs: static=${{ needs.static-and-dependencies.result }} unit=${{ needs.unit-tests.result }} build=${{ needs.docker-build.result }} smoke=${{ needs.runtime-smoke.result }}"
+          echo "Note: Real audio PT-BR benchmarks and physical HAOS satellite tests require separate staging hardware and are not run in GitHub-hosted CI."
+          test "${{ needs.static-and-dependencies.result }}" = "success"
+          test "${{ needs.unit-tests.result }}" = "success"
+          test "${{ needs.docker-build.result }}" = "success"
+          test "${{ needs.runtime-smoke.result }}" = "success"

@@ -99,7 +99,7 @@ _DOMAIN_SPECS: dict[str, dict[str, Any]] = {
 
 _SEMANTIC_QUERY_FORMS = tuple(sorted(set(GROUP_FORMS.get("query", ()))))
 _QUERY_PREFIX_RE = re.compile(
-    r"\b(?:quantos?|quantas?|quais|tem\s+algum(?:a)?|algum(?:a)?\s+\w+\s+(?:aces[ao]|ligad[ao]|abert[ao]|fechad[ao]|destrancad[ao]|trancad[ao]))\b"
+    r"\b(?:quantos?|quantas?|qua(?:l|is)|tem\s+algum(?:a)?|algum(?:a)?\s+\w+\s+(?:aces[ao]|ligad[ao]|abert[ao]|fechad[ao]|destrancad[ao]|trancad[ao]))\b"
 )
 
 

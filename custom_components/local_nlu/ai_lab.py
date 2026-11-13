@@ -6,9 +6,11 @@ import base64
 from dataclasses import asdict
 import json
 from pathlib import Path
+import re
 import secrets
 import time
 from types import SimpleNamespace
+from typing import Any
 
 from .ai_lab_core import MODELS, benchmark, digest, finite, pipeline, settings, validate_proposal
 from .client import LocalNluClient
@@ -111,10 +113,11 @@ class Lab:
                     result['models']=[m for m in result['models'] if m.get('kind')!='decision']+[{**m,'kind':'decision'} for m in decisions['models']]
                     result['decision_backends']=decisions.get('backends',[])
                 except Exception:pass
+                result.update(_panel_version_info())
                 return result
             except Exception as exc:
                 return {"models": [{"id": key, **model, "available": False, "installed": None,
-                                     "reason": model.get("unavailable") or "Worker inacessível; instalação não verificada"} for key, model in MODELS.items()], "error": str(exc)[:256]}
+                                     "reason": model.get("unavailable") or "Worker inacessível; instalação não verificada"} for key, model in MODELS.items()], "error": str(exc)[:256], **_panel_version_info()}
         if command in {'decision_models','decision_prepare','decision_apply'} or command=='install' and payload.get('model') in {'e5-small','minilm-multilingual','e5-base'}:
             if command=='decision_models':return await local_request(session,llm_worker,'/api/decision/models',timeout=10)
             if command=='decision_apply' and payload.get('confirm') is not True:raise ValueError('Confirmação explícita necessária')
@@ -222,7 +225,7 @@ class Lab:
                     readiness = await local_request(session, options.get('stack_endpoint') or worker, "/infer", payload={"action": "readiness", "catalog": catalog}, timeout=5)
                 except Exception:
                     readiness = {"calibration_valid": None, "can_accept": False, "reason": "Serviço Decision indisponível; calibração não verificada."}
-                return {"production_policy": policy, "decision": readiness}
+                return {"production_policy": policy, "decision": readiness, **_panel_version_info()}
             if command == "execute":
                 saved = self.proposals.pop(payload.get("token"), None)
                 if not saved or saved["user"] != user.id or saved["entry"] != entry.entry_id or saved["catalog"] != digest(catalog) or saved["options"] != digest(options) or saved.get("test_area_id", "") != payload.get("test_area_id", ""):
@@ -389,17 +392,8 @@ class Lab:
                     proposal["confidence"] = None
                     return {**raw, "proposal": proposal}
                 if mode == "pipeline":
-                    from .light_aggregation import evaluate_aggregated_light_query, is_aggregated_light_query
-                    from .queries_set import detect_queryset_domain, evaluate_queryset
                     fast_started = time.perf_counter()
-                    q_res = None
-                    q_reason = None
-                    if is_aggregated_light_query(text):
-                        q_res = evaluate_aggregated_light_query(text, snapshot, self.hass)
-                        q_reason = "light_aggregation"
-                    elif detect_queryset_domain(text) is not None:
-                        q_res = evaluate_queryset(text, snapshot, self.hass)
-                        q_reason = f"queryset_{q_res['domain']}" if q_res else None
+                    q_res, q_reason = _evaluate_safe_read_query(text, catalog, snapshot, self.hass)
                     if q_res is not None and q_res.get("speech"):
                         fast_ms = (time.perf_counter() - fast_started) * 1000
                         fast_result = {
@@ -421,6 +415,7 @@ class Lab:
                             "test_mode": "independent",
                             "test_context": test_context,
                             "production_policy": {"nlu": True, "decision": options.get("decision_enabled", False), "llm": options.get("llm_enabled", False)},
+                            **_panel_version_info(),
                             "total_ms": fast_ms,
                             "stages": {
                                 "vad": {"status": "skipped", "reason": "não necessário — entrada de texto"},
@@ -439,7 +434,8 @@ class Lab:
                 result = await pipeline(text, nlu, decision, llm, mode=mode, timeout=95, general=clearly_conversational(text, catalog))
                 result.update(dry_run=True, catalog_generation=catalog["generation"], model=model,
                               catalog=catalog, test_mode="independent", test_context=test_context,
-                              production_policy={"nlu": True, "decision": options.get("decision_enabled", False), "llm": options.get("llm_enabled", False)})
+                              production_policy={"nlu": True, "decision": options.get("decision_enabled", False), "llm": options.get("llm_enabled", False)},
+                              **_panel_version_info())
                 proposal = result["proposal"]
                 if proposal and result["source"] != "nlu" and result.get("kind") != "conversation":
                     from .intelligence import proposal_route
@@ -497,17 +493,8 @@ class Lab:
                         }
                 else:
                     result["stages"]["validation"] = {"status": "skipped", "reason": "Nenhuma ação HA proposta" if result.get("kind") == "conversation" else "Nenhuma operação proposta"}
-                    if result.get("kind") != "conversation":
-                        from .light_aggregation import evaluate_aggregated_light_query, is_aggregated_light_query
-                        from .queries_set import detect_queryset_domain, evaluate_queryset
-                        q_res = None
-                        q_reason = None
-                        if is_aggregated_light_query(text):
-                            q_res = evaluate_aggregated_light_query(text, snapshot, self.hass)
-                            q_reason = "light_aggregation"
-                        elif detect_queryset_domain(text) is not None:
-                            q_res = evaluate_queryset(text, snapshot, self.hass)
-                            q_reason = f"queryset_{q_res['domain']}" if q_res else None
+                    if mode == "pipeline" and result.get("kind") != "conversation":
+                        q_res, q_reason = _evaluate_safe_read_query(text, catalog, snapshot, self.hass)
                         if q_res is not None and q_res.get("speech"):
                             result["response_text"] = q_res["speech"]
                             result["kind"] = "query"
@@ -562,8 +549,96 @@ class Lab:
             runtime.close()
 
 
-def _panel_asset_tag() -> str:
-    """Build deterministic version+hash tag for cache-busting panel JS across HA/Android updates."""
+_EXTRA_ACTION_OR_SCHEDULE_WORDS = (
+    "todo dia",
+    "todos os dias",
+    "toda semana",
+    "sempre",
+    "agende",
+    "agenda",
+    "agendar",
+    "alarme",
+    "lembrete",
+    "timer",
+    "temporizador",
+)
+
+
+def is_exclusively_read_query(text: str, catalog: dict[str, Any] | None = None) -> bool:
+    """Return True only for single-clause, side-effect-free, non-negated read queries."""
+    if not isinstance(text, str) or not text.strip():
+        return False
+    from .light_aggregation import is_aggregated_light_query
+    from .queries_set import detect_queryset_domain
+    from .semantic_context import ACTIONS, POLICY, normalized, semantic_refusal
+
+    if not (is_aggregated_light_query(text) or detect_queryset_domain(text) is not None):
+        return False
+    if semantic_refusal(text, catalog) is not None:
+        return False
+
+    norm = normalized(text)
+    if not norm:
+        return False
+
+    raw_trimmed = text.strip().rstrip(" ?!.")
+    if re.search(r"[?!.;,]", raw_trimmed):
+        return False
+
+    # Mask catalog labels containing " e " so multi-word entity/area names don't trigger compound splits.
+    masked = " " + norm + " "
+    for row in (catalog or {}).get("entities", []):
+        for label in (row.get("name"), *(row.get("aliases") or ())):
+            n_label = normalized(label) if isinstance(label, str) else ""
+            if n_label and " e " in n_label:
+                masked = masked.replace(" " + n_label + " ", " alvo ")
+    for area in (catalog or {}).get("areas", []):
+        for name in (area.get("names") or ()):
+            n_name = normalized(name) if isinstance(name, str) else ""
+            if n_name and " e " in n_name:
+                masked = masked.replace(" " + n_name + " ", " area ")
+
+    if re.search(r"\b(?:e|mas|porem|entao|senao|ou)\b", masked):
+        return False
+
+    blocked_phrases = (
+        *POLICY.get("negation", ()),
+        *POLICY.get("exclusion", ()),
+        *POLICY.get("condition", ()),
+        *POLICY.get("speech", ()),
+        *POLICY.get("effects", ()),
+        *_EXTRA_ACTION_OR_SCHEDULE_WORDS,
+    )
+    for phrase in blocked_phrases:
+        n_phrase = normalized(phrase)
+        if n_phrase and re.search(rf"(?<!\w){re.escape(n_phrase)}(?!\w)", masked):
+            return False
+
+    words = set(masked.split())
+    if any(words & set(verbs) for action_name, verbs in ACTIONS.items() if action_name != "query"):
+        return False
+    return True
+
+
+def _evaluate_safe_read_query(
+    text: str, catalog: dict[str, Any], snapshot: Any, hass: Any
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Evaluate a deterministic HA read query only after passing strict read-only classification."""
+    if not is_exclusively_read_query(text, catalog):
+        return None, None
+    from .light_aggregation import evaluate_aggregated_light_query, is_aggregated_light_query
+    from .queries_set import detect_queryset_domain, evaluate_queryset
+
+    if is_aggregated_light_query(text):
+        return evaluate_aggregated_light_query(text, snapshot, hass), "light_aggregation"
+    if detect_queryset_domain(text) is not None:
+        q_res = evaluate_queryset(text, snapshot, hass)
+        return q_res, (f"queryset_{q_res['domain']}" if q_res else None)
+    return None, None
+
+
+def _panel_version_info() -> dict[str, str]:
+    """Return backend version, combined panel asset SHA256 prefix, and cache-busting tag."""
     import hashlib
     base = Path(__file__).resolve().parent
     version = "0"
@@ -578,13 +653,112 @@ def _panel_asset_tag() -> str:
         fp = base / fname
         if fp.is_file():
             h.update(fp.read_bytes())
-    return f"{version}-{h.hexdigest()[:12]}"
+    asset_hash = h.hexdigest()[:12]
+    return {
+        "backend_version": version,
+        "asset_hash": asset_hash,
+        "panel_tag": f"{version}-{asset_hash}",
+    }
+
+
+def _panel_asset_tag() -> str:
+    """Build deterministic version+hash tag for cache-busting panel JS across HA/Android updates."""
+    return _panel_version_info()["panel_tag"]
+
+
+async def _remove_panel_if_present(hass, panel_custom, frontend_url_path: str) -> bool:
+    """Attempt graceful panel removal across HA versions without failing if absent."""
+    removed = False
+    try:
+        from homeassistant.components import frontend
+        remover = getattr(frontend, "async_remove_panel", None)
+        if callable(remover):
+            res = remover(hass, frontend_url_path)
+            if asyncio.iscoroutine(res):
+                await res
+            removed = True
+    except Exception:
+        pass
+    if not removed:
+        remover = getattr(panel_custom, "async_remove_panel", None)
+        if callable(remover):
+            try:
+                res = remover(hass, frontend_url_path)
+                if asyncio.iscoroutine(res):
+                    await res
+                removed = True
+            except Exception:
+                pass
+    panels_registry = hass.data.get("frontend_panels") if isinstance(getattr(hass, "data", None), dict) else None
+    if isinstance(panels_registry, dict) and frontend_url_path in panels_registry:
+        panels_registry.pop(frontend_url_path, None)
+        removed = True
+    return removed
+
+
+async def _register_or_update_panel(
+    hass,
+    panel_custom,
+    *,
+    webcomponent_name: str,
+    frontend_url_path: str,
+    module_url: str,
+    sidebar_title: str,
+    sidebar_icon: str,
+    require_admin: bool,
+    prev_tag: str | None = None,
+):
+    """Idempotently register or update an existing custom panel without ValueError on tag bump."""
+    kwargs = {
+        "webcomponent_name": webcomponent_name,
+        "frontend_url_path": frontend_url_path,
+        "module_url": module_url,
+        "sidebar_title": sidebar_title,
+        "sidebar_icon": sidebar_icon,
+        "require_admin": require_admin,
+    }
+    panels_registry = hass.data.get("frontend_panels") if isinstance(getattr(hass, "data", None), dict) else None
+    panel_exists = (isinstance(panels_registry, dict) and frontend_url_path in panels_registry) or (prev_tag is not None)
+    removed_prev = False
+    if panel_exists:
+        removed_prev = await _remove_panel_if_present(hass, panel_custom, frontend_url_path)
+    try:
+        return await panel_custom.async_register_panel(hass, **kwargs)
+    except ValueError as exc:
+        if "Overwriting panel" not in str(exc):
+            if removed_prev and prev_tag is not None:
+                try:
+                    await panel_custom.async_register_panel(
+                        hass,
+                        **{**kwargs, "module_url": f"/local_nlu_ai_lab/panel.js?v={prev_tag}"},
+                    )
+                except Exception:
+                    pass
+            raise
+        removed_prev = await _remove_panel_if_present(hass, panel_custom, frontend_url_path) or removed_prev
+        if not removed_prev:
+            try:
+                return await panel_custom.async_register_panel(hass, **kwargs, update=True)
+            except TypeError:
+                pass
+        return await panel_custom.async_register_panel(hass, **kwargs)
+    except Exception:
+        if removed_prev and prev_tag is not None:
+            try:
+                await panel_custom.async_register_panel(
+                    hass,
+                    **{**kwargs, "module_url": f"/local_nlu_ai_lab/panel.js?v={prev_tag}"},
+                )
+            except Exception:
+                pass
+        raise
 
 
 async def async_register(hass):
     """Register one sidebar panel and authenticated websocket route for all entries."""
     tag = _panel_asset_tag()
-    if "local_nlu_ai_lab" in hass.data and hass.data.get("local_nlu_ai_lab_tag") == tag:
+    prev_tag = hass.data.get("local_nlu_ai_lab_tag")
+    if "local_nlu_ai_lab" in hass.data and prev_tag == tag:
         return
     from homeassistant.components import panel_custom, websocket_api
     from homeassistant.components.http import StaticPathConfig
@@ -601,20 +775,32 @@ async def async_register(hass):
                 raise
             except Exception as exc:
                 connection.send_error(msg["id"], "ai_lab_error", str(exc)[:256])
-        websocket_api.async_register_command(hass, handle)
-        await hass.http.async_register_static_paths([
-            StaticPathConfig("/local_nlu_ai_lab/stt.js", str(Path(__file__).with_name("stt_lab_panel.js")), False),
-            StaticPathConfig("/local_nlu_ai_lab/panel.js", str(Path(__file__).with_name("ai_lab_panel.js")), False),
-            StaticPathConfig("/local_nlu_ai_lab/brand", str(Path(__file__).with_name("brand")), False),
-        ])
+
+        if not hass.data.get("local_nlu_ai_lab_ws"):
+            websocket_api.async_register_command(hass, handle)
+            hass.data["local_nlu_ai_lab_ws"] = True
+        if not hass.data.get("local_nlu_ai_lab_static"):
+            await hass.http.async_register_static_paths([
+                StaticPathConfig("/local_nlu_ai_lab/stt.js", str(Path(__file__).with_name("stt_lab_panel.js")), False),
+                StaticPathConfig("/local_nlu_ai_lab/panel.js", str(Path(__file__).with_name("ai_lab_panel.js")), False),
+                StaticPathConfig("/local_nlu_ai_lab/brand", str(Path(__file__).with_name("brand")), False),
+            ])
+            hass.data["local_nlu_ai_lab_static"] = True
         hass.data["local_nlu_ai_lab"] = lab
-    await panel_custom.async_register_panel(
-        hass,
-        webcomponent_name="arandu-ai-lab",
-        frontend_url_path="arandu-ai-lab",
-        module_url=f"/local_nlu_ai_lab/panel.js?v={tag}",
-        sidebar_title="Arandu AI Lab",
-        sidebar_icon="mdi:flask-outline",
-        require_admin=True,
-    )
+    try:
+        await _register_or_update_panel(
+            hass,
+            panel_custom,
+            webcomponent_name="arandu-ai-lab",
+            frontend_url_path="arandu-ai-lab",
+            module_url=f"/local_nlu_ai_lab/panel.js?v={tag}",
+            sidebar_title="Arandu AI Lab",
+            sidebar_icon="mdi:flask-outline",
+            require_admin=True,
+            prev_tag=prev_tag,
+        )
+    except Exception:
+        if prev_tag is not None:
+            hass.data["local_nlu_ai_lab_tag"] = prev_tag
+        raise
     hass.data["local_nlu_ai_lab_tag"] = tag

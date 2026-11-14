@@ -367,19 +367,136 @@ test('reloading panel script updates already-defined custom element and reports 
     document: {
       createElement: () => new Element(),
       createTextNode: (t) => ({textContent: t}),
-      querySelector: () => ({getAttribute: () => '/local_nlu_ai_lab/panel.js?v=11.3.9-abc123def456'}),
+      querySelector: () => ({getAttribute: () => '/local_nlu_ai_lab/panel.js?v=11.4.0-abc123def456'}),
       querySelectorAll: () => [liveEl],
     },
     clearInterval: globalThis.clearInterval,
     clearTimeout: globalThis.clearTimeout,
   });
   assert.equal(defines, 0);
-  assert.equal(OldPanel.PANEL_VERSION, '11.3.9');
+  assert.equal(OldPanel.PANEL_VERSION, '11.4.0');
   assert.equal(typeof OldPanel.prototype.updateVersionDiagnostics, 'function');
-  assert.equal(liveEl.dataset.panelVersion, '11.3.9');
-  assert.match(nodes.versionDiagnostics.textContent, /AI Lab frontend: 11\.3\.9.*Asset hash: abc123def456/);
+  assert.equal(liveEl.dataset.panelVersion, '11.4.0');
+  assert.match(nodes.versionDiagnostics.textContent, /AI Lab frontend: 11\.4\.0.*Asset hash: abc123def456/);
   assert.equal(nodes.versionWarning.hidden, true);
   liveEl.updateVersionDiagnostics({backend_version: '11.3.8', asset_hash: '000000000000', panel_tag: '11.3.8-000000000000'});
   assert.equal(nodes.versionWarning.hidden, false);
   assert.equal(nodes.versionWarning.textContent, 'O painel carregado está desatualizado. Atualize o frontend do Arandu.');
+});
+
+test('stt_lab_panel exposes whisper.cpp models, fixed pt badge, repetitions, sorting, cancel and progress', async () => {
+  const aiPanelSrc = fs.readFileSync('custom_components/local_nlu/ai_lab_panel.js', 'utf8');
+  assert.match(aiPanelSrc, /value="whisper_cpp_small"[^>]*>Whisper Small — whisper\.cpp/);
+  assert.match(aiPanelSrc, /value="whisper_cpp_medium"[^>]*>Whisper Medium — whisper\.cpp/);
+
+  const sttSrc = fs.readFileSync('custom_components/local_nlu/stt_lab_panel.js', 'utf8');
+  assert.match(sttSrc, /value="whisper_cpp_small"/);
+  assert.match(sttSrc, /value="whisper_cpp_medium"/);
+  assert.match(sttSrc, /Idioma: Português — fixo/);
+  assert.match(sttSrc, /data-stt="repetitions"/);
+  assert.match(sttSrc, /data-stt="sort"/);
+  assert.match(sttSrc, /data-stt="cancel"/);
+  assert.match(sttSrc, /Precisão não mensurável/);
+
+  // Execute real mountSTT initialization and refresh against mocked panel.call
+  const byStt = {};
+  class FakeNode {
+    constructor(tag = 'div') {
+      this.tagName = tag;
+      this.children = [];
+      this.textContent = '';
+      this.disabled = false;
+      this.value = '';
+      this.checked = false;
+      this.hidden = false;
+      this.attributes = {};
+      this.files = [];
+    }
+    set innerHTML(html) {
+      this._html = html;
+      for (const m of html.matchAll(/data-stt="([^"]+)"/g)) {
+        if (!byStt[m[1]]) byStt[m[1]] = new FakeNode(m[1]);
+      }
+      if (byStt.variant) byStt.variant.value = 'adapted';
+      if (byStt.threads) byStt.threads.value = '2';
+      if (byStt.repetitions) byStt.repetitions.value = '1';
+      if (byStt.sort) byStt.sort.value = 'order';
+    }
+    get innerHTML() { return this._html || ''; }
+    append(...items) { this.children.push(...items); }
+    replaceChildren(...items) { this.children = items; this.textContent = ''; }
+    setAttribute(k, v) { this.attributes[k] = v; }
+    removeAttribute(k) { delete this.attributes[k]; }
+    querySelector(sel) {
+      const m = sel.match(/\[data-stt="([^"]+)"\]/);
+      return m ? (byStt[m[1]] || null) : null;
+    }
+    querySelectorAll() { return []; }
+  }
+  const section = new FakeNode('section');
+  const calls = [];
+  const fakePanel = {
+    $: (id) => (id === 'sttLab' ? section : null),
+    duration: (v) => (typeof v === 'number' ? `${v.toFixed(1)} ms` : '—'),
+    call: async (cmd, payload) => {
+      calls.push({cmd, payload});
+      if (cmd === 'stt_models') {
+        return {
+          active: null,
+          models: [
+            {
+              id: 'whisper_cpp_small',
+              name: 'Whisper Small — whisper.cpp',
+              runtime: 'whisper.cpp',
+              language_label: 'Português — fixo',
+              download_bytes: 487601967,
+              state: 'downloading',
+              percent: 42.5,
+              bytes_downloaded: 207000000,
+              total_bytes: 487601967,
+            },
+            {
+              id: 'whisper_cpp_medium',
+              name: 'Whisper Medium — whisper.cpp',
+              runtime: 'whisper.cpp',
+              language_label: 'Português — fixo',
+              download_bytes: 1533763059,
+              state: 'installed',
+            },
+          ],
+        };
+      }
+      return {};
+    },
+  };
+  let scheduledTimeout = null;
+  const runnable = sttSrc.replace(/\bexport\s+function\s+mountSTT/, 'function mountSTT') + '\nmountSTT(panel);\n';
+  vm.runInNewContext(runnable, {
+    panel: fakePanel,
+    document: {
+      createElement: (tag) => new FakeNode(tag),
+      createTextNode: (t) => ({textContent: String(t)}),
+    },
+    URL: {createObjectURL: () => 'blob:x', revokeObjectURL: () => {}},
+    Blob: globalThis.Blob,
+    Uint8Array: globalThis.Uint8Array,
+    btoa: (s) => Buffer.from(s, 'latin1').toString('base64'),
+    navigator: {},
+    performance: {now: () => Date.now()},
+    clearTimeout: globalThis.clearTimeout,
+    setTimeout: (fn) => { scheduledTimeout = fn; return 1; },
+    clearInterval: globalThis.clearInterval,
+    setInterval: () => 1,
+    confirm: () => true,
+  });
+  // Flush microtasks for initial task(refresh)
+  await new Promise((r) => setTimeout(r, 20));
+  assert.ok(calls.some((c) => c.cmd === 'stt_models'));
+  assert.equal(byStt.inventory.children.length, 2);
+  const invText = text(byStt.inventory);
+  assert.match(invText, /Whisper Small — whisper\.cpp/);
+  assert.match(invText, /Português — fixo/);
+  assert.match(invText, /42\.5%/);
+  assert.ok(byStt.inventory.children[0].children.some((c) => c.tagName === 'progress' && c.value === 42.5));
+  assert.ok(scheduledTimeout !== null);
 });

@@ -46,6 +46,9 @@ def create_backend(model, directory, threads=2):
         raise ValueError('Threads deve ficar entre 1 e 4')
     if model == 'fastconformer':
         factory = FastConformerBackend
+    elif model in ('whisper_cpp_small', 'whisper_cpp_medium'):
+        from whisper_cpp_backend import WhisperCppBackend
+        return WhisperCppBackend(directory, threads, model_id=model)
     elif model.startswith('whisper_'):
         factory = WhisperBackend
     elif model in ('parakeet_ultra_q8', 'parakeet_ultra_q4'):

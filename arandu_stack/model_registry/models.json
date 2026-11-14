@@ -1,7 +1,7 @@
 {
   "version": 1,
   "counts": {
-    "stt": 13,
+    "stt": 15,
     "tts": 6,
     "decision": 3,
     "llm": 7
@@ -1324,6 +1324,76 @@
       ],
       "verified": true,
       "experimental": true
+    },
+    {
+      "id": "whisper_cpp_small",
+      "legacy_ids": [],
+      "kind": "stt",
+      "display_name": "Whisper Small — whisper.cpp",
+      "vendor": "ggml-org",
+      "repo_id": "ggerganov/whisper.cpp",
+      "revision_immutable": "5359861c739e955e79d9a303bcbc70fb988958b1",
+      "files": [
+        {
+          "path": "ggml-small.bin",
+          "size": 487601967,
+          "sha256": "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b"
+        }
+      ],
+      "license": "MIT",
+      "terms_url": "https://huggingface.co/ggerganov/whisper.cpp",
+      "needs_auth": false,
+      "runtime": "whisper.cpp",
+      "architecture": "Whisper Multilingual Transformer",
+      "format": "ggml",
+      "quantization": "fp16",
+      "language": "pt",
+      "disk_bytes": 487601967,
+      "ram_estimate_mb": 850,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "11.4.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [],
+      "verified": true,
+      "experimental": false
+    },
+    {
+      "id": "whisper_cpp_medium",
+      "legacy_ids": [],
+      "kind": "stt",
+      "display_name": "Whisper Medium — whisper.cpp",
+      "vendor": "ggml-org",
+      "repo_id": "ggerganov/whisper.cpp",
+      "revision_immutable": "5359861c739e955e79d9a303bcbc70fb988958b1",
+      "files": [
+        {
+          "path": "ggml-medium.bin",
+          "size": 1533763059,
+          "sha256": "6c14d5adee5f86394037b4e4e8b59f1673b6cee10e3cf0b11bbdbee79c156208"
+        }
+      ],
+      "license": "MIT",
+      "terms_url": "https://huggingface.co/ggerganov/whisper.cpp",
+      "needs_auth": false,
+      "runtime": "whisper.cpp",
+      "architecture": "Whisper Multilingual Transformer",
+      "format": "ggml",
+      "quantization": "fp16",
+      "language": "pt",
+      "disk_bytes": 1533763059,
+      "ram_estimate_mb": 2100,
+      "supports_cpu": true,
+      "supports_gpu_intel": false,
+      "min_runtime_version": "11.4.0",
+      "downloadable": true,
+      "testable": true,
+      "recommended": false,
+      "restrictions": [],
+      "verified": true,
+      "experimental": false
     }
   ]
 }

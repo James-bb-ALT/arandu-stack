@@ -41,6 +41,8 @@ fi
 pip check
 test -x /usr/bin/local-nlu
 test -x /usr/local/bin/llama-server
+test -x /usr/local/bin/whisper-server
+test -x /usr/local/bin/whisper-cli
 test -f /usr/local/lib/libtranscribe.so
 command -v ffmpeg >/dev/null
 test -f /opt/model_registry/models.json

@@ -3,12 +3,28 @@ from __future__ import annotations
 import base64
 from contextlib import redirect_stdout
 import json
+import math
 import os
 from pathlib import Path
+import statistics
 import sys
 import time
 
 from model_catalog import CATALOG, describe, install, location, remove, verify
+
+
+def _process_tree_rss_mb() -> float:
+    import psutil
+    proc = psutil.Process(os.getpid())
+    total = proc.memory_info().rss
+    children_fn = getattr(proc, 'children', None)
+    if callable(children_fn):
+        for child in children_fn(recursive=True) or ():
+            try:
+                total += child.memory_info().rss
+            except (psutil.Error, AttributeError):
+                pass
+    return total / 1048576
 
 
 def _encode_wav_b64(audio):
@@ -41,13 +57,22 @@ def run(body):
                 engine.load()
             finally:
                 engine.close()
-        def progress(state):
+        def progress(state, **extra):
             status = root / ('.install-' + model + '.json')
             staged = status.with_suffix('.tmp')
-            staged.write_text(json.dumps({'state': state}), encoding='utf-8')
+            payload = {'state': state, **extra}
+            staged.write_text(json.dumps(payload), encoding='utf-8')
             staged.replace(status)
         install(root, model, variant, progress=progress, validator=validate_load)
         return describe(root, model, variant)
+    if command not in ('validate', 'test'):
+        raise ValueError('Comando STT inválido')
+    if command == 'test':
+        if body.get('language') not in (None, 'pt') or body.get('translate') is True or body.get('detect_language') is True:
+            raise ValueError('Idioma fixo em português (pt); tradução e detecção automática não são permitidas')
+        raw_reps = body.get('repetitions', 1)
+        if raw_reps is not None and (isinstance(raw_reps, bool) or not isinstance(raw_reps, int) or raw_reps not in (1, 3, 5, 10)):
+            raise ValueError('Repetições inválidas; escolha 1, 3, 5 ou 10')
     from backends import create_backend
     manifest = verify(root, model, variant)
     engine = create_backend(model, location(root, model, variant), body.get('threads', 2))
@@ -57,8 +82,6 @@ def run(body):
             import numpy as np
             engine.recognize(np.zeros(16000, dtype=np.float32))
             return {'model': model, 'variant': variant, 'state': 'ready', 'model_load_ms': engine.load_ms}
-        if command != 'test':
-            raise ValueError('Comando STT inválido')
         import numpy as np
         from audio_processor import AudioProcessor, AudioProcessorConfig, PRESETS
         from contextual_lexical import ContextualResolver
@@ -116,8 +139,43 @@ def run(body):
             finally:
                 vad.close()
 
+        raw_reps = body.get('repetitions', 1)
+        repetitions = 1 if raw_reps is None else int(raw_reps)
+        do_warmup = bool(body.get('warmup', repetitions > 1))
         # Exact digital silence or VAD-filtered silence must never generate a hallucination.
-        raw, inference_ms = ('', 0.0) if (not len(audio) or not np.any(audio)) else engine.recognize(audio)
+        if not len(audio) or not np.any(audio):
+            raw = ''
+            warmup_ms = 0.0
+            samples = [0.0] * repetitions
+        else:
+            warmup_ms = 0.0
+            if do_warmup:
+                _, warmup_ms = engine.recognize(audio)
+            samples = []
+            raw = ''
+            for idx in range(repetitions):
+                transcript, elapsed_ms = engine.recognize(audio)
+                if idx == 0:
+                    raw = transcript
+                samples.append(float(elapsed_ms))
+        ordered = sorted(samples)
+        n = len(ordered)
+        p50 = float(statistics.median(ordered))
+        p95_idx = min(n - 1, max(0, int(math.ceil(n * 0.95)) - 1))
+        inference_stats = {
+            'repetitions': n,
+            'warmup_executed': bool(do_warmup and len(audio) and np.any(audio)),
+            'warmup_ms': round(warmup_ms, 3),
+            'samples_ms': [round(x, 3) for x in samples],
+            'min_ms': round(ordered[0], 3),
+            'mean_ms': round(float(statistics.fmean(ordered)), 3),
+            'median_ms': round(p50, 3),
+            'p50_ms': round(p50, 3),
+            'p95_ms': round(ordered[p95_idx], 3),
+            'max_ms': round(ordered[-1], 3),
+            'stdev_ms': round(float(statistics.pstdev(ordered)) if n > 1 else 0.0, 3),
+        }
+        inference_ms = p50
         here = Path(__file__).resolve().parent
         lexical_start = time.perf_counter()
         resolver = ContextualResolver(Path(body['inventory']), here/'resources', config_path=here/'config/lexical.json',
@@ -128,11 +186,31 @@ def run(body):
         profile = body.get('profile') or (cfg.get('profile', 'full') if model == 'fastconformer' else cfg.get('whisper_profile', 'normalize_only'))
         resolved = correct(resolver, raw, profile)
         lexical_ms = (time.perf_counter() - lexical_start) * 1000
-        import psutil
+        if model in ('whisper_cpp_small', 'whisper_cpp_medium'):
+            params = {
+                'language': 'pt',
+                'language_fixed': True,
+                'translate': False,
+                'detect_language': False,
+                'beam_size': 1,
+                'best_of': 1,
+                'temperature': 0.0,
+                'max_context': 0,
+                'persistent_session': True,
+            }
+        elif model.startswith('whisper_'):
+            params = {'language': 'pt', 'beam_size': 1, 'vad_filter': False, 'condition_on_previous_text': False}
+        elif model in ('granite_turboctc_q4', 'parakeet_ultra_q8', 'parakeet_ultra_q4'):
+            params = {'language': 'pt', 'timestamps': 'none', 'persistent_session': True}
+        else:
+            params = {'decoding_method': 'greedy_search'}
         return {'revision': manifest.get('revision') or manifest.get('version'), 'model_sha256': manifest.get('sha256'), 'model': model, 'variant': variant if model == 'fastconformer' else None, 'state': 'ready',
                 'backend': CATALOG[model]['runtime'], 'license': CATALOG[model]['license'], 'device': 'cpu', 'compute': 'fp32' if model == 'fastconformer' and variant == 'adapted' else CATALOG[model]['compute'],
+                'language': 'pt', 'language_fixed': True, 'language_label': CATALOG[model].get('language_label', 'Português — fixo'),
                 'threads': body.get('threads', 2), 'profile': profile, 'preset': preset_name,
-                'model_load_ms': engine.load_ms, 'inference_ms': inference_ms, 'lexical_ms': lexical_ms,
+                'model_load_ms': engine.load_ms, 'cold_load_ms': engine.load_ms,
+                'warmup_ms': inference_stats['warmup_ms'], 'repetitions': n,
+                'inference_ms': inference_ms, 'inference_stats': inference_stats, 'lexical_ms': lexical_ms,
                 'preprocess_ms': ap_stats['preprocess_ms'], 'vad_ms': vad_stats['vad_ms'],
                 'end_of_speech_ms': vad_stats['end_of_speech_ms'], 'speech_detected': vad_stats['speech_detected'],
                 'aec': ap_stats['aec'], 'processed_wav_b64': _encode_wav_b64(audio) if len(audio) else None,
@@ -140,11 +218,11 @@ def run(body):
                 'processing_ms': (time.perf_counter()-started)*1000,
                 'realtime_factor': inference_ms / (len(pcm)/32),
                 'estimated_ram_mb': CATALOG[model].get('estimated_ram_mb'),
-                'process_rss_mb': psutil.Process(os.getpid()).memory_info().rss / 1048576,
+                'process_rss_mb': _process_tree_rss_mb(),
                 'raw_transcript': raw, 'final_transcript': resolved['text'],
                 'safety_preserved_raw': resolved.get('safety_preserved_raw', False),
                 'quality': evaluate(body.get('reference'), raw, resolved['text'], body.get('entity_reference')),
-                'parameters': {'language': 'pt', 'beam_size': 1, 'vad_filter': False, 'condition_on_previous_text': False} if model.startswith('whisper_') else ({'language': 'pt', 'timestamps': 'none', 'persistent_session': True} if model in ('granite_turboctc_q4', 'parakeet_ultra_q8', 'parakeet_ultra_q4') else {'decoding_method': 'greedy_search'})}
+                'parameters': params}
     finally:
         engine.close()
 
@@ -158,14 +236,40 @@ if __name__ == '__main__':
     except Exception as exc:
         # No transcripts, paths, download tokens or upstream bodies in the protocol error.
         status = getattr(getattr(exc, 'response', None), 'status_code', None)
-        message = ('Download recusado (HTTP ' + str(status) + '); tente novamente após verificar acesso à origem.') if type(status) is int else {
-            'FileNotFoundError': 'Pesos ausentes; instale o modelo selecionado.',
-            'ValueError': 'Modelo ou integridade inválidos; verifique os pesos e reinstale.',
-            'ImportError': 'Dependência STT indisponível; atualize o app.',
-            'ModuleNotFoundError': 'Dependência STT indisponível; atualize o app.',
-            'ConnectionError': 'Falha de rede ao instalar pesos; tente novamente.',
-        }.get(type(exc).__name__, 'Falha de carregamento, rede ou inferência; verifique o runtime e a origem dos pesos.')
-        if isinstance(exc, ValueError) and str(exc) == 'Espaço insuficiente para download e instalação temporária':
+        structured_code = getattr(exc, 'code', None)
+        if type(status) is int:
+            error_code = 'download_http_error'
+            message = 'Download recusado (HTTP ' + str(status) + '); tente novamente após verificar acesso à origem.'
+        elif isinstance(exc, MemoryError):
+            error_code = 'oom'
+            message = 'Memória insuficiente para carregar ou executar o modelo selecionado (OOM).'
+        elif isinstance(exc, TimeoutError):
+            error_code = 'timeout'
+            message = 'Tempo limite excedido durante carga ou inferência do modelo.'
+        elif structured_code:
+            error_code = 'runtime_unavailable' if structured_code == 'MODEL_RUNTIME_UNAVAILABLE' else 'execution_error'
+            message = str(exc)[:240]
+        elif isinstance(exc, FileNotFoundError):
+            error_code = 'not_installed'
+            message = 'Pesos ausentes; instale o modelo selecionado.'
+        elif isinstance(exc, ValueError) and str(exc).startswith((
+            'Espaço insuficiente para download',
+            'Idioma fixo em português',
+            'Repetições inválidas',
+            'Tradução automática não é permitida',
+            'Detecção automática de idioma não é permitida',
+            'Tamanho do arquivo inválido',
+            'Arquivo de pesos whisper.cpp',
+        )):
+            error_code = 'validation_error'
             message = str(exc)
-        print(json.dumps({'error': type(exc).__name__, 'message': message}))
+        else:
+            error_code = 'execution_error'
+            message = {
+                'ValueError': 'Modelo ou integridade inválidos; verifique os pesos e reinstale.',
+                'ImportError': 'Dependência STT indisponível; atualize o app.',
+                'ModuleNotFoundError': 'Dependência STT indisponível; atualize o app.',
+                'ConnectionError': 'Falha de rede ao instalar pesos; tente novamente.',
+            }.get(type(exc).__name__, 'Falha de carregamento, rede ou inferência; verifique o runtime e a origem dos pesos.')
+        print(json.dumps({'error': type(exc).__name__, 'error_code': error_code, 'message': message}))
         sys.exit(1)

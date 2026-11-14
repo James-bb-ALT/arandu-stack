@@ -6,9 +6,12 @@ export function mountSTT(panel) {
     <div class="row"><button data-stt="record">Gravar áudio</button><button data-stt="stop" disabled>Parar gravação</button>
     <label>Enviar arquivo WAV/áudio<input data-stt="file" type="file" accept="audio/wav,audio/webm,audio/ogg,audio/mp4,video/mp4"></label></div>
     <p data-stt="capture" role="status" aria-live="polite">Nenhum áudio selecionado.</p><audio data-stt="player" controls></audio>
-    <div class="row"><label>Modelo selecionado<select data-stt="model"><option value="fastconformer">Arandu FastConformer</option><option value="whisper_tiny">Whisper Tiny</option><option value="whisper_base">Whisper Base</option><option value="whisper_small">Whisper Small</option><option value="parakeet_ptbr_30s">Parakeet TDT V3 pt-BR 30s</option><option value="parakeet_tagarela">Parakeet TAGARELA pt-BR</option><option value="orukeet_int8" selected>Orukeet INT8</option><option value="granite_turboctc_q4">Granite TurboCTC Q4_K_M</option><option value="parakeet_ultra_q8">Parakeet Ultra Q8_0</option><option value="parakeet_ultra_q4">Parakeet Ultra Q4_K_M</option><option value="phonon_2_5">Phonon 2.5</option><option value="nemotron_unified_0_6b">Nemotron Unified ASR 0.6B</option></select></label>
+    <div class="row"><label>Modelo selecionado<select data-stt="model"><option value="fastconformer">Arandu FastConformer</option><option value="whisper_tiny">Whisper Tiny</option><option value="whisper_base">Whisper Base</option><option value="whisper_small">Whisper Small</option><option value="parakeet_ptbr_30s">Parakeet TDT V3 pt-BR 30s</option><option value="parakeet_tagarela">Parakeet TAGARELA pt-BR</option><option value="orukeet_int8" selected>Orukeet INT8</option><option value="granite_turboctc_q4">Granite TurboCTC Q4_K_M</option><option value="parakeet_ultra_q8">Parakeet Ultra Q8_0</option><option value="parakeet_ultra_q4">Parakeet Ultra Q4_K_M</option><option value="phonon_2_5">Phonon 2.5</option><option value="nemotron_unified_0_6b">Nemotron Unified ASR 0.6B</option><option value="whisper_cpp_small">Whisper Small — whisper.cpp</option><option value="whisper_cpp_medium">Whisper Medium — whisper.cpp</option></select></label>
+    <span data-stt="languageBadge">Idioma: Português — fixo</span>
     <label>Variante FastConformer<select data-stt="variant"><option value="adapted">Adaptado</option><option value="original">Original</option></select></label>
     <label>Threads<select data-stt="threads"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
+    <label>Repetições<select data-stt="repetitions"><option value="1" selected>1x</option><option value="3">3x (warm)</option><option value="5">5x (warm)</option><option value="10">10x (warm)</option></select></label>
+    <label>Ordenar comparação<select data-stt="sort"><option value="order" selected>Ordem de execução</option><option value="wer">Menor WER</option><option value="cer">Menor CER</option><option value="p50">Menor latência P50</option><option value="p95">Menor latência P95</option><option value="ram">Menor RAM</option></select></label>
     <label>Correção neste teste<select data-stt="profile"><option value="">Padrão do motor</option><option value="raw">RAW</option><option value="normalize_only">Somente normalização</option><option value="full">Completa</option></select></label>
     <label>Perfil Nemotron<select data-stt="nemotronProfile"><option value="offline">Offline</option><option value="precision">Precisão (560/560ms)</option><option value="balanced">Balanceado (160/400ms)</option><option value="fast">Rápido (80/160ms)</option><option value="experimental">Experimental (80/80ms)</option></select></label></div>
     <fieldset><legend>Processamento acústico (somente teste no Lab)</legend>
@@ -26,15 +29,15 @@ export function mountSTT(panel) {
     <label>Entidade falada (opcional; trecho exato para avaliar o alvo)<input data-stt="entityReference" maxlength="128"></label>
     <fieldset><legend>Modelos para comparação sequencial</legend><div data-stt="models"></div></fieldset>
     <div class="row"><button data-stt="refresh">Verificar modelos</button><button data-stt="install">Baixar modelo selecionado</button><button data-stt="remove">Remover modelo selecionado</button>
-    <button class="primary" data-stt="test">Transcrever com modelo selecionado</button><button data-stt="compare">Comparar modelos</button></div>
+    <button class="primary" data-stt="test">Transcrever com modelo selecionado</button><button data-stt="compare">Comparar modelos</button><button data-stt="cancel" disabled>Cancelar teste</button></div>
     <p data-stt="status" role="status" aria-live="polite">Configure o endpoint Arandu Stack na integração para conectar.</p>
     <p data-stt="active"></p><div data-stt="inventory"></div><div data-stt="results" class="scroll"></div>
     <p data-stt="summary"></p><div class="row"><button data-stt="apply">Usar este modelo no Assist</button><button data-stt="json">Exportar JSON</button>
     <button data-stt="csv">Exportar CSV</button><button data-stt="clear">Limpar histórico de testes</button></div>`;
   const $=id=>section.querySelector(`[data-stt="${id}"]`);
   let blob=null,url=null,stream=null,recorder=null,timer=null,ticker=null,disposed=false,busy=false,recording=false,stoppedAt=null,rows=[],last=null,inventory=null,poll=null;
-  const names={fastconformer:'Arandu FastConformer',whisper_tiny:'Whisper Tiny',whisper_base:'Whisper Base',whisper_small:'Whisper Small',parakeet_ptbr_30s:'Parakeet TDT V3 pt-BR 30s',parakeet_tagarela:'Parakeet TAGARELA pt-BR',orukeet_int8:'Orukeet INT8',granite_turboctc_q4:'Granite TurboCTC Q4_K_M',parakeet_ultra_q8:'Parakeet Ultra Q8_0',parakeet_ultra_q4:'Parakeet Ultra Q4_K_M',phonon_2_5:'Phonon 2.5',nemotron_unified_0_6b:'Nemotron Unified ASR 0.6B'};
-  const states={not_installed:'Não instalado',downloading:'Baixando',verifying:'Verificando',installed:'Instalado',loading:'Carregando',ready:'Pronto',error:'Erro'};
+  const names={fastconformer:'Arandu FastConformer',whisper_tiny:'Whisper Tiny',whisper_base:'Whisper Base',whisper_small:'Whisper Small',parakeet_ptbr_30s:'Parakeet TDT V3 pt-BR 30s',parakeet_tagarela:'Parakeet TAGARELA pt-BR',orukeet_int8:'Orukeet INT8',granite_turboctc_q4:'Granite TurboCTC Q4_K_M',parakeet_ultra_q8:'Parakeet Ultra Q8_0',parakeet_ultra_q4:'Parakeet Ultra Q4_K_M',phonon_2_5:'Phonon 2.5',nemotron_unified_0_6b:'Nemotron Unified ASR 0.6B',whisper_cpp_small:'Whisper Small — whisper.cpp',whisper_cpp_medium:'Whisper Medium — whisper.cpp'};
+  const states={not_installed:'Não instalado',downloading:'Baixando',verifying:'Verificando',installed:'Instalado',loading:'Carregando',ready:'Pronto',cancelled:'Cancelado',error:'Erro'};
   for(const [id,name] of Object.entries(names)){
     const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=id;input.checked=['fastconformer','whisper_base'].includes(id);
     label.append(input,document.createTextNode(' '+name));$('models').append(label);
@@ -44,6 +47,8 @@ export function mountSTT(panel) {
   function controls(){
     section.querySelectorAll('button,input,select').forEach(node=>node.disabled=busy||recording);
     $('stop').disabled=!recording;
+    if($('cancel'))$('cancel').disabled=!busy;
+    if($('sort')&&!recording)$('sort').disabled=false;
   }
   async function task(fn){
     if(busy||recording)return;
@@ -59,11 +64,22 @@ export function mountSTT(panel) {
     inventory=await panel.call('stt_models',{variant:$('variant').value});
     if(disposed)return;
     const active=inventory.active;
-    $('active').textContent=active?`Assist ativo: ${names[active.model]||active.model} · ${active.model==='fastconformer'?active.variant:'multilíngue'} · ${active.backend} · CPU ${active.compute} · ${active.threads} threads · ${active.process_rss_mb.toFixed(0)} MiB · última inferência ${panel.duration(active.recent?.inference_ms)}`:'STT de produção parado ou sem confirmação de prontidão.';
+    const activeRss=typeof active?.process_rss_mb==='number'?active.process_rss_mb.toFixed(0)+' MiB':'N/D';
+    $('active').textContent=active?`Assist ativo: ${names[active.model]||active.model} · ${active.model==='fastconformer'?active.variant:'Português — fixo'} · ${active.backend} · CPU ${active.compute} · ${active.threads} threads · ${activeRss} · última inferência ${panel.duration(active.recent?.inference_ms)}`:'STT de produção parado ou sem confirmação de prontidão.';
     $('inventory').replaceChildren();
-    for(const model of inventory.models){const line=document.createElement('p');line.textContent=`${model.name}${model.download_bytes?' · download '+(model.download_bytes/1000000).toFixed(0)+' MB':''}: ${states[model.state]||model.state}${model.error?' · '+model.error:''}`;$('inventory').append(line);}
+    for(const model of inventory.models){
+      const line=document.createElement('p');
+      const dlInfo=model.state==='downloading'&&typeof model.percent==='number'?` · ${model.percent.toFixed(1)}% (${((model.bytes_downloaded||0)/1e6).toFixed(1)}/${((model.total_bytes||model.download_bytes||0)/1e6).toFixed(1)} MB)`:'';
+      const rtNote=model.runtime_available===false&&model.runtime_note?` · ${model.runtime_note}`:'';
+      line.textContent=`${model.name}${model.runtime?' · '+model.runtime:''} · ${model.language_label||'Português — fixo'}${model.download_bytes?' · download '+(model.download_bytes/1000000).toFixed(0)+' MB':''}: ${states[model.state]||model.state}${dlInfo}${rtNote}${model.error?' · '+model.error:''}`;
+      if(model.state==='downloading'){
+        const bar=document.createElement('progress');bar.max=100;if(typeof model.percent==='number')bar.value=model.percent;
+        line.append(' ',bar);
+      }
+      $('inventory').append(line);
+    }
     clearTimeout(poll);
-    if(inventory.models.some(model=>['downloading','verifying'].includes(model.state))){status('Baixando pesos. Você pode acompanhar o estado aqui.');poll=setTimeout(()=>refresh().catch(e=>status(e.message,true)),2000);}
+    if(inventory.models.some(model=>['downloading','verifying'].includes(model.state))){status('Baixando pesos. Você pode acompanhar o estado e o progresso aqui.');poll=setTimeout(()=>refresh().catch(e=>status(e.message,true)),2000);}
     else status('Modelos consultados. Testes não alteram o Assist.');
   }
   $('record').onclick=async()=>{
@@ -92,12 +108,47 @@ export function mountSTT(panel) {
   function render(){
     $('results').replaceChildren();
     if(!rows.length){$('summary').textContent='Nenhum teste no histórico desta sessão.';return;}
+    const list=[...(last?.results||[])];
+    const sortBy=$('sort')?.value||'order';
+    const metricVal=row=>{
+      const st=row.inference_stats;
+      if(sortBy==='wer')return row.quality?.evaluated?row.quality.wer_final:Infinity;
+      if(sortBy==='cer')return row.quality?.evaluated?row.quality.cer_final:Infinity;
+      if(sortBy==='p50')return Number.isFinite(st?.p50_ms)?st.p50_ms:(Number.isFinite(row.inference_ms)?row.inference_ms:Infinity);
+      if(sortBy==='p95')return Number.isFinite(st?.p95_ms)?st.p95_ms:(Number.isFinite(row.inference_ms)?row.inference_ms:Infinity);
+      if(sortBy==='ram')return Number.isFinite(row.process_rss_mb)?row.process_rss_mb:Infinity;
+      return 0;
+    };
+    if(sortBy!=='order')list.sort((a,b)=>metricVal(a)-metricVal(b));
+    const readyRows=list.filter(r=>r.state==='ready'&&Number.isFinite(r.inference_stats?.p50_ms??r.inference_ms));
+    const fastestModel=readyRows.length>=2?readyRows.reduce((best,r)=>((r.inference_stats?.p50_ms??r.inference_ms)<(best.inference_stats?.p50_ms??best.inference_ms)?r:best),readyRows[0]).model:null;
+    const evalRows=readyRows.filter(r=>r.quality?.evaluated);
+    const accurateModel=evalRows.length>=2?evalRows.reduce((best,r)=>{
+      if(r.quality.wer_final!==best.quality.wer_final)return r.quality.wer_final<best.quality.wer_final?r:best;
+      if(r.quality.cer_final!==best.quality.cer_final)return r.quality.cer_final<best.quality.cer_final?r:best;
+      return (r.inference_stats?.p50_ms??r.inference_ms)<(best.inference_stats?.p50_ms??best.inference_ms)?r:best;
+    },evalRows[0]).model:null;
     const table=document.createElement('table'),head=document.createElement('tr');
-    for(const name of ['Modelo','RAW','Corrigida','Inferência','Carregamento','Total do teste','Lexical','WER RAW / FINAL','CER RAW / FINAL','Estado']){const th=document.createElement('th');th.textContent=name;head.append(th);}table.append(head);
-    for(const row of last?.results||[]){
-      const tr=document.createElement('tr'),q=row.quality;
-      const values=[names[row.model],row.raw_transcript??'—',row.final_transcript??'—',panel.duration(row.inference_ms),panel.duration(row.model_load_ms),panel.duration(row.request_total_ms),panel.duration(row.lexical_ms),
-        q?.evaluated?`${q.wer_raw.toFixed(3)} / ${q.wer_final.toFixed(3)}`:'Não avaliado',q?.evaluated?`${q.cer_raw.toFixed(3)} / ${q.cer_final.toFixed(3)}`:'Não avaliado',row.error||states[row.state]];
+    for(const name of ['Modelo','RAW','Corrigida','Exact match','WER RAW / Final','CER RAW / Final','Edições S/I/D','Carregamento','Inferência P50','P95','Min / Méd / Máx / DP','Total do teste (D/P/V/L)','RTF','RAM','Estado']){const th=document.createElement('th');th.textContent=name;head.append(th);}table.append(head);
+    for(const row of list){
+      const tr=document.createElement('tr'),q=row.quality,st=row.inference_stats;
+      const tags=[];
+      if(fastestModel&&row.model===fastestModel)tags.push('Mais rápido');
+      if(accurateModel&&row.model===accurateModel)tags.push('Mais preciso');
+      const modelLabel=`${names[row.model]||row.model}${row.backend?' ('+row.backend+')':''}${tags.length?' ['+tags.join(', ')+']':''}`;
+      const p50=st?.p50_ms??row.inference_ms;
+      const p95Text=st?.repetitions>=2?panel.duration(st.p95_ms):'—';
+      const statsText=st?`${panel.duration(st.min_ms)} / ${panel.duration(st.mean_ms)} / ${panel.duration(st.max_ms)} / ${panel.duration(st.stdev_ms)}`:'—';
+      const breakdownText=`${panel.duration(row.request_total_ms)} (${panel.duration(row.audio_decode_ms)} / ${panel.duration(row.preprocess_ms)} / ${panel.duration(row.vad_ms)} / ${panel.duration(row.lexical_ms)})`;
+      const werText=q?.evaluated?`${q.wer_raw.toFixed(3)} / ${q.wer_final.toFixed(3)}`:(q?.precision_status||'Precisão não mensurável');
+      const cerText=q?.evaluated?`${q.cer_raw.toFixed(3)} / ${q.cer_final.toFixed(3)}`:(q?.precision_status||'Precisão não mensurável');
+      const editsText=q?.evaluated?`${q.substitutions??0}S / ${q.insertions??0}I / ${q.deletions??0}D`:'—';
+      const exactText=q?.evaluated?(q.exact_match_final?'Sim':'Não'):'Não avaliado';
+      const values=[modelLabel,row.raw_transcript??'—',row.final_transcript??'—',exactText,werText,cerText,editsText,
+        panel.duration(row.cold_load_ms??row.model_load_ms),panel.duration(p50),p95Text,statsText,breakdownText,
+        Number.isFinite(row.realtime_factor)?row.realtime_factor.toFixed(3):'—',
+        typeof row.process_rss_mb==='number'?row.process_rss_mb.toFixed(1)+' MiB':'—',
+        row.error||(states[row.state]||row.state)];
       for(const value of values){const td=document.createElement('td');td.textContent=value;tr.append(td);}table.append(tr);
     }
     $('results').append(table);
@@ -113,6 +164,7 @@ export function mountSTT(panel) {
     if(!blob)throw Error('Grave ou envie um áudio primeiro');
     const bytes=new Uint8Array(await blob.arrayBuffer());let encoded='';for(let i=0;i<bytes.length;i+=8192)encoded+=String.fromCharCode(...bytes.subarray(i,i+8192));
     const models=[...$('models').querySelectorAll('input:checked')].map(input=>input.value);
+    const repetitions=Number($('repetitions')?.value||1);
     const preset=$('preset').value;
     const audioProcessing=preset==='custom'?{
       vad_enabled:$('vadEnabled').checked,
@@ -125,7 +177,7 @@ export function mountSTT(panel) {
       vad_min_silence_ms:Number($('vadMinSilence').value)
     }:undefined;
     const started=performance.now();last=await panel.call(compare?'stt_compare':'stt_test',{audio:btoa(encoded),stt_model:$('model').value,
-      variant:$('variant').value,models,threads:Number($('threads').value),profile:$('profile').value||null,
+      variant:$('variant').value,models,threads:Number($('threads').value),repetitions,warmup:repetitions>1,profile:$('profile').value||null,
       preset,audio_processing:audioProcessing,nemotron_profile:$('nemotronProfile').value,
       reference:$('reference').value,entity_reference:$('entityReference').value});
     if(last.processed_wav_b64){
@@ -137,9 +189,11 @@ export function mountSTT(panel) {
     last.stop_to_transcript_ms=stoppedAt===null?null:performance.now()-stoppedAt;
     last.browser_wait_before_send_ms=stoppedAt===null?null:started-stoppedAt;
     last.transport_and_orchestration_ms=Math.max(0,last.browser_request_ms-last.request_total_ms);
-    last.reference=$('reference').value;for(const row of last.results)Object.assign(row,{reference:last.reference,entity_reference:$('entityReference').value,browser_request_ms:last.browser_request_ms,stop_to_transcript_ms:last.stop_to_transcript_ms,browser_wait_before_send_ms:last.browser_wait_before_send_ms,transport_and_orchestration_ms:last.transport_and_orchestration_ms});rows.push(...last.results);rows=rows.slice(-200);render();
-    status('Teste concluído. O Assist mantém o modelo de produção.');
+    last.reference=$('reference').value;for(const row of last.results||[])Object.assign(row,{reference:last.reference,entity_reference:$('entityReference').value,browser_request_ms:last.browser_request_ms,stop_to_transcript_ms:last.stop_to_transcript_ms,browser_wait_before_send_ms:last.browser_wait_before_send_ms,transport_and_orchestration_ms:last.transport_and_orchestration_ms});rows.push(...(last.results||[]));rows=rows.slice(-200);render();
+    status(last.cancelled?'Teste cancelado pelo usuário. O Assist mantém o modelo de produção.':'Teste concluído. O Assist mantém o modelo de produção.');
   }
+  $('sort').onchange=()=>render();
+  $('cancel').onclick=async()=>{$('cancel').disabled=true;status('Cancelando benchmark STT…');try{await panel.call('stt_cancel',{});}catch(e){status(e.message||String(e),true);}};
   $('test').onclick=()=>task(()=>transcribe(false));$('compare').onclick=()=>task(()=>transcribe(true));
   $('apply').onclick=()=>task(async()=>{
     await refresh();const model=$('model').value,variant=$('variant').value;
@@ -150,8 +204,9 @@ export function mountSTT(panel) {
   function download(format){
     if(!rows.length){status('Execute um teste antes de exportar.',true);return;}
     const safe=value=>{let text=String(value??'');if(/^[=+@-]/.test(text.trimStart())||/^[\t\r\n]/.test(text))text="'"+text;return '"'+text.replaceAll('"','""')+'"';};
-    const keys=['model','variant','revision','backend','device','compute','threads','profile','state','error','entity_reference','raw_transcript','final_transcript','inference_ms','model_load_ms','lexical_ms','audio_duration_ms','audio_decode_ms','queue_ms','request_total_ms','realtime_factor','process_rss_mb','audio_sha256','reference','browser_request_ms','stop_to_transcript_ms','browser_wait_before_send_ms','transport_and_orchestration_ms','wer_raw','wer_final','cer_raw','cer_final','action_correct_raw','action_correct_final','negation_preserved_raw','negation_preserved_final','entity_correct_raw','entity_correct_final'];
-    const data=format==='json'?JSON.stringify({last,history:rows},null,2):[keys.join(','),...rows.map(row=>keys.map(key=>safe(row[key]??row.quality?.[key])).join(','))].join('\r\n');
+    const keys=['model','variant','revision','backend','language','device','compute','threads','repetitions','profile','state','error_code','error','entity_reference','raw_transcript','final_transcript','cold_load_ms','model_load_ms','warmup_ms','inference_ms','p50_ms','p95_ms','min_ms','mean_ms','max_ms','stdev_ms','lexical_ms','preprocess_ms','vad_ms','audio_duration_ms','audio_decode_ms','queue_ms','total_ms','request_total_ms','realtime_factor','process_rss_mb','audio_sha256','reference','browser_request_ms','stop_to_transcript_ms','browser_wait_before_send_ms','transport_and_orchestration_ms','exact_match_raw','exact_match_final','wer_raw','wer_final','cer_raw','cer_final','substitutions','insertions','deletions','action_correct_raw','action_correct_final','negation_preserved_raw','negation_preserved_final','entity_correct_raw','entity_correct_final'];
+    const payload={exported_at:new Date().toISOString(),language:'pt',language_fixed:true,last,history:rows};
+    const data=format==='json'?JSON.stringify(payload,null,2):[keys.join(','),...rows.map(row=>keys.map(key=>safe(row[key]??row.inference_stats?.[key]??row.quality?.[key])).join(','))].join('\r\n');
     const href=URL.createObjectURL(new Blob([data],{type:format==='json'?'application/json':'text/csv;charset=utf-8'})),link=document.createElement('a');link.href=href;link.download='arandu-stt.'+format;link.click();setTimeout(()=>URL.revokeObjectURL(href),1000);
   }
   $('json').onclick=()=>download('json');$('csv').onclick=()=>download('csv');

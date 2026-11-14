@@ -11,6 +11,8 @@ App **5.0.1**, STT **4.0.1**, integração HACS **6.0.1**. O STT permanece inalt
 | `whisper_tiny` | [Systran/faster-whisper-tiny](https://huggingface.co/Systran/faster-whisper-tiny) | MIT |
 | `whisper_base` | [Systran/faster-whisper-base](https://huggingface.co/Systran/faster-whisper-base) | MIT |
 | `whisper_small` | [Systran/faster-whisper-small](https://huggingface.co/Systran/faster-whisper-small) | MIT |
+| `whisper_cpp_small` | [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp) (`ggml-small.bin`, whisper.cpp v1.9.5) | MIT |
+| `whisper_cpp_medium` | [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp) (`ggml-medium.bin`, whisper.cpp v1.9.5) | MIT |
 | `parakeet_ptbr_30s` | [alefiury/parakeet-tdt-v3-ptBR-30s-onnx](https://huggingface.co/alefiury/parakeet-tdt-v3-ptBR-30s-onnx), FP32, onnx-asr | CC BY 4.0 |
 | `parakeet_tagarela` | [alefiury/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx](https://huggingface.co/alefiury/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx), FP32, onnx-asr | CC BY 4.0 |
 | `orukeet_int8` | [oruk/orukeet](https://huggingface.co/oruk/orukeet), transducer INT8, sherpa-onnx | CC BY-SA 4.0 |
@@ -24,7 +26,7 @@ Whisper usa CPU INT8, português, uma transcrição por vez, beam 1, temperatura
 
 ## Novos motores: instalação e runtime
 
-Os oito IDs usam as mesmas rotas, seletores, cache e aplicação confirmada. A configuração antiga `whisper_profile` continua sendo o perfil de produção dos motores de vocabulário aberto; seu nome foi preservado para compatibilidade. Configurações antigas não são substituídas nem promovidas automaticamente. Apenas FastConformer usa `model_variant=adapted|original`.
+Os modelos instalados usam as mesmas rotas, seletores, cache e aplicação confirmada. A configuração antiga `whisper_profile` continua sendo o perfil de produção dos motores de vocabulário aberto; seu nome foi preservado para compatibilidade. Configurações antigas não são substituídas nem promovidas automaticamente. Apenas FastConformer usa `model_variant=adapted|original`.
 
 | ID | Download previsto | Revisão dos pesos |
 |---|---:|---|
@@ -32,6 +34,27 @@ Os oito IDs usam as mesmas rotas, seletores, cache e aplicação confirmada. A c
 | `parakeet_tagarela` | 2.550 MB | `47586335c0b00ba273205f0ed3ef5a2cd651c143` |
 | `orukeet_int8` | 487 MB; 672 MB extraídos | `55a984d46f68323301837194ce647c702f55facc` |
 | `granite_turboctc_q4` | 279 MB | `88845afaa7beadca4b9ec545df0dd7332349ab88` |
+| `whisper_cpp_small` | 488 MB | `5359861c739e955e79d9a303bcbc70fb988958b1` |
+| `whisper_cpp_medium` | 1.534 MB | `5359861c739e955e79d9a303bcbc70fb988958b1` |
+
+### Runtime whisper.cpp (v11.4.0)
+
+`whisper_cpp_small` (`ggml-small.bin`, SHA-256 `1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b`) e `whisper_cpp_medium` (`ggml-medium.bin`, SHA-256 `6c14d5adee5f86394037b4e4e8b59f1673b6cee10e3cf0b11bbdbee79c156208`) executam sobre **whisper.cpp `v1.9.5`** (commit `d1be6fde11ac6e0407606b4e42fe72d34add8037`), compilado estaticamente na imagem Docker (`/usr/local/bin/whisper-server` e `/usr/local/bin/whisper-cli`) com `-DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DGGML_AVX512=OFF` (alinhado ao estágio `llama.cpp`, habilitando `SSE4.2`, `AVX`, `AVX2`, `BMI2`, `FMA` e `F16C` compatíveis com Intel i5-6500T e `amd64`, mantendo `AVX512` desativado). O modelo legado `whisper_small` (`faster-whisper`) permanece preservado e utilizável lado a lado para comparação.
+
+- **Idioma fixo em português (`pt`):** `--language pt`, `--beam-size 1`, `--best-of 1`, `translate=false`, `detect_language=false`, `temperature=0.0`, `--no-gpu`, `--no-fallback`, `--no-timestamps` e `--max-context 0`. Tentativas de alteração para `auto`, outro idioma ou tradução são rejeitadas no backend e no controle.
+- **Execução persistente aquecida (`whisper-server`):** O processo local `whisper-server` escuta exclusivamente em `127.0.0.1` em porta efêmera; o AI Lab suporta `1`, `3`, `5` ou `10` repetições com warm-up opcional (excluído das estatísticas) sem recarregar pesos entre execuções, reportando carga fria (`cold_load_ms`), `min_ms`, `mean_ms`, `p50_ms`, `p95_ms`, `max_ms`, `stdev_ms`, edições S/I/D (`substitutions`, `insertions`, `deletions`), Exact Match, RTF e RSS somando toda a árvore de processos (`whisper-server` + worker).
+- **Resiliência e cancelamento:** `POST /api/stt/cancel` encerra o benchmark e subprocessos filhos em andamento sem alterar o STT ativo do Assist. Downloads publicam progresso em bytes/percentual (`.install-<modelo>.json`), verificam tamanho exato e SHA-256 e identificam caches parciais como incompletos.
+
+#### Smoke real em container Docker (`arandu:preflight`, v11.4.0)
+
+Medição controlada em container Linux (`python:3.12-slim-bookworm`, Docker Desktop Linux, 2 threads CPU configuradas, `beam_size=1`, `best_of=1`) sobre amostra WAV mono 16 kHz sintetizada pelo Microsoft Maria Desktop PT-BR (`2.497 ms`, `"Liga a luz da sala"`, SHA-256 PCM `a55c4fd063a0677f008344457b82bddacefd62bbaaff10ebe1b740cbcc26124d`). Não é gravação humana nem medição direta no Intel i5-6500T de produção. Sem AVX/AVX2 (build inicial SSE3/SSSE3 apenas), `whisper_cpp_small` levou ~`48.371 ms` e `whisper_cpp_medium` excedeu o timeout de `360 s`; com o build padrão da release (`AVX`/`AVX2`/`FMA`/`F16C`/`BMI2` habilitados), os valores medidos com pesos reais do Hugging Face foram:
+
+| Modelo | Carga fria | Warm-up | Repetições warm (`3x`) P50 / Média / Mín / Máx / DP | RTF | RSS processo+filho | Transcrição / WER / CER |
+|---|---:|---:|---|---:|---:|---|
+| `whisper_cpp_small` | `2.448,5 ms` | `4.015,7 ms` | `4.017,4` / `4.020,1` / `3.993,3` / `4.049,7` / `23,1 ms` | `1,609` | `689,8 MiB` | `"Liga a luz da sala."` · WER `0,0` · CER `0,0` (`0S/0I/0D`) |
+| `whisper_cpp_medium` | `9.156,3 ms` | `12.896,9 ms` | `13.056,4` / `13.000,2` / `12.868,2` / `13.076,1` / `93,7 ms` | `5,229` | `1.829,8 MiB` | `"Liga a luz da sala."` · WER `0,0` · CER `0,0` (`0S/0I/0D`) |
+
+Verificado também `ORPHAN_WHISPER_SERVER: []` após a execução e `13` eventos de progresso incremental em bytes durante o download real de `ggml-small.bin` (`487.601.967` bytes, `24,54 s`).
 
 MB decimais. O catálogo expõe tamanho previsto, arquivos obrigatórios, arquitetura, runtime, licença, revisão, hashes conhecidos, tamanho instalado e prontidão. A interface mostra o download antes da instalação. Pré-verificação reserva download + arquivos instalados + 256 MB; uma substituição conserva a cópia anterior até a promoção. Falhas preservam os outros modelos.
 

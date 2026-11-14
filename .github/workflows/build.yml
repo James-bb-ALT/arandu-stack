@@ -54,6 +54,7 @@ jobs:
             tests/test_llm_conversation_delivery.py \
             tests/test_ai_lab_hotfix_regressions.py \
             tests/test_stt_multimodel.py \
+            tests/test_whisper_cpp_backend.py \
             tests/test_stt_residency.py \
             tests/test_stt_v11_3_vad_webrtc.py \
             tests/test_pipeline_universal_v11_2.py \

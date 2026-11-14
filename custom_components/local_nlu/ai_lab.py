@@ -129,9 +129,11 @@ class Lab:
         if command=='llm_apply':
             if payload.get('confirm') is not True:raise ValueError('Confirmação explícita necessária')
             return await local_request(session,llm_worker,'/api/llm/apply',payload={'model':payload.get('llm_model'),'confirm':True},timeout=180)
-        if command in {'transcribe', 'stt_models', 'stt_test', 'stt_compare', 'stt_install', 'stt_apply', 'stt_remove'}:
+        if command in {'transcribe', 'stt_models', 'stt_test', 'stt_compare', 'stt_install', 'stt_apply', 'stt_remove', 'stt_cancel'}:
             if not stack_endpoint:
                 raise ValueError('Configure o endpoint Arandu Stack nas opções da integração')
+            if command == 'stt_cancel':
+                return await local_request(session, stack_endpoint, '/api/stt/cancel', payload={}, timeout=15)
             if command == 'stt_models':
                 variant = payload.get('variant', 'adapted')
                 if variant not in ('adapted', 'original'):
@@ -147,13 +149,16 @@ class Lab:
                 'fastconformer', 'whisper_tiny', 'whisper_base', 'whisper_small',
                 'parakeet_ptbr_30s', 'parakeet_tagarela', 'orukeet_int8', 'granite_turboctc_q4',
                 'parakeet_ultra_q8', 'parakeet_ultra_q4', 'phonon_2_5', 'nemotron_unified_0_6b',
+                'whisper_cpp_small', 'whisper_cpp_medium',
             }
             if type(model) is not str or model not in allowed or variant not in ('original', 'adapted'):
                 raise ValueError('Modelo STT inválido')
+            if payload.get('language') not in (None, 'pt') or payload.get('translate') is True or payload.get('detect_language') is True:
+                raise ValueError('Idioma fixo em português (pt); tradução e detecção automática não são permitidas')
             body = {'model': model, 'variant': variant}
             for key in (
                 'audio', 'models', 'threads', 'profile', 'reference', 'entity_reference',
-                'confirm', 'preset', 'audio_processing', 'nemotron_profile',
+                'confirm', 'preset', 'audio_processing', 'nemotron_profile', 'repetitions', 'warmup',
             ):
                 if key in payload:
                     body[key] = payload[key]
@@ -164,12 +169,12 @@ class Lab:
                 decoded = base64.b64decode(audio, validate=True)
                 if not 1 <= len(decoded) <= 1_400_000:
                     raise ValueError('Áudio vazio ou excedeu 1,4 MB')
-                if action == 'compare' and (type(body.get('models')) is not list or not 1 <= len(body['models']) <= 12 or any(type(m) is not str or m not in allowed for m in body['models'])):
-                    raise ValueError('Selecione 1–12 modelos STT válidos')
+                if action == 'compare' and (type(body.get('models')) is not list or not 1 <= len(body['models']) <= 14 or any(type(m) is not str or m not in allowed for m in body['models'])):
+                    raise ValueError('Selecione 1–14 modelos STT válidos')
             if self.lock.locked():
                 raise ValueError('Laboratório ocupado; aguarde')
             async with self.lock:
-                result = await local_request(session, stack_endpoint, '/api/stt/' + action, payload=body, timeout=780)
+                result = await local_request(session, stack_endpoint, '/api/stt/' + action, payload=body, timeout=1200)
             if command == 'transcribe':
                 row = result['results'][0]
                 if row.get('state') != 'ready':

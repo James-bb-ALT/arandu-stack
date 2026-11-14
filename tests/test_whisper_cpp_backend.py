@@ -360,9 +360,11 @@ class SttProcessingAndLabBenchmarkTests(unittest.IsolatedAsyncioTestCase):
                 'pcm': base64.b64encode((np.sin(np.linspace(0, 10, 3200)) * 5000).astype('<i2').tobytes()).decode(),
             }
             fake_resolver = SimpleNamespace(apply=lambda raw, profile: {'text': raw, 'changes': []})
+            fake_contextual = ModuleType('contextual_lexical')
+            fake_contextual.ContextualResolver = Mock(return_value=fake_resolver)
             with patch('lab_worker.verify', return_value={'revision': catalog.CATALOG['whisper_cpp_small']['revision'], 'sha256': {}}), \
                  patch('backends.create_backend', return_value=fake_engine), \
-                 patch('contextual_lexical.ContextualResolver', return_value=fake_resolver), \
+                 patch.dict(sys.modules, {'contextual_lexical': fake_contextual}), \
                  patch('psutil.Process', return_value=parent_proc):
                 result = lab_worker.run(body)
 
@@ -405,14 +407,15 @@ class SttProcessingAndLabBenchmarkTests(unittest.IsolatedAsyncioTestCase):
                 return {'model': m, 'state': 'ready', 'inference_ms': 10.0, 'model_load_ms': 5.0, 'lexical_ms': 1.0, 'quality': {'evaluated': False}}
 
             lab.worker = fake_worker
-            out = await lab.test(
-                {
-                    'audio': base64.b64encode(_wav_bytes()).decode(),
-                    'models': ['whisper_cpp_small', 'whisper_cpp_medium'],
-                    'repetitions': 3,
-                },
-                compare=True,
-            )
+            with patch('stt_lab.decode_audio', AsyncMock(return_value=(b'\x01\x00' * 8000, 1.0))):
+                out = await lab.test(
+                    {
+                        'audio': base64.b64encode(_wav_bytes()).decode(),
+                        'models': ['whisper_cpp_small', 'whisper_cpp_medium'],
+                        'repetitions': 3,
+                    },
+                    compare=True,
+                )
             self.assertTrue(out['cancelled'])
             self.assertEqual(out['results'][0]['error_code'], 'cancelled')
             self.assertEqual(out['results'][1]['state'], 'cancelled')

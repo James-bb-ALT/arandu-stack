@@ -75,6 +75,19 @@ class SttDisabledError(RuntimeError):
     code = 'stt_disabled'
 
 
+def _process_tree_rss_bytes() -> int:
+    import os
+    import psutil
+    proc = psutil.Process(os.getpid())
+    total = proc.memory_info().rss
+    children_fn = getattr(proc, 'children', None)
+    if callable(children_fn):
+        for child in children_fn(recursive=True) or ():
+            with suppress(psutil.Error, AttributeError):
+                total += child.memory_info().rss
+    return total
+
+
 class Engine:
     def __init__(self, model_dir: Path, threads: int, model='fastconformer', variant='adapted', resident_policy='RESIDENT'):
         if resident_policy not in {'RESIDENT', 'LAZY', 'OFF'}:
@@ -107,13 +120,11 @@ class Engine:
             if self.backend is not None:
                 return self.backend
             from backends import create_backend
-            import os
-            import psutil
             self.state = 'loading'
             self.last_load_error = None
             try:
                 backend = create_backend(self.model, self.model_dir, self.threads).load()
-                if psutil.Process(os.getpid()).memory_info().rss > CATALOG[self.model]['memory_limit_mb'] * 1024**2:
+                if _process_tree_rss_bytes() > CATALOG[self.model]['memory_limit_mb'] * 1024**2:
                     backend.close()
                     self.state = 'degraded'
                     self.last_load_error = 'memory_pressure'
@@ -153,8 +164,6 @@ class Engine:
             self._lock.release()
 
     def metadata(self):
-        import os
-        import psutil
         from model_catalog import CATALOG
         manifest = self.manifest
         model_loaded = self.backend is not None
@@ -167,7 +176,7 @@ class Engine:
         else:
             state = self.state
         try:
-            rss_mb = psutil.Process(os.getpid()).memory_info().rss / 1048576
+            rss_mb = _process_tree_rss_bytes() / 1048576
         except Exception:
             rss_mb = None
         return {

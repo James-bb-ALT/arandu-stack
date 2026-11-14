@@ -321,14 +321,17 @@ async function renderSttManager(){
       const labels={not_installed:'Não instalado',installed:'Instalado',downloading:'Baixando',verifying:'Verificando',loading:'Carregando',ready:'Pronto',waiting_first_use:'Aguardando primeira transcrição',off:'Desativado (OFF)',error:'Erro'};
       for(const model of result.models){
         const line=el('div',undefined,'stt-model-row');
+        const progressMeta=model.state==='downloading'&&typeof model.percent==='number'?`${model.percent.toFixed(1)}% (${((model.bytes_downloaded||0)/1e6).toFixed(1)}/${((model.total_bytes||model.download_bytes||0)/1e6).toFixed(1)} MB)`:'';
         const meta=[
           model.name,
           model.runtime?`runtime ${model.runtime}`:'',
+          model.language_label||'Português — fixo',
           model.license||'',
           model.download_bytes?`download ${(model.download_bytes/1000000).toFixed(0)} MB`:'',
           model.estimated_ram_mb?`RAM est. ~${model.estimated_ram_mb} MB`:'',
           typeof model.load_ms==='number'?`carga ${model.load_ms.toFixed(0)} ms`:'',
           labels[model.state]||model.state,
+          progressMeta,
           model.error||''
         ].filter(Boolean).join(' · ');
         line.append(el('span',meta));

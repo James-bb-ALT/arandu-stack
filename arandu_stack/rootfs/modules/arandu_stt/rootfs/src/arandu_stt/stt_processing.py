@@ -35,6 +35,38 @@ def correct(resolver, raw, profile):
     return result
 
 
+def edit_operations(a, b):
+    """Return (substitutions, insertions, deletions) summing to Levenshtein distance."""
+    rows, cols = len(a), len(b)
+    dp = [[0] * (cols + 1) for _ in range(rows + 1)]
+    for i in range(rows + 1):
+        dp[i][0] = i
+    for j in range(cols + 1):
+        dp[0][j] = j
+    for i in range(1, rows + 1):
+        left = a[i - 1]
+        for j in range(1, cols + 1):
+            cost = 0 if left == b[j - 1] else 1
+            dp[i][j] = min(dp[i - 1][j - 1] + cost, dp[i - 1][j] + 1, dp[i][j - 1] + 1)
+    substitutions = insertions = deletions = 0
+    i, j = rows, cols
+    while i > 0 or j > 0:
+        if i > 0 and j > 0 and a[i - 1] == b[j - 1] and dp[i][j] == dp[i - 1][j - 1]:
+            i -= 1
+            j -= 1
+        elif i > 0 and j > 0 and dp[i][j] == dp[i - 1][j - 1] + 1:
+            substitutions += 1
+            i -= 1
+            j -= 1
+        elif i > 0 and dp[i][j] == dp[i - 1][j] + 1:
+            deletions += 1
+            i -= 1
+        else:
+            insertions += 1
+            j -= 1
+    return substitutions, insertions, deletions
+
+
 def distance(a, b):
     previous = list(range(len(b) + 1))
     for i, left in enumerate(a, 1):
@@ -47,20 +79,68 @@ def distance(a, b):
 
 def evaluate(reference, raw, final, entity_reference=None):
     if not reference or not normalized(reference):
-        return {'evaluated': False, 'entity_correct': None, 'action_correct': None, 'negation_preserved': None}
+        return {
+            'evaluated': False,
+            'precision_status': 'Precisão não mensurável',
+            'entity_correct': None,
+            'action_correct': None,
+            'negation_preserved': None,
+            'exact_match_raw': None,
+            'exact_match_final': None,
+            'substitutions': None,
+            'insertions': None,
+            'deletions': None,
+        }
     ref = normalized(reference)
-    result = {'evaluated': True, 'entity_correct': None,
-              'entity_note': 'Não avaliado: exige anotação de entidade; STT não executa NLU'}
+    ref_words = ref.split()
+    ref_chars = list(ref)
+    result = {
+        'evaluated': True,
+        'precision_status': 'Avaliado',
+        'entity_correct': None,
+        'entity_note': 'Não avaliado: exige anotação de entidade; STT não executa NLU',
+    }
     for label, text in [('raw', raw), ('final', final)]:
         value = normalized(text)
-        result['wer_' + label] = distance(ref.split(), value.split()) / len(ref.split())
-        result['cer_' + label] = distance(ref, value) / len(ref)
-        result['negation_preserved_' + label] = ('nao' in ref.split()) == ('nao' in value.split())
+        value_words = value.split()
+        value_chars = list(value)
+        sub_w, ins_w, del_w = edit_operations(ref_words, value_words)
+        sub_c, ins_c, del_c = edit_operations(ref_chars, value_chars)
+        dist_w = sub_w + ins_w + del_w
+        dist_c = sub_c + ins_c + del_c
+        result['wer_' + label] = dist_w / len(ref_words)
+        result['cer_' + label] = dist_c / len(ref_chars)
+        result['substitutions_' + label] = sub_w
+        result['insertions_' + label] = ins_w
+        result['deletions_' + label] = del_w
+        result['word_edits_' + label] = {
+            'substitutions': sub_w,
+            'insertions': ins_w,
+            'deletions': del_w,
+            'distance': dist_w,
+            'ref_words': len(ref_words),
+        }
+        result['char_edits_' + label] = {
+            'substitutions': sub_c,
+            'insertions': ins_c,
+            'deletions': del_c,
+            'distance': dist_c,
+            'ref_chars': len(ref_chars),
+        }
+        result['exact_match_' + label] = value == ref
+        result['negation_preserved_' + label] = ('nao' in ref_words) == ('nao' in value_words)
         result['action_correct_' + label] = action(value) == action(ref) if action(ref) else None
     if entity_reference and normalized(entity_reference):
         target = ' ' + normalized(entity_reference) + ' '
         for label, text in [('raw', raw), ('final', final)]:
             result['entity_correct_' + label] = target in (' ' + normalized(text) + ' ')
         result.update(entity_correct=result['entity_correct_final'], entity_note='Comparação literal com entidade anotada; não executa NLU')
-    result.update(action_correct=result['action_correct_final'], negation_preserved=result['negation_preserved_final'])
+    result.update(
+        action_correct=result['action_correct_final'],
+        negation_preserved=result['negation_preserved_final'],
+        substitutions=result['substitutions_final'],
+        insertions=result['insertions_final'],
+        deletions=result['deletions_final'],
+        exact_match=result['exact_match_final'],
+    )
     return result

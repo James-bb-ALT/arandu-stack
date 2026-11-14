@@ -15,12 +15,21 @@ RUN git init /transcribe && cd /transcribe && git remote add origin https://gith
 RUN cmake -S /transcribe -B /transcribe/build -DCMAKE_BUILD_TYPE=Release -DTRANSCRIBE_BUILD_SHARED=ON -DTRANSCRIBE_BUILD_TESTS=OFF -DTRANSCRIBE_BUILD_EXAMPLES=OFF -DTRANSCRIBE_X86_CONSERVATIVE=ON -DTRANSCRIBE_USE_SYSTEM_BLAS=OFF -DTRANSCRIBE_METAL=OFF -DGGML_NATIVE=OFF && cmake --build /transcribe/build --target transcribe -j 2
 RUN mkdir -p /runtime/lib /runtime/wheels && find /transcribe/build -name '*.so*' -exec cp -L {} /runtime/lib/ \; && cp /transcribe/LICENSE /transcribe/bindings/python/LICENSE && pip wheel --no-deps --wheel-dir /runtime/wheels /transcribe/bindings/python
 
+FROM python:3.12-slim-bookworm AS whisper_cpp_builder
+# Source only, pinned immutable upstream release tag v1.9.5; model weights are downloaded on demand.
+RUN apt-get update && apt-get install -y --no-install-recommends git cmake build-essential ca-certificates
+RUN git init /whisper && cd /whisper && git remote add origin https://github.com/ggml-org/whisper.cpp.git && git fetch --depth 1 origin d1be6fde11ac6e0407606b4e42fe72d34add8037 && git checkout FETCH_HEAD
+RUN cmake -S /whisper -B /whisper/build -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_IS_DEV=OFF -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DGGML_AVX512=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON -DWHISPER_BUILD_SERVER=ON && cmake --build /whisper/build --target whisper-server whisper-cli -j 2
+
 FROM python:3.12-slim-bookworm
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libstdc++6 ca-certificates ocl-icd-libopencl1 intel-opencl-icd clinfo && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir aiohttp==3.13.3 && pip install --no-cache-dir torch==2.9.1 --index-url https://download.pytorch.org/whl/cpu
 COPY --from=nlu_builder /build/engine/target/release/local-nlu /usr/bin/local-nlu
 COPY --from=llama /llama/build/bin/llama-server /usr/local/bin/llama-server
+COPY --from=whisper_cpp_builder /whisper/build/bin/whisper-server /usr/local/bin/whisper-server
+COPY --from=whisper_cpp_builder /whisper/build/bin/whisper-cli /usr/local/bin/whisper-cli
+RUN test -x /usr/local/bin/whisper-server && test -x /usr/local/bin/whisper-cli
 COPY --from=transcribe_builder /runtime/lib/ /usr/local/lib/
 COPY --from=transcribe_builder /runtime/wheels/ /opt/transcribe-wheels/
 RUN ldconfig

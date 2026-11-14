@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import shutil
 import tempfile
+import threading
 
 from model_download import ADAPTED_VERSION, ADAPTED_HASHES, ADAPTED_URL, ensure_model, sha256
 
@@ -140,7 +141,41 @@ CATALOG.update({'parakeet_ptbr_30s': {'name': 'Parakeet TDT V3 pt-BR 30s',
                            'estimated_ram_mb': 3600,
                            'experimental': True,
                            'download_bytes': 2507735040,
-                           'installed_bytes': 2507735040}})
+                           'installed_bytes': 2507735040},
+               'whisper_cpp_small': {'name': 'Whisper Small — whisper.cpp',
+                                     'repo': 'ggerganov/whisper.cpp',
+                                     'runtime': 'whisper.cpp',
+                                     'architecture': 'Whisper Multilingual Transformer',
+                                     'compute': 'fp16-ggml',
+                                     'license': 'MIT',
+                                     'revision': '5359861c739e955e79d9a303bcbc70fb988958b1',
+                                     'files': ['ggml-small.bin'],
+                                     'sha256': {'ggml-small.bin': '1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b'},
+                                     'file_sizes': {'ggml-small.bin': 487601967},
+                                     'download_bytes': 487601967,
+                                     'installed_bytes': 487601967,
+                                     'memory_limit_mb': 1800,
+                                     'estimated_ram_mb': 850,
+                                     'language': 'pt',
+                                     'language_fixed': True,
+                                     'language_label': 'Português — fixo'},
+               'whisper_cpp_medium': {'name': 'Whisper Medium — whisper.cpp',
+                                      'repo': 'ggerganov/whisper.cpp',
+                                      'runtime': 'whisper.cpp',
+                                      'architecture': 'Whisper Multilingual Transformer',
+                                      'compute': 'fp16-ggml',
+                                      'license': 'MIT',
+                                      'revision': '5359861c739e955e79d9a303bcbc70fb988958b1',
+                                      'files': ['ggml-medium.bin'],
+                                      'sha256': {'ggml-medium.bin': '6c14d5adee5f86394037b4e4e8b59f1673b6cee10e3cf0b11bbdbee79c156208'},
+                                      'file_sizes': {'ggml-medium.bin': 1533763059},
+                                      'download_bytes': 1533763059,
+                                      'installed_bytes': 1533763059,
+                                      'memory_limit_mb': 3200,
+                                      'estimated_ram_mb': 2100,
+                                      'language': 'pt',
+                                      'language_fixed': True,
+                                      'language_label': 'Português — fixo'}})
 for _id, _entry in CATALOG.items():
     _entry.setdefault("architecture", "CTC" if _id == "fastconformer" else "Whisper encoder-decoder")
     _entry.setdefault("compute", "int8")
@@ -192,7 +227,10 @@ def verify(root, model, variant='adapted'):
     pinned = CATALOG[model].get('revision')
     if pinned and manifest.get('revision') != pinned:
         raise ValueError('Revisão instalada difere do catálogo')
+    expected_sizes = CATALOG[model].get('file_sizes') or {}
     for name in required:
+        if name in expected_sizes and (directory / name).stat().st_size != expected_sizes[name]:
+            raise ValueError('Tamanho do arquivo inválido: ' + name)
         if CATALOG[model].get('sha256', {}).get(name) not in (None, hashes.get(name)):
             raise ValueError('Hash difere da origem pinada: ' + name)
         if not hashes.get(name) or sha256(directory / name) != hashes[name]:
@@ -221,7 +259,23 @@ def _runtime_status(model: str) -> tuple[bool, str | None]:
             return ok, None if ok else 'MODEL_RUNTIME_UNAVAILABLE: experimental sem NeMo isolado (/opt/venvs/nemotron)'
         except Exception as exc:
             return False, f'MODEL_RUNTIME_UNAVAILABLE: {exc}'
+    if CATALOG.get(model, {}).get('runtime') == 'whisper.cpp':
+        try:
+            from whisper_cpp_backend import is_whisper_cpp_runtime_available
+            ok = is_whisper_cpp_runtime_available()
+            return ok, None if ok else 'MODEL_RUNTIME_UNAVAILABLE: binário whisper-server ausente'
+        except Exception as exc:
+            return False, f'MODEL_RUNTIME_UNAVAILABLE: {exc}'
     return True, None
+
+
+def _emit_progress(progress, state: str, **payload):
+    if not progress:
+        return
+    try:
+        progress(state, **payload)
+    except TypeError:
+        progress(state)
 
 
 def describe(root, model, variant='adapted'):
@@ -229,19 +283,30 @@ def describe(root, model, variant='adapted'):
     runtime_ok, runtime_note = _runtime_status(model)
     result = {'id': model, **CATALOG[model], 'variant': variant if model == 'fastconformer' else None,
               'required_files': files(model, variant), 'ready': False, 'path': str(directory),
-              'state': 'not_installed', 'installed': False,
+              'state': 'not_installed', 'installed': False, 'incomplete': False,
+              'language': CATALOG[model].get('language', 'pt'),
+              'language_fixed': bool(CATALOG[model].get('language_fixed', True)),
+              'language_label': CATALOG[model].get('language_label', 'Português — fixo'),
               'runtime_available': runtime_ok, 'runtime_note': runtime_note}
     if model == 'fastconformer' and variant == 'adapted':
         result.update(download_bytes=456406182, installed_bytes=456406182, source_url=ADAPTED_URL, download_revision=ADAPTED_VERSION)
+    expected_sizes = CATALOG[model].get('file_sizes') or {}
+    install_marker = Path(root) / ('.install-' + model + '.json')
     try:
         # Inventory is cheap; full hashes are checked at installation/load, never every UI poll.
         required = files(model, variant)
         if all((directory / f).is_file() and (directory / f).stat().st_size for f in required):
-            manifest = json.loads((directory / 'manifest.json').read_text(encoding='utf-8'))
-            result.update(state='installed', installed=True, revision=manifest.get('revision') or manifest.get('version'),
-                          sha256=manifest.get('sha256'), load_validated=manifest.get('load_validated', False), size_bytes=sum((directory / f).stat().st_size for f in required))
+            size_mismatch = next((f for f in required if f in expected_sizes and (directory / f).stat().st_size != expected_sizes[f]), None)
+            if size_mismatch:
+                result.update(state='error', incomplete=True, error=f'Arquivo de modelo truncado ou corrompido ({size_mismatch}); reinstale o modelo')
+            else:
+                manifest = json.loads((directory / 'manifest.json').read_text(encoding='utf-8'))
+                result.update(state='installed', installed=True, revision=manifest.get('revision') or manifest.get('version'),
+                              sha256=manifest.get('sha256'), load_validated=manifest.get('load_validated', False), size_bytes=sum((directory / f).stat().st_size for f in required))
+        elif (directory.exists() and any(directory.iterdir())) or install_marker.is_file():
+            result.update(state='error', incomplete=True, error='Download ou instalação incompleta; reinstale o modelo')
     except (OSError, ValueError):
-        result.update(state='error', error='Manifesto ausente ou inválido; reinstale o modelo')
+        result.update(state='error', incomplete=True, error='Manifesto ausente ou inválido; reinstale o modelo')
     return result
 
 
@@ -284,23 +349,51 @@ def _install_locked(root, model, variant='adapted', *, progress=None, validator=
             revision = info.sha
             if not revision or not re.fullmatch(r'[0-9a-f]{40}', revision):
                 raise ValueError('Revisão Hugging Face inválida')
-            if entry.get('archive'):
-                from huggingface_hub import hf_hub_download
-                archive = Path(hf_hub_download(repo_id=repo, filename=entry['archive'], revision=revision, token=False, local_dir=str(stage_root/'download')))
-                if sha256(archive) != entry['archive_sha256']:
-                    raise ValueError('SHA256 do pacote inválido')
-                if progress: progress('verifying')
-                extract_archive(archive, stage, files(model, variant), entry.get('installed_bytes', 800_000_000) + 1_000_000)
-            else:
-                snapshot_download(repo_id=repo, revision=revision, token=False, allow_patterns=list(files(model, variant)), local_dir=str(stage))
-            if progress: progress('verifying')
+            total_bytes = int(entry.get('download_bytes') or 0)
+            stop_watch = threading.Event()
+            def _watch_download():
+                last_bytes = -1
+                while not stop_watch.wait(0.25):
+                    current = 0
+                    for candidate in stage_root.rglob('*'):
+                        if candidate.is_file():
+                            try:
+                                current += candidate.stat().st_size
+                            except OSError:
+                                pass
+                    if current != last_bytes:
+                        last_bytes = current
+                        pct = round(min(99.0, current * 100.0 / total_bytes), 1) if total_bytes > 0 else None
+                        _emit_progress(progress, 'downloading', bytes_downloaded=current, total_bytes=total_bytes, percent=pct)
+            watcher = threading.Thread(target=_watch_download, daemon=True) if progress else None
+            if watcher:
+                _emit_progress(progress, 'downloading', bytes_downloaded=0, total_bytes=total_bytes, percent=0.0 if total_bytes > 0 else None)
+                watcher.start()
+            try:
+                if entry.get('archive'):
+                    from huggingface_hub import hf_hub_download
+                    archive = Path(hf_hub_download(repo_id=repo, filename=entry['archive'], revision=revision, token=False, local_dir=str(stage_root/'download')))
+                    stop_watch.set()
+                    if watcher:
+                        watcher.join(timeout=1.0)
+                    if sha256(archive) != entry['archive_sha256']:
+                        raise ValueError('SHA256 do pacote inválido')
+                    _emit_progress(progress, 'verifying', bytes_downloaded=total_bytes, total_bytes=total_bytes, percent=100.0)
+                    extract_archive(archive, stage, files(model, variant), entry.get('installed_bytes', 800_000_000) + 1_000_000)
+                else:
+                    snapshot_download(repo_id=repo, revision=revision, token=False, allow_patterns=list(files(model, variant)), local_dir=str(stage))
+            finally:
+                stop_watch.set()
+                if watcher:
+                    watcher.join(timeout=1.0)
+            _emit_progress(progress, 'verifying', bytes_downloaded=total_bytes, total_bytes=total_bytes, percent=100.0)
             for item in getattr(info, 'siblings', []) or []:
                 if item.rfilename in files(model, variant) and getattr(item, 'lfs', None):
                     expected = getattr(item.lfs, 'sha256', None)
                     if expected and sha256(stage/item.rfilename) != expected:
                         raise ValueError('SHA256 Hugging Face inválido: ' + item.rfilename)
             manifest = {'repo': repo, 'revision': revision, 'license': CATALOG[model]['license']}
-        if progress: progress('verifying')
+        _emit_progress(progress, 'verifying')
         manifest.update(id=model, sha256={f: sha256(stage / f) for f in files(model, variant)})
         (stage / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
         verify(stage_root, model, variant)
@@ -322,6 +415,7 @@ def _install_locked(root, model, variant='adapted', *, progress=None, validator=
             raise
         if backup.exists():
             shutil.rmtree(backup)
+    (root / ('.install-' + model + '.json')).unlink(missing_ok=True)
     return manifest
 
 

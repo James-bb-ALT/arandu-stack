@@ -243,5 +243,9 @@ class ControlBoundary(unittest.IsolatedAsyncioTestCase):
                     state=await (await client.get('/api/state',headers=headers)).json()
                     accepted=await client.post('/api/stt/test',headers={**headers,'X-Arandu-CSRF':state['csrf']},json={'model':'whisper_base'})
                     self.assertEqual(accepted.status,200)
+                with patch.object(app['stt_lab'],'cancel',AsyncMock(return_value={'cancelled':True,'state':'cancelled','stopped_workers':1})):
+                    cancelled=await client.post('/api/stt/cancel',headers={**headers,'X-Arandu-Lab':'1'})
+                    self.assertEqual(cancelled.status,200)
+                    self.assertTrue((await cancelled.json())['cancelled'])
             finally:
                 await client.close()

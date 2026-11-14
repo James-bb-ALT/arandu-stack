@@ -5,6 +5,7 @@ import asyncio
 import base64
 import copy
 import hashlib
+import inspect
 import json
 import os
 from pathlib import Path
@@ -24,16 +25,69 @@ MAX_UPLOAD = 1_400_000  # Keep the Base64 JSON envelope below the shared 2 MiB r
 MAX_PCM = 12 * 16000 * 2
 
 
-async def watch_memory(process, limit):
-    while process.returncode is None and getattr(process, 'pid', None):
+class WorkerExecutionError(ValueError):
+    def __init__(self, message: str, error_code: str | None = None):
+        super().__init__(message)
+        self.error_code = error_code
+
+
+def _descendant_pids(root_pid: int) -> list[int]:
+    pids = [root_pid]
+    seen = {root_pid}
+    queue = [root_pid]
+    while queue:
+        current = queue.pop(0)
+        for children_file in Path(f'/proc/{current}/task').glob('*/children'):
+            try:
+                for token in children_file.read_text(encoding='utf-8').split():
+                    child = int(token)
+                    if child not in seen:
+                        seen.add(child)
+                        pids.append(child)
+                        queue.append(child)
+            except (OSError, ValueError):
+                pass
+    return pids
+
+
+def _tree_rss_bytes(root_pid: int) -> int | None:
+    total = 0
+    found = False
+    for pid in _descendant_pids(root_pid):
         try:
-            status = Path(f'/proc/{process.pid}/status').read_text()
+            status = Path(f'/proc/{pid}/status').read_text(encoding='utf-8')
             rss = next(int(line.split()[1]) for line in status.splitlines() if line.startswith('VmRSS:')) * 1024
-            if rss > limit:
-                process.kill()
-                return
-        except (OSError, StopIteration):
+            total += rss
+            found = True
+        except (OSError, StopIteration, ValueError):
             pass
+    return total if found else None
+
+
+def _kill_process_tree(process) -> None:
+    pid = getattr(process, 'pid', None)
+    if pid:
+        for child_pid in reversed(_descendant_pids(pid)):
+            if child_pid != pid:
+                try:
+                    os.kill(child_pid, 9)
+                except OSError:
+                    pass
+    if getattr(process, 'returncode', None) is None:
+        try:
+            process.kill()
+        except ProcessLookupError:
+            pass
+
+
+async def watch_memory(process, limit, oom_flag=None):
+    while process.returncode is None and getattr(process, 'pid', None):
+        rss = _tree_rss_bytes(process.pid)
+        if rss is not None and rss > limit:
+            if oom_flag is not None:
+                oom_flag.set()
+            _kill_process_tree(process)
+            return
         await asyncio.sleep(.2)
 
 
@@ -75,6 +129,14 @@ class STTLab:
         self.operations = {}
         self.install_task = None
         self.children = set()
+        self.cancel_requested = False
+
+    async def cancel(self):
+        self.cancel_requested = True
+        active_children = list(self.children)
+        for proc in active_children:
+            _kill_process_tree(proc)
+        return {'cancelled': True, 'state': 'cancelled', 'stopped_workers': len(active_children)}
 
     async def worker(self, body, timeout=90):
         python = os.environ.get('ARANDU_STT_PYTHON', '/opt/venvs/stt/bin/python')
@@ -86,18 +148,24 @@ class STTLab:
             stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
             env=environment)
         self.children.add(process)
-        monitor = asyncio.create_task(watch_memory(process, CATALOG[body.get('model', 'fastconformer')]['memory_limit_mb'] * 1024**2))
+        oom_flag = asyncio.Event()
+        monitor = asyncio.create_task(watch_memory(process, CATALOG[body.get('model', 'fastconformer')]['memory_limit_mb'] * 1024**2, oom_flag=oom_flag))
         try:
             raw, _ = await asyncio.wait_for(process.communicate(json.dumps({**body, 'root': str(self.root)}).encode()), timeout)
             if len(raw) > 2_097_152:
-                raise ValueError('Resposta STT excedeu o limite')
+                raise WorkerExecutionError('Resposta STT excedeu o limite', 'execution_error')
+            if not raw:
+                if self.cancel_requested:
+                    raise WorkerExecutionError('Benchmark cancelado pelo usuário', 'cancelled')
+                if oom_flag.is_set() or process.returncode in (-9, 137):
+                    raise WorkerExecutionError('Modelo excedeu o limite de memória RAM (OOM).', 'oom')
+                raise WorkerExecutionError('Falha no processo STT', 'execution_error')
             result = json.loads(raw)
             if process.returncode or result.get('error'):
-                raise ValueError(result.get('message', 'Falha no processo STT'))
+                raise WorkerExecutionError(result.get('message', 'Falha no processo STT'), result.get('error_code'))
             return result
         except BaseException:
-            if process.returncode is None:
-                process.kill()
+            _kill_process_tree(process)
             await process.wait()
             raise
         finally:
@@ -129,11 +197,15 @@ class STTLab:
                 row.update(state='error', error='Falha no processo STT; consulte os logs e verifique os pesos.')
             key = (row['id'], variant)
             row.update(self.operations.get(key, {}))
-            if row['state'] == 'downloading':
+            if row['state'] in ('downloading', 'verifying'):
                 progress = self.root / ('.install-' + row['id'] + '.json')
                 try:
-                    if json.loads(progress.read_text(encoding='utf-8')).get('state') == 'verifying':
+                    payload = json.loads(progress.read_text(encoding='utf-8'))
+                    if payload.get('state') == 'verifying':
                         row['state'] = 'verifying'
+                    for field in ('bytes_downloaded', 'total_bytes', 'percent'):
+                        if field in payload and payload[field] is not None:
+                            row[field] = payload[field]
                 except (OSError, ValueError):
                     pass
             if active and row['id'] == active.get('configured_model', active.get('model')) and (row['id'] != 'fastconformer' or variant == active.get('variant')):
@@ -186,6 +258,11 @@ class STTLab:
             return result
 
     def parameters(self, body):
+        if body.get('language') not in (None, 'pt') or body.get('translate') is True or body.get('detect_language') is True:
+            raise ValueError('Idioma fixo em português (pt); tradução e detecção automática não são permitidas')
+        repetitions = body.get('repetitions', 1)
+        if isinstance(repetitions, bool) or not isinstance(repetitions, int) or repetitions not in (1, 3, 5, 10):
+            raise ValueError('Repetições inválidas; escolha 1, 3, 5 ou 10')
         model, variant = body.get('model', self.manager.config['stt']['stt_model']), body.get('variant', 'adapted')
         validate(model, variant)
         threads = body.get('threads', self.manager.config['stt']['threads'])
@@ -194,11 +271,22 @@ class STTLab:
             raise ValueError('Threads ou perfil STT inválidos')
         return model, variant, threads
 
+    @staticmethod
+    def _model_timeout(model: str, repetitions: int) -> int:
+        if model == 'whisper_cpp_medium':
+            return min(600, 180 + 60 * repetitions)
+        if model in ('whisper_cpp_small', 'nemotron_unified_0_6b', 'parakeet_ptbr_30s', 'parakeet_tagarela', 'parakeet_ultra_q8', 'parakeet_ultra_q4'):
+            return min(420, 120 + 35 * repetitions)
+        return min(300, 90 + 25 * (repetitions - 1))
+
     async def test(self, body, compare=False):
         model, variant, threads = self.parameters(body)
+        repetitions = body.get('repetitions', 1)
+        warmup = body.get('warmup', repetitions > 1)
         models = body.get('models', [model]) if compare else [model]
-        if type(models) is not list or not 1 <= len(models) <= 12 or any(type(item) is not str for item in models) or len(set(models)) != len(models):
-            raise ValueError('Selecione de 1 a 12 modelos distintos')
+        max_models = len(CATALOG)
+        if type(models) is not list or not 1 <= len(models) <= max_models or any(type(item) is not str for item in models) or len(set(models)) != len(models):
+            raise ValueError(f'Selecione de 1 a {max_models} modelos distintos')
         for selected in models:
             validate(selected, variant)
         reference = body.get('reference', '')
@@ -213,30 +301,77 @@ class STTLab:
         if self.busy.locked():
             raise ValueError('STT ocupado; tente novamente após a operação atual')
         async with self.busy:
+            self.cancel_requested = False
             started = time.perf_counter()
             pcm, decode_ms = await decode_audio(base64.b64decode(encoded, validate=True))
             rows = []
             digest = hashlib.sha256(pcm).hexdigest()
+            sig = inspect.signature(self.worker)
+            supports_timeout = (
+                any(p.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD) for p in sig.parameters.values())
+                or len(sig.parameters) >= 2
+                or 'timeout' in sig.parameters
+            )
             for selected in models:
+                if self.cancel_requested:
+                    msg = 'Benchmark cancelado pelo usuário'
+                    rows.append({'model': selected, 'state': 'cancelled', 'error_code': 'cancelled', 'error': msg, 'audio_sha256': digest})
+                    self.operations[(selected, variant)] = {'state': 'error', 'error': msg}
+                    continue
                 item_started = time.perf_counter()
                 self.operations[(selected, variant)] = {'state': 'loading'}
+                model_timeout = self._model_timeout(selected, repetitions)
+                worker_payload = {
+                    'command': 'test', 'model': selected, 'variant': variant,
+                    'threads': threads, 'profile': body.get('profile'), 'reference': reference, 'entity_reference': entity_reference,
+                    'preset': body.get('preset', 'original'),
+                    'audio_processing': body.get('audio_processing') if isinstance(body.get('audio_processing'), dict) else None,
+                    'nemotron_streaming_profile': body.get('nemotron_streaming_profile'),
+                    'repetitions': repetitions, 'warmup': warmup,
+                    'options': self.manager.config['stt'], 'pcm': base64.b64encode(pcm).decode(),
+                    'inventory': str(self.root.parent/'arandu_ha_inventory.json'),
+                }
                 try:
-                    row = await self.worker({'command': 'test', 'model': selected, 'variant': variant,
-                        'threads': threads, 'profile': body.get('profile'), 'reference': reference, 'entity_reference': entity_reference,
-                        'preset': body.get('preset', 'original'),
-                        'audio_processing': body.get('audio_processing') if isinstance(body.get('audio_processing'), dict) else None,
-                        'nemotron_streaming_profile': body.get('nemotron_streaming_profile'),
-                        'options': self.manager.config['stt'], 'pcm': base64.b64encode(pcm).decode(),
-                        'inventory': str(self.root.parent/'arandu_ha_inventory.json')})
+                    row = await (self.worker(worker_payload, model_timeout) if supports_timeout else self.worker(worker_payload))
+                    elapsed_total = (time.perf_counter()-item_started)*1000
                     row.update(audio_decode_ms=decode_ms, audio_sha256=digest,
-                               request_total_ms=(time.perf_counter()-item_started)*1000)
+                               request_total_ms=elapsed_total, total_ms=elapsed_total, error_code=None)
                     rows.append(row)
                     self.operations.pop((selected, variant), None)
                 except (ValueError, TimeoutError, OSError) as exc:
-                    message = str(exc) if isinstance(exc, ValueError) else ('Tempo limite de inferência excedido' if isinstance(exc, TimeoutError) else 'Runtime STT indisponível')
-                    rows.append({'model': selected, 'state': 'error', 'error': message, 'audio_sha256': digest})
+                    raw_msg = str(exc)
+                    explicit_code = getattr(exc, 'error_code', None)
+                    if self.cancel_requested or explicit_code == 'cancelled':
+                        err_code = 'cancelled'
+                        message = 'Benchmark cancelado pelo usuário'
+                    elif isinstance(exc, TimeoutError) or explicit_code == 'timeout':
+                        err_code = 'timeout'
+                        message = 'Tempo limite de inferência excedido'
+                    elif explicit_code:
+                        err_code = explicit_code
+                        message = raw_msg
+                    elif 'Pesos ausentes' in raw_msg or 'não instalado' in raw_msg:
+                        err_code = 'not_installed'
+                        message = raw_msg
+                    elif 'MODEL_RUNTIME_UNAVAILABLE' in raw_msg or 'indisponível' in raw_msg:
+                        err_code = 'runtime_unavailable'
+                        message = raw_msg
+                    elif 'memória' in raw_msg or 'RAM' in raw_msg or 'OOM' in raw_msg:
+                        err_code = 'oom'
+                        message = raw_msg
+                    else:
+                        err_code = 'execution_error' if isinstance(exc, ValueError) else 'runtime_unavailable'
+                        message = raw_msg if isinstance(exc, ValueError) else 'Runtime STT indisponível'
+                    rows.append({
+                        'model': selected,
+                        'state': 'cancelled' if err_code == 'cancelled' else 'error',
+                        'error_code': err_code,
+                        'error': message,
+                        'audio_sha256': digest,
+                    })
                     self.operations[(selected, variant)] = {'state': 'error', 'error': rows[-1]['error']}
-            return {'results': rows, 'sequential': True, 'dry_run': True,
+            return {'results': rows, 'sequential': True, 'dry_run': True, 'repetitions': repetitions,
+                    'cancelled': self.cancel_requested,
                     'audio_decode_ms': decode_ms, 'request_total_ms': (time.perf_counter()-started)*1000,
                     'stop_to_transcript_ms': None, 'stop_to_transcript_note': 'Medido no navegador a partir do botão Parar; inclui espera, upload e rede.',
                     'audio_sha256': digest}

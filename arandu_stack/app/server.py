@@ -16,7 +16,7 @@ from logs import LogStore, SOURCES, LOGGER
 from request_traces import TraceStore
 from admission import Gate, Busy
 
-APP_VERSION = '11.3.9'
+APP_VERSION = '11.4.0'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""
@@ -418,16 +418,19 @@ def create_app(data_dir, local=False):
     async def stt_models(request):
         return web.json_response(await stt_lab.models(request.query.get('variant')))
     async def stt_action(request):
-        body = await request.json()
+        action = request.match_info['action']
+        raw_text = await request.text() if request.can_read_body else ''
+        body = json.loads(raw_text) if raw_text.strip() else ({} if action == 'cancel' else None)
         if type(body) is not dict:
             raise ValueError('Objeto JSON obrigatório')
-        action = request.match_info['action']
         if action == 'install':
             result = stt_lab.start_install(body.get('model'), body.get('variant', 'adapted'))
         elif action == 'remove':
             result = await stt_lab.remove(body.get('model'), body.get('variant', 'adapted'))
         elif action in {'test', 'compare'}:
             result = await stt_lab.test(body, compare=action == 'compare')
+        elif action == 'cancel':
+            result = await stt_lab.cancel()
         elif action == 'apply':
             async with lock:
                 result = await stt_lab.apply(body)

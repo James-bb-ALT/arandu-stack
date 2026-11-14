@@ -59,6 +59,8 @@ FIELDS = {
              ('parakeet_ultra_q4', 'Parakeet Ultra Q4_K_M (variante)'),
              ('phonon_2_5', 'Phonon 2.5 (CPU compacto)'),
              ('nemotron_unified_0_6b', 'NVIDIA Nemotron Unified ASR 0.6B (experimental)'),
+             ('whisper_cpp_small', 'Whisper Small — whisper.cpp'),
+             ('whisper_cpp_medium', 'Whisper Medium — whisper.cpp'),
          ]),
          field('nemotron_streaming_profile', 'Perfil streaming Nemotron', 'select', 'Desempenho',
                choices=[('precision','Precisão (560 ms / 560 ms)'),('balanced','Balanceado (160 ms / 400 ms)'),('fast','Rápido (80 ms / 160 ms)'),('experimental','Experimental (80 ms / 80 ms)')]),

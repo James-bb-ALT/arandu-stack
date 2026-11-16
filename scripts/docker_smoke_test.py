@@ -51,7 +51,7 @@ test -f /usr/local/lib/libtranscribe.so
 command -v ffmpeg >/dev/null
 test -f /opt/model_registry/models.json
 /opt/venvs/stt/bin/python -c "import numpy, sherpa_onnx, faster_whisper, ctranslate2, onnx_asr, onnxruntime, pywebrtc_audio, transcribe_cpp, wyoming, huggingface_hub, aiohttp, psutil, filelock"
-/opt/venvs/stt/bin/python -c "import sys; sys.path.insert(0, '/opt/modules/arandu_stt/rootfs/src/arandu_stt'); from audio_processor import AudioProcessor, AudioProcessorConfig; ap = AudioProcessor(AudioProcessorConfig(high_pass_filter=True, noise_suppression=True, auto_gain_control=True)); out, st = ap.process_pcm16(b'\x10\x00'*3200); tail = ap.flush(); assert st['webrtc_applied'] and len(out)+len(tail)==3200, st"
+/opt/venvs/stt/bin/python -c "import sys; sys.path.insert(0, '/opt/modules/arandu_stt/rootfs/src/arandu_stt'); from audio_processor import AudioProcessor, AudioProcessorConfig; ap = AudioProcessor(AudioProcessorConfig(high_pass_filter=True, noise_suppression=True, auto_gain_control=True, echo_cancellation=True)); out, st = ap.process_pcm16(b'\x10\x00'*3200); tail = ap.flush(); assert st['webrtc_applied'] and not st['aec_active'] and len(out)+len(tail)==3200, st"
 /opt/venvs/phonon/bin/python -c "import numpy, fermion, torch; assert hasattr(fermion, 'load_speech')"
 if [ "${ENABLE_NEMOTRON_RUNTIME:-1}" = "1" ] || [ -x /opt/venvs/nemotron/bin/python ]; then
   /opt/venvs/nemotron/bin/python -c "import numpy, torch, soundfile, nemo.collections.asr as nemo_asr; assert hasattr(nemo_asr.models, 'ASRModel')"

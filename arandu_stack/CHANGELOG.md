@@ -1,3 +1,8 @@
+# 11.4.7 — AEC WebRTC sem far-end no Wyoming STT (`audio_processor.py`) (2026-11-16)
+
+- **Correção de `ValueError: far is required when echo_cancellation is enabled` (`audio_processor.py`):** Quando `echo_cancellation=True` está habilitado nas configurações mas o fluxo Wyoming não fornece referência acústica `far_end_pcm`, o `AudioProcessor` nativo passa a operar com `echo_cancellation=False` (mantendo HPF/NS/AGC ativos e `aec_active=False` no diagnóstico) e só ativa AEC nativo quando `far_end_pcm` está presente, inclusive preenchendo `far` zerado no `flush()`.
+- **Smoke test Docker (`scripts/docker_smoke_test.py`):** Teste do `pywebrtc_audio` nativo atualizado para exercitar `echo_cancellation=True` sem `far_end_pcm`.
+
 # 11.4.6 — Correção do pipeline WebRTC AudioProcessor (`pywebrtc_audio.process`) (2026-11-16)
 
 - **Correção de `AttributeError: 'AudioProcessor' object has no attribute 'process_stream'` (`audio_processor.py`):** Atualizado `AudioProcessor._process_native_frame()` para invocar a API real do `pywebrtc_audio` (`self._native.process(frame)` / `self._native.process(frame, far_frame)`), corrigindo a falha em `[stage=preprocess]` durante a captura Wyoming no Home Assistant.

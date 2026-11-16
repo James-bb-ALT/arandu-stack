@@ -22,6 +22,10 @@ type Resolved = (
     Vec<String>,
 );
 
+pub(super) fn clean_text(value: &str) -> String {
+    clean(value)
+}
+
 fn clean(value: &str) -> String {
     slots::normalize(value)
         .split_whitespace()
@@ -501,21 +505,31 @@ impl Index {
                 }
                 add(name, 85, "configured_device_relation");
             }
-            let synonyms = if entity.domain == "climate"
-                && !clean(&entity.name).contains("ar condicionado")
-                && !clean(&entity.name).contains("split")
-                && !entity
+            let clean_name = clean(&entity.name);
+            let is_ac = clean_name.contains("ar condicionado")
+                || clean_name.contains("condicionado")
+                || clean_name.contains("split")
+                || entity.aliases.iter().any(|alias| {
+                    let clean_alias = clean(alias);
+                    clean_alias.contains("ar condicionado")
+                        || clean_alias.contains("condicionado")
+                        || clean_alias.contains("split")
+                })
+                || entity
                     .attributes
                     .get("hvac_modes")
                     .and_then(serde_json::Value::as_array)
-                    .is_some_and(|modes| modes.iter().any(|mode| mode.as_str() == Some("cool")))
-            {
+                    .is_some_and(|modes| modes.iter().any(|mode| mode.as_str() == Some("cool")));
+            let synonyms = if entity.domain == "climate" && !is_ac {
                 vec!["termostato"]
             } else {
                 type_names(&entity.domain, entity.device_class.as_deref())
             };
             for synonym in synonyms {
                 add(synonym, 60, "semantic_type");
+            }
+            if entity.domain == "climate" && is_ac {
+                add("condicionado", 60, "semantic_type");
             }
             let labelled_names: Vec<String> = std::iter::once(entity.name.clone())
                 .chain(entity.aliases.iter().cloned())
@@ -595,7 +609,7 @@ impl Index {
             .is_some_and(|name| self.areas.contains_key(&name))
             && matches!(
                 mention.as_str(),
-                "tudo" | "aparelhos" | "dispositivos" | "equipamentos"
+                "tudo" | "aparelhos" | "dispositivos" | "equipamentos" | "coisas"
             );
         if bare_room || explicit_bulk {
             if command.action == "vacuum_stop" {
@@ -604,6 +618,10 @@ impl Index {
             command.domains.clear();
             command.plural = true;
         }
+    }
+
+    pub(super) fn is_area_name(&self, name: &str) -> bool {
+        self.areas.contains_key(name)
     }
 
     pub fn domain_hint(&self, text: &str) -> Option<String> {
@@ -642,15 +660,21 @@ impl Index {
                     | "desativa"
                     | "desative"
             )
-        }) && ["", "tudo ", "aparelhos ", "dispositivos ", "equipamentos "]
-            .iter()
-            .any(|prefix| {
-                words[1..]
-                    .join(" ")
-                    .strip_prefix(prefix)
-                    .is_some_and(|name| self.areas.contains_key(name))
-            })
-        {
+        }) && [
+            "",
+            "tudo ",
+            "aparelhos ",
+            "dispositivos ",
+            "equipamentos ",
+            "coisas ",
+        ]
+        .iter()
+        .any(|prefix| {
+            words[1..]
+                .join(" ")
+                .strip_prefix(prefix)
+                .is_some_and(|name| self.areas.contains_key(name))
+        }) {
             return Some("area".into());
         }
         let mut best = 0;
@@ -672,8 +696,25 @@ impl Index {
         }
         if domains.len() == 1 {
             domains.into_iter().next()
+        } else if let Some(domain) = grammar::semantic_domain(text) {
+            Some(domain.to_owned())
         } else {
-            grammar::semantic_domain(text).map(str::to_owned)
+            let mut token_domains = BTreeSet::new();
+            for token in lexical_tokens(text) {
+                if token.len() >= 4
+                    && !self.areas.contains_key(&token)
+                    && let Some(rows) = self.tokens.get(&token)
+                {
+                    for i in rows {
+                        token_domains.insert(self.catalog.entities[*i].domain.clone());
+                    }
+                }
+            }
+            if token_domains.len() == 1 {
+                token_domains.into_iter().next()
+            } else {
+                None
+            }
         }
     }
 
@@ -834,6 +875,11 @@ impl Index {
                 group_id = Some(groups[0].0.clone());
                 group_areas = Some(groups[0].1.clone());
                 explicit = true;
+            } else if let Some(raw_id) = command.area.as_deref()
+                && self.catalog.areas.iter().any(|a| a.area_id == raw_id)
+            {
+                area = Some(raw_id.to_owned());
+                explicit = true;
             } else if let Some(id) = self.area_with_origin(&name, request.origin_area.as_deref()) {
                 area = Some(id);
                 explicit = true;
@@ -940,18 +986,90 @@ impl Index {
                 "missing_origin_area",
             ));
         }
-        let category = command.plural
+        let mut mention_base = mention.clone();
+        for phrase in [
+            "daqui",
+            "aqui",
+            "nesse comodo",
+            "neste comodo",
+            "desse comodo",
+            "perto mim",
+            "onde eu estou",
+            "onde estou",
+            "nessa sala",
+            "nesse quarto",
+        ] {
+            format!(" {mention_base} ")
+                .replace(&format!(" {phrase} "), " ")
+                .trim()
+                .clone_into(&mut mention_base);
+        }
+        let bare_light_category = matches!(command.action.as_str(), "turn_on" | "turn_off")
+            && command.domains == ["light"]
+            && type_names("light", None).contains(&mention_base.as_str());
+        if bare_light_category && area.is_none() && group_areas.is_none() {
+            if request.origin_area.is_none()
+                || matches!(
+                    request.origin_area_source.as_deref(),
+                    Some("default" | "unknown")
+                )
+            {
+                return Err(Response::failure(
+                    "clarification",
+                    &command.intent,
+                    "missing_origin_area",
+                ));
+            }
+            area.clone_from(&request.origin_area);
+        }
+        let (light_in_scope, _) = if bare_light_category && (area.is_some() || group_areas.is_some())
+        {
+            let matching = self
+                .catalog
+                .entities
+                .iter()
+                .filter(|entity| {
+                    entity.domain == "light"
+                        && entity.actions.contains(&command.action)
+                        && area
+                            .as_ref()
+                            .is_none_or(|id| entity.area_id.as_ref() == Some(id))
+                        && group_areas.as_ref().is_none_or(|areas| {
+                            entity
+                                .area_id
+                                .as_ref()
+                                .is_some_and(|id| areas.contains(id))
+                        })
+                        && class_compatible(command, entity)
+                })
+                .count();
+            (matching, 0usize)
+        } else {
+            (0usize, 0usize)
+        };
+        let category = (command.plural
             && (mention.is_empty()
                 || command
                     .domains
                     .iter()
-                    .any(|domain| type_names(domain, None).contains(&mention.as_str())));
+                    .any(|domain| type_names(domain, None).contains(&mention.as_str()))))
+            || bare_light_category;
         if category
             && command.intent != "home.all_off"
             && matches!(command.action.as_str(), "turn_on" | "turn_off")
             && area.is_none()
             && group_areas.is_none()
         {
+            if matches!(
+                request.origin_area_source.as_deref(),
+                Some("default" | "unknown")
+            ) {
+                return Err(Response::failure(
+                    "clarification",
+                    &command.intent,
+                    "missing_origin_area",
+                ));
+            }
             area.clone_from(&request.origin_area);
         }
         if here && area.is_none() {
@@ -981,7 +1099,7 @@ impl Index {
                 && (area.is_some() || group_areas.is_some())
                 && matches!(
                     mention.as_str(),
-                    "aparelhos" | "dispositivos" | "equipamentos"
+                    "aparelhos" | "dispositivos" | "equipamentos" | "coisas"
                 ))
         {
             mention.clear();
@@ -989,13 +1107,14 @@ impl Index {
         let bulk = matches!(command.action.as_str(), "turn_on" | "turn_off")
             && (command.plural
                 || bare_area
+                || (bare_light_category && (light_in_scope > 1 || group_areas.is_some()))
                 || (mention.is_empty() && (area.is_some() || group_areas.is_some())));
         if category {
             mention.clear();
         }
         let context_target = matches!(
             mention.as_str(),
-            "isso" | "esse aparelho" | "essa" | "ele" | "ela" | "mais dois graus" | "dois graus"
+            "isso" | "esse" | "esse aparelho" | "essa" | "ele" | "ela" | "mais dois graus" | "dois graus"
         );
         let mut ranked: BTreeMap<usize, (u16, &'static str)> = BTreeMap::new();
         if context_target {
@@ -1175,7 +1294,12 @@ impl Index {
                 }
             }
         }
-        if bulk && command.action == "turn_on" && area.is_none() && group_areas.is_none() {
+        if bulk
+            && matches!(command.action.as_str(), "turn_on" | "turn_off")
+            && area.is_none()
+            && group_areas.is_none()
+            && command.intent != "home.all_off"
+        {
             return Err(Response::failure(
                 "clarification",
                 &command.intent,
@@ -1317,13 +1441,14 @@ impl Index {
         if !explicit
             && area.is_none()
             && (command.action != "query" || !command.plural)
-            && (max_rank <= 60
+            && (max_rank <= 65
                 || (max_rank <= 80
                     && self
                         .names
                         .get(&mention)
                         .is_some_and(|rows| rows.iter().any(|(_, rank, _)| *rank == 60))))
             && let Some(origin) = &request.origin_area
+            && request.origin_area_source.as_deref() != Some("unknown")
         {
             let local: Vec<_> = ranked
                 .keys()
@@ -1339,7 +1464,11 @@ impl Index {
                 return Err(Response::failure(
                     "unavailable",
                     &command.intent,
-                    "no_compatible_capability",
+                    if max_rank == 65 {
+                        "target_not_found"
+                    } else {
+                        "no_compatible_capability"
+                    },
                 ));
             }
             if !local.is_empty() {

@@ -39,18 +39,43 @@ def semantic_refusal(text, catalog=None):
     if not timed and not any(' ' + phrase + ' ' in value for kind in ('condition', 'exclusion', 'negation') for phrase in POLICY[kind]):
         return None
     effects = set(POLICY['effects'])
-    labels = [name for row in (catalog or {}).get('entities', [])
-              for name in [row['name'], *row.get('aliases', [])]]
-    labels += [name for area in (catalog or {}).get('areas', []) for name in area['names']]
-    for label in sorted({normalized(name) for name in labels}, key=lambda name: (-len(name), name)):
-        if label and not effects.intersection(label.split()):
-            pattern = re.compile(' ' + re.escape(label) + ' ')
-            def target_name(match):
-                prefix = set(value[:match.start()].split())
-                allowed = effects | set(POLICY['name_prefix'])
-                return ' alvo ' if prefix and prefix <= allowed else match.group()
-            value = pattern.sub(target_name, value)
+    entity_labels = {normalized(name) for row in (catalog or {}).get('entities', [])
+                     for name in [row['name'], *row.get('aliases', [])] if normalized(name)}
+    area_labels = {normalized(name) for area in (catalog or {}).get('areas', [])
+                   for name in area['names'] if normalized(name)}
+    allowed = effects | set(POLICY['name_prefix'])
+    for label in sorted(entity_labels | area_labels, key=lambda name: (-len(name), name)):
+        label_words = label.split()
+        has_effect = bool(effects.intersection(label_words))
+        if has_effect and (
+            label not in entity_labels
+            or len(label_words) < 2
+            or bool({'e', 'se', 'caso', 'quando', 'enquanto'}.intersection(label_words))
+        ):
+            continue
+        pattern = re.compile(' ' + re.escape(label) + ' ')
+        def target_name(match, *, _has_effect=has_effect):
+            prefix = value[:match.start()].split()
+            suffix = value[match.end():].split()
+            prefix_ok = bool(prefix) and set(prefix) <= allowed
+            verbal_ok = (not _has_effect) or (bool(effects & set(prefix)) and not bool(effects & set(suffix)))
+            return ' alvo ' if prefix_ok and verbal_ok else match.group()
+        value = pattern.sub(target_name, value)
     words = set(value.split())
+    catalog_tokens = {tok for lbl in (entity_labels | area_labels) for tok in lbl.split()}
+    raw_tokens = normalized(text).split()
+    correction_stop = {'a', 'o', 'as', 'os', 'da', 'do', 'das', 'dos', 'na', 'no', 'nas', 'nos', 'de', 'em', 'para', 'esse', 'essa', 'este', 'esta', 'aquele', 'aquela', 'outro', 'outra', 'somente', 'so', 'apenas'}
+    tail_tokens = set(raw_tokens[1:]) if len(raw_tokens) >= 2 else set()
+    if (
+        len(raw_tokens) >= 2
+        and raw_tokens[0] == 'nao'
+        and not (words & effects)
+        and bool(tail_tokens & catalog_tokens)
+        and tail_tokens <= (catalog_tokens | correction_stop)
+        and not (words & {'pode', 'posso', 'quero', 'queria', 'precisa', 'preciso', 'pense', 'cancela', 'cancelar', 'para', 'pare', 'parar', 'deixa', 'esquece', 'mexa', 'mexe', 'faca', 'nunca', 'jamais', 'nem', 'obrigado', 'obrigada'})
+        and 'nao' not in raw_tokens[1:]
+    ):
+        return None
     # A date inside an explicit calendar creation is data, not a deferred home action.
     calendar = (words & {'agenda', 'calendario'} and value.startswith((' coloca ', 'cria ', 'marca '))
                 and words.intersection(effects) <= {'coloca'})

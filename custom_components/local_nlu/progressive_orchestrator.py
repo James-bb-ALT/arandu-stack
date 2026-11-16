@@ -7,6 +7,7 @@ import time
 import uuid
 from typing import Any, Awaitable, Callable
 
+from .contextual_errors import render_contextual_message
 from .home_graph import HomeGraphCache, build_graph_context
 from .progressive_contract import (
     PROGRESSIVE_PROTOCOL_VERSION,
@@ -15,17 +16,91 @@ from .progressive_contract import (
 )
 
 
-_AMBIGUITY_REASONS = {"ambiguous_area", "unknown_area", "ambiguous_target"}
+_AMBIGUITY_REASONS = {"ambiguous_area", "unknown_area", "ambiguous_target", "missing_origin_area", "no_compatible_capability", "target_not_found"}
 
 
-def _ambiguity_clarification_speech(reason: str | None) -> str:
-    if reason == "ambiguous_area":
-        return "Há mais de um cômodo com esse nome. Em qual cômodo?"
-    if reason == "unknown_area":
-        return "Não encontrei esse cômodo. Em qual cômodo você quer executar?"
-    if reason == "ambiguous_target":
-        return "Encontrei mais de um dispositivo compatível. Qual deles você quer controlar?"
-    return "Não tenho certeza da ação desejada. Pode confirmar o que quer fazer?"
+def _area_display_name(area_id: str | None, snapshot_payload: dict[str, Any]) -> str | None:
+    if not area_id:
+        return None
+    for row in snapshot_payload.get("areas") or ():
+        if row.get("area_id") == area_id:
+            names = row.get("names") or ()
+            if names:
+                return str(names[0])
+    return area_id
+
+
+def _build_slot_clarification(
+    partial: dict[str, Any],
+    reason: str | None,
+    snapshot_by_id: dict[str, dict],
+    snapshot_payload: dict[str, Any],
+    custom_text: str | None = None,
+) -> tuple[str, str, str, tuple[str, ...], tuple[str, ...]]:
+    clauses = partial.get("clauses") or ()
+    clause = clauses[0] if clauses else {}
+    slots = clause.get("slots") or {}
+    unresolved = tuple(clause.get("unresolved") or ())
+    v4_out = partial.get("v4_outcome") or {}
+    v4_cmd = v4_out.get("command") or {}
+
+    action = (slots.get("action") or {}).get("value") or v4_cmd.get("action")
+    target_slot = slots.get("target") or {}
+    area_slot = slots.get("area") or {}
+    area_id = area_slot.get("value") or v4_cmd.get("area") or (partial.get("origin") or {}).get("area_id")
+    area_name = _area_display_name(area_id, snapshot_payload)
+
+    target_cands = tuple(str(c) for c in (target_slot.get("candidates") or v4_out.get("candidates") or ()) if isinstance(c, str))
+    candidate_names = [snapshot_by_id[c]["name"] for c in target_cands if c in snapshot_by_id]
+    target_val = target_slot.get("value")
+    target_names: list[str] = []
+    if isinstance(target_val, str) and target_val in snapshot_by_id:
+        target_names = [snapshot_by_id[target_val]["name"]]
+    elif isinstance(target_val, list):
+        target_names = [snapshot_by_id[t]["name"] for t in target_val if isinstance(t, str) and t in snapshot_by_id]
+    elif len(candidate_names) == 1 and not action:
+        target_names = [candidate_names[0]]
+
+    domains = v4_cmd.get("domains") or ()
+    domain = domains[0] if len(domains) == 1 else (
+        snapshot_by_id[target_val].get("domain")
+        if isinstance(target_val, str) and target_val in snapshot_by_id
+        else (snapshot_by_id[target_cands[0]].get("domain") if target_cands and target_cands[0] in snapshot_by_id else None)
+    )
+    mention = v4_cmd.get("mention")
+
+    effective_reason = reason
+    if effective_reason in ("ambiguous_area", "unknown_area", "missing_origin_area") or ("area" in unresolved and area_id is None):
+        question_kind = "ask_area"
+        missing = ("area",)
+    elif target_cands and (effective_reason in ("ambiguous_target", "ambiguous_source") or target_slot.get("status") == "conflicting"):
+        question_kind = "disambiguate_target"
+        effective_reason = effective_reason or "ambiguous_target"
+        missing = ("target",)
+    elif target_names and not action and ("action" in unresolved or (slots.get("action") or {}).get("status") == "unknown"):
+        question_kind = "ask_action"
+        effective_reason = "action_unresolved"
+        missing = ("action",)
+    elif effective_reason in ("no_compatible_capability", "capability_unsupported"):
+        question_kind = "ask_target"
+        missing = unresolved or ("target",)
+    else:
+        question_kind = "ask_target" if action else "clarify"
+        if effective_reason in (None, "llm_abstention", "no_repair_produced", "unresolved_progressive_pipeline"):
+            effective_reason = "target_not_found" if action else ("action_unresolved" if target_names else "unresolved_progressive_pipeline")
+        missing = unresolved or (("target",) if action else ("action", "target"))
+
+    speech_text = custom_text or render_contextual_message(
+        effective_reason,
+        code="missing_slot",
+        mention=mention,
+        action=action,
+        area_name=area_name,
+        candidate_names=candidate_names,
+        target_names=target_names,
+        domain=domain,
+    )
+    return speech_text, effective_reason or "clarification", question_kind, missing, target_cands
 
 
 @dataclass
@@ -35,6 +110,9 @@ class ProgressiveResult:
     speech: str | None = None
     reason: str | None = None
     trace: dict[str, Any] = field(default_factory=dict)
+    question_kind: str | None = None
+    missing_slots: tuple[str, ...] = ()
+    candidates: tuple[str, ...] = ()
 
 
 def _identity_scope_hash(user_id: str | None, generation: str) -> str:
@@ -167,28 +245,39 @@ class ProgressiveOrchestrator:
         if decision_out:
             d_status = decision_out.get("status")
             if d_status == "denied":
-                if v4_reason in _AMBIGUITY_REASONS:
+                if v4_reason in _AMBIGUITY_REASONS or not partial.get("safety_flags"):
+                    speech_text, eff_reason, q_kind, missing, cands = _build_slot_clarification(
+                        partial, v4_reason or decision_out.get("reason"), snapshot_by_id, snapshot_payload
+                    )
                     trace["final_outcome"] = "clarification"
                     trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
                     return ProgressiveResult(
                         "clarification",
-                        speech=_ambiguity_clarification_speech(v4_reason),
-                        reason=v4_reason,
+                        speech=speech_text,
+                        reason=eff_reason,
                         trace=trace,
+                        question_kind=q_kind,
+                        missing_slots=missing,
+                        candidates=cands,
                     )
                 trace["final_outcome"] = "safety_refusal"
                 trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
                 return ProgressiveResult("safety_refusal", reason=decision_out.get("reason"), trace=trace)
 
             if d_status == "needs_clarification" and not (llm_enabled and llm_handoff is not None):
+                speech_text, eff_reason, q_kind, missing, cands = _build_slot_clarification(
+                    partial, decision_out.get("reason") or v4_reason, snapshot_by_id, snapshot_payload
+                )
                 trace["final_outcome"] = "clarification"
                 trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
-                clarify_reason = decision_out.get("reason") or v4_reason
                 return ProgressiveResult(
                     "clarification",
-                    speech=_ambiguity_clarification_speech(clarify_reason),
-                    reason=clarify_reason,
+                    speech=speech_text,
+                    reason=eff_reason,
                     trace=trace,
+                    question_kind=q_kind,
+                    missing_slots=missing,
+                    candidates=cands,
                 )
 
             if d_status == "resolved_candidate" and decision_out.get("repairs"):
@@ -197,8 +286,18 @@ class ProgressiveOrchestrator:
                     partial, repairs, authorized_targets=set(snapshot_by_id)
                 )
                 if ok:
+                    wire_repairs = [
+                        {
+                            "clause_id": r["clause_id"],
+                            "slot": r["slot"],
+                            "value": r["value"],
+                            "source": r["source"],
+                            "evidence": list(r.get("evidence") or ()),
+                        }
+                        for r in repairs
+                    ]
                     reviewed = await review_v5(
-                        {"version": PROGRESSIVE_PROTOCOL_VERSION, "partial": partial, "repairs": repairs}
+                        {"version": PROGRESSIVE_PROTOCOL_VERSION, "partial": partial, "repairs": wire_repairs}
                     )
                     trace["nlu_review"] = {
                         "accepted": reviewed.get("accepted"),
@@ -207,11 +306,17 @@ class ProgressiveOrchestrator:
                     }
                     if reviewed.get("accepted"):
                         ops = tuple(reviewed.get("operations") or ())
+                        deterministic_grounding = (
+                            not bool(reviewed.get("requires_confirmation"))
+                            and not bool(decision_out.get("requires_confirmation", True))
+                            and bool(decision_out.get("calibration_valid"))
+                            and decision_out.get("reason") == "deterministic_catalog_grounding"
+                        )
                         needs_confirm = (
                             bool(reviewed.get("requires_confirmation"))
                             or bool(decision_out.get("requires_confirmation", True))
                             or not bool(decision_out.get("calibration_valid"))
-                            or auto_resolve_level != "calibrated"
+                            or (auto_resolve_level != "calibrated" and not deterministic_grounding)
                         )
                         outcome_kind = "confirmation_required" if needs_confirm else "execute_plan"
                         trace["final_outcome"] = outcome_kind
@@ -261,8 +366,18 @@ class ProgressiveOrchestrator:
                     partial, repairs, authorized_targets=set(snapshot_by_id)
                 )
                 if ok:
+                    wire_repairs = [
+                        {
+                            "clause_id": r["clause_id"],
+                            "slot": r["slot"],
+                            "value": r["value"],
+                            "source": r["source"],
+                            "evidence": list(r.get("evidence") or ()),
+                        }
+                        for r in repairs
+                    ]
                     reviewed = await review_v5(
-                        {"version": PROGRESSIVE_PROTOCOL_VERSION, "partial": partial, "repairs": repairs}
+                        {"version": PROGRESSIVE_PROTOCOL_VERSION, "partial": partial, "repairs": wire_repairs}
                     )
                     trace["nlu_review"] = {
                         "accepted": reviewed.get("accepted"),
@@ -286,40 +401,45 @@ class ProgressiveOrchestrator:
                     trace["nlu_review"] = {"accepted": False, "reason": reason}
 
             if mode in {"clarification", "refusal"}:
-                resolved_mode = "clarification" if (mode == "refusal" and v4_reason in _AMBIGUITY_REASONS) else mode
+                resolved_mode = "clarification"
                 trace["final_outcome"] = resolved_mode
                 trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
                 plan = llm_out.get("plan") if isinstance(llm_out.get("plan"), dict) else {}
-                speech_text = (
-                    llm_out.get("response_text")
-                    or llm_out.get("question")
-                    or plan.get("question")
-                    or (
-                        _ambiguity_clarification_speech(v4_reason)
-                        if v4_reason in _AMBIGUITY_REASONS
-                        else "Não consegui confirmar uma ação segura para esse pedido."
-                    )
+                custom = None
+                if mode == "clarification":
+                    custom = llm_out.get("response_text") or llm_out.get("question") or plan.get("question")
+                else:
+                    candidate_q = llm_out.get("question") or plan.get("question")
+                    if isinstance(candidate_q, str) and candidate_q.strip() and "restrição" not in candidate_q:
+                        custom = candidate_q
+                speech_text, eff_reason, q_kind, missing, cands = _build_slot_clarification(
+                    partial,
+                    v4_reason or (llm_out.get("reason") if mode == "clarification" else "llm_abstention"),
+                    snapshot_by_id,
+                    snapshot_payload,
+                    custom_text=custom,
                 )
                 return ProgressiveResult(
                     resolved_mode,
                     speech=speech_text,
-                    reason=(
-                        v4_reason
-                        if resolved_mode == "clarification" and v4_reason in _AMBIGUITY_REASONS
-                        else llm_out.get("reason")
-                    ),
+                    reason=eff_reason,
                     trace=trace,
+                    question_kind=q_kind,
+                    missing_slots=missing,
+                    candidates=cands,
                 )
 
+        speech_text, eff_reason, q_kind, missing, cands = _build_slot_clarification(
+            partial, v4_reason or "unresolved_progressive_pipeline", snapshot_by_id, snapshot_payload
+        )
         trace["final_outcome"] = "clarification"
         trace["total_ms"] = round((time.perf_counter() - started) * 1000.0, 3)
         return ProgressiveResult(
             "clarification",
-            speech=(
-                _ambiguity_clarification_speech(v4_reason)
-                if v4_reason in _AMBIGUITY_REASONS
-                else "Não entendi exatamente o que você quer fazer. Pode repetir ou especificar o dispositivo?"
-            ),
-            reason=v4_reason if v4_reason in _AMBIGUITY_REASONS else "unresolved_progressive_pipeline",
+            speech=speech_text,
+            reason=eff_reason,
             trace=trace,
+            question_kind=q_kind,
+            missing_slots=missing,
+            candidates=cands,
         )

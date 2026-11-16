@@ -57,11 +57,18 @@ def reason_partial(payload: dict[str, Any], *, encoder=None) -> dict[str, Any]:
     repairs: list[dict[str, Any]] = []
     alternatives: list[dict[str, Any]] = []
     margins: list[float] = []
+    action_repaired = False
+    sensitive_actions = {"unlock", "lock", "arm", "disarm"}
+    clause_actions: list[str] = []
 
     for clause in partial.get("clauses") or ():
         cid = clause.get("clause_id", 0)
         slots = clause.get("slots") or {}
         unresolved = list(clause.get("unresolved") or ())
+
+        action_slot = slots.get("action") or {}
+        if isinstance(action_slot.get("value"), str):
+            clause_actions.append(action_slot["value"])
 
         target_slot = slots.get("target") or {}
         if target_slot.get("status") == "conflicting":
@@ -70,7 +77,7 @@ def reason_partial(payload: dict[str, Any], *, encoder=None) -> dict[str, Any]:
                 for c in (target_slot.get("candidates") or ())
             )
 
-        if "action" in unresolved and (slots.get("action") or {}).get("status") in {"unknown", "candidate"}:
+        if "action" in unresolved and action_slot.get("status") in {"unknown", "candidate"}:
             allowed_actions = list(clause.get("allowed_actions") or ())
             if not allowed_actions:
                 continue
@@ -87,6 +94,7 @@ def reason_partial(payload: dict[str, Any], *, encoder=None) -> dict[str, Any]:
             evidence = list(top.get("evidence") or [])
             if "capability_compatible" not in evidence:
                 evidence.append("capability_compatible")
+            action_repaired = True
             repairs.append(
                 {
                     "clause_id": cid,
@@ -102,6 +110,8 @@ def reason_partial(payload: dict[str, Any], *, encoder=None) -> dict[str, Any]:
         # Area disambiguation via satellite origin_area when ambiguous
         area_slot = slots.get("area") or {}
         origin_area = (partial.get("origin") or {}).get("area_id")
+        origin_source = (partial.get("origin") or {}).get("source")
+        trusted_origin = origin_area if origin_source in {"satellite", "device"} else None
         if area_slot.get("status") in {"conflicting", "candidate", "unknown"}:
             area_cands = list(area_slot.get("candidates") or ())
             if origin_area and origin_area in area_cands:
@@ -110,9 +120,20 @@ def reason_partial(payload: dict[str, Any], *, encoder=None) -> dict[str, Any]:
                         "clause_id": cid,
                         "slot": "area",
                         "value": origin_area,
-                        "source": "origin_context",
+                        "source": "decision_ranked",
                         "evidence": ["origin_area_match"],
                         "raw_score": 0.95,
+                    }
+                )
+            elif trusted_origin and area_slot.get("status") == "unknown" and not area_cands:
+                repairs.append(
+                    {
+                        "clause_id": cid,
+                        "slot": "area",
+                        "value": trusted_origin,
+                        "source": "decision_ranked",
+                        "evidence": ["origin_area_match"],
+                        "raw_score": 0.9,
                     }
                 )
             elif len(area_cands) > 1:
@@ -163,15 +184,25 @@ def reason_partial(payload: dict[str, Any], *, encoder=None) -> dict[str, Any]:
             "reason": "ambiguous_target" if any(a.get("slot") == "target" for a in alternatives) else "no_repair_produced",
         }
 
+    deterministic_grounding = (
+        not action_repaired
+        and not any(a in sensitive_actions for a in clause_actions)
+        and all(
+            r.get("slot") in {"target", "area"}
+            and set(r.get("evidence") or ()) <= {"single_authorized_candidate", "single_authorized_candidate_in_area", "catalog_token_match", "origin_area_match"}
+            for r in repairs
+        )
+    )
+
     return {
         "decision_contract": DECISION_PARTIAL_CONTRACT,
         "route": "possible_action",
         "status": "resolved_candidate",
         "repairs": repairs,
         "alternatives": alternatives[:4],
-        "confidence": None,
-        "margin": min(margins) if margins else None,
-        "calibration_valid": False,
-        "requires_confirmation": True,
-        "reason": "uncalibrated_asr_repair",
+        "confidence": 0.92 if deterministic_grounding else None,
+        "margin": min(margins) if margins else (1.0 if deterministic_grounding else None),
+        "calibration_valid": deterministic_grounding,
+        "requires_confirmation": not deterministic_grounding,
+        "reason": "deterministic_catalog_grounding" if deterministic_grounding else "uncalibrated_asr_repair",
     }

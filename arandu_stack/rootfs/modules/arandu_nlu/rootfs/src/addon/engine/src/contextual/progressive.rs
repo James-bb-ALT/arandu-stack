@@ -38,7 +38,16 @@ fn contains_phrase(haystack: &str, needle: &str) -> bool {
 }
 
 fn extract_excluded_targets(clause: &str, catalog: &Catalog) -> (String, Vec<String>) {
-    for marker in [" menos ", " exceto ", " tirando ", " sem "] {
+    for marker in [
+        " com excecao de ",
+        " com excecao do ",
+        " com excecao da ",
+        " com excecao ",
+        " menos ",
+        " exceto ",
+        " tirando ",
+        " sem ",
+    ] {
         if let Some((head, tail)) = clause.split_once(marker) {
             let tail_norm = slots::normalize(tail);
             let mut excluded = Vec::new();
@@ -73,6 +82,35 @@ fn extract_area(clause: &str, catalog: &Catalog) -> Option<(String, String)> {
         }
     }
     best.map(|(_, id, norm)| (id, norm))
+}
+
+fn has_unknown_spatial_qualifier(clause: &str, catalog: &Catalog) -> bool {
+    let words: Vec<&str> = clause.split_whitespace().collect();
+    if words.len() < 2 {
+        return false;
+    }
+    let area_tokens: BTreeSet<String> = catalog
+        .areas
+        .iter()
+        .flat_map(|a| a.names.iter())
+        .flat_map(|n| slots::normalize(n).split_whitespace().map(str::to_owned).collect::<Vec<_>>())
+        .collect();
+    let entity_tokens: BTreeSet<String> = catalog
+        .entities
+        .iter()
+        .flat_map(|e| std::iter::once(&e.name).chain(e.aliases.iter()))
+        .flat_map(|n| slots::normalize(n).split_whitespace().map(str::to_owned).collect::<Vec<_>>())
+        .collect();
+    words.windows(2).any(|pair| {
+        matches!(pair[0], "no" | "na" | "nos" | "nas" | "do" | "da" | "dos" | "das" | "em")
+            && pair[1].len() >= 3
+            && !matches!(
+                pair[1],
+                "aqui" | "comodo" | "ambiente" | "mesmo" | "meu" | "minha" | "seu" | "sua"
+            )
+            && !area_tokens.contains(pair[1])
+            && !entity_tokens.contains(pair[1])
+    })
 }
 
 fn extract_target_candidates(
@@ -115,6 +153,74 @@ fn extract_target_candidates(
             .collect();
         let actions = allowed_actions_for_targets(&ids, catalog);
         return (ids, actions, Some("catalog_alias"), evidence);
+    }
+
+    // Compositional / distinctive token matching against catalog names/aliases
+    let area_tokens: BTreeSet<String> = catalog
+        .areas
+        .iter()
+        .flat_map(|a| a.names.iter())
+        .flat_map(|n| slots::normalize(n).split_whitespace().map(str::to_owned).collect::<Vec<_>>())
+        .collect();
+    let query_tokens: BTreeSet<String> = slots::normalize(clause)
+        .split_whitespace()
+        .filter(|w| w.len() >= 4 && !area_tokens.contains(*w))
+        .filter(|w| {
+            !matches!(
+                *w,
+                "liga" | "ligue" | "ligar" | "desliga" | "desligue" | "desligar"
+                    | "acende" | "acenda" | "acender" | "apaga" | "apague" | "apagar"
+                    | "abre" | "abra" | "abrir" | "fecha" | "feche" | "fechar"
+                    | "ativa" | "ative" | "ativar" | "desativa" | "desative" | "desativar"
+                    | "coloca" | "coloque" | "deixa" | "deixe" | "ajusta" | "ajuste"
+                    | "aumenta" | "diminui" | "todas" | "todos" | "tudo" | "pode" | "quero"
+            )
+        })
+        .map(str::to_owned)
+        .collect();
+    if !query_tokens.is_empty() {
+        let mut token_hits: Vec<(usize, String, Vec<String>)> = Vec::new();
+        for entity in &catalog.entities {
+            if excluded.contains(&entity.registry_id) {
+                continue;
+            }
+            if let Some(area) = area_id
+                && entity.area_id.as_deref() != Some(area)
+            {
+                continue;
+            }
+            let entity_tokens: BTreeSet<String> = std::iter::once(&entity.name)
+                .chain(entity.aliases.iter())
+                .flat_map(|n| slots::normalize(n).split_whitespace().map(str::to_owned).collect::<Vec<_>>())
+                .filter(|w| w.len() >= 4 && !area_tokens.contains(w))
+                .collect();
+            let shared: Vec<String> = query_tokens.intersection(&entity_tokens).cloned().collect();
+            if !shared.is_empty() {
+                token_hits.push((shared.len(), entity.registry_id.clone(), shared));
+            }
+        }
+        if !token_hits.is_empty() {
+            let max_hits = token_hits.iter().map(|(c, _, _)| *c).max().unwrap_or(0);
+            let mut ids: Vec<String> = token_hits
+                .iter()
+                .filter(|(c, _, _)| *c == max_hits)
+                .map(|(_, id, _)| id.clone())
+                .collect();
+            ids.sort();
+            ids.dedup();
+            let mut ev = Vec::new();
+            for (c, _, toks) in &token_hits {
+                if *c == max_hits {
+                    for t in toks {
+                        ev.push(format!("catalog_token_match:{t}"));
+                    }
+                }
+            }
+            ev.sort();
+            ev.dedup();
+            let actions = allowed_actions_for_targets(&ids, catalog);
+            return (ids, actions, Some("catalog_alias"), ev);
+        }
     }
 
     if let Some(domain) = resolver::category_domain(clause) {
@@ -163,10 +269,20 @@ fn build_clause_from_partial_text(
     clause_id: usize,
     raw_clause: &str,
     catalog: &Catalog,
+    trusted_origin_area: Option<&str>,
 ) -> (PartialClause, bool) {
     let (head_clause, excluded_targets) = extract_excluded_targets(raw_clause, catalog);
     let area_match = extract_area(&head_clause, catalog);
-    let area_id = area_match.as_ref().map(|(id, _)| id.clone());
+    let unknown_spatial = area_match.is_none() && has_unknown_spatial_qualifier(&head_clause, catalog);
+    let context_origin = if unknown_spatial {
+        None
+    } else {
+        trusted_origin_area
+    };
+    let area_id = area_match
+        .as_ref()
+        .map(|(id, _)| id.clone())
+        .or_else(|| context_origin.map(str::to_owned));
 
     let (target_ids, allowed_actions, target_source, target_evidence) =
         extract_target_candidates(&head_clause, area_id.as_deref(), &excluded_targets, catalog);
@@ -260,6 +376,17 @@ fn build_clause_from_partial_text(
                 "resolved",
                 vec!["entity_area".into()],
                 Some("catalog_exact"),
+                Vec::new(),
+            ),
+        );
+    } else if let Some(origin_aid) = context_origin {
+        slots_map.insert(
+            "area".into(),
+            slot(
+                Value::String(origin_aid.to_owned()),
+                "resolved",
+                vec![format!("origin_area:{origin_aid}")],
+                Some("contextual_reference"),
                 Vec::new(),
             ),
         );
@@ -371,6 +498,10 @@ pub fn interpret_partial(request: &PartialRequest) -> PartialUnderstanding {
     let v4_req = request.to_v4();
     let v4_outcome = interpret_index(&norm_text, &v4_req, &index);
 
+    let trusted_origin_area = request
+        .origin_area
+        .as_deref()
+        .filter(|_| matches!(request.origin_area_source.as_deref(), Some("satellite" | "device")));
     let mut timings = v4_outcome.timings.clone();
     let mut safety_flags = Vec::new();
     let mut clauses = Vec::new();
@@ -484,8 +615,12 @@ pub fn interpret_partial(request: &PartialRequest) -> PartialUnderstanding {
         let first_clause = raw_clauses
             .first()
             .map_or(norm_text.as_str(), String::as_str);
-        let (mut partial_clause, _) =
-            build_clause_from_partial_text(0, first_clause, &index.catalog);
+        let (mut partial_clause, _) = build_clause_from_partial_text(
+            0,
+            first_clause,
+            &index.catalog,
+            trusted_origin_area,
+        );
         if !v4_outcome.candidates.is_empty() {
             partial_clause.allowed_actions =
                 allowed_actions_for_targets(&v4_outcome.candidates, &index.catalog);
@@ -518,7 +653,8 @@ pub fn interpret_partial(request: &PartialRequest) -> PartialUnderstanding {
         let raw_clauses = grammar::split_clauses(&norm_text);
         let mut any_signal = false;
         for (idx, raw) in raw_clauses.iter().enumerate() {
-            let (clause, sig) = build_clause_from_partial_text(idx, raw, &index.catalog);
+            let (clause, sig) =
+                build_clause_from_partial_text(idx, raw, &index.catalog, trusted_origin_area);
             any_signal |= sig;
             clauses.push(clause);
         }
@@ -679,7 +815,22 @@ pub fn review_proposal(request: &ReviewProposalRequest) -> ReviewProposalRespons
                         return reject_review("unauthorized_target", start);
                     }
                 }
-                requires_confirmation = true;
+                let deterministic_target = repair.source == "decision_ranked"
+                    && clause
+                        .slots
+                        .get("action")
+                        .is_some_and(|s| s.status == "resolved" && s.source.as_deref() == Some("nlu_rule"))
+                    && repair.evidence.iter().any(|ev| {
+                        matches!(
+                            ev.as_str(),
+                            "single_authorized_candidate"
+                                | "single_authorized_candidate_in_area"
+                                | "catalog_token_match"
+                        )
+                    });
+                if !deterministic_target {
+                    requires_confirmation = true;
+                }
             }
             "parameters" => {
                 if serde_json::from_value::<Parameters>(repair.value.clone()).is_err() {
@@ -691,7 +842,15 @@ pub fn review_proposal(request: &ReviewProposalRequest) -> ReviewProposalRespons
                 if repair.value.as_str().is_none_or(str::is_empty) {
                     return reject_review("invalid_area", start);
                 }
-                requires_confirmation = true;
+                let deterministic_area = repair.source == "decision_ranked"
+                    && clause
+                        .slots
+                        .get("action")
+                        .is_some_and(|s| s.status == "resolved" && s.source.as_deref() == Some("nlu_rule"))
+                    && repair.evidence.iter().any(|ev| ev == "origin_area_match");
+                if !deterministic_area {
+                    requires_confirmation = true;
+                }
             }
             _ => return reject_review("invalid_slot", start),
         }

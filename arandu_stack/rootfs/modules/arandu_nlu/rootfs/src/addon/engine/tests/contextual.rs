@@ -1088,3 +1088,214 @@ fn numbers_duration_and_limits() {
     request.text = "a".repeat(2049);
     assert_eq!(interpret(&request).status, "invalid_request");
 }
+
+#[test]
+fn generic_lighting_category_and_compositional_ac_regressions() {
+    let _guard = catalog_test_guard();
+    let mut cat = catalog();
+    cat.generation = "f".repeat(64);
+    cat.areas.extend([
+        Area {
+            area_id: "banheiro".into(),
+            names: vec!["Banheiro".into()],
+        },
+        Area {
+            area_id: "varanda".into(),
+            names: vec!["Varanda".into()],
+        },
+        Area {
+            area_id: "cozinha".into(),
+            names: vec!["Cozinha".into()],
+        },
+    ]);
+    let mut excluded_light = entity(
+        "luz_quarto_critica",
+        "light",
+        "Luz de Emergência",
+        "quarto",
+        None,
+        &["turn_on", "turn_off"],
+    );
+    excluded_light
+        .attributes
+        .insert("bulk_eligible".into(), json!(false));
+    let mut verbal_light = entity(
+        "luz_nao_desliga",
+        "light",
+        "Luz Não Desliga",
+        "sala",
+        None,
+        &["turn_on", "turn_off"],
+    );
+    verbal_light
+        .attributes
+        .insert("bulk_eligible".into(), json!(true));
+    cat.entities = vec![
+        entity(
+            "luz_teto_quarto",
+            "light",
+            "Luz do Teto",
+            "quarto",
+            None,
+            &["turn_on", "turn_off"],
+        ),
+        entity(
+            "abajur_quarto",
+            "light",
+            "Abajur",
+            "quarto",
+            None,
+            &["turn_on", "turn_off"],
+        ),
+        excluded_light,
+        entity(
+            "luz_cozinha_literal",
+            "light",
+            "Luz",
+            "cozinha",
+            None,
+            &["turn_on", "turn_off"],
+        ),
+        entity(
+            "luz_varanda",
+            "light",
+            "Luz da Varanda",
+            "varanda",
+            None,
+            &["turn_on", "turn_off"],
+        ),
+        verbal_light,
+        entity(
+            "ar_quarto",
+            "climate",
+            "Ar-condicionado",
+            "quarto",
+            None,
+            &["turn_on", "turn_off"],
+        ),
+        entity(
+            "termostato_banheiro",
+            "climate",
+            "Termostato",
+            "banheiro",
+            None,
+            &["turn_on", "turn_off"],
+        ),
+        entity(
+            "tv_sala",
+            "media_player",
+            "TV",
+            "sala",
+            Some("tv"),
+            &["turn_on", "turn_off"],
+        ),
+        entity(
+            "fan_sala",
+            "fan",
+            "Ventilador",
+            "sala",
+            None,
+            &["turn_on", "turn_off"],
+        ),
+    ];
+    assert_eq!(register_catalog(cat).status, "catalog_ready");
+
+    let req = |text: &str, area: Option<&str>, source: Option<&str>| ContextRequest {
+        version: 4,
+        generation: "f".repeat(64),
+        text: text.into(),
+        origin_area: area.map(str::to_owned),
+        origin_area_source: source.map(str::to_owned),
+        ..ContextRequest::default()
+    };
+
+    // T01/T02: "desliga luz" / "desliga a luz" in satellite room with 2+ lights turns off local eligible lights only, ignoring literal "Luz" in kitchen and excluded bulk_eligible=false light
+    for phrase in ["desliga luz", "desliga a luz", "apaga as lâmpadas"] {
+        let res = interpret(&req(phrase, Some("quarto"), Some("satellite")));
+        assert_eq!(res.status, "plan", "{phrase}: {res:?}");
+        assert_eq!(res.operations[0].action, "turn_off");
+        assert_eq!(
+            res.operations[0].targets,
+            vec!["abajur_quarto", "luz_teto_quarto"],
+            "{phrase}"
+        );
+    }
+
+    // Room with 1 light ignores literal "Luz" in kitchen
+    let one_light = interpret(&req("desliga a luz", Some("varanda"), Some("satellite")));
+    assert_eq!(one_light.status, "plan", "{one_light:?}");
+    assert_eq!(one_light.operations[0].targets, vec!["luz_varanda"]);
+
+    // Room with 0 lights must fail closed with no_compatible_capability, never touch kitchen "Luz"
+    let no_light = interpret(&req("desliga luz", Some("banheiro"), Some("satellite")));
+    assert_eq!(no_light.status, "unavailable", "{no_light:?}");
+    assert_eq!(no_light.reason.as_deref(), Some("no_compatible_capability"));
+
+    // Untrusted default/unknown origin must ask missing_origin_area instead of global bulk or picking another room
+    for src in [None, Some("default"), Some("unknown")] {
+        let untrusted = interpret(&req(
+            "desliga luz",
+            src.map(|_| "quarto"),
+            src,
+        ));
+        assert_eq!(untrusted.status, "clarification", "{src:?}: {untrusted:?}");
+        assert_eq!(untrusted.reason.as_deref(), Some("missing_origin_area"));
+    }
+
+    // T05-T10: compositional AC resolution
+    for phrase in ["liga condicionado", "liga o condicionado", "liga o ar", "liga o split"] {
+        let ok = interpret(&req(phrase, Some("quarto"), Some("satellite")));
+        assert_eq!(ok.status, "plan", "{phrase}: {ok:?}");
+        assert_eq!(ok.operations[0].targets, vec!["ar_quarto"]);
+    }
+    let wrong_origin = interpret(&req("liga o condicionado", Some("sala"), Some("satellite")));
+    assert!(wrong_origin.operations.is_empty(), "{wrong_origin:?}");
+    let thermostat_room = interpret(&req("liga o condicionado", Some("banheiro"), Some("satellite")));
+    assert!(thermostat_room.operations.is_empty(), "{thermostat_room:?}");
+    let wrong_explicit = interpret(&req(
+        "liga o condicionado da cozinha",
+        Some("quarto"),
+        Some("satellite"),
+    ));
+    assert!(wrong_explicit.operations.is_empty(), "{wrong_explicit:?}");
+
+    // T23/T24/T28: "todas as coisas da sala", "com exceção da tv", "Luz Não Desliga"
+    let bulk_things = interpret(&req(
+        "desliga todas as coisas da sala",
+        Some("sala"),
+        Some("satellite"),
+    ));
+    assert_eq!(bulk_things.status, "plan", "{bulk_things:?}");
+    assert_eq!(
+        bulk_things.operations[0].targets,
+        vec!["fan_sala", "luz_nao_desliga", "tv_sala"]
+    );
+
+    let bulk_excl = interpret(&req(
+        "desliga todas as coisas da sala com exceção da tv",
+        Some("sala"),
+        Some("satellite"),
+    ));
+    assert_eq!(bulk_excl.status, "plan", "{bulk_excl:?}");
+    assert_eq!(
+        bulk_excl.operations[0].targets,
+        vec!["fan_sala", "luz_nao_desliga"]
+    );
+    assert_eq!(
+        bulk_excl.operations[0].parameters.excluded_targets,
+        vec!["tv_sala"]
+    );
+
+    let verbal = interpret(&req("apaga a Luz Não Desliga", Some("sala"), Some("satellite")));
+    assert_eq!(verbal.status, "plan", "{verbal:?}");
+    assert_eq!(verbal.operations[0].targets, vec!["luz_nao_desliga"]);
+
+    // T18: slot correction "não, a da varanda" when pending clarification is active
+    let first = interpret(&req("liga a luz", None, Some("unknown")));
+    assert_eq!(first.status, "clarification");
+    let mut followup = req("não, a da varanda", None, Some("unknown"));
+    followup.pending = first.command;
+    let second = interpret(&followup);
+    assert_eq!(second.status, "plan", "{second:?}");
+    assert_eq!(second.operations[0].targets, vec!["luz_varanda"]);
+}

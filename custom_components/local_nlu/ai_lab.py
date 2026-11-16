@@ -348,13 +348,14 @@ class Lab:
             if type(test_area_id) is not str or (test_area_id and test_area_id not in {a["area_id"] for a in catalog["areas"]}):
                 raise ValueError("Escolha uma área de teste existente no catálogo")
             selected_area = test_area_id or origin_area(self.hass, SimpleNamespace(device_id=None, satellite_id=None), options)
+            origin_area_source = payload.get("origin_area_source") or ("satellite" if test_area_id else "default" if selected_area else "unknown")
             test_context = {"origin_area": selected_area, "source": "lab_selection" if test_area_id else "integration_default" if selected_area else "none"}
             settings(payload)
             await runtime._send(snapshot)
 
             async def nlu(text):
                 raw = await runtime.client.async_interpret_v4({"version": 4, "generation": catalog["generation"], "text": text,
-                    "origin_area": selected_area, "origin_area_source": "default" if selected_area else "unknown", "last_area": None, "last_targets": [], "pending": None})
+                    "origin_area": selected_area, "origin_area_source": origin_area_source, "last_area": None, "last_targets": [], "pending": payload.get("pending")})
                 parse(raw)
                 return raw
 
@@ -439,6 +440,7 @@ class Lab:
                 result = await pipeline(text, nlu, decision, llm, mode=mode, timeout=95, general=clearly_conversational(text, catalog))
                 result.update(dry_run=True, catalog_generation=catalog["generation"], model=model,
                               catalog=catalog, test_mode="independent", test_context=test_context,
+                              origin_area_source=origin_area_source,
                               production_policy={"nlu": True, "decision": options.get("decision_enabled", False), "llm": options.get("llm_enabled", False)},
                               **_panel_version_info())
                 proposal = result["proposal"]

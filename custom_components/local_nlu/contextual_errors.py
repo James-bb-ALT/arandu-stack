@@ -46,12 +46,156 @@ MESSAGES = {
     "location_unknown_area": "A fonte de localização não identificou um cômodo cadastrado.",
     "location_ambiguous": "Há mais de uma localização possível para esse aparelho.",
     "device_not_identified": "Não identifiquei esse aparelho no catálogo acessível.",
+    "semantic_negation": "Entendi um pedido para não executar essa ação. Nenhuma alteração foi feita.",
+    "semantic_condition": "Não consigo agendar ou aguardar condições externas para executar esse comando.",
+    "semantic_exclusion": "Não consegui identificar com segurança qual dispositivo excluir desse comando coletivo.",
+    "semantic_quoted_command": "Entendi o comando apenas como uma citação ou pergunta, por isso não executei nenhuma ação.",
+    "semantic_non_effect_request": "Esse pedido parece ser uma consulta ou comentário, não um comando de acionamento.",
+    "semantic_safety_refusal": "Não executei: o pedido contém uma restrição que não consigo aplicar com segurança.",
+    "missing_origin_area": "Entendi o comando, mas não identifiquei o cômodo. Em qual cômodo?",
+    "max_clarification_attempts": "Ainda não consegui identificar o comando completo. Diga novamente informando a ação, o aparelho e o cômodo.",
 }
 
 
 def speech(code: str, reason: str | None) -> str | None:
     aliases = {"entity_unavailable": "sensor_unavailable", "entity_permission": "permission_denied", "not_exposed": "permission_denied"}
     return MESSAGES.get(aliases.get(reason, reason), MESSAGES.get(code))
+
+
+_ACTION_VERBS = {
+    "turn_on": "ligar",
+    "turn_off": "desligar",
+    "open": "abrir",
+    "close": "fechar",
+    "lock": "trancar",
+    "unlock": "destrancar",
+    "activate": "ativar",
+    "play": "tocar",
+    "pause": "pausar",
+    "stop": "parar",
+    "brightness": "ajustar",
+    "temperature": "ajustar",
+    "percentage": "ajustar",
+    "query": "consultar",
+}
+
+
+def action_verb(action: str | None) -> str | None:
+    return _ACTION_VERBS.get(action or "")
+
+
+def spoken_reason_category(code: str | None, reason: str | None) -> str:
+    if code in ("success", "query_success", "executed"):
+        return "execution"
+    if code == "confirmation_required":
+        return "confirmation"
+    if reason and reason.startswith("semantic_") and reason not in ("semantic_clarification", "semantic_confirmation"):
+        return "restriction"
+    if code in ("denied",) or reason in ("permission_denied", "entity_permission", "not_exposed", "authentication_required", "bulk_policy", "sensitive_policy"):
+        return "restriction"
+    if code in ("missing_slot", "clarification") or reason in (
+        "missing_origin_area", "unknown_area", "ambiguous_area", "ambiguous_target",
+        "ambiguous_source", "target_not_found", "no_compatible_capability",
+        "missing_target", "missing_media_query", "action_unresolved", "target_unresolved",
+        "area_unresolved", "capability_unsupported", "max_clarification_attempts",
+        "bulk_clarification", "semantic_clarification", "llm_abstention",
+        "unresolved_progressive_pipeline",
+    ):
+        return "clarification"
+    if code in ("unavailable",) or reason in ("backend_unavailable", "queue_saturated", "request_timeout", "ha_execution_failed"):
+        return "error"
+    if code == "cancelled":
+        return "cancelled"
+    return "no_match"
+
+
+def render_contextual_message(
+    reason_code: str | None,
+    *,
+    code: str | None = None,
+    mention: str | None = None,
+    action: str | None = None,
+    area_name: str | None = None,
+    candidate_names: list[str] | tuple[str, ...] = (),
+    target_names: list[str] | tuple[str, ...] = (),
+    domain: str | None = None,
+    stage: str | None = None,
+    metric: str | None = None,
+) -> str:
+    """Centralized typed rendering for diagnostic errors, restrictions, and slot clarifications."""
+    del stage
+    verb = action_verb(action)
+    clean_mention = mention.strip() if isinstance(mention, str) and mention.strip() else None
+    names = [str(item).strip() for item in candidate_names if isinstance(item, str) and str(item).strip()]
+    targets = [str(item).strip() for item in target_names if isinstance(item, str) and str(item).strip()]
+
+    if reason_code in (
+        "semantic_negation",
+        "semantic_condition",
+        "semantic_exclusion",
+        "semantic_quoted_command",
+        "semantic_non_effect_request",
+        "semantic_safety_refusal",
+        "max_clarification_attempts",
+    ):
+        return MESSAGES[reason_code]
+
+    if reason_code in ("missing_origin_area", "area_unresolved", "unknown_area", "ambiguous_area"):
+        if reason_code == "unknown_area":
+            return f"Não encontrei o cômodo '{area_name}'. Em qual cômodo?" if area_name else "Não encontrei um cômodo com esse nome. Em qual cômodo?"
+        if reason_code == "ambiguous_area":
+            return "Há mais de um cômodo com esse nome. Em qual cômodo?"
+        if domain == "light" and verb:
+            return f"Entendi que você quer {verb} as luzes. Em qual cômodo?"
+        if verb and clean_mention:
+            return f"Entendi que você quer {verb} {clean_mention}, mas não identifiquei o cômodo. Em qual cômodo?"
+        if verb:
+            return f"Entendi que você quer {verb}, mas não sei em qual cômodo. Em qual cômodo?"
+        return MESSAGES["missing_origin_area"]
+
+    if reason_code in ("ambiguous_target", "target_ambiguous", "ambiguous_source"):
+        if names:
+            listing = f"{names[0]} ou {names[1]}" if len(names) == 2 else ", ".join(names[:4])
+            if reason_code == "ambiguous_source":
+                kind = "aparelho" if metric in ("battery", "location") else "sensor"
+                return f"Encontrei {listing}. Qual {kind} você quer consultar?"
+            if area_name and verb:
+                return f"Encontrei mais de um aparelho em {area_name} ({listing}). Qual deles você quer {verb}?"
+            if verb:
+                return f"Encontrei mais de um aparelho compatível ({listing}). Qual deles você quer {verb}?"
+            return f"Encontrei {listing}. Qual deles?"
+        return "Encontrei mais de um dispositivo compatível. Qual deles você quer usar?"
+
+    if reason_code in ("action_unresolved", "missing_action"):
+        label = targets[0] if targets else clean_mention
+        if label:
+            return f"Encontrei {label}, mas não entendi o que você quer fazer com ele. Você quer ligar ou desligar?"
+        return "Não entendi qual ação você quer fazer. Você quer ligar ou desligar?"
+
+    if reason_code in ("no_compatible_capability", "capability_unsupported"):
+        if domain == "light":
+            return f"Não encontrei iluminação compatível em {area_name}." if area_name else "Não encontrei iluminação compatível neste cômodo."
+        if targets or clean_mention:
+            return "Encontrei esse aparelho, mas ele não oferece essa função no Home Assistant."
+        return MESSAGES["no_compatible_capability"]
+
+    if reason_code in ("target_not_found", "target_unresolved", "device_not_identified", "missing_target"):
+        if clean_mention and area_name and verb:
+            return f"Entendi '{clean_mention}', mas não encontrei um dispositivo correspondente em {area_name}. Qual aparelho você quer {verb}?"
+        if clean_mention and verb:
+            return f"Entendi '{clean_mention}', mas não encontrei um dispositivo correspondente neste cômodo. Qual aparelho você quer {verb}?"
+        if clean_mention and area_name:
+            return f"Entendi '{clean_mention}', mas não encontrei um dispositivo correspondente em {area_name}."
+        if clean_mention:
+            return f"Entendi '{clean_mention}', mas não encontrei um dispositivo correspondente neste cômodo. Qual aparelho você quer usar?"
+        if verb:
+            return f"Entendi que você quer {verb}, mas não identifiquei o aparelho. Qual dispositivo você quer {verb}?"
+        return MESSAGES.get(reason_code, MESSAGES["target_not_found"])
+
+    if reason_code in ("backend_unavailable", "queue_saturated", "request_timeout"):
+        return "Houve uma falha temporária do serviço ao processar o pedido. Tente novamente em instantes."
+
+    return speech(code or "no_match", reason_code) or MESSAGES["no_match"]
 
 
 def requested_target(command: dict, original: str) -> str | None:

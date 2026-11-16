@@ -149,13 +149,38 @@ fn interpret_index(text: &str, request: &ContextRequest, index: &Index) -> Respo
                 }
             } else if pending.action == "music" && pending.parameters.value.is_none() {
                 pending.parameters.value = Some(serde_json::Value::String(clause.clone()));
+            } else if pending.intent == "clarification.action"
+                && let Some((_, action, domain)) = grammar::followup_action(clause)
+            {
+                pending.action = action.to_owned();
+                if let Some(d) = domain
+                    && pending.domains.is_empty()
+                {
+                    pending.domains = vec![d.to_owned()];
+                }
+                let dom = pending
+                    .domains
+                    .first()
+                    .map_or("device", String::as_str);
+                pending.intent = format!("{dom}.{action}");
+                pending.origin = false;
             } else {
-                pending.mention = Some(grammar::followup_target(clause).to_owned());
-                pending.area = None;
-                if pending.intent.ends_with(".implicit_on") {
-                    pending.intent = pending.intent.replace(".implicit_on", ".turn_on");
-                    pending.origin = false;
-                    pending.area = pending.mention.take();
+                let target_reply = grammar::followup_target(clause);
+                let area_hint = index.is_area_name(&resolver::clean_text(target_reply));
+                if area_hint && (pending.area.is_some() || pending.mention.is_some()) {
+                    pending.area = Some(target_reply.to_owned());
+                    if pending.intent.ends_with(".implicit_on") {
+                        pending.intent = pending.intent.replace(".implicit_on", ".turn_on");
+                        pending.origin = false;
+                    }
+                } else {
+                    pending.mention = Some(target_reply.to_owned());
+                    pending.area = None;
+                    if pending.intent.ends_with(".implicit_on") {
+                        pending.intent = pending.intent.replace(".implicit_on", ".turn_on");
+                        pending.origin = false;
+                        pending.area = pending.mention.take();
+                    }
                 }
             }
             pending
@@ -283,7 +308,24 @@ fn interpret_index(text: &str, request: &ContextRequest, index: &Index) -> Respo
                 return failure;
             }
         }
-        let resolution = index.resolve(&command, request);
+        let clause_request;
+        let effective_request = if clauses.len() > 1
+            && command.area.is_none()
+            && let Some(prev_area) = response
+                .operations
+                .last()
+                .and_then(|op| op.parameters.area.clone())
+        {
+            clause_request = ContextRequest {
+                origin_area: Some(prev_area),
+                origin_area_source: Some("device".into()),
+                ..request.clone()
+            };
+            &clause_request
+        } else {
+            request
+        };
+        let resolution = index.resolve(&command, effective_request);
         *response.timings.entry("resolution_ms".into()).or_default() +=
             resolution_start.elapsed().as_secs_f64() * 1_000.0;
         match resolution {
@@ -372,7 +414,10 @@ fn interpret_index(text: &str, request: &ContextRequest, index: &Index) -> Respo
             }
             Err(mut failure) => {
                 if failure.status == "clarification"
-                    || failure.reason.as_deref() == Some("target_not_found")
+                    || matches!(
+                        failure.reason.as_deref(),
+                        Some("target_not_found" | "no_compatible_capability")
+                    )
                 {
                     failure.command = Some(Command { ..command });
                 }

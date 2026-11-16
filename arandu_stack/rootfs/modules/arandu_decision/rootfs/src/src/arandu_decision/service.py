@@ -200,7 +200,7 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
                 if action == "unload":
                     adapter.unload()
                     return {"unloaded": True}
-                if action not in {"decision", "partial", "residency", "load", "apply", "prepare", "compare", "calibrate", "readiness"}:
+                if action not in {"decision", "partial", "decision_partial", "residency", "load", "apply", "prepare", "compare", "calibrate", "readiness"}:
                     raise ValueError("Ação indisponível neste pacote")
                 if action == "residency":
                     requested = str(body.get("resident_policy", active["resident_policy"])).upper()
@@ -215,7 +215,7 @@ def create_app(root, executable=None, threads=2, runtime_settings=None):
                         residency_state["preload_success"] = True
                         residency_state["cold_start_ms"] = adapter.load_ms
                     return {"resident_policy": active["resident_policy"], "is_model_loaded": adapter.model is not None, "rss_bytes": _process_rss_bytes()}
-                if action == "partial":
+                if action in {"partial", "decision_partial"}:
                     infer_start = time.perf_counter()
                     if active["resident_policy"] in {"RESIDENT", "LAZY"} and adapter.model is None and installed(root, key):
                         try:

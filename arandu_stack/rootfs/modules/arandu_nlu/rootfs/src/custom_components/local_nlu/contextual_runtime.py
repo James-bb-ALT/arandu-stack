@@ -59,6 +59,7 @@ class Session:
     dialogue: Any = None
     todo_confirmation: dict = field(default_factory=dict)
     temporal_clarification: dict | None = None
+    clarification_turns: int = 0
 
 
 class TemporalClarificationRequired(Exception):
@@ -106,6 +107,8 @@ class ContextualRuntime:
         self.active_requests = {}
         self.cancelled_tasks = set()
         self.queued_requests = {}
+        from .dialogue_coordinator import PendingRequestStore
+        self._pending_requests = PendingRequestStore()
         from .scheduled_delivery import ScheduledDeliveryHandler
         from .scheduled_execution import ScheduledExecutionHandler
         from .scheduled_jobs import ScheduledJobManager
@@ -128,6 +131,8 @@ class ContextualRuntime:
             task.cancel()
         self.catalog.close()
         self.sessions.clear()
+        if hasattr(self, "_pending_requests"):
+            self._pending_requests = type(self._pending_requests)()
         if hasattr(self, "scheduler"):
             self.scheduler.close()
         if self._scheduler_publisher:
@@ -158,7 +163,21 @@ class ContextualRuntime:
     def options_changed(self) -> None:
         self.options_revision += 1
         self.sessions.clear()
+        if hasattr(self, "_pending_requests"):
+            self._pending_requests = type(self._pending_requests)()
         self.catalog.invalidate()
+
+    def _has_action_pending(self, *, user_id: str, origin_id: str, conversation_id: str | None) -> bool:
+        store = getattr(self, "_pending_requests", None)
+        if store is None:
+            return False
+        if conversation_id and (req := store._by_conv.get(conversation_id)) is not None:
+            if req.user_id == user_id and req.origin_id == origin_id and ("action" in req.missing_slots or req.question_kind == "ask_action"):
+                return True
+        for req in store._by_conv.values():
+            if req.user_id == user_id and req.origin_id == origin_id and origin_id not in ("", "unknown") and not origin_id.startswith("anonymous") and ("action" in req.missing_slots or req.question_kind == "ask_action"):
+                return True
+        return False
 
     def invalidate_scope(self, user_id: str, origin_id: str, conversation_id: str | None) -> None:
         """Invalidate pending confirmations, selections, and dialogue in this exact scope."""
@@ -175,11 +194,16 @@ class ContextualRuntime:
 
     def result(self, code: str, user_input: Any, *, speech: str | None = None, count: int = 0, followup: bool = False, reason: str | None = None, timings: dict | None = None, preserve_clarification: bool = False) -> Any:
         from .runtime import RuntimeResult
-        from .contextual_errors import speech as failure_speech
+        from .contextual_errors import render_contextual_message, spoken_reason_category, speech as failure_speech
         from .response_profile import FAILURES, short_failure_origin
+        original_reason = reason
+        flattened_by_profile = False
         if code in FAILURES and not count and short_failure_origin(self.hass, user_input):
             if preserve_clarification and (speech or followup):
-                followup = True
+                if reason == "max_clarification_attempts":
+                    followup = False
+                else:
+                    followup = True
             else:
                 # End this dialogue, including any clarification/selection retained
                 # by NLU or semantic fallback. A later "sim" must not revive it.
@@ -187,19 +211,31 @@ class ContextualRuntime:
                          user_input.conversation_id)
                 self.sessions.pop(owner, None)
                 code, speech, followup = 'no_match', 'Não entendi.', False
+                flattened_by_profile = True
         reason = reason or {"denied": "permission_denied", "stale": "stale", "invalid_request": "invalid_request", "no_match": "no_match", "unsupported_intent": "unsupported_intent", "partial_failure": "partial_failure"}.get(code)
         stage = getattr(self, "stage", "normalization")
-        if reason in ("missing_origin_area", "unknown_area", "ambiguous_area", "ambiguous_group", "origin_area_changed"):
+        if reason in ("missing_origin_area", "unknown_area", "ambiguous_area", "ambiguous_group", "origin_area_changed", "area_unresolved"):
             stage = "area_resolution"
-        elif reason in ("no_compatible_capability", "ambiguous_target", "bulk_target_unavailable", "target_limit", "target_not_found"):
+        elif reason in ("no_compatible_capability", "ambiguous_target", "bulk_target_unavailable", "target_limit", "target_not_found", "target_unresolved", "action_unresolved", "capability_unsupported"):
             stage = "entity_resolution"
         elif reason == "contradictory_plan":
             stage = "planning"
         elif code == "no_match":
             stage = "intent_recognition"
-        self.last_outcome = {"code": code, "reason": reason, "stage": stage}
-        _LOGGER.debug("ARANDU contextual stage=%s code=%s reason=%s", stage, code, reason)
-        speech = speech or failure_speech(code, reason)
+        self.last_outcome = {
+            "code": code,
+            "reason": reason,
+            "original_reason": original_reason or reason,
+            "flattened_by_profile": flattened_by_profile,
+            "spoken_reason_category": spoken_reason_category(code, reason),
+            "stage": stage,
+        }
+        _LOGGER.debug("ARANDU contextual stage=%s code=%s reason=%s original_reason=%s", stage, code, reason, original_reason)
+        if not speech:
+            if reason and (reason.startswith("semantic_") or reason in ("missing_origin_area", "max_clarification_attempts", "backend_unavailable")):
+                speech = render_contextual_message(reason, code=code)
+            else:
+                speech = failure_speech(code, reason)
         return RuntimeResult(code=code, operation_count=count, response_text=speech,
                              continue_conversation=followup, conversation_id=user_input.conversation_id,
                              reason=reason, timings=timings or {})
@@ -424,9 +460,19 @@ class ContextualRuntime:
             key = (user_id, origin, conversation_id)
             current_time = time.monotonic()
             expired = key in self.sessions and self.sessions[key].expires < current_time
+            session_existed_before = key in self.sessions
             protected = set(self.active_requests.values())
             for stale_key in [item for item, session in self.sessions.items() if session.expires < current_time and item not in protected]:
                 self.sessions.pop(stale_key)
+                self._pending_requests.pop(stale_key[2])
+            if not session_existed_before:
+                self._pending_requests.pop(conversation_id)
+                stale_for_origin = [
+                    cid for cid, req in list(self._pending_requests._by_conv.items())
+                    if (req.user_id, req.origin_id, cid) not in self.sessions
+                ]
+                for cid in stale_for_origin:
+                    self._pending_requests.pop(cid)
             if key not in self.sessions:
                 if len(self.sessions) >= 128:
                     oldest = next((item for item in self.sessions if item not in protected),None)
@@ -459,12 +505,19 @@ class ContextualRuntime:
                 operation = Operation('satellite.volume_set', 'volume', (target,), {'value': percent}, evidence=('origin_device',))
                 return await self.execute((operation,), snapshot, user_input, session, options, identity)
             independent = _independent_command(text)
+            bare_action_reply = _is_bare_action_reply(text)
+            conv_id = getattr(user_input, "conversation_id", None)
+            if bare_action_reply and (
+                (session.pending and session.pending.get("intent") == "clarification.action")
+                or self._has_action_pending(user_id=user_id, origin_id=origin, conversation_id=conv_id)
+            ):
+                independent = False
             if session.identity_source != identity.source:
                 self.sessions[key] = Session(current_time + _ttl(options), identity_source=identity.source)
                 session = self.sessions[key]
                 if not independent:
                     return self.result("stale", user_input, reason="identity_changed")
-            if not independent and (session.selection or session.pending or session.confirmation or session.temporal_clarification) and text not in ("sim", "não", "nao", "confirmo", "pode", "pode confirmar", "isso"):
+            if not independent and (session.selection or session.pending or session.confirmation or session.temporal_clarification) and text not in ("sim", "não", "nao", "confirmo", "pode", "pode confirmar", "isso") and not bare_action_reply:
                 # Rust remains the grammar authority for command families without verbs.
                 # This probe has no effects and never renders a catalog or candidates.
                 from .contextual_catalog import build
@@ -532,12 +585,50 @@ class ContextualRuntime:
                 return self.result('unavailable',user_input,reason='phase5_not_supported',speech='Atualize também o módulo NLU para usar o contexto da Fase 5.')
             refusal = semantic_refusal(user_input.text, snapshot.payload)
             pending = session.pending
+            perms_fp = _permissions_fingerprint(user)
+            origin_recovered_req = None
+            conv_id = getattr(user_input, "conversation_id", None)
+            if pending is None and not session.selection and not session.confirmation:
+                exact_req = self._pending_requests.get_valid(
+                    user_id=identity.user_id,
+                    origin_id=origin,
+                    conversation_id=conv_id,
+                    generation=generation,
+                    permissions_fingerprint=perms_fp,
+                )
+                if exact_req is None and not (independent and not bare_action_reply):
+                    exact_req = self._pending_requests.get_valid_for_origin(
+                        user_id=identity.user_id,
+                        origin_id=origin,
+                        generation=generation,
+                        permissions_fingerprint=perms_fp,
+                        max_age_seconds=30.0,
+                    )
+                    if exact_req is not None and exact_req.origin_area != area:
+                        exact_req = None
+                if exact_req is not None and exact_req.command:
+                    origin_recovered_req = exact_req
+                    pending = dict(exact_req.command)
+                    session.pending = pending
+                    session.candidates = exact_req.candidates
+                    session.pending_generation = generation
+                    session.pending_origin = area
+                    session.pending_options = _options_hash(options)
+                    session.clarification_turns = exact_req.turn_count
+                    if bare_action_reply and (pending.get("intent") == "clarification.action" or "action" in exact_req.missing_slots):
+                        independent = False
+                    if exact_req.preserved_slots.get("target") and not session.last_targets:
+                        t_val = exact_req.preserved_slots["target"]
+                        if isinstance(t_val, str) and t_val in snapshot.by_id:
+                            session.last_targets = (t_val,)
             if pending is not None and (generation != session.pending_generation or area != session.pending_origin or _options_hash(options) != session.pending_options):
                 session.pending = None
                 session.candidates = ()
                 raise ExecutionError("stale", "dialogue_changed")
-            # New commands replace a clarification; only a short target answer fills it.
-            if text.split()[0] in ("liga", "desliga", "coloca", "aumenta", "diminui", "qual", "quanto", "onde", "ativa", "abre", "fecha"):
+            # New commands replace a clarification; only a short slot/action answer fills it.
+            if text.split()[0] in ("liga", "desliga", "coloca", "aumenta", "diminui", "qual", "quanto", "onde", "ativa", "abre", "fecha") and not (
+                bare_action_reply and pending is not None and pending.get("intent") == "clarification.action"
+            ):
                 pending = None
             payload = {"version": 4, "generation": generation, "text": user_input.text,
                        "origin_area": area, "origin_area_source": spatial_context[1], "last_area": session.last_area,
@@ -566,10 +657,11 @@ class ContextualRuntime:
                 from .todo_actions import literal_binding
                 if literal_binding(user_input.text,outcome.operations): remaining=None
                 if remaining:
+                    from .contextual_errors import render_contextual_message
                     session.dialogue=None
                     session.pending,session.selection,session.confirmation,session.candidates=None,None,(),()
                     return self.result('cancelled' if remaining=='semantic_negation' else 'unavailable',user_input,reason=remaining,
-                        speech='Não executei: o pedido contém uma restrição que não consigo aplicar com segurança.')
+                        speech=render_contextual_message(remaining), preserve_clarification=True)
             from .light_aggregation import evaluate_aggregated_light_query, is_aggregated_light_query
             if outcome.status != "plan" and pending is None and not session.candidates and is_aggregated_light_query(user_input.text):
                 current_user = await self.revalidate(identity, user_input, options)
@@ -599,14 +691,19 @@ class ContextualRuntime:
             from .dialogue_coordinator import PendingRequest, PendingRequestStore
             if not hasattr(self, "_pending_requests"):
                 self._pending_requests = PendingRequestStore()
-            conv_id = getattr(user_input, "conversation_id", None)
-            active_pending_req = self._pending_requests.get_valid(
+            active_pending_req = origin_recovered_req or self._pending_requests.get_valid(
                 user_id=identity.user_id,
                 origin_id=origin,
                 conversation_id=conv_id,
                 generation=generation,
+                permissions_fingerprint=perms_fp,
             )
-            effective_text = active_pending_req.merge_reply(user_input.text) if (active_pending_req is not None and outcome.status != "plan") else user_input.text
+            merged_frame = (
+                active_pending_req.merge_into_frame(user_input.text)
+                if (active_pending_req is not None and outcome.status != "plan")
+                else None
+            )
+            effective_text = _compose_effective_text(user_input.text, active_pending_req, merged_frame) if (active_pending_req is not None and outcome.status != "plan") else user_input.text
             from .intelligence import eligible, fallback, nlu_summary
             if outcome.status != "plan" and not reserved(user_input.text) and (options.get("decision_enabled") is True or options.get("llm_enabled") is True):
                 from .ai_lab import local_request
@@ -631,31 +728,60 @@ class ContextualRuntime:
                         from .progressive_contract import build_llm_handoff
                         orchestrator = self._progressive_orchestrator
                         async def _decision_partial(req_body):
-                            return await infer({"action": "decision_partial", "catalog": model_payload, **req_body})
+                            req_trace = CURRENT.get()
+                            if req_trace:
+                                req_trace.start("decision")
+                            try:
+                                res = await infer({"action": "decision_partial", "catalog": model_payload, **req_body})
+                            except BaseException as exc:
+                                if req_trace and "decision" in req_trace.running:
+                                    req_trace.end("decision", "error", type(exc).__name__)
+                                raise
+                            if req_trace and "decision" in req_trace.running:
+                                req_trace.model("decision", res)
+                                req_trace.end("decision", "completed" if res.get("status") != "denied" else "rejected", res.get("reason"), res.get("confidence"))
+                            return res
                         async def _llm_handoff(partial_u, dec_out, graph_ctx):
+                            session_state_payload = (
+                                {"preserved_slots": merged_frame["slots"], "frame": merged_frame["frame"], "question_kind": active_pending_req.question_kind}
+                                if (active_pending_req and merged_frame)
+                                else ({"preserved_slots": active_pending_req.preserved_slots} if active_pending_req else None)
+                            )
                             handoff_payload = build_llm_handoff(
                                 partial_u,
                                 dec_out,
                                 graph_ctx,
-                                session_state={"preserved_slots": active_pending_req.preserved_slots} if active_pending_req else None,
+                                session_state=session_state_payload,
                             )
-                            return await infer({
-                                "action": "llm",
-                                "text": effective_text,
-                                "catalog": model_payload,
-                                "context": {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets), "last_action": session.last_action},
-                                "partial_understanding": partial_u,
-                                "decision": dec_out,
-                                "graph_context": graph_ctx,
-                                "handoff": handoff_payload,
-                                "contract_version": 2,
-                            })
+                            req_trace = CURRENT.get()
+                            if req_trace:
+                                req_trace.start("llm")
+                            try:
+                                res = await infer({
+                                    "action": "llm",
+                                    "text": effective_text,
+                                    "catalog": model_payload,
+                                    "context": {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets), "last_action": session.last_action},
+                                    "partial_understanding": partial_u,
+                                    "decision": dec_out,
+                                    "graph_context": graph_ctx,
+                                    "handoff": handoff_payload,
+                                    "contract_version": 2,
+                                })
+                            except BaseException as exc:
+                                if req_trace and "llm" in req_trace.running:
+                                    req_trace.end("llm", "error", type(exc).__name__)
+                                raise
+                            if req_trace and "llm" in req_trace.running:
+                                req_trace.model("llm", res)
+                                req_trace.end("llm", "completed", res.get("reason") or res.get("mode"))
+                            return res
                         v5_result = await orchestrator.resolve(
                             text=effective_text,
                             snapshot_payload=snapshot.payload,
                             snapshot_by_id=snapshot.by_id,
                             origin_area=area,
-                            origin_source=origin,
+                            origin_source=spatial_context[1],
                             origin_context_id=conv_id,
                             user_id=identity.user_id,
                             interpret_v5=self.client.async_interpret_v5,
@@ -667,29 +793,63 @@ class ContextualRuntime:
                         )
                     except Exception as exc:
                         self.last_v5_error = f"{type(exc).__name__}: {exc}"
-                        LOGGER.warning("Progressive V5 failed (%s): %s", type(exc).__name__, exc)
+                        _LOGGER.warning("Progressive V5 failed (%s): %s", type(exc).__name__, exc)
                         v5_result = None
                 if v5_result is not None and v5_result.outcome_kind in ("conversation_response", "safety_refusal"):
                     self._pending_requests.pop(conv_id)
+                    if origin_recovered_req is not None:
+                        self._pending_requests.pop(origin_recovered_req.conversation_id)
+                    session.clarification_turns = 0
                     if v5_result.outcome_kind == "conversation_response" and v5_result.speech:
                         await self.revalidate(identity, user_input, options)
                         session.pending = None
                         session.candidates = ()
                         session.response = v5_result.speech
                         return self.result("query_success", user_input, speech=v5_result.speech, reason="llm_conversation")
-                    return self.result("unavailable", user_input, reason=v5_result.reason or "safety_refusal",
-                        speech="Não executei: o pedido contém uma restrição que não consigo aplicar com segurança.")
+                    from .contextual_errors import render_contextual_message
+                    r_code = v5_result.reason or "semantic_safety_refusal"
+                    return self.result(
+                        "cancelled" if r_code == "semantic_negation" else "unavailable",
+                        user_input,
+                        reason=r_code,
+                        speech=render_contextual_message(r_code),
+                        preserve_clarification=True,
+                    )
                 if v5_result is not None and v5_result.outcome_kind in ("execute_plan", "confirmation_required") and v5_result.operations:
                     self._pending_requests.pop(conv_id)
+                    if origin_recovered_req is not None:
+                        self._pending_requests.pop(origin_recovered_req.conversation_id)
+                    session.clarification_turns = 0
                     proposed = tuple(Operation(action=op["action"], targets=tuple(op.get("targets") or ()), parameters=op.get("parameters") or {}, evidence=op.get("evidence") or ()) for op in v5_result.operations)
                     trace = {"progressive_v5": v5_result.trace}
                     if v5_result.outcome_kind == "confirmation_required":
                         trace["progressive_v5"]["status"] = "confirmation_required"
                 elif v5_result is not None and v5_result.outcome_kind == "clarification":
+                    turn_count = (active_pending_req.turn_count if active_pending_req else session.clarification_turns) + 1
+                    if turn_count > 3:
+                        self._pending_requests.pop(conv_id)
+                        if origin_recovered_req is not None:
+                            self._pending_requests.pop(origin_recovered_req.conversation_id)
+                        session.pending = None
+                        session.candidates = ()
+                        session.clarification_turns = 0
+                        from .contextual_errors import MESSAGES
+                        return self.result("missing_slot", user_input, speech=MESSAGES["max_clarification_attempts"], followup=False, reason="max_clarification_attempts", preserve_clarification=True)
+                    clauses_trace = (v5_result.trace or {}).get("clauses") or []
+                    preserved = dict(clauses_trace[0].get("frozen_slots") or {}) if clauses_trace else {}
+                    missing = v5_result.missing_slots or (tuple(clauses_trace[0].get("unresolved") or ()) if clauses_trace else ())
+                    cmd_stub = outcome.command or _v5_partial_command(v5_result, preserved, snapshot)
+                    cands = v5_result.candidates or outcome.candidates
+                    if cands and not session.last_targets:
+                        session.last_targets = tuple(cands)
+                    session.clarification_turns = turn_count
+                    session.pending = cmd_stub
+                    session.candidates = cands
+                    session.pending_generation = generation
+                    session.pending_origin = area
+                    session.pending_options = _options_hash(options)
+                    session.expires = current_time + min(30, _ttl(options))
                     if conv_id:
-                        clauses_trace = (v5_result.trace or {}).get("clauses") or []
-                        preserved = dict(clauses_trace[0].get("frozen_slots") or {}) if clauses_trace else {}
-                        missing = tuple(clauses_trace[0].get("unresolved") or ()) if clauses_trace else ()
                         self._pending_requests.put(
                             PendingRequest(
                                 user_id=identity.user_id,
@@ -699,9 +859,17 @@ class ContextualRuntime:
                                 preserved_slots=preserved,
                                 missing_slots=missing,
                                 original_text=effective_text,
+                                candidates=cands,
+                                origin_area=area,
+                                origin_source=spatial_context[1],
+                                permissions_fingerprint=perms_fp,
+                                question_kind=v5_result.question_kind or "",
+                                last_question=v5_result.speech or "",
+                                turn_count=turn_count,
+                                command=cmd_stub,
                             )
                         )
-                    return self.result("missing_slot", user_input, speech=v5_result.speech, reason=v5_result.reason or "clarification", preserve_clarification=True)
+                    return self.result("missing_slot", user_input, speech=v5_result.speech, followup=True, reason=v5_result.reason or "clarification", preserve_clarification=True)
                 elif eligible(outcome, pending=pending is not None or bool(session.candidates)):
                     proposed, trace = await fallback(effective_text, model_snapshot, options, infer,
                         {"origin_area": area, "last_area": session.last_area, "last_targets": list(session.last_targets), "last_action":session.last_action,
@@ -748,6 +916,7 @@ class ContextualRuntime:
             if outcome.status == "clarification":
                 # Interpretation awaits I/O; cached names are not permission authority.
                 from .contextual_catalog import build
+                from .contextual_errors import MESSAGES, render_contextual_message
                 current_user = await self.revalidate(identity, user_input, options)
                 self.validate_options(options)
                 current_snapshot = build(self.hass, current_user, options)
@@ -757,7 +926,18 @@ class ContextualRuntime:
                     session.candidates = ()
                     raise ExecutionError("stale", "clarification_catalog_changed")
                 snapshot = current_snapshot
+                turn_count = (active_pending_req.turn_count if active_pending_req else session.clarification_turns) + 1
+                if turn_count > 3:
+                    session.pending = None
+                    session.selection = None
+                    session.candidates = ()
+                    session.clarification_turns = 0
+                    self._pending_requests.pop(conv_id)
+                    if origin_recovered_req is not None:
+                        self._pending_requests.pop(origin_recovered_req.conversation_id)
+                    return self.result("missing_slot", user_input, speech=MESSAGES["max_clarification_attempts"], followup=False, reason="max_clarification_attempts", preserve_clarification=True)
                 # No partial plan is retained across a compound clarification.
+                session.clarification_turns = turn_count
                 session.pending = outcome.command
                 session.candidates = outcome.candidates
                 session.pending_generation = generation
@@ -770,26 +950,87 @@ class ContextualRuntime:
                                          "text": user_input.text, "generation": generation, "origin": area,
                                          "options_hash": _options_hash(options), "question": question,
                                          "confirmation_semantics": {"sim": "area", "nao": "name"}}
-                    return self.result("missing_slot", user_input, speech=question, followup=True, reason=outcome.reason)
+                    return self.result("missing_slot", user_input, speech=question, followup=True, reason=outcome.reason, preserve_clarification=True)
                 labels = [(snapshot.by_id[item].get("attributes", {}).get("reference_device_name") or snapshot.by_id[item].get("device_name") or snapshot.by_id[item]["name"]) if outcome.command and outcome.command["parameters"].get("metric") in ("battery", "location") else snapshot.by_id[item]["name"] for item in outcome.candidates if item in snapshot.by_id]
+                cmd_dict = outcome.command or {}
+                cmd_action = cmd_dict.get("action")
+                cmd_domains = cmd_dict.get("domains") or ()
+                cmd_domain = cmd_domains[0] if len(cmd_domains) == 1 else None
+                cmd_area = cmd_dict.get("area") or area
+                area_name = next((a["names"][0] for a in snapshot.payload.get("areas", []) if a.get("area_id") == cmd_area and a.get("names")), cmd_area)
                 speech = "Qual alvo você quer usar?"
                 if labels:
-                    speech = "Encontrei " + ", ".join(labels[:4]) + ". Qual deles?"
-                    if outcome.reason == "ambiguous_source":
-                        kind = "aparelho" if outcome.command and outcome.command["parameters"].get("metric") in ("battery", "location") else "sensor"
-                        speech = "Encontrei " + ", ".join(labels[:4]) + f". Qual {kind} você quer consultar?"
-                elif outcome.reason in ("missing_origin_area", "unknown_area", "ambiguous_area"):
+                    speech = render_contextual_message(
+                        outcome.reason or "ambiguous_target",
+                        code="missing_slot",
+                        action=cmd_action,
+                        area_name=area_name,
+                        candidate_names=labels,
+                        domain=cmd_domain,
+                        metric=(cmd_dict.get("parameters") or {}).get("metric"),
+                    )
+                elif outcome.reason == "missing_origin_area":
+                    if cmd_dict.get("intent", "").endswith(".implicit_on") or not cmd_action:
+                        speech = "Em qual cômodo?"
+                    else:
+                        speech = render_contextual_message("missing_origin_area", code="missing_slot", action=cmd_action, mention=cmd_dict.get("mention"), domain=cmd_domain)
+                elif outcome.reason in ("unknown_area", "ambiguous_area"):
                     speech = "Em qual cômodo?"
                 elif outcome.reason == "missing_media_query":
                     speech = "O que você quer ouvir?"
                 elif outcome.reason and outcome.reason.startswith("missing_calendar_"):
                     speech = {"summary": "Qual é o título do compromisso?", "date": "Em qual dia?", "time": "A que horas?", "duration": "Qual é a duração do compromisso?"}.get(outcome.reason.removeprefix("missing_calendar_"), "Qual informação falta?")
-                return self.result("missing_slot", user_input, speech=speech, followup=session.pending is not None, reason=outcome.reason)
+                if conv_id and outcome.command is not None:
+                    missing_s = ("area",) if outcome.reason in ("missing_origin_area", "unknown_area", "ambiguous_area") else ("target",)
+                    self._pending_requests.put(
+                        PendingRequest(
+                            user_id=identity.user_id,
+                            origin_id=origin,
+                            conversation_id=conv_id,
+                            generation=generation,
+                            preserved_slots={"action": cmd_action, "domain": cmd_domain, "area": cmd_dict.get("area"), "intent": cmd_dict.get("intent")},
+                            missing_slots=missing_s,
+                            original_text=user_input.text,
+                            candidates=outcome.candidates,
+                            origin_area=area,
+                            origin_source=spatial_context[1],
+                            permissions_fingerprint=perms_fp,
+                            question_kind="ask_area" if missing_s == ("area",) else "disambiguate_target",
+                            last_question=speech,
+                            turn_count=turn_count,
+                            command=outcome.command,
+                        )
+                    )
+                return self.result("missing_slot", user_input, speech=speech, followup=session.pending is not None, reason=outcome.reason, preserve_clarification=True)
+            if pending is not None and outcome.status in ("unavailable", "no_match") and outcome.reason in ("target_not_found", "unknown_area", "no_match", None):
+                from .contextual_errors import MESSAGES, requested_target
+                turn_count = (active_pending_req.turn_count if active_pending_req else session.clarification_turns) + 1
+                if turn_count > 3:
+                    session.pending = None
+                    session.selection = None
+                    session.candidates = ()
+                    session.clarification_turns = 0
+                    self._pending_requests.pop(conv_id)
+                    if origin_recovered_req is not None:
+                        self._pending_requests.pop(origin_recovered_req.conversation_id)
+                    return self.result("missing_slot", user_input, speech=MESSAGES["max_clarification_attempts"], followup=False, reason="max_clarification_attempts", preserve_clarification=True)
+                session.clarification_turns = turn_count
+                session.pending = pending
+                session.expires = current_time + min(30, _ttl(options))
+                if active_pending_req is not None:
+                    active_pending_req.turn_count = turn_count
+                    self._pending_requests.put(active_pending_req)
+                label = requested_target(outcome.command, user_input.text) if outcome.command is not None else user_input.text.strip()
+                prior_q = (active_pending_req.last_question if active_pending_req and active_pending_req.last_question else "Qual deles você quer usar?")
+                retry_speech = f'Não encontrei “{label}”. {prior_q}' if label else prior_q
+                return self.result("missing_slot", user_input, speech=retry_speech, followup=True, reason=outcome.reason or "clarification_retry", preserve_clarification=True)
             session.pending = None
             if outcome.status in ("cancel", "confirm", "repeat_response"):
+                self._pending_requests.pop(conv_id)
                 return self.result("cancelled", user_input, speech="Nenhuma ação executada.")
             if outcome.status != "plan":
                 speech = None
+                from .contextual_errors import render_contextual_message
                 if eligible(outcome, pending=pending is not None or bool(session.candidates)):
                     # Clarification names are subject to the same post-I/O privacy
                     # and origin checks as executable semantic proposals.
@@ -804,6 +1045,53 @@ class ContextualRuntime:
                     if action_missing:
                         session.last_targets = tuple(key for key, row in snapshot.by_id.items() if row["entity_id"] in partial["target_entities"])
                         session.last_area = partial["target_area"]
+                        turn_count = (active_pending_req.turn_count if active_pending_req else session.clarification_turns) + 1
+                        if turn_count > 3:
+                            session.clarification_turns = 0
+                            self._pending_requests.pop(conv_id)
+                            from .contextual_errors import MESSAGES
+                            return self.result("missing_slot", user_input, speech=MESSAGES["max_clarification_attempts"], followup=False, reason="max_clarification_attempts", preserve_clarification=True)
+                        target_key = session.last_targets[0] if session.last_targets else None
+                        target_row = snapshot.by_id.get(target_key) if target_key else None
+                        if target_row is not None:
+                            action_cmd = {
+                                "intent": "clarification.action",
+                                "action": "query",
+                                "domains": [target_row["domain"]],
+                                "mention": target_row["name"],
+                                "area": partial["target_area"],
+                                "device_class": target_row.get("device_class"),
+                                "plural": False,
+                                "origin": False,
+                                "parameters": {},
+                            }
+                            session.clarification_turns = turn_count
+                            session.pending = action_cmd
+                            session.candidates = session.last_targets
+                            session.pending_generation = generation
+                            session.pending_origin = area
+                            session.pending_options = _options_hash(options)
+                            session.expires = current_time + min(30, _ttl(options))
+                            if conv_id:
+                                self._pending_requests.put(
+                                    PendingRequest(
+                                        user_id=identity.user_id,
+                                        origin_id=origin,
+                                        conversation_id=conv_id,
+                                        generation=generation,
+                                        preserved_slots={"target": target_key, "domain": target_row["domain"], "area": partial["target_area"]},
+                                        missing_slots=("action",),
+                                        original_text=user_input.text,
+                                        candidates=session.last_targets,
+                                        origin_area=area,
+                                        origin_source=spatial_context[1],
+                                        permissions_fingerprint=perms_fp,
+                                        question_kind="ask_action",
+                                        last_question=partial["clarification_question"],
+                                        turn_count=turn_count,
+                                        command=action_cmd,
+                                    )
+                                )
                     if not partial["target_entities"] and outcome.reason == "target_not_found" and outcome.command is not None:
                         cmd_action = outcome.command.get("action")
                         cmd_area = outcome.command.get("area") or partial.get("target_area")
@@ -833,27 +1121,43 @@ class ContextualRuntime:
                                     speech=f"Quer desligar {' e '.join(labels)} de {area_name}?",
                                     followup=True,
                                     reason="bulk_clarification",
+                                    preserve_clarification=True,
                                 )
                             return self.result(
                                 "no_match",
                                 user_input,
                                 speech="Não encontrei dispositivos elegíveis para desligar nessa área.",
                                 reason="no_eligible_targets",
+                                preserve_clarification=True,
                             )
-                    return self.result("missing_slot" if action_missing else "no_match", user_input,
-                        speech=partial["clarification_question"], followup=True, reason="semantic_clarification")
+                    if action_missing or (
+                        outcome.reason not in ("no_compatible_capability", "target_limit")
+                        and not (outcome.reason == "target_not_found" and outcome.command is not None and not partial["target_entities"])
+                    ):
+                        return self.result("missing_slot" if action_missing else "no_match", user_input,
+                            speech=partial["clarification_question"], followup=True, reason="action_unresolved" if action_missing else "semantic_clarification", preserve_clarification=True)
                 if outcome.reason == "target_not_found" and outcome.command is not None:
                     from .contextual_errors import requested_target
                     label = requested_target(outcome.command, user_input.text)
                     if label:
                         speech = f'Não encontrei um dispositivo chamado “{label}”.'
-                return self.result(outcome.status, user_input, speech=speech, reason=outcome.reason)
+                elif outcome.reason == "no_compatible_capability":
+                    cmd_domains = (outcome.command or {}).get("domains") or ()
+                    cmd_domain = cmd_domains[0] if len(cmd_domains) == 1 else None
+                    cmd_area = (outcome.command or {}).get("area") or area
+                    area_name = next((a["names"][0] for a in snapshot.payload.get("areas", []) if a.get("area_id") == cmd_area and a.get("names")), None)
+                    speech = render_contextual_message("no_compatible_capability", domain=cmd_domain, mention=(outcome.command or {}).get("mention"), area_name=area_name)
+                return self.result(outcome.status, user_input, speech=speech, reason=outcome.reason, preserve_clarification=True)
             if origin_context(self.hass, user_input, options) != spatial_context:
                 raise ExecutionError("stale", "origin_area_changed")
             if pending is not None and session.candidates:
                 targets = {target for operation in outcome.operations for target in operation.targets}
                 if not targets <= set(session.candidates):
                     raise ExecutionError("stale", "clarification_candidate_changed")
+            self._pending_requests.pop(conv_id)
+            if origin_recovered_req is not None:
+                self._pending_requests.pop(origin_recovered_req.conversation_id)
+            session.clarification_turns = 0
             session.expires = time.monotonic() + _ttl(options)
             self.stage = "planning"
             result = await self.execute(outcome.operations, snapshot, user_input, session, options, identity)
@@ -956,7 +1260,12 @@ class ContextualRuntime:
         session.pending = None
         session.candidates = ()
         session.expires = time.monotonic() + _ttl(options)
-        return await self.execute((operation,), snapshot, user_input, session, options, identity)
+        exec_input = (
+            replace(user_input, text=pending["text"])
+            if hasattr(user_input, "__dataclass_fields__")
+            else _input_with_text(user_input, pending["text"])
+        )
+        return await self.execute((operation,), snapshot, exec_input, session, options, identity)
 
     async def _send(self, snapshot: Snapshot) -> None:
         response = await self.client.async_catalog_v4(snapshot.payload)
@@ -1936,6 +2245,81 @@ def _independent_command(text: str) -> bool:
     return bool(words) and (words[0] in ("liga", "ligue", "ligar", "aciona", "acione", "desliga", "desligue", "desligar", "apaga", "apague", "apagar", "acende", "acenda", "acender", "coloca", "coloque", "colocar", "bota", "deixa", "ajusta", "ajuste", "aumenta", "aumentar", "diminui", "diminuir", "qual", "quanto", "quantas", "quantos", "quais", "onde", "tem", "ativa", "ative", "desativa", "desative", "abre", "abra", "abrir", "fecha", "feche", "fechar", "tranca", "tranque", "trancar", "destranca", "destranque", "destrancar", "finaliza", "acabar", "toca", "toque", "quero", "pode", "poderia", "me") or " qual " in text or " quanto " in text)
 
 
+_BARE_ACTION_VERBS = frozenset(
+    (
+        "liga", "ligue", "ligar", "acende", "acenda", "acender",
+        "ativa", "ative", "ativar", "desliga", "desligue", "desligar",
+        "apaga", "apague", "apagar", "desativa", "desative", "desativar",
+        "abre", "abra", "abrir", "fecha", "feche", "fechar",
+        "tranca", "tranque", "trancar", "destranca", "destranque", "destrancar",
+    )
+)
+
+
+def _is_bare_action_reply(text: str) -> bool:
+    words = [w for w in text.split() if w not in ("por", "favor", "arandu")]
+    if not words or words[0] not in _BARE_ACTION_VERBS:
+        return False
+    if len(words) == 1:
+        return True
+    return len(words) == 2 and words[1] in ("ele", "ela", "isso")
+
+
+def _permissions_fingerprint(user: Any) -> str:
+    is_admin = getattr(user, "is_admin", None)
+    perms = getattr(user, "permissions", None)
+    allowed = getattr(perms, "allowed", None)
+    if isinstance(allowed, (set, frozenset, list, tuple)):
+        body = json.dumps({"admin": is_admin, "allowed": sorted(str(x) for x in allowed)}, sort_keys=True)
+    else:
+        body = json.dumps({"admin": is_admin, "id": getattr(user, "id", None)}, sort_keys=True)
+    return hashlib.sha256(body.encode()).hexdigest()[:16]
+
+
+def _compose_effective_text(reply_text: str, pending_req: Any, merged_frame: dict[str, Any] | None) -> str:
+    clean = (reply_text or "").strip()
+    if not clean:
+        return pending_req.original_text
+    if merged_frame:
+        slots = merged_frame.get("slots") or {}
+        action = slots.get("action")
+        target = slots.get("target")
+        area = slots.get("area")
+        verbs = {
+            "turn_on": "liga", "turn_off": "desliga", "open": "abre", "close": "fecha",
+            "lock": "tranca", "unlock": "destranca", "activate": "ativa", "play": "toca", "pause": "pausa",
+        }
+        if action in verbs and target and area:
+            return f"{verbs[action]} {target} em {area}"
+        if action in verbs and target:
+            return f"{verbs[action]} {target}"
+        if action in verbs and area:
+            return f"{verbs[action]} em {area}"
+    return pending_req.merge_reply(clean)
+
+
+def _v5_partial_command(v5_result: Any, preserved: dict[str, Any], snapshot: Snapshot) -> dict[str, Any] | None:
+    action = preserved.get("action")
+    target = preserved.get("target")
+    area = preserved.get("area")
+    if not any((action, target, area)):
+        return None
+    domains: list[str] = []
+    if isinstance(target, str) and target in snapshot.by_id:
+        domains = [snapshot.by_id[target]["domain"]]
+    return {
+        "intent": f"{domains[0] if domains else 'device'}.{action}" if action else "clarification.action",
+        "action": action or "query",
+        "domains": domains,
+        "mention": snapshot.by_id[target]["name"] if isinstance(target, str) and target in snapshot.by_id else None,
+        "area": area,
+        "device_class": None,
+        "plural": False,
+        "origin": False,
+        "parameters": {},
+    }
+
+
 def _ttl(options: dict) -> float:
     value = options.get("session_ttl", 60)
     return min(600, max(1, value)) if type(value) in (int, float) else 60
@@ -1945,3 +2329,9 @@ def _input_with_id(user_input: Any, conversation_id: str) -> Any:
     from types import SimpleNamespace
     return SimpleNamespace(text=user_input.text, language=getattr(user_input, "language", "pt-BR"), context=user_input.context,
                            device_id=getattr(user_input, "device_id", None), satellite_id=getattr(user_input, "satellite_id", None), conversation_id=conversation_id)
+
+
+def _input_with_text(user_input: Any, text: str) -> Any:
+    from types import SimpleNamespace
+    return SimpleNamespace(text=text, language=getattr(user_input, "language", "pt-BR"), context=user_input.context,
+                           device_id=getattr(user_input, "device_id", None), satellite_id=getattr(user_input, "satellite_id", None), conversation_id=getattr(user_input, "conversation_id", None))

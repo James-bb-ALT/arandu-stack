@@ -163,3 +163,18 @@ fn partial_preserves_exclusions_and_multiclause() {
         vec!["ar_quarto_1"]
     );
 }
+
+#[test]
+fn partial_extracts_compositional_token_and_origin_area() {
+    let generation = "f".repeat(64);
+    let _ = register_catalog(test_catalog(&generation));
+
+    let out = interpret_partial(&partial_req(&generation, "lingua o condicionado"));
+    assert_eq!(out.request_kind, "possible_device_action");
+    let c = &out.clauses[0];
+    assert_eq!(c.slots["target"].status, "resolved");
+    assert_eq!(c.slots["target"].value, "ar_quarto_1");
+    assert_eq!(c.slots["area"].status, "resolved");
+    assert_eq!(c.slots["area"].value, "quarto");
+    assert_eq!(c.slots["action"].status, "unknown");
+}

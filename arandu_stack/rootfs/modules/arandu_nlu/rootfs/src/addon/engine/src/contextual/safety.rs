@@ -40,12 +40,23 @@ pub(super) fn refusal(text: &str, catalog: &Catalog) -> Option<&'static str> {
     {
         return None;
     }
-    let mut labels: Vec<String> = catalog
+    let entity_label_set: BTreeSet<String> = catalog
         .entities
         .iter()
         .flat_map(|row| std::iter::once(&row.name).chain(row.aliases.iter()))
-        .chain(catalog.areas.iter().flat_map(|row| row.names.iter()))
         .map(|name| slots::normalize(name))
+        .filter(|name| !name.is_empty())
+        .collect();
+    let mut labels: Vec<String> = entity_label_set
+        .iter()
+        .cloned()
+        .chain(
+            catalog
+                .areas
+                .iter()
+                .flat_map(|row| row.names.iter())
+                .map(|name| slots::normalize(name)),
+        )
         .collect();
     labels.sort_by(|a, b| b.len().cmp(&a.len()).then_with(|| a.cmp(b)));
     labels.dedup();
@@ -53,14 +64,30 @@ pub(super) fn refusal(text: &str, catalog: &Catalog) -> Option<&'static str> {
     let mut allowed = effects.clone();
     allowed.extend(policy.name_prefix.iter().map(String::as_str));
     for label in labels {
-        if label.is_empty() || label.split_whitespace().any(|word| effects.contains(word)) {
+        if label.is_empty() {
+            continue;
+        }
+        let label_words: Vec<&str> = label.split_whitespace().collect();
+        let has_effect = label_words.iter().any(|word| effects.contains(word));
+        if has_effect
+            && (!entity_label_set.contains(&label)
+                || label_words.len() < 2
+                || label_words
+                    .iter()
+                    .any(|w| matches!(*w, "e" | "se" | "caso" | "quando" | "enquanto")))
+        {
             continue;
         }
         let needle = format!(" {label} ");
         let positions: Vec<usize> = value.match_indices(&needle).map(|(i, _)| i).collect();
         for position in positions.into_iter().rev() {
             let prefix: Vec<&str> = value[..position].split_whitespace().collect();
-            if !prefix.is_empty() && prefix.iter().all(|word| allowed.contains(word)) {
+            let suffix: Vec<&str> = value[position + needle.len()..].split_whitespace().collect();
+            let prefix_ok = !prefix.is_empty() && prefix.iter().all(|word| allowed.contains(word));
+            let verbal_entity_ok = !has_effect
+                || (prefix.iter().any(|word| effects.contains(word))
+                    && !suffix.iter().any(|word| effects.contains(word)));
+            if prefix_ok && verbal_entity_ok {
                 value.replace_range(position..position + needle.len(), " alvo ");
             }
         }
@@ -74,6 +101,88 @@ pub(super) fn refusal(text: &str, catalog: &Catalog) -> Option<&'static str> {
         return None;
     }
     let words: BTreeSet<&str> = value.split_whitespace().collect();
+    let catalog_tokens: BTreeSet<String> = entity_label_set
+        .iter()
+        .chain(
+            catalog
+                .areas
+                .iter()
+                .flat_map(|row| row.names.iter())
+                .map(|n| slots::normalize(n))
+                .collect::<Vec<_>>()
+                .iter(),
+        )
+        .flat_map(|s| s.split_whitespace().map(str::to_owned).collect::<Vec<_>>())
+        .collect();
+    let raw_trimmed = text.split_whitespace().collect::<Vec<_>>();
+    if raw_trimmed.len() >= 2
+        && raw_trimmed[0] == "nao"
+        && words.is_disjoint(&effects)
+        && raw_trimmed[1..]
+            .iter()
+            .any(|tok| catalog_tokens.contains(*tok))
+        && raw_trimmed[1..].iter().all(|tok| {
+            catalog_tokens.contains(*tok)
+                || matches!(
+                    *tok,
+                    "a" | "o"
+                        | "as"
+                        | "os"
+                        | "da"
+                        | "do"
+                        | "das"
+                        | "dos"
+                        | "na"
+                        | "no"
+                        | "nas"
+                        | "nos"
+                        | "de"
+                        | "em"
+                        | "para"
+                        | "esse"
+                        | "essa"
+                        | "este"
+                        | "esta"
+                        | "aquele"
+                        | "aquela"
+                        | "outro"
+                        | "outra"
+                        | "somente"
+                        | "so"
+                        | "apenas"
+                )
+        })
+        && !words.iter().any(|w| {
+            matches!(
+                *w,
+                "pode"
+                    | "posso"
+                    | "quero"
+                    | "queria"
+                    | "precisa"
+                    | "preciso"
+                    | "pense"
+                    | "cancela"
+                    | "cancelar"
+                    | "para"
+                    | "pare"
+                    | "parar"
+                    | "deixa"
+                    | "esquece"
+                    | "mexa"
+                    | "mexe"
+                    | "faca"
+                    | "nunca"
+                    | "jamais"
+                    | "nem"
+                    | "obrigado"
+                    | "obrigada"
+            )
+        })
+        && raw_trimmed[1..].iter().all(|w| *w != "nao")
+    {
+        return None;
+    }
     if words.is_disjoint(&effects)
         && policy
             .speech
@@ -283,8 +392,24 @@ fn is_permitted_exclusion(value: &str) -> bool {
                 | "acender"
         )
     });
-    let has_bulk_noun = words
-        .iter()
-        .any(|w| matches!(*w, "tudo" | "toda" | "todas" | "todo" | "todos"));
+    let has_bulk_noun = words.iter().any(|w| {
+        matches!(
+            *w,
+            "tudo"
+                | "toda"
+                | "todas"
+                | "todo"
+                | "todos"
+                | "lampadas"
+                | "luzes"
+                | "iluminacao"
+                | "luminarias"
+                | "ventiladores"
+                | "coisas"
+                | "aparelhos"
+                | "dispositivos"
+                | "equipamentos"
+        )
+    });
     has_bulk_verb && has_bulk_noun
 }

@@ -358,6 +358,36 @@ class ProductionSttErrorDiagnosticsTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(meta['last_infer_error']['stage'], 'recognize')
             self.assertEqual(meta['last_infer_error']['error_type'], 'RuntimeError')
 
+    def test_audio_processor_supports_real_pywebrtc_process_api(self):
+        import numpy as np
+        from arandu_stt.audio_processor import AudioProcessor, AudioProcessorConfig
+
+        calls = []
+
+        class RealStyleWebRtcAP:
+            def __init__(self, **kwargs):
+                self.kwargs = kwargs
+
+            def process(self, near, far=None):
+                calls.append((near.dtype, len(near), far is not None))
+                return near
+
+        fake_mod = ModuleType('pywebrtc_audio')
+        fake_mod.AudioProcessor = RealStyleWebRtcAP
+        with patch.dict(sys.modules, {'pywebrtc_audio': fake_mod}):
+            ap = AudioProcessor(AudioProcessorConfig(
+                sample_rate=16000, num_channels=1, high_pass_filter=True,
+                noise_suppression=True, auto_gain_control=True, echo_cancellation=True,
+            ))
+            pcm = (np.ones(1600, dtype='<i2') * 100).tobytes()
+            out, stats = ap.process_pcm16(pcm, sample_rate=16000, channels=1, far_end_pcm=pcm)
+            tail = ap.flush()
+            self.assertTrue(stats['webrtc_applied'])
+            self.assertTrue(stats['aec_active'])
+            self.assertEqual(len(out) + len(tail), 1600)
+            self.assertEqual(len(calls), 10)
+            self.assertTrue(all(has_far for _, _, has_far in calls))
+
 
 if __name__ == '__main__':
     unittest.main()

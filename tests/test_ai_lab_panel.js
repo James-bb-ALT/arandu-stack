@@ -367,17 +367,17 @@ test('reloading panel script updates already-defined custom element and reports 
     document: {
       createElement: () => new Element(),
       createTextNode: (t) => ({textContent: t}),
-      querySelector: () => ({getAttribute: () => '/local_nlu_ai_lab/panel.js?v=11.4.0-abc123def456'}),
+      querySelector: () => ({getAttribute: () => '/local_nlu_ai_lab/panel.js?v=11.4.1-abc123def456'}),
       querySelectorAll: () => [liveEl],
     },
     clearInterval: globalThis.clearInterval,
     clearTimeout: globalThis.clearTimeout,
   });
   assert.equal(defines, 0);
-  assert.equal(OldPanel.PANEL_VERSION, '11.4.0');
+  assert.equal(OldPanel.PANEL_VERSION, '11.4.1');
   assert.equal(typeof OldPanel.prototype.updateVersionDiagnostics, 'function');
-  assert.equal(liveEl.dataset.panelVersion, '11.4.0');
-  assert.match(nodes.versionDiagnostics.textContent, /AI Lab frontend: 11\.4\.0.*Asset hash: abc123def456/);
+  assert.equal(liveEl.dataset.panelVersion, '11.4.1');
+  assert.match(nodes.versionDiagnostics.textContent, /AI Lab frontend: 11\.4\.1.*Asset hash: abc123def456/);
   assert.equal(nodes.versionWarning.hidden, true);
   liveEl.updateVersionDiagnostics({backend_version: '11.3.8', asset_hash: '000000000000', panel_tag: '11.3.8-000000000000'});
   assert.equal(nodes.versionWarning.hidden, false);

@@ -1,6 +1,6 @@
 /* Native Home Assistant panel. Uses the authenticated hass websocket, never stored tokens. */
 class AranduAILab extends HTMLElement {
-  static PANEL_VERSION = '11.4.2';
+  static PANEL_VERSION = '11.4.3';
   loadedScriptTag() {
     try {
       const script = typeof document !== 'undefined' && typeof document.querySelector === 'function'

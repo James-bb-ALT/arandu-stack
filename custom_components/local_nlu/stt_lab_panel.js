@@ -44,11 +44,20 @@ export function mountSTT(panel) {
   }
   function status(text,error=false){$('status').textContent=text;$('status').setAttribute('role',error?'alert':'status');}
   function release(){clearTimeout(timer);clearInterval(ticker);stream?.getTracks().forEach(track=>track.stop());stream=null;}
+  function syncInstallButton(){
+    const btn=$('install');if(!btn)return;
+    const selected=inventory?.models?.find(m=>m.id===$('model')?.value);
+    const needsReinstall=Boolean(selected&&(selected.installed||selected.incomplete||selected.weights_status==='model_corrupted'||selected.state==='error'));
+    btn.textContent=needsReinstall?'Verificar / reinstalar':'Baixar modelo selecionado';
+    const isActiveOp=Boolean(selected&&['downloading','verifying'].includes(selected.state));
+    btn.disabled=busy||recording||isActiveOp;
+  }
   function controls(){
     section.querySelectorAll('button,input,select').forEach(node=>node.disabled=busy||recording);
     $('stop').disabled=!recording;
     if($('cancel'))$('cancel').disabled=!busy;
     if($('sort')&&!recording)$('sort').disabled=false;
+    syncInstallButton();
   }
   async function task(fn){
     if(busy||recording)return;
@@ -72,20 +81,47 @@ export function mountSTT(panel) {
     const ldLabels={unloaded:'Não carregado',loading:'Carregando',model_ready:'Modelo carregado',model_load_failed:'Falha na carga',oom:'Sem memória (OOM)',timeout:'Timeout na carga'};
     for(const model of inventory.models){
       const line=document.createElement('p');
-      const dlInfo=model.state==='downloading'&&typeof model.percent==='number'?` · ${model.percent.toFixed(1)}% (${((model.bytes_downloaded||0)/1e6).toFixed(1)}/${((model.total_bytes||model.download_bytes||0)/1e6).toFixed(1)} MB)`:'';
+      const isDownloading=model.state==='downloading'||model.weights_status==='downloading';
+      const isVerifying=model.state==='verifying'||model.weights_status==='verifying';
+      const isActiveOp=isDownloading||isVerifying;
+      let dlInfo='';
+      if(isDownloading){
+        const doneMb=((model.bytes_downloaded||0)/1e6).toFixed(1);
+        const totalMb=((model.total_bytes||model.download_bytes||0)/1e6).toFixed(1);
+        const pctStr=typeof model.percent==='number'?`${model.percent.toFixed(1)}%`:'iniciando';
+        const speedStr=typeof model.speed_mbps==='number'&&model.speed_mbps>0?` · ${model.speed_mbps.toFixed(1)} MB/s`:'';
+        dlInfo=` · ${model.phase||'Baixando'}: ${pctStr} (${doneMb}/${totalMb} MB)${speedStr}`;
+      }else if(isVerifying){
+        dlInfo=` · ${model.phase||'Verificando integridade (SHA-256)...'}`;
+      }
       const rtState=rtLabels[model.runtime_status]||(model.runtime_available===false?'Runtime indisponível':'Runtime OK');
       const wtState=wtLabels[model.weights_status]||(model.installed?'Pesos instalados':'Pesos não baixados');
       const ldState=ldLabels[model.load_status]||(states[model.state]||model.state);
       const rtNote=model.runtime_available===false&&model.runtime_note?` · ${model.runtime_note}`:'';
-      line.textContent=`${model.name}${model.runtime?' · '+model.runtime:''} · ${model.language_label||'Português — fixo'}${model.download_bytes?' · download '+(model.download_bytes/1000000).toFixed(0)+' MB':''} · [${rtState} | ${wtState} | ${ldState}]${dlInfo}${rtNote}${model.error?' · '+model.error:''}`;
-      if(model.state==='downloading'){
-        const bar=document.createElement('progress');bar.max=100;if(typeof model.percent==='number')bar.value=model.percent;
+      line.textContent=`${model.name}${model.runtime?' · '+model.runtime:''} · ${model.language_label||'Português — fixo'}${model.download_bytes?' · download '+(model.download_bytes/1000000).toFixed(0)+' MB':''} · [${rtState} | ${wtState} | ${ldState}]${dlInfo}${rtNote}${!isActiveOp&&model.error?' · '+model.error:''}`;
+      if(isActiveOp){
+        const bar=document.createElement('progress');bar.max=100;
+        if(isVerifying)bar.value=100;
+        else if(typeof model.percent==='number')bar.value=model.percent;
         line.append(' ',bar);
       }
       $('inventory').append(line);
     }
+    syncInstallButton();
     clearTimeout(poll);
-    if(inventory.models.some(model=>['downloading','verifying'].includes(model.state))){status('Baixando pesos. Você pode acompanhar o estado e o progresso aqui.');poll=setTimeout(()=>refresh().catch(e=>status(e.message,true)),2000);}
+    const activeDownload=inventory.models.find(model=>['downloading','verifying'].includes(model.state)||['downloading','verifying'].includes(model.weights_status));
+    if(activeDownload){
+      if(activeDownload.state==='verifying'||activeDownload.weights_status==='verifying'){
+        status(`${activeDownload.name}: ${activeDownload.phase||'Verificando integridade (SHA-256)...'}`);
+      }else{
+        const pctStr=typeof activeDownload.percent==='number'?`${activeDownload.percent.toFixed(1)}%`:'conectando...';
+        const doneMb=((activeDownload.bytes_downloaded||0)/1e6).toFixed(1);
+        const totalMb=((activeDownload.total_bytes||activeDownload.download_bytes||0)/1e6).toFixed(1);
+        const speedStr=typeof activeDownload.speed_mbps==='number'&&activeDownload.speed_mbps>0?` (${activeDownload.speed_mbps.toFixed(1)} MB/s)`:'';
+        status(`Baixando ${activeDownload.name}: ${pctStr} · ${doneMb} / ${totalMb} MB${speedStr}`);
+      }
+      poll=setTimeout(()=>refresh().catch(e=>status(e.message,true)),1500);
+    }
     else status('Modelos consultados. Testes não alteram o Assist.');
   }
   $('record').onclick=async()=>{
@@ -108,6 +144,7 @@ export function mountSTT(panel) {
   $('stop').onclick=stop;
   $('file').onchange=()=>{try{stoppedAt=null;if($('file').files[0])selectAudio($('file').files[0]);}catch(e){status(e.message,true);}};
   $('variant').onchange=()=>task(refresh);
+  $('model').onchange=()=>syncInstallButton();
   $('refresh').onclick=()=>task(refresh);
   $('install').onclick=()=>task(async()=>{await panel.call('stt_install',{stt_model:$('model').value,variant:$('variant').value});await refresh();});
   $('remove').onclick=()=>task(async()=>{await panel.call('stt_remove',{stt_model:$('model').value,variant:$('variant').value});await refresh();});

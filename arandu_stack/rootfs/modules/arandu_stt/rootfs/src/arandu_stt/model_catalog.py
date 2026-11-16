@@ -679,36 +679,61 @@ def _install_locked(root, model, variant='adapted', *, progress=None, validator=
         stage_root = Path(staging)
         stage = location(stage_root, model, variant)
         stage.mkdir()
-        if model == 'fastconformer' and variant == 'adapted':
-            manifest = ensure_model(stage, variant=variant)
-        else:
-            from huggingface_hub import HfApi, snapshot_download
-            repo = CATALOG[model]['repo']
-            info = HfApi(token=False).model_info(repo_id=repo, files_metadata=True, **({'revision': entry.get('revision') or entry['download_revision']} if 'revision' in entry or 'download_revision' in entry else {}))
-            revision = info.sha
-            if not revision or not re.fullmatch(r'[0-9a-f]{40}', revision):
-                raise ValueError('Revisão Hugging Face inválida')
-            total_bytes = int(entry.get('download_bytes') or 0)
-            stop_watch = threading.Event()
-            def _watch_download():
-                last_bytes = -1
-                while not stop_watch.wait(0.25):
-                    current = 0
-                    for candidate in stage_root.rglob('*'):
-                        if candidate.is_file():
-                            try:
-                                current += candidate.stat().st_size
-                            except OSError:
-                                pass
-                    if current != last_bytes:
-                        last_bytes = current
-                        pct = round(min(99.0, current * 100.0 / total_bytes), 1) if total_bytes > 0 else None
-                        _emit_progress(progress, 'downloading', bytes_downloaded=current, total_bytes=total_bytes, percent=pct)
-            watcher = threading.Thread(target=_watch_download, daemon=True) if progress else None
-            if watcher:
-                _emit_progress(progress, 'downloading', bytes_downloaded=0, total_bytes=total_bytes, percent=0.0 if total_bytes > 0 else None)
-                watcher.start()
-            try:
+        total_bytes = int(entry.get('download_bytes') or 0)
+        stop_watch = threading.Event()
+        watch_started = time.monotonic()
+
+        def _watch_download():
+            last_bytes = -1
+            last_emit = 0.0
+            while not stop_watch.wait(0.25):
+                current = 0
+                for candidate in stage_root.rglob('*'):
+                    if candidate.is_file():
+                        try:
+                            current += candidate.stat().st_size
+                        except OSError:
+                            pass
+                now = time.monotonic()
+                if current != last_bytes or (now - last_emit) >= 2.0:
+                    last_bytes = current
+                    last_emit = now
+                    pct = round(min(99.0, current * 100.0 / total_bytes), 1) if total_bytes > 0 else None
+                    elapsed = max(now - watch_started, 0.2)
+                    speed_mbps = round((current / 1_000_000.0) / elapsed, 2) if current > 0 else 0.0
+                    _emit_progress(
+                        progress,
+                        'downloading',
+                        bytes_downloaded=current,
+                        total_bytes=total_bytes,
+                        percent=pct,
+                        speed_mbps=speed_mbps,
+                        phase='Baixando pesos...',
+                    )
+
+        watcher = threading.Thread(target=_watch_download, daemon=True) if progress else None
+        if progress:
+            _emit_progress(
+                progress,
+                'downloading',
+                bytes_downloaded=0,
+                total_bytes=total_bytes,
+                percent=0.0 if total_bytes > 0 else None,
+                speed_mbps=0.0,
+                phase='Conectando à origem...',
+            )
+        if watcher:
+            watcher.start()
+        try:
+            if model == 'fastconformer' and variant == 'adapted':
+                manifest = ensure_model(stage, variant=variant)
+            else:
+                from huggingface_hub import HfApi, snapshot_download
+                repo = CATALOG[model]['repo']
+                info = HfApi(token=False).model_info(repo_id=repo, files_metadata=True, **({'revision': entry.get('revision') or entry['download_revision']} if 'revision' in entry or 'download_revision' in entry else {}))
+                revision = info.sha
+                if not revision or not re.fullmatch(r'[0-9a-f]{40}', revision):
+                    raise ValueError('Revisão Hugging Face inválida')
                 if entry.get('archive'):
                     from huggingface_hub import hf_hub_download
                     archive = Path(hf_hub_download(repo_id=repo, filename=entry['archive'], revision=revision, token=False, local_dir=str(stage_root/'download')))
@@ -717,22 +742,25 @@ def _install_locked(root, model, variant='adapted', *, progress=None, validator=
                         watcher.join(timeout=1.0)
                     if sha256(archive) != entry['archive_sha256']:
                         raise ValueError('SHA256 do pacote inválido')
-                    _emit_progress(progress, 'verifying', bytes_downloaded=total_bytes, total_bytes=total_bytes, percent=100.0)
+                    _emit_progress(progress, 'verifying', bytes_downloaded=total_bytes, total_bytes=total_bytes, percent=100.0, phase='Extraindo e verificando SHA-256...')
                     extract_archive(archive, stage, files(model, variant), entry.get('installed_bytes', 800_000_000) + 1_000_000)
                 else:
                     snapshot_download(repo_id=repo, revision=revision, token=False, allow_patterns=list(files(model, variant)), local_dir=str(stage))
-            finally:
                 stop_watch.set()
                 if watcher:
                     watcher.join(timeout=1.0)
-            _emit_progress(progress, 'verifying', bytes_downloaded=total_bytes, total_bytes=total_bytes, percent=100.0)
-            for item in getattr(info, 'siblings', []) or []:
-                if item.rfilename in files(model, variant) and getattr(item, 'lfs', None):
-                    expected = getattr(item.lfs, 'sha256', None)
-                    if expected and sha256(stage/item.rfilename) != expected:
-                        raise ValueError('SHA256 Hugging Face inválido: ' + item.rfilename)
-            manifest = {'repo': repo, 'revision': revision, 'license': CATALOG[model]['license']}
-        _emit_progress(progress, 'verifying')
+                _emit_progress(progress, 'verifying', bytes_downloaded=total_bytes, total_bytes=total_bytes, percent=100.0, phase='Verificando SHA-256...')
+                for item in getattr(info, 'siblings', []) or []:
+                    if item.rfilename in files(model, variant) and getattr(item, 'lfs', None):
+                        expected = getattr(item.lfs, 'sha256', None)
+                        if expected and sha256(stage/item.rfilename) != expected:
+                            raise ValueError('SHA256 Hugging Face inválido: ' + item.rfilename)
+                manifest = {'repo': repo, 'revision': revision, 'license': CATALOG[model]['license']}
+        finally:
+            stop_watch.set()
+            if watcher:
+                watcher.join(timeout=1.0)
+        _emit_progress(progress, 'verifying', bytes_downloaded=total_bytes, total_bytes=total_bytes, percent=100.0, phase='Validando carga do modelo...')
         manifest.update(id=model, sha256={f: sha256(stage / f) for f in files(model, variant)})
         (stage / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
         verify(stage_root, model, variant)

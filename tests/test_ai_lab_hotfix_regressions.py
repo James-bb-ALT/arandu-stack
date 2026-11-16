@@ -192,14 +192,14 @@ def test_panel_asset_tag_cache_busting_and_frontend_markers():
     info = _panel_version_info()
     assert re.fullmatch(r"\d+\.\d+\.\d+-[0-9a-f]{12}", tag), f"Tag inesperada: {tag}"
     assert info["panel_tag"] == tag
-    assert info["backend_version"] == "11.4.2"
+    assert info["backend_version"] == "11.4.3"
     for marker in (
         "playAudio(",
         "Tocar áudio",
         "ttsState",
         "playbackState",
         "dataset.panelVersion",
-        "PANEL_VERSION = '11.4.2'",
+        "PANEL_VERSION = '11.4.3'",
         "versionDiagnostics",
         "versionWarning",
         "O painel carregado está desatualizado. Atualize o frontend do Arandu.",
@@ -524,6 +524,6 @@ class TestFastPathAndMetricsAsync(unittest.IsolatedAsyncioTestCase):
             res_isolated = await lab.handle(user, {"command": "run", "text": "Qual luz tá ligada?", "mode": "nlu"})
 
         assert res_compound["source"] != "ha_read_fast_path"
-        assert res_compound["backend_version"] == "11.4.2"
+        assert res_compound["backend_version"] == "11.4.3"
         assert res_isolated["source"] != "ha_read_fast_path"
         assert entry.runtime_data._client.async_interpret_v4.call_count == 2

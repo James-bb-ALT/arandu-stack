@@ -98,6 +98,7 @@ class AudioProcessor:
     def __init__(self, config: AudioProcessorConfig | None = None, **kwargs: Any) -> None:
         self.config = config or AudioProcessorConfig(**kwargs)
         self._native: Any = None
+        self._native_aec_enabled = False
         self._residual = np.empty(0, dtype=np.int16)
         self._aec_reference_seen = False
         self._closed = False
@@ -109,19 +110,21 @@ class AudioProcessor:
             self.config.echo_cancellation,
         ))
         if self._webrtc_requested:
-            self._init_native()
+            self._init_native(enable_aec=False)
 
-    def _init_native(self) -> None:
+    def _init_native(self, *, enable_aec: bool = False) -> None:
         try:
             from pywebrtc_audio import AudioProcessor as NativeAP  # type: ignore
         except ImportError as exc:
             self._init_error = f'pywebrtc_audio indisponível: {exc}'
             self._native = None
+            self._native_aec_enabled = False
             return
+        aec_flag = bool(enable_aec and self.config.echo_cancellation)
         self._native = NativeAP(
             sample_rate=16000,
             num_channels=1,
-            echo_cancellation=bool(self.config.echo_cancellation),
+            echo_cancellation=aec_flag,
             noise_suppression=bool(self.config.noise_suppression),
             high_pass_filter=bool(self.config.high_pass_filter),
             auto_gain_control=bool(self.config.auto_gain_control),
@@ -129,6 +132,7 @@ class AudioProcessor:
             agc_gain_db=float(self.config.agc_gain_db),
             stream_delay_ms=int(self.config.stream_delay_ms),
         )
+        self._native_aec_enabled = aec_flag
 
     def aec_diagnostics(self) -> dict[str, Any]:
         return {
@@ -180,6 +184,11 @@ class AudioProcessor:
             self._aec_reference_seen = True
 
         aec_active = bool(self.config.echo_cancellation and self._native is not None and far_end_pcm)
+        if self._native is not None and self.config.echo_cancellation:
+            if aec_active and not self._native_aec_enabled:
+                self._init_native(enable_aec=True)
+            elif not aec_active and self._native_aec_enabled:
+                self._init_native(enable_aec=False)
         webrtc_applied = False
         if self._native is not None and len(i16_16k) > 0:
             combined = np.concatenate((self._residual, i16_16k)) if len(self._residual) else i16_16k
@@ -228,7 +237,8 @@ class AudioProcessor:
         padded = np.concatenate((self._residual, np.zeros(pad, dtype=np.int16)))
         self._residual = np.empty(0, dtype=np.int16)
         if self._native is not None:
-            out = self._process_native_frame(padded)[: 160 - pad]
+            far_pad = np.zeros_like(padded) if self._native_aec_enabled else None
+            out = self._process_native_frame(padded, far_pad)[: 160 - pad]
             return out.astype(np.float32) / 32768.0
         return padded[: 160 - pad].astype(np.float32) / 32768.0
 

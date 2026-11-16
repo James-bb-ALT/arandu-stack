@@ -369,7 +369,9 @@ class ProductionSttErrorDiagnosticsTests(unittest.IsolatedAsyncioTestCase):
                 self.kwargs = kwargs
 
             def process(self, near, far=None):
-                calls.append((near.dtype, len(near), far is not None))
+                if self.kwargs.get('echo_cancellation') and far is None:
+                    raise ValueError('far is required when echo_cancellation is enabled')
+                calls.append((near.dtype, len(near), far is not None, self.kwargs.get('echo_cancellation')))
                 return near
 
         fake_mod = ModuleType('pywebrtc_audio')
@@ -380,13 +382,21 @@ class ProductionSttErrorDiagnosticsTests(unittest.IsolatedAsyncioTestCase):
                 noise_suppression=True, auto_gain_control=True, echo_cancellation=True,
             ))
             pcm = (np.ones(1600, dtype='<i2') * 100).tobytes()
+            # Without far_end_pcm: must NOT raise ValueError even when echo_cancellation=True
+            out0, stats0 = ap.process_pcm16(pcm, sample_rate=16000, channels=1)
+            self.assertTrue(stats0['webrtc_applied'])
+            self.assertFalse(stats0['aec_active'])
+            self.assertEqual(len(out0), 1600)
+            calls.clear()
+
+            # With far_end_pcm: enables native AEC and passes far frames
             out, stats = ap.process_pcm16(pcm, sample_rate=16000, channels=1, far_end_pcm=pcm)
             tail = ap.flush()
             self.assertTrue(stats['webrtc_applied'])
             self.assertTrue(stats['aec_active'])
             self.assertEqual(len(out) + len(tail), 1600)
             self.assertEqual(len(calls), 10)
-            self.assertTrue(all(has_far for _, _, has_far in calls))
+            self.assertTrue(all(has_far and aec for _, _, has_far, aec in calls))
 
 
 if __name__ == '__main__':

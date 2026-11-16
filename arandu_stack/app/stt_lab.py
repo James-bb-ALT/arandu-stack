@@ -195,13 +195,15 @@ class STTLab:
             key = (row['id'], variant)
             if row['installed'] and key in self.validation_state:
                 row.update(self.validation_state[key])
-            if loading and row['id'] == self.manager.config['stt']['stt_model']:
+            if loading and row['id'] == self.manager.config['stt']['stt_model'] and row['installed'] and not row.get('incomplete') and row.get('state') != 'error':
                 row['state'] = 'loading'
                 row['load_status'] = 'loading'
             if active is None and row['id'] == self.manager.config['stt']['stt_model'] and 'stt' in self.manager.failures:
                 row.update(state='error', load_status='model_load_failed', error='Falha no processo STT; consulte os logs e verifique os pesos.')
             row.update(self.operations.get(key, {}))
             if row['state'] in ('downloading', 'verifying'):
+                row['incomplete'] = False
+                row.pop('error', None)
                 row['weights_status'] = row['state']
                 progress = self.root / ('.install-' + row['id'] + '.json')
                 try:
@@ -209,7 +211,7 @@ class STTLab:
                     if payload.get('state') == 'verifying':
                         row['state'] = 'verifying'
                         row['weights_status'] = 'verifying'
-                    for field in ('bytes_downloaded', 'total_bytes', 'percent'):
+                    for field in ('bytes_downloaded', 'total_bytes', 'percent', 'speed_mbps', 'phase'):
                         if field in payload and payload[field] is not None:
                             row[field] = payload[field]
                 except (OSError, ValueError):
@@ -266,15 +268,22 @@ class STTLab:
         async def install_one():
             async with self.busy:
                 try:
-                    await self.worker({'command': 'install', 'model': model, 'variant': variant}, 900)
+                    install_timeout = 1800 if (CATALOG[model].get('download_bytes') or 0) >= 1_000_000_000 else 900
+                    await self.worker({'command': 'install', 'model': model, 'variant': variant}, install_timeout)
                     invalidate_runtime_cache(model)
-                    self.operations[key] = {'state': 'installed', 'weights_status': 'model_ready'}
+                    self.operations[key] = {'state': 'installed', 'weights_status': 'model_ready', 'incomplete': False}
                     self.validation_state[key] = {'load_status': 'unloaded'}
                 except Exception as exc:
                     invalidate_runtime_cache(model)
                     err_code = getattr(exc, 'error_code', None)
                     detail = str(exc) if isinstance(exc, ValueError) else ('Tempo limite excedido' if isinstance(exc, TimeoutError) else 'Runtime STT ou rede indisponível')
-                    self.operations[key] = {'state': 'error', 'error_code': err_code, 'error': detail + ' Cache anterior preservado; tente novamente.'}
+                    self.operations[key] = {
+                        'state': 'error',
+                        'incomplete': True,
+                        'weights_status': 'model_corrupted' if err_code == 'model_corrupted' else 'model_not_installed',
+                        'error_code': err_code,
+                        'error': detail + ' Cache anterior preservado; tente novamente.',
+                    }
                     if err_code in ('oom', 'timeout'):
                         self.validation_state[key] = {'load_status': err_code}
                     elif err_code == 'model_corrupted':

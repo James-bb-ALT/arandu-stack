@@ -723,3 +723,57 @@ def test_18_api_stt_models_endpoint_contract_and_no_numpy_error(tmp_path, monkey
                 assert 'MODEL_RUNTIME_UNAVAILABLE' not in json.dumps(row)
 
     asyncio.run(_run())
+
+
+def test_19_download_progress_and_error_reinstall_state_in_stt_lab(tmp_path, monkeypatch):
+    site = _make_fake_stt_site(tmp_path)
+    wrapper = _make_python_wrapper(tmp_path, 'all_py_dl', {'PYTHONPATH': str(site)})
+    whisper_bin = _make_executable_stub(tmp_path / ('whisper-server.cmd' if os.name == 'nt' else 'whisper-server'))
+    transcribe_lib = tmp_path / 'libtranscribe.so'
+    transcribe_lib.write_text('stub', encoding='utf-8')
+    monkeypatch.setenv('ARANDU_STT_PYTHON', str(wrapper))
+    monkeypatch.setenv('ARANDU_PHONON_PYTHON', str(wrapper))
+    monkeypatch.setenv('ARANDU_NEMOTRON_PYTHON', str(wrapper))
+    monkeypatch.setenv('ARANDU_WHISPER_SERVER_BIN', str(whisper_bin))
+    monkeypatch.setenv('TRANSCRIBE_LIBRARY', str(transcribe_lib))
+
+    manager = _DummyManager(tmp_path / 'data', stt_model='nemotron_unified_0_6b')
+    # Simulate an active STT process starting up while nemotron is incomplete/downloading
+    manager.processes['stt'] = type('P', (), {'returncode': None})()
+    lab = STTLab(manager)
+    lab.root.mkdir(parents=True, exist_ok=True)
+    key = ('nemotron_unified_0_6b', 'adapted')
+    lab.operations[key] = {'state': 'downloading', 'weights_status': 'downloading'}
+    (lab.root / '.install-nemotron_unified_0_6b.json').write_text(
+        json.dumps({
+            'state': 'downloading',
+            'bytes_downloaded': 500_000_000,
+            'total_bytes': 2_507_735_040,
+            'percent': 19.9,
+            'speed_mbps': 24.5,
+            'phase': 'Baixando pesos...',
+        }),
+        encoding='utf-8',
+    )
+
+    inv_dl = asyncio.run(lab.models())
+    nem_dl = next(r for r in inv_dl['models'] if r['id'] == 'nemotron_unified_0_6b')
+    assert nem_dl['state'] == 'downloading'
+    assert nem_dl['incomplete'] is False
+    assert 'error' not in nem_dl
+    assert nem_dl['percent'] == 19.9
+    assert nem_dl['speed_mbps'] == 24.5
+    assert nem_dl['phase'] == 'Baixando pesos...'
+
+    # On install failure, state must stay 'error' (not overwritten to 'loading') so reinstall stays enabled
+    lab.operations[key] = {
+        'state': 'error',
+        'incomplete': True,
+        'weights_status': 'model_not_installed',
+        'error': 'Falha de rede. Cache anterior preservado; tente novamente.',
+    }
+    inv_err = asyncio.run(lab.models())
+    nem_err = next(r for r in inv_err['models'] if r['id'] == 'nemotron_unified_0_6b')
+    assert nem_err['state'] == 'error'
+    assert nem_err['incomplete'] is True
+    assert 'tente novamente' in nem_err['error']

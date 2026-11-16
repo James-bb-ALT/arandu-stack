@@ -367,17 +367,17 @@ test('reloading panel script updates already-defined custom element and reports 
     document: {
       createElement: () => new Element(),
       createTextNode: (t) => ({textContent: t}),
-      querySelector: () => ({getAttribute: () => '/local_nlu_ai_lab/panel.js?v=11.4.2-abc123def456'}),
+      querySelector: () => ({getAttribute: () => '/local_nlu_ai_lab/panel.js?v=11.4.3-abc123def456'}),
       querySelectorAll: () => [liveEl],
     },
     clearInterval: globalThis.clearInterval,
     clearTimeout: globalThis.clearTimeout,
   });
   assert.equal(defines, 0);
-  assert.equal(OldPanel.PANEL_VERSION, '11.4.2');
+  assert.equal(OldPanel.PANEL_VERSION, '11.4.3');
   assert.equal(typeof OldPanel.prototype.updateVersionDiagnostics, 'function');
-  assert.equal(liveEl.dataset.panelVersion, '11.4.2');
-  assert.match(nodes.versionDiagnostics.textContent, /AI Lab frontend: 11\.4\.2.*Asset hash: abc123def456/);
+  assert.equal(liveEl.dataset.panelVersion, '11.4.3');
+  assert.match(nodes.versionDiagnostics.textContent, /AI Lab frontend: 11\.4\.3.*Asset hash: abc123def456/);
   assert.equal(nodes.versionWarning.hidden, true);
   liveEl.updateVersionDiagnostics({backend_version: '11.3.8', asset_hash: '000000000000', panel_tag: '11.3.8-000000000000'});
   assert.equal(nodes.versionWarning.hidden, false);
@@ -514,5 +514,30 @@ test('stt_lab_panel exposes whisper.cpp models, fixed pt badge, repetitions, sor
   assert.match(invText, /Português — fixo/);
   assert.match(invText, /42\.5%/);
   assert.ok(byStt.inventory.children[0].children.some((c) => c.tagName === 'progress' && c.value === 42.5));
+  assert.equal(byStt.downloadProgress.hidden, false);
+  assert.equal(byStt.downloadProgress.value, 42.5);
+  assert.match(byStt.status.textContent, /42\.5%.*207\.0 \/ 487\.6 MB/);
   assert.ok(scheduledTimeout !== null);
+  assert.equal(byStt.install.textContent, 'Baixar modelo selecionado');
+  assert.equal(byStt.install.disabled, false);
+
+  // Error / incomplete state switches button to enabled "Verificar / reinstalar"
+  if (byStt.model) byStt.model.value = 'whisper_cpp_small';
+  fakePanel.call = async (cmd) => (cmd === 'stt_models' ? {
+    active: null,
+    models: [{
+      id: 'whisper_cpp_small',
+      name: 'Whisper Small — whisper.cpp',
+      runtime: 'whisper.cpp',
+      installed: false,
+      incomplete: true,
+      weights_status: 'model_corrupted',
+      state: 'error',
+      error: 'Download ou instalação incompleta; reinstale o modelo',
+    }],
+  } : {});
+  if (byStt.refresh && byStt.refresh.onclick) await byStt.refresh.onclick();
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(byStt.install.textContent, 'Verificar / reinstalar');
+  assert.equal(byStt.install.disabled, false);
 });

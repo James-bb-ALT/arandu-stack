@@ -324,7 +324,19 @@ async function renderSttManager(){
       const ldLabels={unloaded:'Não carregado',loading:'Carregando',model_ready:'Carregado/Pronto',model_load_failed:'Falha na carga',oom:'Sem memória (OOM)',timeout:'Timeout na carga'};
       for(const model of result.models){
         const line=el('div',undefined,'stt-model-row');
-        const progressMeta=model.state==='downloading'&&typeof model.percent==='number'?`${model.percent.toFixed(1)}% (${((model.bytes_downloaded||0)/1e6).toFixed(1)}/${((model.total_bytes||model.download_bytes||0)/1e6).toFixed(1)} MB)`:'';
+        const isDownloading=model.state==='downloading'||model.weights_status==='downloading';
+        const isVerifying=model.state==='verifying'||model.weights_status==='verifying';
+        const isActiveOp=isDownloading||isVerifying;
+        let progressMeta='';
+        if(isDownloading){
+          const totalMb=((model.total_bytes||model.download_bytes||0)/1e6).toFixed(1);
+          const doneMb=((model.bytes_downloaded||0)/1e6).toFixed(1);
+          const pctStr=typeof model.percent==='number'?`${model.percent.toFixed(1)}%`:'iniciando';
+          const speedStr=typeof model.speed_mbps==='number'&&model.speed_mbps>0?` · ${model.speed_mbps.toFixed(1)} MB/s`:'';
+          progressMeta=`${model.phase||'Baixando'}: ${pctStr} (${doneMb}/${totalMb} MB)${speedStr}`;
+        }else if(isVerifying){
+          progressMeta=model.phase||'Verificando integridade (SHA-256)...';
+        }
         const rtNote=model.runtime_available===false&&model.runtime_note?model.runtime_note:'';
         const meta=[
           model.name,
@@ -337,19 +349,38 @@ async function renderSttManager(){
           `[${rtLabels[model.runtime_status]||'Runtime'} | ${wtLabels[model.weights_status]||labels[model.state]||model.state} | ${ldLabels[model.load_status]||'Não carregado'}]`,
           progressMeta,
           rtNote,
-          model.error||''
+          isActiveOp?'':(model.error||'')
         ].filter(Boolean).join(' · ');
         line.append(el('span',meta));
-        const button=el('button',model.installed?'Verificar / reinstalar':'Baixar','secondary');button.type='button';button.disabled=['downloading','verifying','loading'].includes(model.state);
+        if(isActiveOp){
+          const bar=document.createElement('progress');bar.max=100;
+          if(isVerifying)bar.value=100;
+          else if(typeof model.percent==='number')bar.value=model.percent;
+          line.append(bar);
+        }
+        const needsReinstall=Boolean(model.installed||model.incomplete||model.weights_status==='model_corrupted'||model.state==='error');
+        const button=el('button',needsReinstall?'Verificar / reinstalar':'Baixar','secondary');button.type='button';button.disabled=isActiveOp;
         button.onclick=async()=>{button.disabled=true;try{await api('stt/install',{model:model.id,variant:settingInput('model_variant')?.value||'adapted'});await update();}catch(e){status.textContent=e.message;button.disabled=false;}};line.append(button);
         if(model.installed&&result.configured!==model.id){
-          const rm=el('button','Remover','secondary');rm.type='button';rm.disabled=['downloading','verifying','loading'].includes(model.state);
+          const rm=el('button','Remover','secondary');rm.type='button';rm.disabled=isActiveOp;
           rm.onclick=async()=>{rm.disabled=true;try{await api('stt/remove',{model:model.id,variant:settingInput('model_variant')?.value||'adapted'});await update();}catch(e){status.textContent=e.message;rm.disabled=false;}};
           line.append(rm);
         }
         list.append(line);
       }
-      if(result.models.some(row=>['downloading','verifying','loading'].includes(row.state)))setTimeout(update,2000);
+      const activeDownload=result.models.find(row=>['downloading','verifying'].includes(row.state)||['downloading','verifying'].includes(row.weights_status));
+      if(activeDownload){
+        if(activeDownload.state==='verifying'||activeDownload.weights_status==='verifying'){
+          status.textContent=`${activeDownload.name}: ${activeDownload.phase||'Verificando integridade (SHA-256)...'}`;
+        }else{
+          const pctStr=typeof activeDownload.percent==='number'?`${activeDownload.percent.toFixed(1)}%`:'conectando...';
+          const doneMb=((activeDownload.bytes_downloaded||0)/1e6).toFixed(1);
+          const totalMb=((activeDownload.total_bytes||activeDownload.download_bytes||0)/1e6).toFixed(1);
+          const speedStr=typeof activeDownload.speed_mbps==='number'&&activeDownload.speed_mbps>0?` (${activeDownload.speed_mbps.toFixed(1)} MB/s)`:'';
+          status.textContent=`Baixando ${activeDownload.name}: ${pctStr} · ${doneMb} / ${totalMb} MB${speedStr}`;
+        }
+        setTimeout(update,1500);
+      }
     }catch(e){status.textContent=e.message;}
   }
   const link=el('a','Testar STT no Home Assistant');link.href='/arandu-ai-lab#stt';link.target='_top';group.append(link);

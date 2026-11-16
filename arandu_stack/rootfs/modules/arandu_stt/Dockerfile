@@ -15,6 +15,7 @@ FROM python:3.12-slim-bookworm
 
 ARG BUILD_VERSION="4.0.1"
 ARG BUILD_ARCH="amd64"
+ARG ENABLE_NEMOTRON_RUNTIME=1
 
 LABEL \
   io.hass.version="$BUILD_VERSION" \
@@ -23,7 +24,8 @@ LABEL \
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    HF_HOME=/data/hub
+    HF_HOME=/data/hub \
+    ENABLE_NEMOTRON_RUNTIME=${ENABLE_NEMOTRON_RUNTIME}
 
 COPY --from=transcribe_builder /runtime/lib/ /usr/local/lib/
 COPY --from=transcribe_builder /runtime/wheels/ /opt/transcribe-wheels/
@@ -35,11 +37,18 @@ ENV TRANSCRIBE_LIBRARY=/usr/local/lib/libtranscribe.so
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates \
+    && apt-get install -y --no-install-recommends ca-certificates libsndfile1 ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 COPY rootfs/src/arandu_stt/requirements.txt /app/requirements.txt
+COPY rootfs/src/arandu_stt/requirements-nemotron.txt /app/requirements-nemotron.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN if [ "$ENABLE_NEMOTRON_RUNTIME" = "1" ]; then \
+      python -m venv /opt/venvs/nemotron \
+      && /opt/venvs/nemotron/bin/pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r /app/requirements-nemotron.txt \
+      && /opt/venvs/nemotron/bin/pip check \
+      && /opt/venvs/nemotron/bin/python -c "import numpy, torch, soundfile, nemo.collections.asr as nemo_asr; assert hasattr(nemo_asr.models, 'ASRModel')"; \
+    fi
 
 COPY rootfs/src/arandu_stt /app
 RUN chmod +x /app/run.sh

@@ -319,9 +319,13 @@ async function renderSttManager(){
       status.textContent='Política: '+policy+' | Carregado realmente?: '+loadedFlag+' | Selecionado: '+result.configured+' | Ativo: '+(active?.active_model||'nenhum')+' | Estado: '+stateText+' | RAM do processo: '+rssText+' | Carga: '+loadMs+' | Cold starts: '+cold+errText;
       list.replaceChildren();
       const labels={not_installed:'Não instalado',installed:'Instalado',downloading:'Baixando',verifying:'Verificando',loading:'Carregando',ready:'Pronto',waiting_first_use:'Aguardando primeira transcrição',off:'Desativado (OFF)',error:'Erro'};
+      const rtLabels={runtime_ready:'Runtime OK',runtime_missing:'Runtime ausente',dependency_missing:'Dependência ausente',dependency_conflict:'Conflito de deps',timeout:'Timeout no runtime'};
+      const wtLabels={model_not_installed:'Pesos não baixados',downloading:'Baixando',verifying:'Verificando',model_corrupted:'Pesos corrompidos',model_ready:'Pesos instalados'};
+      const ldLabels={unloaded:'Não carregado',loading:'Carregando',model_ready:'Carregado/Pronto',model_load_failed:'Falha na carga',oom:'Sem memória (OOM)',timeout:'Timeout na carga'};
       for(const model of result.models){
         const line=el('div',undefined,'stt-model-row');
         const progressMeta=model.state==='downloading'&&typeof model.percent==='number'?`${model.percent.toFixed(1)}% (${((model.bytes_downloaded||0)/1e6).toFixed(1)}/${((model.total_bytes||model.download_bytes||0)/1e6).toFixed(1)} MB)`:'';
+        const rtNote=model.runtime_available===false&&model.runtime_note?model.runtime_note:'';
         const meta=[
           model.name,
           model.runtime?`runtime ${model.runtime}`:'',
@@ -330,8 +334,9 @@ async function renderSttManager(){
           model.download_bytes?`download ${(model.download_bytes/1000000).toFixed(0)} MB`:'',
           model.estimated_ram_mb?`RAM est. ~${model.estimated_ram_mb} MB`:'',
           typeof model.load_ms==='number'?`carga ${model.load_ms.toFixed(0)} ms`:'',
-          labels[model.state]||model.state,
+          `[${rtLabels[model.runtime_status]||'Runtime'} | ${wtLabels[model.weights_status]||labels[model.state]||model.state} | ${ldLabels[model.load_status]||'Não carregado'}]`,
           progressMeta,
+          rtNote,
           model.error||''
         ].filter(Boolean).join(' · ');
         line.append(el('span',meta));

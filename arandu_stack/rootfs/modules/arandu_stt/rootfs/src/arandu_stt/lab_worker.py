@@ -27,6 +27,23 @@ def _process_tree_rss_mb() -> float:
     return total / 1048576
 
 
+def _safe_engine_rss_mb(engine) -> float:
+    fn = getattr(engine, 'process_rss_mb', None)
+    if callable(fn):
+        try:
+            val = fn()
+            if isinstance(val, (int, float)) and not isinstance(val, bool):
+                return float(val)
+        except Exception:
+            pass
+    return 0.0
+
+
+def _safe_engine_str(engine, attr: str, default: str | None = None) -> str | None:
+    val = getattr(engine, attr, default)
+    return val if isinstance(val, str) else default
+
+
 def _encode_wav_b64(audio):
     import io
     import wave
@@ -76,12 +93,26 @@ def run(body):
     from backends import create_backend
     manifest = verify(root, model, variant)
     engine = create_backend(model, location(root, model, variant), body.get('threads', 2))
+    if model == 'nemotron_unified_0_6b':
+        req_prof = body.get('nemotron_streaming_profile') or body.get('nemotron_profile') or 'offline'
+        if req_prof:
+            engine.streaming_profile = req_prof
     try:
         engine.load()
         if command == 'validate':
             import numpy as np
             engine.recognize(np.zeros(16000, dtype=np.float32))
-            return {'model': model, 'variant': variant, 'state': 'ready', 'model_load_ms': engine.load_ms}
+            rss_mb = round(max(_process_tree_rss_mb(), _safe_engine_rss_mb(engine)), 2)
+            return {
+                'model': model,
+                'variant': variant,
+                'state': 'ready',
+                'load_status': 'model_ready',
+                'model_load_ms': engine.load_ms,
+                'cold_load_ms': engine.load_ms,
+                'process_rss_mb': rss_mb,
+                'inference_mode': _safe_engine_str(engine, 'last_inference_mode', 'offline') or 'offline',
+            }
         import numpy as np
         from audio_processor import AudioProcessor, AudioProcessorConfig, PRESETS
         from contextual_lexical import ContextualResolver
@@ -202,15 +233,29 @@ def run(body):
             params = {'language': 'pt', 'beam_size': 1, 'vad_filter': False, 'condition_on_previous_text': False}
         elif model in ('granite_turboctc_q4', 'parakeet_ultra_q8', 'parakeet_ultra_q4'):
             params = {'language': 'pt', 'timestamps': 'none', 'persistent_session': True}
+        elif model == 'nemotron_unified_0_6b':
+            params = {
+                'language': 'pt',
+                'language_fixed': True,
+                'translate': False,
+                'detect_language': False,
+                'streaming_profile': _safe_engine_str(engine, 'streaming_profile', 'offline') or 'offline',
+                'inference_mode': _safe_engine_str(engine, 'last_inference_mode', 'offline') or 'offline',
+                'persistent_worker': True,
+            }
         else:
             params = {'decoding_method': 'greedy_search'}
+        rss_mb = round(max(_process_tree_rss_mb(), _safe_engine_rss_mb(engine)), 2)
+        total_ms = round(float(engine.load_ms or 0.0) + float(inference_ms or 0.0), 3)
         return {'revision': manifest.get('revision') or manifest.get('version'), 'model_sha256': manifest.get('sha256'), 'model': model, 'variant': variant if model == 'fastconformer' else None, 'state': 'ready',
                 'backend': CATALOG[model]['runtime'], 'license': CATALOG[model]['license'], 'device': 'cpu', 'compute': 'fp32' if model == 'fastconformer' and variant == 'adapted' else CATALOG[model]['compute'],
                 'language': 'pt', 'language_fixed': True, 'language_label': CATALOG[model].get('language_label', 'Português — fixo'),
                 'threads': body.get('threads', 2), 'profile': profile, 'preset': preset_name,
+                'inference_mode': _safe_engine_str(engine, 'last_inference_mode', 'offline') or 'offline',
+                'streaming_note': _safe_engine_str(engine, 'last_streaming_note', None),
                 'model_load_ms': engine.load_ms, 'cold_load_ms': engine.load_ms,
                 'warmup_ms': inference_stats['warmup_ms'], 'repetitions': n,
-                'inference_ms': inference_ms, 'inference_stats': inference_stats, 'lexical_ms': lexical_ms,
+                'inference_ms': inference_ms, 'total_ms': total_ms, 'inference_stats': inference_stats, 'lexical_ms': lexical_ms,
                 'preprocess_ms': ap_stats['preprocess_ms'], 'vad_ms': vad_stats['vad_ms'],
                 'end_of_speech_ms': vad_stats['end_of_speech_ms'], 'speech_detected': vad_stats['speech_detected'],
                 'aec': ap_stats['aec'], 'processed_wav_b64': _encode_wav_b64(audio) if len(audio) else None,
@@ -218,7 +263,7 @@ def run(body):
                 'processing_ms': (time.perf_counter()-started)*1000,
                 'realtime_factor': inference_ms / (len(pcm)/32),
                 'estimated_ram_mb': CATALOG[model].get('estimated_ram_mb'),
-                'process_rss_mb': _process_tree_rss_mb(),
+                'process_rss_mb': rss_mb,
                 'raw_transcript': raw, 'final_transcript': resolved['text'],
                 'safety_preserved_raw': resolved.get('safety_preserved_raw', False),
                 'quality': evaluate(body.get('reference'), raw, resolved['text'], body.get('entity_reference')),
@@ -252,13 +297,28 @@ if __name__ == '__main__':
         elif isinstance(exc, FileNotFoundError):
             error_code = 'not_installed'
             message = 'Pesos ausentes; instale o modelo selecionado.'
+        elif isinstance(exc, ValueError) and any(
+            tok in str(exc) for tok in (
+                'Tamanho do arquivo inválido',
+                'Integridade do modelo inválida',
+                'Hash difere da origem pinada',
+                'SHA256',
+                'Revisão instalada difere',
+                'Manifesto Whisper',
+                'Modelo legado incompleto',
+                'corrompido',
+                'truncado',
+                'Git LFS',
+            )
+        ):
+            error_code = 'model_corrupted'
+            message = str(exc)
         elif isinstance(exc, ValueError) and str(exc).startswith((
             'Espaço insuficiente para download',
             'Idioma fixo em português',
             'Repetições inválidas',
             'Tradução automática não é permitida',
             'Detecção automática de idioma não é permitida',
-            'Tamanho do arquivo inválido',
             'Arquivo de pesos whisper.cpp',
         )):
             error_code = 'validation_error'

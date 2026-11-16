@@ -22,9 +22,10 @@ RUN git init /whisper && cd /whisper && git remote add origin https://github.com
 RUN cmake -S /whisper -B /whisper/build -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_IS_DEV=OFF -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DGGML_AVX512=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON -DWHISPER_BUILD_SERVER=ON && cmake --build /whisper/build --target whisper-server whisper-cli -j 2
 
 FROM python:3.12-slim-bookworm
-ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libstdc++6 ca-certificates ocl-icd-libopencl1 intel-opencl-icd clinfo && rm -rf /var/lib/apt/lists/*
-RUN pip install --no-cache-dir aiohttp==3.13.3 && pip install --no-cache-dir torch==2.9.1 --index-url https://download.pytorch.org/whl/cpu
+ARG ENABLE_NEMOTRON_RUNTIME=1
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 ENABLE_NEMOTRON_RUNTIME=${ENABLE_NEMOTRON_RUNTIME}
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libsndfile1 libstdc++6 ca-certificates ocl-icd-libopencl1 intel-opencl-icd clinfo && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir aiohttp==3.13.3 psutil==7.2.2 && pip install --no-cache-dir torch==2.9.1 --index-url https://download.pytorch.org/whl/cpu
 COPY --from=nlu_builder /build/engine/target/release/local-nlu /usr/bin/local-nlu
 COPY --from=llama /llama/build/bin/llama-server /usr/local/bin/llama-server
 COPY --from=whisper_cpp_builder /whisper/build/bin/whisper-server /usr/local/bin/whisper-server
@@ -39,11 +40,17 @@ RUN python -m venv --system-site-packages /opt/venvs/decision && /opt/venvs/deci
 RUN python -m venv --system-site-packages /opt/venvs/llm && /opt/venvs/llm/bin/pip install --no-cache-dir /opt/modules/arandu_llm/rootfs/src && /opt/venvs/llm/bin/pip check
 RUN python -m venv /opt/venvs/stt && /opt/venvs/stt/bin/pip install --no-cache-dir -r /opt/modules/arandu_stt/rootfs/src/arandu_stt/requirements.txt && /opt/venvs/stt/bin/pip check && /opt/venvs/stt/bin/pip install --no-deps /opt/transcribe-wheels/*.whl
 RUN python -m venv --system-site-packages /opt/venvs/phonon && /opt/venvs/phonon/bin/pip install --no-cache-dir -r /opt/modules/arandu_stt/rootfs/src/arandu_stt/requirements-phonon.txt && /opt/venvs/phonon/bin/pip check
+RUN if [ "$ENABLE_NEMOTRON_RUNTIME" = "1" ]; then \
+      python -m venv --system-site-packages /opt/venvs/nemotron \
+      && /opt/venvs/nemotron/bin/pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r /opt/modules/arandu_stt/rootfs/src/arandu_stt/requirements-nemotron.txt \
+      && /opt/venvs/nemotron/bin/pip check \
+      && /opt/venvs/nemotron/bin/python -c "import numpy, torch, soundfile, nemo.collections.asr as nemo_asr; assert hasattr(nemo_asr.models, 'ASRModel')"; \
+    fi
 RUN python -m venv --system-site-packages /opt/venvs/tts && /opt/venvs/tts/bin/pip install --no-cache-dir '/opt/modules/arandu_tts/rootfs/src[pocket]' && /opt/venvs/tts/bin/pip check
 RUN python -m venv --system-site-packages /opt/venvs/wake && /opt/venvs/wake/bin/pip install --no-cache-dir -r /opt/modules/arandu_wake/rootfs/src/requirements-detector.txt /opt/modules/arandu_wake/rootfs/src && /opt/venvs/wake/bin/pip check
-RUN pip install --no-cache-dir psutil==7.2.2 && pip check
+RUN pip check
 RUN /opt/venvs/stt/bin/python -c "import numpy, sherpa_onnx, faster_whisper, ctranslate2, onnx_asr, onnxruntime, pywebrtc_audio, transcribe_cpp, wyoming, huggingface_hub, aiohttp, psutil, filelock" \
- && /opt/venvs/phonon/bin/python -c "import fermion, torch; assert hasattr(fermion, 'load_speech')" \
+ && /opt/venvs/phonon/bin/python -c "import numpy, fermion, torch; assert hasattr(fermion, 'load_speech')" \
  && /opt/venvs/decision/bin/python -c "import aiohttp, sentence_transformers, torch, transformers, huggingface_hub, openvino, onnx" \
  && /opt/venvs/llm/bin/python -c "import aiohttp, huggingface_hub, psutil" \
  && /opt/venvs/tts/bin/python -c "import piper, pocket_tts, wyoming, aiohttp" \

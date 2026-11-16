@@ -25,6 +25,7 @@ class EnvSpec:
     pyproject_spec: str | None = None
     pyproject_path: Path | None = None
     extras: tuple[str, ...] = ()
+    extra_index_urls: tuple[str, ...] = ()
 
 
 ENVS: tuple[EnvSpec, ...] = (
@@ -37,6 +38,12 @@ ENVS: tuple[EnvSpec, ...] = (
         name='phonon',
         venv_dir='/opt/venvs/phonon',
         requirements_files=(MODULES / 'arandu_stt' / 'rootfs' / 'src' / 'arandu_stt' / 'requirements-phonon.txt',),
+    ),
+    EnvSpec(
+        name='nemotron',
+        venv_dir='/opt/venvs/nemotron',
+        requirements_files=(MODULES / 'arandu_stt' / 'rootfs' / 'src' / 'arandu_stt' / 'requirements-nemotron.txt',),
+        extra_index_urls=('https://download.pytorch.org/whl/cpu',),
     ),
     EnvSpec(
         name='decision',
@@ -120,6 +127,10 @@ def audit_static_metadata() -> list[str]:
     if 'fermion-research==' not in phonon_joined:
         errors.append('DEPENDENCY_CONFLICT [phonon] fermion-research must be pinned in requirements-phonon.txt')
 
+    nemotron_joined = '\n'.join(by_env['nemotron']).lower()
+    if 'nemo-toolkit[asr]==' not in nemotron_joined and 'nemo_toolkit[asr]==' not in nemotron_joined:
+        errors.append('DEPENDENCY_CONFLICT [nemotron] nemo-toolkit[asr] must be pinned in requirements-nemotron.txt')
+
     return errors
 
 
@@ -130,6 +141,8 @@ def run_dry_run_resolution(python_exe: str = sys.executable) -> list[str]:
         tmp_path = Path(tmp)
         for env in ENVS:
             cmd = [python_exe, '-m', 'pip', 'install', '--dry-run', '--ignore-installed']
+            for idx_url in env.extra_index_urls:
+                cmd.extend(['--extra-index-url', idx_url])
             for req in env.requirements_files:
                 cmd.extend(['-r', str(req)])
             if env.pyproject_path is not None:

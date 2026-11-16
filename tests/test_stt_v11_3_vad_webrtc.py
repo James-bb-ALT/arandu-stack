@@ -223,48 +223,61 @@ def test_new_stt_backends_contracts_and_missing_runtimes(tmp_path, monkeypatch):
     assert text_ph == 'acende o quarto'
     b_ph.close()
 
-    # 3. Nemotron Unified 0.6B offline & streaming profiles
+    # 3. Nemotron Unified 0.6B offline & streaming profiles (via isolated NeMo worker)
     assert set(STREAMING_PROFILES) == {'precision', 'balanced', 'fast', 'experimental'}
     nem_dir = tmp_path / 'nemotron_unified_0_6b'
     nem_dir.mkdir()
     with (nem_dir / 'nemotron-labs-unified-asr-0.6b.nemo').open('wb') as fh:
         fh.truncate(100_000_001)
 
-    class FakeNemoASRModel:
-        @staticmethod
-        def restore_from(restore_path, map_location='cpu'):
-            return types.SimpleNamespace(
-                eval=lambda: None,
-                transcribe=lambda paths, target_lang='pt', **kw: [types.SimpleNamespace(text='liga a tomada')],
-            )
-
-    fake_torch = types.ModuleType('torch')
-    fake_torch.set_num_threads = lambda n: None
-    fake_nemo = types.ModuleType('nemo')
-    fake_nemo_col = types.ModuleType('nemo.collections')
-    fake_nemo_asr = types.ModuleType('nemo.collections.asr')
-    fake_nemo_asr.models = types.SimpleNamespace(ASRModel=FakeNemoASRModel)
-
+    monkeypatch.setenv('ARANDU_NEMOTRON_PYTHON', str(tmp_path / 'missing_nemotron_py'))
     b_nem_missing = NemotronUnifiedBackend(nem_dir, streaming_profile='balanced')
     with pytest.raises(ImportError, match='NeMo'):
         b_nem_missing.load()
 
-    monkeypatch.setitem(sys.modules, 'torch', fake_torch)
-    monkeypatch.setitem(sys.modules, 'nemo', fake_nemo)
-    monkeypatch.setitem(sys.modules, 'nemo.collections', fake_nemo_col)
-    monkeypatch.setitem(sys.modules, 'nemo.collections.asr', fake_nemo_asr)
+    nemo_site = tmp_path / 'nemo_site'
+    nemo_asr_dir = nemo_site / 'nemo' / 'collections' / 'asr'
+    nemo_asr_dir.mkdir(parents=True)
+    (nemo_site / 'torch.py').write_text('def set_num_threads(_n): pass\ndef set_grad_enabled(_f): pass\n', encoding='utf-8')
+    (nemo_site / 'soundfile.py').write_text('', encoding='utf-8')
+    (nemo_site / 'nemo' / '__init__.py').write_text('', encoding='utf-8')
+    (nemo_site / 'nemo' / 'collections' / '__init__.py').write_text('', encoding='utf-8')
+    (nemo_asr_dir / '__init__.py').write_text('from nemo.collections.asr import models\n', encoding='utf-8')
+    (nemo_asr_dir / 'models.py').write_text(
+        'import types\n'
+        'class ASRModel:\n'
+        '    @staticmethod\n'
+        '    def restore_from(restore_path, map_location="cpu"):\n'
+        '        return types.SimpleNamespace(cfg=types.SimpleNamespace(model_defaults={}), eval=lambda: None, freeze=lambda: None, transcribe=lambda paths, **kw: [types.SimpleNamespace(text="liga a tomada")])\n',
+        encoding='utf-8',
+    )
+    import os
+    if os.name == 'nt':
+        wrapper = tmp_path / 'fake_nemo_py.cmd'
+        wrapper.write_text(f'@echo off\r\nset "PYTHONPATH={nemo_site}"\r\n"{sys.executable}" %*\r\n', encoding='utf-8')
+    else:
+        wrapper = tmp_path / 'fake_nemo_py.sh'
+        wrapper.write_text(f'#!/usr/bin/env sh\nexport PYTHONPATH="{nemo_site}"\nexec "{sys.executable}" "$@"\n', encoding='utf-8')
+        wrapper.chmod(0o755)
+    monkeypatch.setenv('ARANDU_NEMOTRON_PYTHON', str(wrapper))
 
     b_nem = NemotronUnifiedBackend(nem_dir, streaming_profile='balanced')
     b_nem.load()
-    text_nem, _ = b_nem.recognize(np.zeros(3200, dtype=np.float32))
+    # Silence short-circuits without hallucination
+    text_sil, _ = b_nem.recognize(np.zeros(3200, dtype=np.float32))
+    assert text_sil == ''
+    # Non-silent signal invokes isolated worker
+    speech = np.sin(np.linspace(0, 60, 3200)).astype(np.float32) * 0.3
+    text_nem, _ = b_nem.recognize(speech)
     assert text_nem == 'liga a tomada'
     sess = b_nem.create_stream('fast')
     assert sess.profile == 'fast'
     assert sess.algorithmic_latency_ms == 240  # 80 + 160 ms
-    step = b_nem.feed_chunk(sess, np.zeros(1280, dtype=np.float32))
+    step = b_nem.feed_chunk(sess, np.sin(np.linspace(0, 30, 1280)).astype(np.float32) * 0.3)
     assert step['ready_for_step'] is True
     done = b_nem.finish_stream(sess)
     assert done['text'] == 'liga a tomada'
+    assert done['inference_mode'] == 'buffered_offline'
     b_nem.close()
 
 

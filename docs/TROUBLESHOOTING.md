@@ -10,7 +10,9 @@ Para impedir conflitos transitivos entre bibliotecas de IA (como `huggingface-hu
 - `/opt/venvs/llm`: `aiohttp`, `huggingface-hub==0.36.0`, `llama-server`.
 - `/opt/venvs/tts`: `piper-tts`, `pocket-tts`, `wyoming`.
 - `/opt/venvs/wake`: `wyoming-openwakeword`, `pyopen-wakeword`.
-- `/opt/venvs/nemotron` (opcional/experimental): NVIDIA NeMo não é pré-instalado na imagem CPU padrão; sem ele, `nemotron_unified_0_6b` aparece com `runtime_available: false` (`MODEL_RUNTIME_UNAVAILABLE`) sem afetar os demais backends.
+- `/opt/venvs/nemotron`: `nemo-toolkit[asr]==3.0.0` herdando `torch==2.9.1` CPU-only do sistema (`--system-site-packages`), com build habilitado por padrão (`ARG ENABLE_NEMOTRON_RUNTIME=1` no `Dockerfile`) e worker persistente isolado em `nemotron_unified_backend.py` (`--worker`). Builds restritos podem usar `--build-arg ENABLE_NEMOTRON_RUNTIME=0`, caso em que o diagnóstico reporta `runtime_missing` para `nemotron_unified_0_6b` sem afetar os demais motores.
+
+> **Sondagem de runtimes (`model_catalog.py`):** O painel de controle (`server.py` / `stt_lab.py`) roda no Python global sem `numpy` e verifica cada runtime STT em subprocesso explícito com o interpretador do respectivo ambiente (`/opt/venvs/stt/bin/python`, `/opt/venvs/phonon/bin/python`, `/opt/venvs/nemotron/bin/python` + binário nativo `whisper-server`), separando `runtime_status` (`runtime_ready`, `runtime_missing`, `dependency_missing`, `dependency_conflict`, `timeout`), `weights_status` (`model_not_installed`, `model_corrupted`, `model_ready`) e `load_status` (`unloaded`, `loading`, `model_ready`, `model_load_failed`, `oom`, `timeout`). Modelos com runtime pronto e pesos ainda não baixados mostram `model_not_installed` (nunca `MODEL_RUNTIME_UNAVAILABLE`).
 
 ## 2. Verificação de dependências antes do build
 

@@ -1,3 +1,8 @@
+# 11.4.5 — Diagnóstico explícito de falhas Wyoming STT (`stt_failure` vs `stt_busy`) (2026-11-16)
+
+- **Diagnóstico de `stt_failure` no STT de produção (`arandu_stt/rootfs/src/arandu_stt/server.py`):** Exceções na etapa `AudioStop` agora registram o estágio exato (`preprocess`, `vad`, `recognize`, `lexical`), o tipo e o resumo sanitizado da exceção diretamente no evento `Error` retornado ao Home Assistant e em `last_infer_error` no `/status` (`11560`).
+- **Separação de concorrência (`SttBusyError` / `stt_busy`):** `Engine.recognize()` passa a emitir `SttBusyError` (`code='stt_busy'`) quando o lock de inferência está ocupado, evitando mascarar concorrência como `stt_failure`.
+
 # 11.4.4 — AI Lab STT: Persistência residente, governança de memória e otimização whisper.cpp (2026-11-16)
 
 - **Sessão persistente no AI Lab STT (`lab_worker.py`, `stt_lab.py`, `server.py`, `ai_lab.py`, `stt_lab_panel.js`):** Adicionado modo servidor persistente (`--serve`) gerenciado pelo `STTLab` com no máximo 1 modelo residente em RAM (`unloaded`, `loading`, `resident`, `warming`, `ready`, `inferring`, `error`), retenção configurável (`0`, `300s`, `900s`, `1800s`, permanente), botões **Carregar modelo**, **Aquecer modelo** e **Descarregar modelo**, modos `warm` / `cold` / `warmup_benchmark` e rotas `GET /api/stt/session` e `POST /api/stt/{load,warmup,unload}`, mantendo o STT de produção (`11560`/`10350`) totalmente isolado.

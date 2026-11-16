@@ -188,11 +188,11 @@ def test_real_chromium_and_android_mobile_layout_and_tts_autoplay():
                 warnHidden: sr.getElementById('versionWarning')?.hidden,
               };
             }""")
-            assert info["version"] == "11.4.4"
+            assert info["version"] == "11.4.5"
             assert info["hasPlayAudio"] is True
             assert info["hasPlayBtn"] is True
             assert f"?v={expected_tag}" in info["srcAttr"]
-            assert "AI Lab frontend: 11.4.4" in info["diagText"]
+            assert "AI Lab frontend: 11.4.5" in info["diagText"]
             assert f"Asset hash: {expected_hash}" in info["diagText"]
             assert info["warnHidden"] is True
 
@@ -212,9 +212,9 @@ def test_real_chromium_and_android_mobile_layout_and_tts_autoplay():
               el.updateVersionDiagnostics({backend_version: ver, asset_hash: h, panel_tag: tag});
               const w = el.shadowRoot.getElementById('versionWarning');
               return {hidden: w.hidden, diag: el.shadowRoot.getElementById('versionDiagnostics').textContent};
-            }""", ["11.4.4", expected_hash, expected_tag])
+            }""", ["11.4.5", expected_hash, expected_tag])
             assert synced_state["hidden"] is True
-            assert "Backend: 11.4.4" in synced_state["diag"]
+            assert "Backend: 11.4.5" in synced_state["diag"]
 
             page.evaluate("""() => {
               const el = document.querySelector('arandu-ai-lab');

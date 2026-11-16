@@ -75,6 +75,19 @@ class SttDisabledError(RuntimeError):
     code = 'stt_disabled'
 
 
+class SttBusyError(RuntimeError):
+    code = 'stt_busy'
+
+
+def _sanitize_error_detail(exc: BaseException) -> str:
+    if isinstance(exc, (TimeoutError, asyncio.TimeoutError)):
+        return 'timeout após 60s'
+    raw = ' '.join(str(exc).split())
+    if not raw:
+        return 'sem detalhes adicionais'
+    return raw[:180]
+
+
 def _process_tree_rss_bytes() -> int:
     import os
     import psutil
@@ -101,6 +114,7 @@ class Engine:
         self.load_ms = None
         self.cold_start_count = 0
         self.last_load_error = None
+        self.last_infer_error = None
         self.state = 'off' if resident_policy == 'OFF' else 'waiting_first_use'
         self._load_lock = threading.Lock()
         self._lock = threading.Lock()
@@ -153,11 +167,12 @@ class Engine:
             raise SttDisabledError('STT desativado pela política de RAM (OFF)')
         backend = self.ensure_loaded()
         if not self._lock.acquire(blocking=False):
-            raise RuntimeError('STT ocupado; tente novamente')
+            raise SttBusyError('STT ocupado; tente novamente')
         try:
             if not np.any(audio):
                 return '', 0.0, 0.0
             text, milliseconds = backend.recognize(audio)
+            self.last_infer_error = None
             self.recent = {'inference_ms': milliseconds, 'audio_duration_ms': len(audio)/16}
             return text, milliseconds / 1000, 0.0
         finally:
@@ -190,6 +205,7 @@ class Engine:
             'cold_start_count': self.cold_start_count,
             'process_rss_mb': rss_mb,
             'last_load_error': self.last_load_error,
+            'last_infer_error': self.last_infer_error,
             'revision': manifest.get('revision') or manifest.get('version'),
             'model_path': str(self.model_dir),
             'model': self.model,
@@ -414,6 +430,7 @@ class Handler(AsyncEventHandler):
                 outcome = 'disabled'
                 error = Error(text='STT desativado pela política de RAM (OFF)', code='stt_disabled')
             elif duration >= .35:
+                stage = 'preprocess'
                 try:
                     if self.audio_processor is not None:
                         audio, _ap_stats = await asyncio.to_thread(self.audio_processor.process_pcm16, pcm, sample_rate=16000, channels=1)
@@ -423,6 +440,7 @@ class Handler(AsyncEventHandler):
                     else:
                         audio = pcm16_to_float32(pcm)
                     if self.vad_processor is not None and len(audio):
+                        stage = 'vad'
                         vres = await asyncio.to_thread(self.vad_processor.process_audio, audio)
                         audio = vres.audio if vres.speech_detected else np.empty(0, dtype=np.float32)
                     if not len(audio):
@@ -430,7 +448,9 @@ class Handler(AsyncEventHandler):
                     else:
                         if self.padding_ms:
                             audio = np.concatenate((audio, np.zeros(round(16000*self.padding_ms/1000), dtype=np.float32)))
+                        stage = 'recognize'
                         raw, infer, wait = await asyncio.wait_for(asyncio.to_thread(self.engine.recognize, audio), 60)
+                        stage = 'lexical'
                         from stt_processing import correct
                         resolved = await asyncio.to_thread(correct, self.resolver, raw, self.profile)
                         final = resolved['text']
@@ -440,14 +460,29 @@ class Handler(AsyncEventHandler):
                 except SttDisabledError as exc:
                     outcome = 'disabled'
                     error = Error(text=str(exc), code='stt_disabled')
+                except SttBusyError as exc:
+                    outcome = 'busy'
+                    error = Error(text=str(exc), code='stt_busy')
+                    LOG.warning('[WYOMING] %s', exc)
                 except LexicalError as exc:
                     outcome = 'failure'
                     error = Error(text=str(exc), code=exc.code)
                     LOG.error('Correção lexical indisponível: %s', exc.code)
-                except Exception:
+                except Exception as exc:
                     outcome = 'failure'
-                    error = Error(text='Falha de inferência/correção', code='stt_failure')
-                    LOG.exception('Erro de inferencia/correcao')
+                    detail = _sanitize_error_detail(exc)
+                    err_type = type(exc).__name__
+                    self.engine.last_infer_error = {
+                        'utc': datetime.now(timezone.utc).isoformat(),
+                        'stage': stage,
+                        'error_type': err_type,
+                        'message': detail,
+                    }
+                    error = Error(
+                        text=f'Falha de inferência/correção [{stage}] ({err_type}: {detail})',
+                        code='stt_failure',
+                    )
+                    LOG.exception('Erro de inferencia/correcao [stage=%s]', stage)
             context = {'arandu': resolved} if resolved.get('confidence_kind') == 'heuristic_lexical' else None
             if error:
                 await self.write_event(error.event())

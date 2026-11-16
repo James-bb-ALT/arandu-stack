@@ -1,3 +1,8 @@
+# 11.4.6 — Correção do pipeline WebRTC AudioProcessor (`pywebrtc_audio.process`) (2026-11-16)
+
+- **Correção de `AttributeError: 'AudioProcessor' object has no attribute 'process_stream'` (`audio_processor.py`):** Atualizado `AudioProcessor._process_native_frame()` para invocar a API real do `pywebrtc_audio` (`self._native.process(frame)` / `self._native.process(frame, far_frame)`), corrigindo a falha em `[stage=preprocess]` durante a captura Wyoming no Home Assistant.
+- **Validação real em container (`scripts/docker_smoke_test.py`):** Adicionada verificação executável de `AudioProcessor.process_pcm16()` + `flush()` com `pywebrtc_audio` nativo no smoke test Docker.
+
 # 11.4.5 — Diagnóstico explícito de falhas Wyoming STT (`stt_failure` vs `stt_busy`) (2026-11-16)
 
 - **Diagnóstico de `stt_failure` no STT de produção (`arandu_stt/rootfs/src/arandu_stt/server.py`):** Exceções na etapa `AudioStop` agora registram o estágio exato (`preprocess`, `vad`, `recognize`, `lexical`), o tipo e o resumo sanitizado da exceção diretamente no evento `Error` retornado ao Home Assistant e em `last_infer_error` no `/status` (`11560`).

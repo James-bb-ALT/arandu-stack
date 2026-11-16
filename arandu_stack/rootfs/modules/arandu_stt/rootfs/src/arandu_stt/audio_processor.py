@@ -144,6 +144,18 @@ class AudioProcessor:
             ),
         }
 
+    def _process_native_frame(self, frame: np.ndarray, far_frame: np.ndarray | None = None) -> np.ndarray:
+        if hasattr(self._native, 'process'):
+            out = self._native.process(frame, far_frame) if far_frame is not None else self._native.process(frame)
+            arr = np.asarray(out)
+            if np.issubdtype(arr.dtype, np.floating):
+                return np.clip(np.round(arr * 32768.0), -32768, 32767).astype(np.int16)
+            return arr.astype(np.int16, copy=False)
+        if far_frame is not None and hasattr(self._native, 'process_reverse_stream'):
+            self._native.process_reverse_stream(far_frame.tobytes())
+        processed = self._native.process_stream(frame.tobytes())
+        return np.frombuffer(processed, dtype='<i2')
+
     def process_pcm16(
         self,
         pcm: bytes,
@@ -181,13 +193,13 @@ class AudioProcessor:
                 far_i16 = np.clip(np.round(far_f32 * 32768.0), -32768, 32767).astype(np.int16)
             for idx in range(n_frames):
                 frame = combined[idx * frame_samples : (idx + 1) * frame_samples]
-                if aec_active and far_i16 is not None and hasattr(self._native, 'process_reverse_stream'):
+                far_frame = None
+                if aec_active and far_i16 is not None:
                     f_start = idx * frame_samples
-                    far_frame = far_i16[f_start : f_start + frame_samples]
-                    if len(far_frame) == frame_samples:
-                        self._native.process_reverse_stream(far_frame.tobytes())
-                processed = self._native.process_stream(frame.tobytes())
-                out_chunks.append(np.frombuffer(processed, dtype='<i2'))
+                    cand = far_i16[f_start : f_start + frame_samples]
+                    if len(cand) == frame_samples:
+                        far_frame = cand
+                out_chunks.append(self._process_native_frame(frame, far_frame))
             self._residual = combined[n_frames * frame_samples :].copy()
             if out_chunks:
                 out_i16 = np.concatenate(out_chunks)
@@ -216,7 +228,7 @@ class AudioProcessor:
         padded = np.concatenate((self._residual, np.zeros(pad, dtype=np.int16)))
         self._residual = np.empty(0, dtype=np.int16)
         if self._native is not None:
-            out = np.frombuffer(self._native.process_stream(padded.tobytes()), dtype='<i2')[: 160 - pad]
+            out = self._process_native_frame(padded)[: 160 - pad]
             return out.astype(np.float32) / 32768.0
         return padded[: 160 - pad].astype(np.float32) / 32768.0
 

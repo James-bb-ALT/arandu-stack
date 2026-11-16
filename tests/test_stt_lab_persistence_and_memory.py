@@ -316,5 +316,48 @@ class SttLabSessionManagerTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(req.await_count, 4)
 
 
+class ProductionSttErrorDiagnosticsTests(unittest.IsolatedAsyncioTestCase):
+    async def test_wyoming_handler_distinguishes_stt_busy_and_exposes_stage_on_stt_failure(self):
+        import server as stt_server
+        from wyoming.audio import AudioChunk, AudioStart, AudioStop
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            engine = stt_server.Engine(root, 2, 'fastconformer', 'adapted', resident_policy='LAZY')
+            engine.backend = MagicMock()
+            resolver = MagicMock()
+            metrics = stt_server.Metrics(root / 'metrics.jsonl')
+
+            async def run_utterance():
+                handler = stt_server.Handler(engine, resolver, metrics, 0, 'full', reader=AsyncMock(), writer=AsyncMock())
+                sent = []
+                handler.write_event = AsyncMock(side_effect=lambda ev: sent.append(ev))
+                await handler.handle_event(AudioStart(rate=16000, width=2, channels=1).event())
+                await handler.handle_event(AudioChunk(rate=16000, width=2, channels=1, audio=b'\x20\x00' * 8000).event())
+                await handler.handle_event(AudioStop().event())
+                return sent
+
+            # 1) Busy lock -> stt_busy (not stt_failure)
+            engine._lock.acquire()
+            try:
+                sent_busy = await run_utterance()
+            finally:
+                engine._lock.release()
+            self.assertEqual(len(sent_busy), 1)
+            self.assertEqual(sent_busy[0].data['code'], 'stt_busy')
+            self.assertIn('STT ocupado', sent_busy[0].data['text'])
+
+            # 2) Unexpected backend failure -> stt_failure with stage + exception + metadata
+            engine.backend.recognize = MagicMock(side_effect=RuntimeError('whisper-server HTTP 500'))
+            sent_fail = await run_utterance()
+            self.assertEqual(len(sent_fail), 1)
+            self.assertEqual(sent_fail[0].data['code'], 'stt_failure')
+            self.assertIn('[recognize]', sent_fail[0].data['text'])
+            self.assertIn('RuntimeError: whisper-server HTTP 500', sent_fail[0].data['text'])
+            meta = engine.metadata()
+            self.assertEqual(meta['last_infer_error']['stage'], 'recognize')
+            self.assertEqual(meta['last_infer_error']['error_type'], 'RuntimeError')
+
+
 if __name__ == '__main__':
     unittest.main()

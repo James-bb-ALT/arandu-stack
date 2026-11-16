@@ -11,8 +11,6 @@ import sys
 import threading
 import time
 
-import numpy as np
-
 from stt_errors import AranduStructuredError
 
 DEFAULT_PHONON_PYTHON = Path('/opt/venvs/phonon/bin/python')
@@ -152,6 +150,8 @@ class PhononBackend:
     def recognize(self, audio):
         if self._model is None and self._proc is None:
             raise RuntimeError('Phonon 2.5 não carregado')
+        import numpy as np
+
         arr = np.asarray(audio, dtype=np.float32).reshape(-1)
         if arr.size == 0:
             return '', 0.0
@@ -237,6 +237,8 @@ def _worker_main() -> int:
                 if model is None:
                     print(json.dumps({'ok': False, 'error_code': 'MODEL_LOAD_FAILED', 'error': 'Modelo não carregado'}), flush=True)
                     continue
+                import numpy as np
+
                 t0 = time.perf_counter()
                 raw_bytes = base64.b64decode(req['audio_f32_b64'])
                 arr = np.frombuffer(raw_bytes, dtype='<f4')

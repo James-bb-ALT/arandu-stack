@@ -31,6 +31,10 @@ for v in decision llm phonon tts wake; do
   echo "=== pip check: $v ==="
   /opt/venvs/$v/bin/pip check
 done
+if [ -x /opt/venvs/nemotron/bin/python ]; then
+  echo "=== pip check: nemotron ==="
+  /opt/venvs/nemotron/bin/pip check
+fi
 echo "=== pip check: stt (excluding native C++ libtranscribe.so) ==="
 stt_check=$(/opt/venvs/stt/bin/pip check 2>&1 || true)
 filtered=$(echo "$stt_check" | grep -v 'No broken requirements found' | grep -v 'transcribe-cpp .* requires transcribe-cpp-native' || true)
@@ -47,7 +51,10 @@ test -f /usr/local/lib/libtranscribe.so
 command -v ffmpeg >/dev/null
 test -f /opt/model_registry/models.json
 /opt/venvs/stt/bin/python -c "import numpy, sherpa_onnx, faster_whisper, ctranslate2, onnx_asr, onnxruntime, pywebrtc_audio, transcribe_cpp, wyoming, huggingface_hub, aiohttp, psutil, filelock"
-/opt/venvs/phonon/bin/python -c "import fermion, torch; assert hasattr(fermion, 'load_speech')"
+/opt/venvs/phonon/bin/python -c "import numpy, fermion, torch; assert hasattr(fermion, 'load_speech')"
+if [ "${ENABLE_NEMOTRON_RUNTIME:-1}" = "1" ] || [ -x /opt/venvs/nemotron/bin/python ]; then
+  /opt/venvs/nemotron/bin/python -c "import numpy, torch, soundfile, nemo.collections.asr as nemo_asr; assert hasattr(nemo_asr.models, 'ASRModel')"
+fi
 /opt/venvs/decision/bin/python -c "import aiohttp, sentence_transformers, torch, transformers, huggingface_hub, openvino, onnx"
 /opt/venvs/llm/bin/python -c "import aiohttp, huggingface_hub, psutil"
 /opt/venvs/tts/bin/python -c "import piper, pocket_tts, wyoming, aiohttp"
@@ -91,13 +98,30 @@ while time.monotonic() < deadline:
         time.sleep(0.5)
 if not state:
     raise SystemExit(f'Server failed on /api/state: {last_err}')
-out = {'state_version': state.get('version'), 'endpoints': {}}
+out = {'state_version': state.get('version'), 'endpoints': {}, 'stt_runtime_summary': {}}
 for ep in ('/api/stt/models', '/api/llm/models', '/api/tts/models'):
-    with urllib.request.urlopen('http://127.0.0.1:8099' + ep, timeout=5) as r:
+    with urllib.request.urlopen('http://127.0.0.1:8099' + ep, timeout=30) as r:
         assert r.status == 200, f'{ep} -> {r.status}'
         data = json.loads(r.read().decode('utf-8'))
-        assert 'models' in data, f'Missing models in {ep}'
+        assert 'models' in data and isinstance(data['models'], list) and data['models'], f'Missing models in {ep}'
         out['endpoints'][ep] = len(data['models'])
+        if ep == '/api/stt/models':
+            by_id = {m.get('id'): m for m in data['models']}
+            for expected in ('fastconformer', 'whisper_cpp_small', 'phonon_2_5', 'nemotron_unified_0_6b'):
+                assert expected in by_id, f'Expected STT model {expected} missing in /api/stt/models'
+            raw_json = json.dumps(data, ensure_ascii=False)
+            assert "No module named 'numpy'" not in raw_json, f'Global numpy leak in /api/stt/models: {raw_json}'
+            for mid, m in by_id.items():
+                assert m.get('runtime_status') == 'runtime_ready', f'{mid} runtime not ready: {m}'
+                assert m.get('runtime_available') is True, f'{mid} runtime_available is not True: {m}'
+                assert not m.get('runtime_note'), f'{mid} unexpected runtime_note when ready: {m.get("runtime_note")}'
+                assert m.get('weights_status') == 'model_not_installed' or m.get('installed'), f'{mid} invalid weights_status: {m}'
+                out['stt_runtime_summary'][mid] = {
+                    'runtime_status': m.get('runtime_status'),
+                    'weights_status': m.get('weights_status'),
+                    'load_status': m.get('load_status'),
+                    'state': m.get('state'),
+                }
 print(json.dumps(out))
 """
             res = _run(['docker', 'exec', cname, 'python', '-c', client_script], check=False)

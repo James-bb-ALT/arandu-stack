@@ -37,7 +37,7 @@ export function mountSTT(panel) {
   const $=id=>section.querySelector(`[data-stt="${id}"]`);
   let blob=null,url=null,stream=null,recorder=null,timer=null,ticker=null,disposed=false,busy=false,recording=false,stoppedAt=null,rows=[],last=null,inventory=null,poll=null;
   const names={fastconformer:'Arandu FastConformer',whisper_tiny:'Whisper Tiny',whisper_base:'Whisper Base',whisper_small:'Whisper Small',parakeet_ptbr_30s:'Parakeet TDT V3 pt-BR 30s',parakeet_tagarela:'Parakeet TAGARELA pt-BR',orukeet_int8:'Orukeet INT8',granite_turboctc_q4:'Granite TurboCTC Q4_K_M',parakeet_ultra_q8:'Parakeet Ultra Q8_0',parakeet_ultra_q4:'Parakeet Ultra Q4_K_M',phonon_2_5:'Phonon 2.5',nemotron_unified_0_6b:'Nemotron Unified ASR 0.6B',whisper_cpp_small:'Whisper Small — whisper.cpp',whisper_cpp_medium:'Whisper Medium — whisper.cpp'};
-  const states={not_installed:'Não instalado',downloading:'Baixando',verifying:'Verificando',installed:'Instalado',loading:'Carregando',ready:'Pronto',cancelled:'Cancelado',error:'Erro'};
+  const states={not_installed:'Não instalado',downloading:'Baixando',verifying:'Verificando',installed:'Instalado',loading:'Carregando',ready:'Pronto',cancelled:'Cancelado',error:'Erro',runtime_missing:'Runtime ausente',dependency_missing:'Dependência ausente',dependency_conflict:'Conflito de dependências',runtime_ready:'Runtime OK',model_not_installed:'Pesos não baixados',model_corrupted:'Pesos corrompidos',model_load_failed:'Falha na carga',model_ready:'Modelo pronto',oom:'Sem memória (OOM)',timeout:'Tempo limite excedido'};
   for(const [id,name] of Object.entries(names)){
     const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=id;input.checked=['fastconformer','whisper_base'].includes(id);
     label.append(input,document.createTextNode(' '+name));$('models').append(label);
@@ -67,11 +67,17 @@ export function mountSTT(panel) {
     const activeRss=typeof active?.process_rss_mb==='number'?active.process_rss_mb.toFixed(0)+' MiB':'N/D';
     $('active').textContent=active?`Assist ativo: ${names[active.model]||active.model} · ${active.model==='fastconformer'?active.variant:'Português — fixo'} · ${active.backend} · CPU ${active.compute} · ${active.threads} threads · ${activeRss} · última inferência ${panel.duration(active.recent?.inference_ms)}`:'STT de produção parado ou sem confirmação de prontidão.';
     $('inventory').replaceChildren();
+    const rtLabels={runtime_ready:'Runtime OK',runtime_missing:'Runtime ausente',dependency_missing:'Dependência ausente',dependency_conflict:'Conflito de deps',timeout:'Timeout no runtime'};
+    const wtLabels={model_not_installed:'Pesos não baixados',downloading:'Baixando',verifying:'Verificando',model_corrupted:'Pesos corrompidos',model_ready:'Pesos instalados'};
+    const ldLabels={unloaded:'Não carregado',loading:'Carregando',model_ready:'Modelo carregado',model_load_failed:'Falha na carga',oom:'Sem memória (OOM)',timeout:'Timeout na carga'};
     for(const model of inventory.models){
       const line=document.createElement('p');
       const dlInfo=model.state==='downloading'&&typeof model.percent==='number'?` · ${model.percent.toFixed(1)}% (${((model.bytes_downloaded||0)/1e6).toFixed(1)}/${((model.total_bytes||model.download_bytes||0)/1e6).toFixed(1)} MB)`:'';
+      const rtState=rtLabels[model.runtime_status]||(model.runtime_available===false?'Runtime indisponível':'Runtime OK');
+      const wtState=wtLabels[model.weights_status]||(model.installed?'Pesos instalados':'Pesos não baixados');
+      const ldState=ldLabels[model.load_status]||(states[model.state]||model.state);
       const rtNote=model.runtime_available===false&&model.runtime_note?` · ${model.runtime_note}`:'';
-      line.textContent=`${model.name}${model.runtime?' · '+model.runtime:''} · ${model.language_label||'Português — fixo'}${model.download_bytes?' · download '+(model.download_bytes/1000000).toFixed(0)+' MB':''}: ${states[model.state]||model.state}${dlInfo}${rtNote}${model.error?' · '+model.error:''}`;
+      line.textContent=`${model.name}${model.runtime?' · '+model.runtime:''} · ${model.language_label||'Português — fixo'}${model.download_bytes?' · download '+(model.download_bytes/1000000).toFixed(0)+' MB':''} · [${rtState} | ${wtState} | ${ldState}]${dlInfo}${rtNote}${model.error?' · '+model.error:''}`;
       if(model.state==='downloading'){
         const bar=document.createElement('progress');bar.max=100;if(typeof model.percent==='number')bar.value=model.percent;
         line.append(' ',bar);
@@ -129,7 +135,7 @@ export function mountSTT(panel) {
       return (r.inference_stats?.p50_ms??r.inference_ms)<(best.inference_stats?.p50_ms??best.inference_ms)?r:best;
     },evalRows[0]).model:null;
     const table=document.createElement('table'),head=document.createElement('tr');
-    for(const name of ['Modelo','RAW','Corrigida','Exact match','WER RAW / Final','CER RAW / Final','Edições S/I/D','Carregamento','Inferência P50','P95','Min / Méd / Máx / DP','Total do teste (D/P/V/L)','RTF','RAM','Estado']){const th=document.createElement('th');th.textContent=name;head.append(th);}table.append(head);
+    for(const name of ['Modelo','Modo','RAW','Corrigida','Exact match','WER RAW / Final','CER RAW / Final','Edições S/I/D','Carga fria','Inferência P50','P95','Min / Méd / Máx / DP','Total do teste (D/P/V/L)','RTF','RAM','Estado']){const th=document.createElement('th');th.textContent=name;head.append(th);}table.append(head);
     for(const row of list){
       const tr=document.createElement('tr'),q=row.quality,st=row.inference_stats;
       const tags=[];
@@ -139,16 +145,17 @@ export function mountSTT(panel) {
       const p50=st?.p50_ms??row.inference_ms;
       const p95Text=st?.repetitions>=2?panel.duration(st.p95_ms):'—';
       const statsText=st?`${panel.duration(st.min_ms)} / ${panel.duration(st.mean_ms)} / ${panel.duration(st.max_ms)} / ${panel.duration(st.stdev_ms)}`:'—';
-      const breakdownText=`${panel.duration(row.request_total_ms)} (${panel.duration(row.audio_decode_ms)} / ${panel.duration(row.preprocess_ms)} / ${panel.duration(row.vad_ms)} / ${panel.duration(row.lexical_ms)})`;
+      const breakdownText=`${panel.duration(row.total_ms??row.request_total_ms)} (${panel.duration(row.audio_decode_ms)} / ${panel.duration(row.preprocess_ms)} / ${panel.duration(row.vad_ms)} / ${panel.duration(row.lexical_ms)})`;
       const werText=q?.evaluated?`${q.wer_raw.toFixed(3)} / ${q.wer_final.toFixed(3)}`:(q?.precision_status||'Precisão não mensurável');
       const cerText=q?.evaluated?`${q.cer_raw.toFixed(3)} / ${q.cer_final.toFixed(3)}`:(q?.precision_status||'Precisão não mensurável');
       const editsText=q?.evaluated?`${q.substitutions??0}S / ${q.insertions??0}I / ${q.deletions??0}D`:'—';
       const exactText=q?.evaluated?(q.exact_match_final?'Sim':'Não'):'Não avaliado';
-      const values=[modelLabel,row.raw_transcript??'—',row.final_transcript??'—',exactText,werText,cerText,editsText,
+      const stateLabel=row.error||(row.streaming_note?`${states[row.state]||row.state} (${row.streaming_note})`:(states[row.state]||row.state));
+      const values=[modelLabel,row.inference_mode||'offline',row.raw_transcript??'—',row.final_transcript??'—',exactText,werText,cerText,editsText,
         panel.duration(row.cold_load_ms??row.model_load_ms),panel.duration(p50),p95Text,statsText,breakdownText,
         Number.isFinite(row.realtime_factor)?row.realtime_factor.toFixed(3):'—',
         typeof row.process_rss_mb==='number'?row.process_rss_mb.toFixed(1)+' MiB':'—',
-        row.error||(states[row.state]||row.state)];
+        stateLabel];
       for(const value of values){const td=document.createElement('td');td.textContent=value;tr.append(td);}table.append(tr);
     }
     $('results').append(table);
@@ -178,7 +185,7 @@ export function mountSTT(panel) {
     }:undefined;
     const started=performance.now();last=await panel.call(compare?'stt_compare':'stt_test',{audio:btoa(encoded),stt_model:$('model').value,
       variant:$('variant').value,models,threads:Number($('threads').value),repetitions,warmup:repetitions>1,profile:$('profile').value||null,
-      preset,audio_processing:audioProcessing,nemotron_profile:$('nemotronProfile').value,
+      preset,audio_processing:audioProcessing,nemotron_profile:$('nemotronProfile').value,nemotron_streaming_profile:$('nemotronProfile').value,
       reference:$('reference').value,entity_reference:$('entityReference').value});
     if(last.processed_wav_b64){
       $('processedPlayer').src='data:audio/wav;base64,'+last.processed_wav_b64;
@@ -204,7 +211,7 @@ export function mountSTT(panel) {
   function download(format){
     if(!rows.length){status('Execute um teste antes de exportar.',true);return;}
     const safe=value=>{let text=String(value??'');if(/^[=+@-]/.test(text.trimStart())||/^[\t\r\n]/.test(text))text="'"+text;return '"'+text.replaceAll('"','""')+'"';};
-    const keys=['model','variant','revision','backend','language','device','compute','threads','repetitions','profile','state','error_code','error','entity_reference','raw_transcript','final_transcript','cold_load_ms','model_load_ms','warmup_ms','inference_ms','p50_ms','p95_ms','min_ms','mean_ms','max_ms','stdev_ms','lexical_ms','preprocess_ms','vad_ms','audio_duration_ms','audio_decode_ms','queue_ms','total_ms','request_total_ms','realtime_factor','process_rss_mb','audio_sha256','reference','browser_request_ms','stop_to_transcript_ms','browser_wait_before_send_ms','transport_and_orchestration_ms','exact_match_raw','exact_match_final','wer_raw','wer_final','cer_raw','cer_final','substitutions','insertions','deletions','action_correct_raw','action_correct_final','negation_preserved_raw','negation_preserved_final','entity_correct_raw','entity_correct_final'];
+    const keys=['model','variant','revision','backend','inference_mode','streaming_note','language','device','compute','threads','repetitions','profile','state','error_code','error','entity_reference','raw_transcript','final_transcript','cold_load_ms','model_load_ms','warmup_ms','inference_ms','p50_ms','p95_ms','min_ms','mean_ms','max_ms','stdev_ms','lexical_ms','preprocess_ms','vad_ms','audio_duration_ms','audio_decode_ms','queue_ms','total_ms','request_total_ms','realtime_factor','process_rss_mb','audio_sha256','reference','browser_request_ms','stop_to_transcript_ms','browser_wait_before_send_ms','transport_and_orchestration_ms','exact_match_raw','exact_match_final','wer_raw','wer_final','cer_raw','cer_final','substitutions','insertions','deletions','action_correct_raw','action_correct_final','negation_preserved_raw','negation_preserved_final','entity_correct_raw','entity_correct_final'];
     const payload={exported_at:new Date().toISOString(),language:'pt',language_fixed:true,last,history:rows};
     const data=format==='json'?JSON.stringify(payload,null,2):[keys.join(','),...rows.map(row=>keys.map(key=>safe(row[key]??row.inference_stats?.[key]??row.quality?.[key])).join(','))].join('\r\n');
     const href=URL.createObjectURL(new Blob([data],{type:format==='json'?'application/json':'text/csv;charset=utf-8'})),link=document.createElement('a');link.href=href;link.download='arandu-stt.'+format;link.click();setTimeout(()=>URL.revokeObjectURL(href),1000);

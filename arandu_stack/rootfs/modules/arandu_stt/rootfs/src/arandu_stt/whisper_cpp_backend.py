@@ -19,8 +19,6 @@ import urllib.request
 import uuid
 import wave
 
-import numpy as np
-
 from stt_errors import AranduRuntimeUnavailableError, AranduStructuredError
 
 WHISPER_CPP_VERSION = '1.9.5'
@@ -91,6 +89,8 @@ def _allocate_loopback_port() -> int:
 
 def _audio_to_wav_bytes(audio) -> tuple[bytes, int]:
     """Convert 16 kHz mono audio (bytes PCM16 or float array/sequence) into WAV bytes."""
+    import numpy as np
+
     if audio is None:
         return b'', 0
     if isinstance(audio, (bytes, bytearray, memoryview)):

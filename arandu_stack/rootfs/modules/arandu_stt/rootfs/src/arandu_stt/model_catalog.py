@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
 import threading
+import time
 
 from model_download import ADAPTED_VERSION, ADAPTED_HASHES, ADAPTED_URL, ensure_model, sha256
 
@@ -133,10 +137,14 @@ CATALOG.update({'parakeet_ptbr_30s': {'name': 'Parakeet TDT V3 pt-BR 30s',
                            'architecture': 'FastConformer-RNNT',
                            'compute': 'fp32',
                            'license': 'OpenMDW-1.1',
+                           'language': 'pt',
+                           'language_fixed': True,
+                           'language_label': 'Português — fixo',
                            'languages': ['pt', 'auto'],
                            'revision': '023ce907267a09a308a5cb69239447cb3d0c1597',
                            'files': ['nemotron-labs-unified-asr-0.6b.nemo'],
                            'sha256': {'nemotron-labs-unified-asr-0.6b.nemo': '1718cc1b44fb8597b2356328d706a8d89f31c389ca6f2256c2e3f743c0246936'},
+                           'file_sizes': {'nemotron-labs-unified-asr-0.6b.nemo': 2507735040},
                            'memory_limit_mb': 4608,
                            'estimated_ram_mb': 3600,
                            'experimental': True,
@@ -244,29 +252,299 @@ def verify(root, model, variant='adapted'):
     return manifest
 
 
+DEFAULT_STT_PYTHON = '/opt/venvs/stt/bin/python'
+DEFAULT_PHONON_PYTHON = '/opt/venvs/phonon/bin/python'
+DEFAULT_NEMOTRON_PYTHON = '/opt/venvs/nemotron/bin/python'
+DEFAULT_TRANSCRIBE_LIB = '/usr/local/lib/libtranscribe.so'
+DEFAULT_WHISPER_SERVER_PATHS = (
+    '/usr/local/bin/whisper-server',
+    '/usr/bin/whisper-server',
+)
+
+RUNTIME_STATES = (
+    'runtime_missing',
+    'dependency_missing',
+    'dependency_conflict',
+    'runtime_ready',
+    'timeout',
+)
+
+_RUNTIME_PROBE_LOCK = threading.Lock()
+_RUNTIME_STATUS_CACHE: dict[tuple, tuple[float, dict]] = {}
+
+_PROBE_BODY = "\n".join([
+    "try:",
+    "    for mod_name, attrs in checks:",
+    "        mod = importlib.import_module(mod_name)",
+    "        for attr in attrs:",
+    "            obj = mod",
+    "            for part in attr.split('.'):",
+    "                obj = getattr(obj, part)",
+    "    print(json.dumps({'ok': True}))",
+    "except ModuleNotFoundError as exc:",
+    "    print(json.dumps({'ok': False, 'kind': 'dependency_missing', 'detail': str(exc)}))",
+    "    sys.exit(10)",
+    "except (ImportError, AttributeError, AssertionError, ValueError, RuntimeError, OSError) as exc:",
+    "    print(json.dumps({'ok': False, 'kind': 'dependency_conflict', 'detail': f'{type(exc).__name__}: {exc}'}))",
+    "    sys.exit(11)",
+])
+
+
+def _runtime_probe_ttl() -> float:
+    try:
+        return max(0.0, float(os.environ.get('ARANDU_RUNTIME_PROBE_TTL_S', '15.0')))
+    except ValueError:
+        return 15.0
+
+
+def _runtime_probe_timeout(runtime_name: str) -> float:
+    raw = os.environ.get('ARANDU_RUNTIME_PROBE_TIMEOUT_S')
+    if raw:
+        try:
+            return max(0.2, float(raw))
+        except ValueError:
+            pass
+    return 25.0 if runtime_name in ('nvidia-nemo-isolated', 'fermion-research') else 10.0
+
+
+def invalidate_runtime_cache(model: str | None = None) -> None:
+    """Clear cached runtime probe entries after runtime install, update or removal."""
+    with _RUNTIME_PROBE_LOCK:
+        if model is None:
+            _RUNTIME_STATUS_CACHE.clear()
+        else:
+            stale = [k for k in _RUNTIME_STATUS_CACHE if k and k[0] == model]
+            for k in stale:
+                _RUNTIME_STATUS_CACHE.pop(k, None)
+
+
+def _stat_mtime_ns(path_str: str | None) -> int | None:
+    if not path_str:
+        return None
+    try:
+        return Path(path_str).stat().st_mtime_ns
+    except OSError:
+        return None
+
+
+def _resolve_stt_python() -> tuple[str | None, str | None]:
+    if 'ARANDU_STT_PYTHON' in os.environ:
+        val = os.environ['ARANDU_STT_PYTHON'].strip()
+        if not val or not Path(val).is_file():
+            return None, 'MODEL_RUNTIME_UNAVAILABLE: /opt/venvs/stt ausente'
+        return str(Path(val)), None
+    if Path(DEFAULT_STT_PYTHON).is_file():
+        return DEFAULT_STT_PYTHON, None
+    return sys.executable, None
+
+
+def _resolve_phonon_python() -> tuple[str | None, str | None]:
+    if 'ARANDU_PHONON_PYTHON' in os.environ:
+        val = os.environ['ARANDU_PHONON_PYTHON'].strip()
+        if not val or not Path(val).is_file():
+            return None, 'MODEL_RUNTIME_UNAVAILABLE: /opt/venvs/phonon ausente'
+        return str(Path(val)), None
+    if Path(DEFAULT_PHONON_PYTHON).is_file():
+        return DEFAULT_PHONON_PYTHON, None
+    return None, 'MODEL_RUNTIME_UNAVAILABLE: /opt/venvs/phonon ausente'
+
+
+def _resolve_nemotron_python() -> tuple[str | None, str | None]:
+    if 'ARANDU_NEMOTRON_PYTHON' in os.environ:
+        val = os.environ['ARANDU_NEMOTRON_PYTHON'].strip()
+        if not val or not Path(val).is_file():
+            return None, 'MODEL_RUNTIME_UNAVAILABLE: /opt/venvs/nemotron ausente'
+        return str(Path(val)), None
+    if Path(DEFAULT_NEMOTRON_PYTHON).is_file():
+        return DEFAULT_NEMOTRON_PYTHON, None
+    return None, 'MODEL_RUNTIME_UNAVAILABLE: /opt/venvs/nemotron ausente'
+
+
+def _resolve_whisper_server_binary() -> str | None:
+    if 'ARANDU_WHISPER_SERVER_BIN' in os.environ:
+        val = os.environ['ARANDU_WHISPER_SERVER_BIN'].strip()
+        if not val:
+            return None
+        cand = Path(val)
+        if cand.is_file() and (os.name == 'nt' or os.access(cand, os.X_OK)):
+            return str(cand)
+        return None
+    for candidate in DEFAULT_WHISPER_SERVER_PATHS:
+        cand = Path(candidate)
+        if cand.is_file() and (os.name == 'nt' or os.access(cand, os.X_OK)):
+            return str(cand)
+    return shutil.which('whisper-server')
+
+
+def _resolve_transcribe_library() -> str | None:
+    if 'TRANSCRIBE_LIBRARY' in os.environ:
+        val = os.environ['TRANSCRIBE_LIBRARY'].strip()
+        return val if val and Path(val).is_file() else None
+    return DEFAULT_TRANSCRIBE_LIB if Path(DEFAULT_TRANSCRIBE_LIB).is_file() else None
+
+
+def _run_python_probe(python_bin: str, checks: list[tuple[str, tuple[str, ...]]], *, timeout: float) -> dict:
+    """Execute lightweight single-line import verification inside the target interpreter subprocess."""
+    script_src = f"import importlib, json, sys\nchecks = {json.dumps(checks)}\n{_PROBE_BODY}\n"
+    code = f"exec(bytes.fromhex('{script_src.encode('utf-8').hex()}').decode('utf-8'))"
+    try:
+        proc = subprocess.run(
+            [python_bin, '-c', code],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except FileNotFoundError:
+        return {
+            'available': False,
+            'runtime_status': 'runtime_missing',
+            'error_code': 'MODEL_RUNTIME_UNAVAILABLE',
+            'note': f'MODEL_RUNTIME_UNAVAILABLE: interpretador ausente ({python_bin})',
+            'detail': python_bin,
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            'available': False,
+            'runtime_status': 'timeout',
+            'error_code': 'STT_TIMEOUT',
+            'note': f'STT_TIMEOUT: verificação do runtime excedeu {timeout:.1f}s ({python_bin})',
+            'detail': f'timeout>{timeout:.1f}s',
+        }
+    except OSError as exc:
+        return {
+            'available': False,
+            'runtime_status': 'runtime_missing',
+            'error_code': 'MODEL_RUNTIME_UNAVAILABLE',
+            'note': f'MODEL_RUNTIME_UNAVAILABLE: falha ao executar {python_bin}: {exc}',
+            'detail': str(exc),
+        }
+
+    stdout = (proc.stdout or '').strip()
+    stderr = (proc.stderr or '').strip()
+    parsed = None
+    if stdout:
+        for line in reversed(stdout.splitlines()):
+            line_s = line.strip()
+            if line_s.startswith('{') and line_s.endswith('}'):
+                try:
+                    parsed = json.loads(line_s)
+                    break
+                except ValueError:
+                    pass
+
+    if proc.returncode == 0 and isinstance(parsed, dict) and parsed.get('ok'):
+        return {
+            'available': True,
+            'runtime_status': 'runtime_ready',
+            'error_code': None,
+            'note': None,
+            'detail': None,
+        }
+
+    detail = (parsed.get('detail') if isinstance(parsed, dict) else None) or stderr or stdout or f'exit={proc.returncode}'
+    kind = parsed.get('kind') if isinstance(parsed, dict) else None
+    if kind not in ('dependency_missing', 'dependency_conflict'):
+        low = detail.lower()
+        if 'modulenotfounderror' in low or 'no module named' in low:
+            kind = 'dependency_missing'
+        elif proc.returncode == 10:
+            kind = 'dependency_missing'
+        else:
+            kind = 'dependency_conflict'
+
+    label = 'dependência ausente' if kind == 'dependency_missing' else 'conflito de dependências'
+    return {
+        'available': False,
+        'runtime_status': kind,
+        'error_code': 'MODEL_RUNTIME_UNAVAILABLE',
+        'note': f'MODEL_RUNTIME_UNAVAILABLE: {label}: {detail}',
+        'detail': detail,
+    }
+
+
+def _runtime_checks_for_model(model: str) -> tuple[str, str | None, str | None, list[tuple[str, tuple[str, ...]]], str | None]:
+    runtime = CATALOG.get(model, {}).get('runtime', 'sherpa-onnx')
+    if runtime == 'nvidia-nemo-isolated':
+        py, err = _resolve_nemotron_python()
+        checks = [('numpy', ()), ('torch', ()), ('soundfile', ()), ('nemo.collections.asr', ('models.ASRModel',))]
+        return runtime, py, None, checks, err
+    if runtime == 'fermion-research':
+        py, err = _resolve_phonon_python()
+        checks = [('numpy', ()), ('torch', ()), ('fermion', ('load_speech',))]
+        return runtime, py, None, checks, err
+    if runtime == 'whisper.cpp':
+        wbin = _resolve_whisper_server_binary()
+        if not wbin:
+            return runtime, None, None, [], 'MODEL_RUNTIME_UNAVAILABLE: binário whisper-server ausente'
+        py, err = _resolve_stt_python()
+        return runtime, py, wbin, [('numpy', ())], err
+    if runtime == 'transcribe.cpp':
+        tlib = _resolve_transcribe_library()
+        if not tlib:
+            return runtime, None, None, [], 'MODEL_RUNTIME_UNAVAILABLE: biblioteca nativa libtranscribe.so ausente'
+        py, err = _resolve_stt_python()
+        return runtime, py, tlib, [('numpy', ()), ('transcribe_cpp', ())], err
+    py, err = _resolve_stt_python()
+    if runtime == 'faster-whisper':
+        checks = [('numpy', ()), ('faster_whisper', ()), ('ctranslate2', ())]
+    elif runtime == 'onnx-asr':
+        checks = [('numpy', ()), ('onnx_asr', ()), ('onnxruntime', ())]
+    else:
+        checks = [('numpy', ()), ('sherpa_onnx', ())]
+    return runtime, py, None, checks, err
+
+
+def probe_runtime_status(model: str, *, force_refresh: bool = False, timeout: float | None = None) -> dict:
+    """Probe the isolated runtime environment for `model` via subprocess with short TTL cache."""
+    runtime, py_bin, native_artifact, checks, pre_err = _runtime_checks_for_model(model)
+    cache_key = (
+        model,
+        runtime,
+        py_bin,
+        _stat_mtime_ns(py_bin),
+        native_artifact,
+        _stat_mtime_ns(native_artifact),
+    )
+    ttl = _runtime_probe_ttl()
+    now = time.monotonic()
+    if not force_refresh and ttl > 0.0:
+        with _RUNTIME_PROBE_LOCK:
+            cached = _RUNTIME_STATUS_CACHE.get(cache_key)
+            if cached and (now - cached[0]) < ttl:
+                return dict(cached[1])
+
+    if pre_err or not py_bin:
+        result = {
+            'model': model,
+            'runtime': runtime,
+            'interpreter': py_bin,
+            'native_artifact': native_artifact,
+            'available': False,
+            'runtime_status': 'runtime_missing',
+            'error_code': 'MODEL_RUNTIME_UNAVAILABLE',
+            'note': pre_err or f'MODEL_RUNTIME_UNAVAILABLE: runtime {runtime} ausente',
+            'detail': pre_err,
+        }
+    else:
+        eff_timeout = float(timeout) if timeout is not None else _runtime_probe_timeout(runtime)
+        probed = _run_python_probe(py_bin, checks, timeout=eff_timeout)
+        result = {
+            'model': model,
+            'runtime': runtime,
+            'interpreter': py_bin,
+            'native_artifact': native_artifact,
+            **probed,
+        }
+
+    with _RUNTIME_PROBE_LOCK:
+        _RUNTIME_STATUS_CACHE[cache_key] = (time.monotonic(), dict(result))
+    return result
+
+
 def _runtime_status(model: str) -> tuple[bool, str | None]:
-    if model == 'phonon_2_5':
-        try:
-            from phonon_backend import is_phonon_runtime_available
-            ok = is_phonon_runtime_available()
-            return ok, None if ok else 'MODEL_RUNTIME_UNAVAILABLE: /opt/venvs/phonon ausente'
-        except Exception as exc:
-            return False, f'MODEL_RUNTIME_UNAVAILABLE: {exc}'
-    if model == 'nemotron_unified_0_6b':
-        try:
-            from nemotron_unified_backend import is_nemotron_runtime_available
-            ok = is_nemotron_runtime_available()
-            return ok, None if ok else 'MODEL_RUNTIME_UNAVAILABLE: experimental sem NeMo isolado (/opt/venvs/nemotron)'
-        except Exception as exc:
-            return False, f'MODEL_RUNTIME_UNAVAILABLE: {exc}'
-    if CATALOG.get(model, {}).get('runtime') == 'whisper.cpp':
-        try:
-            from whisper_cpp_backend import is_whisper_cpp_runtime_available
-            ok = is_whisper_cpp_runtime_available()
-            return ok, None if ok else 'MODEL_RUNTIME_UNAVAILABLE: binário whisper-server ausente'
-        except Exception as exc:
-            return False, f'MODEL_RUNTIME_UNAVAILABLE: {exc}'
-    return True, None
+    info = probe_runtime_status(model)
+    return bool(info['available']), info['note']
 
 
 def _emit_progress(progress, state: str, **payload):
@@ -280,17 +558,35 @@ def _emit_progress(progress, state: str, **payload):
 
 def describe(root, model, variant='adapted'):
     directory = location(root, model, variant)
-    runtime_ok, runtime_note = _runtime_status(model)
-    result = {'id': model, **CATALOG[model], 'variant': variant if model == 'fastconformer' else None,
-              'required_files': files(model, variant), 'ready': False, 'path': str(directory),
-              'state': 'not_installed', 'installed': False, 'incomplete': False,
-              'language': CATALOG[model].get('language', 'pt'),
-              'language_fixed': bool(CATALOG[model].get('language_fixed', True)),
-              'language_label': CATALOG[model].get('language_label', 'Português — fixo'),
-              'runtime_available': runtime_ok, 'runtime_note': runtime_note}
+    probe = probe_runtime_status(model)
+    runtime_ok = bool(probe['available'])
+    runtime_note = probe['note']
+    result = {
+        'id': model,
+        **CATALOG[model],
+        'variant': variant if model == 'fastconformer' else None,
+        'required_files': files(model, variant),
+        'ready': False,
+        'path': str(directory),
+        'state': 'not_installed',
+        'installed': False,
+        'incomplete': False,
+        'language': CATALOG[model].get('language', 'pt'),
+        'language_fixed': bool(CATALOG[model].get('language_fixed', True)),
+        'language_label': CATALOG[model].get('language_label', 'Português — fixo'),
+        'runtime_available': runtime_ok,
+        'runtime_note': runtime_note,
+        'runtime_status': probe['runtime_status'],
+        'runtime_interpreter': probe.get('interpreter'),
+        'runtime_detail': probe.get('detail'),
+        'weights_status': 'model_not_installed',
+        'load_status': 'unloaded',
+        'error_code': probe.get('error_code') if not runtime_ok else None,
+    }
     if model == 'fastconformer' and variant == 'adapted':
         result.update(download_bytes=456406182, installed_bytes=456406182, source_url=ADAPTED_URL, download_revision=ADAPTED_VERSION)
     expected_sizes = CATALOG[model].get('file_sizes') or {}
+    expected_hashes = CATALOG[model].get('sha256') or {}
     install_marker = Path(root) / ('.install-' + model + '.json')
     try:
         # Inventory is cheap; full hashes are checked at installation/load, never every UI poll.
@@ -298,27 +594,70 @@ def describe(root, model, variant='adapted'):
         if all((directory / f).is_file() and (directory / f).stat().st_size for f in required):
             size_mismatch = next((f for f in required if f in expected_sizes and (directory / f).stat().st_size != expected_sizes[f]), None)
             if size_mismatch:
-                result.update(state='error', incomplete=True, error=f'Arquivo de modelo truncado ou corrompido ({size_mismatch}); reinstale o modelo')
+                result.update(
+                    state='error',
+                    incomplete=True,
+                    weights_status='model_corrupted',
+                    error_code='MODEL_INTEGRITY_FAILED',
+                    error=f'Arquivo de modelo truncado ou corrompido ({size_mismatch}); reinstale o modelo',
+                )
             else:
                 manifest = json.loads((directory / 'manifest.json').read_text(encoding='utf-8'))
-                result.update(state='installed', installed=True, revision=manifest.get('revision') or manifest.get('version'),
-                              sha256=manifest.get('sha256'), load_validated=manifest.get('load_validated', False), size_bytes=sum((directory / f).stat().st_size for f in required))
+                manifest_hashes = manifest.get('sha256') or {}
+                hash_mismatch = next(
+                    (f for f in required if f in expected_hashes and manifest_hashes.get(f) not in (None, expected_hashes[f])),
+                    None,
+                )
+                if hash_mismatch:
+                    result.update(
+                        state='error',
+                        incomplete=True,
+                        weights_status='model_corrupted',
+                        error_code='MODEL_INTEGRITY_FAILED',
+                        error=f'Checksum SHA-256 inválido no manifesto ({hash_mismatch}); reinstale o modelo',
+                    )
+                else:
+                    result.update(
+                        state='installed',
+                        installed=True,
+                        weights_status='model_ready',
+                        revision=manifest.get('revision') or manifest.get('version'),
+                        sha256=manifest.get('sha256'),
+                        load_validated=manifest.get('load_validated', False),
+                        size_bytes=sum((directory / f).stat().st_size for f in required),
+                    )
         elif (directory.exists() and any(directory.iterdir())) or install_marker.is_file():
-            result.update(state='error', incomplete=True, error='Download ou instalação incompleta; reinstale o modelo')
+            result.update(
+                state='error',
+                incomplete=True,
+                weights_status='model_corrupted',
+                error_code='MODEL_INTEGRITY_FAILED',
+                error='Download ou instalação incompleta; reinstale o modelo',
+            )
     except (OSError, ValueError):
-        result.update(state='error', incomplete=True, error='Manifesto ausente ou inválido; reinstale o modelo')
+        result.update(
+            state='error',
+            incomplete=True,
+            weights_status='model_corrupted',
+            error_code='MODEL_INTEGRITY_FAILED',
+            error='Manifesto ausente ou inválido; reinstale o modelo',
+        )
     return result
 
 
 def install(root, model, variant='adapted', *, progress=None, validator=None):
     from filelock import FileLock
     validate(model, variant)
+    invalidate_runtime_cache(model)
     Path(root).mkdir(parents=True, exist_ok=True)
     with FileLock(str(Path(root)/'.install.lock'), timeout=0):
         for abandoned in Path(root).glob('.staging-*'):
             if not abandoned.is_symlink() and abandoned.is_dir() and abandoned.resolve().parent == Path(root).resolve():
                 shutil.rmtree(abandoned)
-        return _install_locked(root, model, variant, progress=progress, validator=validator)
+        try:
+            return _install_locked(root, model, variant, progress=progress, validator=validator)
+        finally:
+            invalidate_runtime_cache(model)
 
 
 def _install_locked(root, model, variant='adapted', *, progress=None, validator=None):
@@ -422,6 +761,7 @@ def _install_locked(root, model, variant='adapted', *, progress=None, validator=
 def remove(root, model, variant='adapted'):
     """Remove installed weights for one model without affecting other models."""
     validate(model, variant)
+    invalidate_runtime_cache(model)
     directory = location(root, model, variant)
     if directory.exists():
         shutil.rmtree(directory)
@@ -429,6 +769,7 @@ def remove(root, model, variant='adapted'):
     if backup.exists():
         shutil.rmtree(backup)
     (Path(root) / ('.install-' + model + '.json')).unlink(missing_ok=True)
+    invalidate_runtime_cache(model)
     return {'removed': True, 'model': model}
 
 

@@ -367,17 +367,17 @@ test('reloading panel script updates already-defined custom element and reports 
     document: {
       createElement: () => new Element(),
       createTextNode: (t) => ({textContent: t}),
-      querySelector: () => ({getAttribute: () => '/local_nlu_ai_lab/panel.js?v=11.4.1-abc123def456'}),
+      querySelector: () => ({getAttribute: () => '/local_nlu_ai_lab/panel.js?v=11.4.2-abc123def456'}),
       querySelectorAll: () => [liveEl],
     },
     clearInterval: globalThis.clearInterval,
     clearTimeout: globalThis.clearTimeout,
   });
   assert.equal(defines, 0);
-  assert.equal(OldPanel.PANEL_VERSION, '11.4.1');
+  assert.equal(OldPanel.PANEL_VERSION, '11.4.2');
   assert.equal(typeof OldPanel.prototype.updateVersionDiagnostics, 'function');
-  assert.equal(liveEl.dataset.panelVersion, '11.4.1');
-  assert.match(nodes.versionDiagnostics.textContent, /AI Lab frontend: 11\.4\.1.*Asset hash: abc123def456/);
+  assert.equal(liveEl.dataset.panelVersion, '11.4.2');
+  assert.match(nodes.versionDiagnostics.textContent, /AI Lab frontend: 11\.4\.2.*Asset hash: abc123def456/);
   assert.equal(nodes.versionWarning.hidden, true);
   liveEl.updateVersionDiagnostics({backend_version: '11.3.8', asset_hash: '000000000000', panel_tag: '11.3.8-000000000000'});
   assert.equal(nodes.versionWarning.hidden, false);
@@ -463,6 +463,19 @@ test('stt_lab_panel exposes whisper.cpp models, fixed pt badge, repetitions, sor
               download_bytes: 1533763059,
               state: 'installed',
             },
+            {
+              id: 'nemotron_unified_0_6b',
+              name: 'NVIDIA Nemotron Unified ASR 0.6B (experimental)',
+              runtime: 'nvidia-nemo-isolated',
+              language_label: 'Português — fixo',
+              download_bytes: 2507735040,
+              runtime_available: true,
+              runtime_status: 'runtime_ready',
+              runtime_note: null,
+              weights_status: 'model_not_installed',
+              load_status: 'unloaded',
+              state: 'not_installed',
+            },
           ],
         };
       }
@@ -492,9 +505,12 @@ test('stt_lab_panel exposes whisper.cpp models, fixed pt badge, repetitions, sor
   // Flush microtasks for initial task(refresh)
   await new Promise((r) => setTimeout(r, 20));
   assert.ok(calls.some((c) => c.cmd === 'stt_models'));
-  assert.equal(byStt.inventory.children.length, 2);
+  assert.equal(byStt.inventory.children.length, 3);
   const invText = text(byStt.inventory);
   assert.match(invText, /Whisper Small — whisper\.cpp/);
+  assert.match(invText, /NVIDIA Nemotron Unified ASR 0\.6B/);
+  assert.match(invText, /Runtime OK \| Pesos não baixados \| Não carregado/);
+  assert.doesNotMatch(invText, /MODEL_RUNTIME_UNAVAILABLE/);
   assert.match(invText, /Português — fixo/);
   assert.match(invText, /42\.5%/);
   assert.ok(byStt.inventory.children[0].children.some((c) => c.tagName === 'progress' && c.value === 42.5));

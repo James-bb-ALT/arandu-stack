@@ -62,7 +62,9 @@ def create_backend(model, directory, threads=2):
         factory = PhononBackend
     elif model == 'nemotron_unified_0_6b':
         from nemotron_unified_backend import NemotronUnifiedBackend
-        factory = NemotronUnifiedBackend
+        from model_catalog import CATALOG
+        mem_limit = int(CATALOG.get('nemotron_unified_0_6b', {}).get('memory_limit_mb', 4608))
+        return NemotronUnifiedBackend(directory, threads, memory_limit_mb=mem_limit)
     elif model == 'orukeet_int8':
         from orukeet_backend import OrukeetBackend
         factory = OrukeetBackend

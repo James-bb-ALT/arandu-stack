@@ -514,6 +514,9 @@ test('stt_lab_panel exposes whisper.cpp models, fixed pt badge, repetitions, sor
   assert.match(invText, /Português — fixo/);
   assert.match(invText, /42\.5%/);
   assert.ok(byStt.inventory.children[0].children.some((c) => c.tagName === 'progress' && c.value === 42.5));
+  assert.equal(byStt.downloadProgress.hidden, false);
+  assert.equal(byStt.downloadProgress.value, 42.5);
+  assert.match(byStt.status.textContent, /42\.5%.*207\.0 \/ 487\.6 MB/);
   assert.ok(scheduledTimeout !== null);
   assert.equal(byStt.install.textContent, 'Baixar modelo selecionado');
   assert.equal(byStt.install.disabled, false);

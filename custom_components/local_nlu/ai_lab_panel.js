@@ -184,7 +184,12 @@ class AranduAILab extends HTMLElement {
     this.$('repeat').onclick = () => this.task(async () => { if (!this.lastInput) throw Error('Nenhum teste anterior'); this.$('text').value = this.lastInput.text; await this.run(this.lastInput); });
     this.$('refresh').onclick = () => this.task(() => this.refresh());
     for (const command of ['load','unload','install']) this.$(command).onclick = () => this.task(async () => {
-      const r = await this.call(command, command === 'install' ? {model:this.$('installModel').value} : {});
+      const targetModel = this.$('installModel').value;
+      if (command === 'install') {
+        this.$('advancedOutput').textContent = `Baixando e verificando pesos de ${targetModel}…`;
+        this.status(`Baixando e verificando pesos de ${targetModel}…`);
+      }
+      const r = await this.call(command, command === 'install' ? {model:targetModel} : {});
       this.$('advancedOutput').textContent = JSON.stringify(r, null, 2); if(command==='install') await this.refresh();
     });
     this.$('real').onchange = () => { this.$('safety').textContent = this.$('real').checked ? 'Revisão obrigatória' : 'Dry-run ativo'; this.executionState(); };

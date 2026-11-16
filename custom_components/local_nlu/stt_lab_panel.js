@@ -31,6 +31,7 @@ export function mountSTT(panel) {
     <div class="row"><button data-stt="refresh">Verificar modelos</button><button data-stt="install">Baixar modelo selecionado</button><button data-stt="remove">Remover modelo selecionado</button>
     <button class="primary" data-stt="test">Transcrever com modelo selecionado</button><button data-stt="compare">Comparar modelos</button><button data-stt="cancel" disabled>Cancelar teste</button></div>
     <p data-stt="status" role="status" aria-live="polite">Configure o endpoint Arandu Stack na integração para conectar.</p>
+    <progress data-stt="downloadProgress" max="100" hidden style="width:100%"></progress>
     <p data-stt="active"></p><div data-stt="inventory"></div><div data-stt="results" class="scroll"></div>
     <p data-stt="summary"></p><div class="row"><button data-stt="apply">Usar este modelo no Assist</button><button data-stt="json">Exportar JSON</button>
     <button data-stt="csv">Exportar CSV</button><button data-stt="clear">Limpar histórico de testes</button></div>`;
@@ -110,7 +111,14 @@ export function mountSTT(panel) {
     syncInstallButton();
     clearTimeout(poll);
     const activeDownload=inventory.models.find(model=>['downloading','verifying'].includes(model.state)||['downloading','verifying'].includes(model.weights_status));
+    const dlBar=$('downloadProgress');
     if(activeDownload){
+      if(dlBar){
+        dlBar.hidden=false;
+        if(activeDownload.state==='verifying'||activeDownload.weights_status==='verifying')dlBar.value=100;
+        else if(typeof activeDownload.percent==='number')dlBar.value=activeDownload.percent;
+        else dlBar.removeAttribute('value');
+      }
       if(activeDownload.state==='verifying'||activeDownload.weights_status==='verifying'){
         status(`${activeDownload.name}: ${activeDownload.phase||'Verificando integridade (SHA-256)...'}`);
       }else{
@@ -121,8 +129,10 @@ export function mountSTT(panel) {
         status(`Baixando ${activeDownload.name}: ${pctStr} · ${doneMb} / ${totalMb} MB${speedStr}`);
       }
       poll=setTimeout(()=>refresh().catch(e=>status(e.message,true)),1500);
+    }else{
+      if(dlBar){dlBar.hidden=true;dlBar.value=0;}
+      status('Modelos consultados. Testes não alteram o Assist.');
     }
-    else status('Modelos consultados. Testes não alteram o Assist.');
   }
   $('record').onclick=async()=>{
     if(busy||recording)return;

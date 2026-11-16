@@ -39,14 +39,17 @@ class FastConformerBackend:
         self._model = None
 
 
-def create_backend(model, directory, threads=2):
+_UNSET = object()
+
+
+def create_backend(model, directory, threads=2, *, memory_limit_mb=_UNSET):
     from model_catalog import validate
     validate(model)
     if type(threads) is not int or not 1 <= threads <= 4:
         raise ValueError('Threads deve ficar entre 1 e 4')
     if model == 'fastconformer':
         factory = FastConformerBackend
-    elif model in ('whisper_cpp_small', 'whisper_cpp_medium'):
+    elif model.startswith('whisper_cpp_'):
         from whisper_cpp_backend import WhisperCppBackend
         return WhisperCppBackend(directory, threads, model_id=model)
     elif model.startswith('whisper_'):
@@ -63,7 +66,7 @@ def create_backend(model, directory, threads=2):
     elif model == 'nemotron_unified_0_6b':
         from nemotron_unified_backend import NemotronUnifiedBackend
         from model_catalog import CATALOG
-        mem_limit = int(CATALOG.get('nemotron_unified_0_6b', {}).get('memory_limit_mb', 4608))
+        mem_limit = int(CATALOG.get('nemotron_unified_0_6b', {}).get('memory_limit_mb', 4608)) if memory_limit_mb is _UNSET else memory_limit_mb
         return NemotronUnifiedBackend(directory, threads, memory_limit_mb=mem_limit)
     elif model == 'orukeet_int8':
         from orukeet_backend import OrukeetBackend

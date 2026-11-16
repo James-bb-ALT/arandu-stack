@@ -261,7 +261,7 @@ class NemotronUnifiedBackend:
         target_lang: str = 'pt',
         streaming_profile: str = 'offline',
         residency_policy: str = 'LAZY',
-        memory_limit_mb: int = DEFAULT_MEMORY_LIMIT_MB,
+        memory_limit_mb: int | None = DEFAULT_MEMORY_LIMIT_MB,
         load_timeout_s: float | None = None,
         infer_timeout_s: float | None = None,
     ):
@@ -275,9 +275,10 @@ class NemotronUnifiedBackend:
             raise ValueError(f'Política de residência inválida: {residency_policy}')
         self.streaming_profile = streaming_profile
         self.residency_policy = policy
-        self.memory_limit_mb = int(memory_limit_mb)
+        self.memory_limit_mb = None if (memory_limit_mb is None or int(memory_limit_mb) <= 0) else int(memory_limit_mb)
         self.load_timeout_s = float(load_timeout_s if load_timeout_s is not None else DEFAULT_LOAD_TIMEOUT_S)
         self.infer_timeout_s = float(infer_timeout_s if infer_timeout_s is not None else DEFAULT_INFER_TIMEOUT_S)
+        self.last_failure_detail: dict[str, Any] | None = None
 
         self._proc: subprocess.Popen | None = None
         self._stderr_lines: deque[str] = deque(maxlen=60)
@@ -436,7 +437,18 @@ class NemotronUnifiedBackend:
 
         if err_box:
             exc = err_box[0]
-            if isinstance(exc, MemoryError):
+            rc_final = proc.poll()
+            from memory_budget import classify_memory_failure
+
+            self.last_failure_detail = classify_memory_failure(
+                exc=exc,
+                returncode=rc_final,
+                stderr_lines=list(self._stderr_lines),
+                observed_rss_mb=self.last_rss_mb or None,
+                internal_limit_mb=self.memory_limit_mb,
+                stage=stage,
+            )
+            if isinstance(exc, MemoryError) or self.last_failure_detail.get('error_code') == 'oom':
                 self.load_status = 'oom'
             elif isinstance(exc, TimeoutError):
                 self.load_status = 'timeout'
@@ -459,9 +471,17 @@ class NemotronUnifiedBackend:
     def _enforce_memory_limit(self, reported_rss: float | None = None) -> float:
         rss = max(float(reported_rss or 0.0), self.process_rss_mb())
         self.last_rss_mb = rss
-        if self.memory_limit_mb > 0 and rss > self.memory_limit_mb:
+        if self.memory_limit_mb is not None and self.memory_limit_mb > 0 and rss > self.memory_limit_mb:
             self.load_status = 'oom'
             self.last_error = f'RSS Nemotron ({rss:.1f} MiB) excedeu limite ({self.memory_limit_mb} MiB)'
+            from memory_budget import classify_memory_failure
+
+            self.last_failure_detail = classify_memory_failure(
+                exc=MemoryError(self.last_error),
+                observed_rss_mb=rss,
+                internal_limit_mb=self.memory_limit_mb,
+                stage='load' if not self._loaded else 'infer',
+            )
             self._terminate_proc()
             raise MemoryError(self.last_error)
         return rss

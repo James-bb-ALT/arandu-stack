@@ -132,7 +132,7 @@ class WhisperCppCatalogTests(unittest.TestCase):
             'parakeet_ultra_q8', 'parakeet_ultra_q4', 'phonon_2_5', 'nemotron_unified_0_6b',
         }
         self.assertTrue(expected_existing.issubset(set(catalog.CATALOG)))
-        self.assertEqual(len(catalog.CATALOG), 14)
+        self.assertEqual(len(catalog.CATALOG), 18)
         self.assertEqual(catalog.CATALOG['whisper_small']['runtime'], 'faster-whisper')
 
         small = catalog.CATALOG['whisper_cpp_small']

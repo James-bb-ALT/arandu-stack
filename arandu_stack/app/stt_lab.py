@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+from collections import deque
 import copy
 import hashlib
 import inspect
@@ -19,6 +20,7 @@ SOURCE = Path('/opt/modules/arandu_stt/rootfs/src/arandu_stt')
 if not SOURCE.exists():
     SOURCE = Path(__file__).resolve().parents[1] / 'rootfs/modules/arandu_stt/rootfs/src/arandu_stt'
 sys.path.insert(0, str(SOURCE))
+from memory_budget import classify_memory_failure, compute_memory_budget
 from model_catalog import CATALOG, describe, invalidate_runtime_cache, validate
 
 MAX_UPLOAD = 1_400_000  # Keep the Base64 JSON envelope below the shared 2 MiB request budget.
@@ -26,9 +28,10 @@ MAX_PCM = 12 * 16000 * 2
 
 
 class WorkerExecutionError(ValueError):
-    def __init__(self, message: str, error_code: str | None = None):
+    def __init__(self, message: str, error_code: str | None = None, failure_detail: dict | None = None):
         super().__init__(message)
         self.error_code = error_code
+        self.failure_detail = failure_detail
 
 
 def _descendant_pids(root_pid: int) -> list[int]:
@@ -131,12 +134,288 @@ class STTLab:
         self.install_task = None
         self.children = set()
         self.cancel_requested = False
+        self._session_proc = None
+        self._session_stderr = deque(maxlen=50)
+        self._session_stderr_task = None
+        self._retention_task = None
+        self.retention_seconds = 900
+        self.session_state = 'unloaded'
+        self.session_info = {}
+        self.session_history = []
+
+    def _cancel_retention(self):
+        if self._retention_task and not self._retention_task.done():
+            self._retention_task.cancel()
+        self._retention_task = None
+
+    def _schedule_retention(self, seconds):
+        self._cancel_retention()
+        if seconds is None:
+            return
+        try:
+            sec = int(seconds)
+        except (TypeError, ValueError):
+            return
+        if sec <= 0:
+            return
+
+        async def _expire():
+            try:
+                await asyncio.sleep(sec)
+                async with self.busy:
+                    await self._unload_session_locked()
+            except asyncio.CancelledError:
+                pass
+
+        self._retention_task = asyncio.create_task(_expire())
+
+    def _build_worker_env(self, threads: int = 2) -> dict[str, str]:
+        environment = {
+            key: value for key, value in os.environ.items()
+            if not any(secret in key.upper() for secret in ('TOKEN', 'SECRET', 'PASSWORD', 'API_KEY', 'ACCESS_KEY', 'CREDENTIAL'))
+        }
+        environment.update(
+            OMP_NUM_THREADS=str(threads),
+            OPENBLAS_NUM_THREADS='1',
+            MKL_NUM_THREADS=str(threads),
+            HF_HUB_DISABLE_TELEMETRY='1',
+            PYTHONIOENCODING='utf-8',
+        )
+        return environment
+
+    async def _kill_session_proc(self):
+        proc = self._session_proc
+        self._session_proc = None
+        if self._session_stderr_task and not self._session_stderr_task.done():
+            self._session_stderr_task.cancel()
+            await asyncio.gather(self._session_stderr_task, return_exceptions=True)
+        self._session_stderr_task = None
+        if proc is not None:
+            _kill_process_tree(proc)
+            try:
+                await asyncio.wait_for(proc.wait(), timeout=3.0)
+            except Exception:
+                pass
+            self.children.discard(proc)
+
+    async def _ensure_session_proc(self, threads: int = 2):
+        if self._session_proc is not None and self._session_proc.returncode is None:
+            return self._session_proc
+        await self._kill_session_proc()
+        python = os.environ.get('ARANDU_STT_PYTHON', '/opt/venvs/stt/bin/python')
+        self._session_stderr.clear()
+        proc = await asyncio.create_subprocess_exec(
+            python,
+            str(SOURCE / 'lab_worker.py'),
+            '--serve',
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            env=self._build_worker_env(threads),
+        )
+        self._session_proc = proc
+        self.children.add(proc)
+
+        async def _drain():
+            try:
+                while proc.stderr is not None:
+                    line = await proc.stderr.readline()
+                    if not line:
+                        break
+                    txt = line.decode('utf-8', errors='replace').strip()
+                    if txt:
+                        self._session_stderr.append(txt)
+            except Exception:
+                pass
+
+        self._session_stderr_task = asyncio.create_task(_drain())
+        return proc
+
+    async def _session_rpc(self, payload: dict, timeout: float = 120.0) -> dict:
+        threads = int(payload.get('threads', 2) or 2)
+        proc = await self._ensure_session_proc(threads)
+        assert proc.stdin is not None and proc.stdout is not None
+        encoded = (json.dumps({**payload, 'root': str(self.root)}) + '\n').encode('utf-8')
+        try:
+            proc.stdin.write(encoded)
+            await proc.stdin.drain()
+            while True:
+                line = await asyncio.wait_for(proc.stdout.readline(), timeout=timeout)
+                if not line:
+                    try:
+                        rc = await asyncio.wait_for(proc.wait(), timeout=2.0)
+                    except asyncio.TimeoutError:
+                        rc = proc.returncode
+                    if self.cancel_requested:
+                        await self._kill_session_proc()
+                        self.session_state = 'unloaded'
+                        raise WorkerExecutionError('Operação cancelada pelo usuário', 'cancelled')
+                    detail = classify_memory_failure(
+                        returncode=rc,
+                        stderr_lines=list(self._session_stderr),
+                        internal_limit_mb=payload.get('memory_limit_mb'),
+                        stage=payload.get('cmd', 'infer'),
+                    )
+                    await self._kill_session_proc()
+                    self.session_state = 'error'
+                    self.session_info['last_error'] = detail['reason']
+                    self.session_info['failure_detail'] = detail
+                    raise WorkerExecutionError(detail['reason'], detail['error_code'], failure_detail=detail)
+                text = line.decode('utf-8', errors='replace').strip()
+                if text.startswith('{') and text.endswith('}'):
+                    resp = json.loads(text)
+                    if not resp.get('ok'):
+                        err_code = resp.get('error_code', 'execution_error')
+                        msg = resp.get('message', 'Falha na sessão STT')
+                        fdetail = resp.get('failure_detail')
+                        if fdetail:
+                            self.session_info['failure_detail'] = fdetail
+                        if err_code == 'oom' or resp.get('state') == 'error':
+                            self.session_state = 'error'
+                            self.session_info['last_error'] = msg
+                        raise WorkerExecutionError(msg, err_code, failure_detail=fdetail)
+                    return resp
+        except asyncio.TimeoutError as exc:
+            await self._kill_session_proc()
+            self.session_state = 'error'
+            self.session_info['last_error'] = 'Tempo limite excedido na sessão residente STT'
+            raise TimeoutError('Tempo limite excedido na sessão residente STT') from exc
+        except WorkerExecutionError:
+            raise
+        except Exception as exc:
+            await self._kill_session_proc()
+            self.session_state = 'error'
+            self.session_info['last_error'] = str(exc)
+            raise WorkerExecutionError(str(exc), 'execution_error') from exc
+
+    async def _unload_session_locked(self) -> dict:
+        self._cancel_retention()
+        if self._session_proc is None or self._session_proc.returncode is not None:
+            await self._kill_session_proc()
+            self.session_state = 'unloaded'
+            self.session_info.update({'state': 'unloaded', 'model': None, 'process_rss_mb': 0.0})
+            return {'ok': True, 'state': 'unloaded', 'freed_mb': 0.0}
+        try:
+            resp = await self._session_rpc({'cmd': 'unload'}, timeout=15.0)
+        except Exception:
+            await self._kill_session_proc()
+            resp = {'ok': True, 'state': 'unloaded', 'freed_mb': 0.0}
+        self.session_state = 'unloaded'
+        self.session_info.update({'state': 'unloaded', 'model': None, 'process_rss_mb': resp.get('ram_after_mb', 0.0)})
+        return resp
+
+    async def session_status(self, *, memory_policy: str = 'auto', memory_limit_mb=None) -> dict:
+        active = await self.active()
+        prod_rss = float((active or {}).get('process_rss_mb') or 0.0)
+        if self._session_proc is not None and self._session_proc.returncode is None and not self.busy.locked():
+            try:
+                resp = await self._session_rpc({
+                    'cmd': 'status',
+                    'memory_policy': memory_policy,
+                    'memory_limit_mb': memory_limit_mb,
+                    'production_stt_rss_mb': prod_rss,
+                }, timeout=10.0)
+                self.session_state = resp.get('state', self.session_state)
+                self.session_info = resp
+                return {
+                    **resp,
+                    'retention_seconds': self.retention_seconds,
+                    'history': list(self.session_history[-25:]),
+                    'production_active': active,
+                }
+            except Exception:
+                pass
+        elif self._session_proc is not None and self._session_proc.returncode is not None and self.session_state not in ('unloaded', 'error'):
+            detail = classify_memory_failure(
+                returncode=self._session_proc.returncode,
+                stderr_lines=list(self._session_stderr),
+                internal_limit_mb=self.session_info.get('memory_budget', {}).get('memory_limit_mb'),
+                stage='resident',
+            )
+            await self._kill_session_proc()
+            self.session_state = 'error'
+            self.session_info['last_error'] = detail['reason']
+            self.session_info['failure_detail'] = detail
+        budget = compute_memory_budget(
+            policy=memory_policy,
+            custom_limit_mb=memory_limit_mb,
+            production_stt_rss_mb=prod_rss,
+        )
+        return {
+            'ok': True,
+            'state': self.session_state,
+            'model': self.session_info.get('model'),
+            'variant': self.session_info.get('variant'),
+            'threads': self.session_info.get('threads'),
+            'cold_load_ms': self.session_info.get('cold_load_ms'),
+            'warmup_ms': self.session_info.get('warmup_ms'),
+            'warmed_up': self.session_info.get('warmed_up', False),
+            'infer_count': self.session_info.get('infer_count', 0),
+            'process_rss_mb': self.session_info.get('process_rss_mb', 0.0),
+            'memory_budget': self.session_info.get('memory_budget') or budget,
+            'retention_seconds': self.retention_seconds,
+            'last_error': self.session_info.get('last_error'),
+            'failure_detail': self.session_info.get('failure_detail'),
+            'history': list(self.session_history[-25:]),
+            'production_active': active,
+        }
+
+    async def load_model(self, body: dict) -> dict:
+        model, variant, threads = self.parameters(body)
+        if self.busy.locked():
+            raise ValueError('STT ocupado; aguarde a operação atual')
+        memory_policy = body.get('memory_policy', 'auto')
+        memory_limit_mb = body.get('memory_limit_mb')
+        if 'retention_seconds' in body:
+            self.retention_seconds = body.get('retention_seconds')
+        async with self.busy:
+            self.cancel_requested = False
+            self.session_state = 'loading'
+            active = await self.active()
+            prod_rss = float((active or {}).get('process_rss_mb') or 0.0)
+            timeout = self._model_timeout(model, 1)
+            resp = await self._session_rpc({
+                'cmd': 'load',
+                'model': model,
+                'variant': variant,
+                'threads': threads,
+                'warmup': bool(body.get('warmup', False)),
+                'memory_policy': memory_policy,
+                'memory_limit_mb': memory_limit_mb,
+                'nemotron_streaming_profile': body.get('nemotron_streaming_profile') or body.get('nemotron_profile'),
+                'production_stt_rss_mb': prod_rss,
+            }, timeout=timeout)
+            self.session_state = 'resident'
+            self.session_info = resp
+            self._schedule_retention(self.retention_seconds)
+            return {**resp, 'retention_seconds': self.retention_seconds, 'history': list(self.session_history[-25:])}
+
+    async def warmup_model(self, body: dict | None = None) -> dict:
+        if self.busy.locked():
+            raise ValueError('STT ocupado; aguarde a operação atual')
+        async with self.busy:
+            self.cancel_requested = False
+            self.session_state = 'warming'
+            resp = await self._session_rpc({'cmd': 'warmup'}, timeout=120.0)
+            self.session_state = 'resident'
+            self.session_info = resp
+            self._schedule_retention(self.retention_seconds)
+            return {**resp, 'retention_seconds': self.retention_seconds}
+
+    async def unload_model(self) -> dict:
+        if self.busy.locked():
+            raise ValueError('STT ocupado; aguarde a operação atual')
+        async with self.busy:
+            return await self._unload_session_locked()
 
     async def cancel(self):
         self.cancel_requested = True
+        self._cancel_retention()
         active_children = list(self.children)
         for proc in active_children:
             _kill_process_tree(proc)
+        self._session_proc = None
+        self.session_state = 'unloaded'
         return {'cancelled': True, 'state': 'cancelled', 'stopped_workers': len(active_children)}
 
     async def worker(self, body, timeout=90):
@@ -180,7 +459,7 @@ class STTLab:
                 async with session.get('http://127.0.0.1:11560/status', allow_redirects=False) as response:
                     if response.status == 200:
                         return await response.json()
-        except (OSError, TimeoutError):
+        except (OSError, TimeoutError, asyncio.TimeoutError):
             pass
         return None
 
@@ -324,11 +603,11 @@ class STTLab:
 
     @staticmethod
     def _model_timeout(model: str, repetitions: int) -> int:
-        if model == 'whisper_cpp_medium':
+        if model.startswith('whisper_cpp_medium'):
             return min(600, 180 + 60 * repetitions)
         if model == 'nemotron_unified_0_6b':
             return min(600, 210 + 45 * repetitions)
-        if model in ('whisper_cpp_small', 'parakeet_ptbr_30s', 'parakeet_tagarela', 'parakeet_ultra_q8', 'parakeet_ultra_q4'):
+        if model.startswith('whisper_cpp_small') or model in ('parakeet_ptbr_30s', 'parakeet_tagarela', 'parakeet_ultra_q8', 'parakeet_ultra_q4'):
             return min(420, 120 + 35 * repetitions)
         return min(300, 90 + 25 * (repetitions - 1))
 
@@ -353,12 +632,25 @@ class STTLab:
             raise ValueError('Áudio excedeu o limite')
         if self.busy.locked():
             raise ValueError('STT ocupado; tente novamente após a operação atual')
+        resident = bool(body.get('resident', True))
+        execution_mode = body.get('execution_mode')
+        memory_policy = body.get('memory_policy', 'auto')
+        memory_limit_mb = body.get('memory_limit_mb')
+        if 'retention_seconds' in body:
+            self.retention_seconds = body.get('retention_seconds')
+        worker_is_native = getattr(type(self), 'worker', None) is getattr(self.worker, '__func__', None)
+        use_persistent = (not compare) and worker_is_native and (resident or execution_mode in ('warm', 'warmup_benchmark'))
+
         async with self.busy:
             self.cancel_requested = False
             started = time.perf_counter()
             pcm, decode_ms = await decode_audio(base64.b64decode(encoded, validate=True))
             rows = []
             digest = hashlib.sha256(pcm).hexdigest()
+            active_prod = await self.active()
+            prod_rss = float((active_prod or {}).get('process_rss_mb') or 0.0)
+            if compare and self._session_proc is not None and self._session_proc.returncode is None:
+                await self._unload_session_locked()
             sig = inspect.signature(self.worker)
             supports_timeout = (
                 any(p.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD) for p in sig.parameters.values())
@@ -381,14 +673,37 @@ class STTLab:
                     'audio_processing': body.get('audio_processing') if isinstance(body.get('audio_processing'), dict) else None,
                     'nemotron_streaming_profile': body.get('nemotron_streaming_profile') or body.get('nemotron_profile'),
                     'repetitions': repetitions, 'warmup': warmup,
+                    'execution_mode': execution_mode, 'resident': resident,
+                    'memory_policy': memory_policy, 'memory_limit_mb': memory_limit_mb,
+                    'production_stt_rss_mb': prod_rss,
                     'options': self.manager.config['stt'], 'pcm': base64.b64encode(pcm).decode(),
                     'inventory': str(self.root.parent/'arandu_ha_inventory.json'),
                 }
                 try:
-                    row = await (self.worker(worker_payload, model_timeout) if supports_timeout else self.worker(worker_payload))
+                    if use_persistent:
+                        self.session_state = 'inferring'
+                        row = await self._session_rpc({**worker_payload, 'cmd': 'test'}, timeout=model_timeout)
+                        self.session_state = 'resident' if row.get('resident_after_test', True) else 'unloaded'
+                        self.session_info.update({
+                            'state': self.session_state,
+                            'model': selected if self.session_state == 'resident' else None,
+                            'variant': variant if (self.session_state == 'resident' and selected == 'fastconformer') else None,
+                            'threads': threads if self.session_state == 'resident' else None,
+                            'process_rss_mb': row.get('process_rss_mb', 0.0),
+                            'memory_budget': row.get('memory_budget'),
+                        })
+                        if self.session_state == 'resident':
+                            self._schedule_retention(self.retention_seconds)
+                    else:
+                        row = await (self.worker(worker_payload, model_timeout) if supports_timeout else self.worker(worker_payload))
                     elapsed_total = (time.perf_counter()-item_started)*1000
-                    row.update(audio_decode_ms=decode_ms, audio_sha256=digest,
-                               request_total_ms=elapsed_total, total_ms=elapsed_total, error_code=None)
+                    row.update(
+                        audio_decode_ms=decode_ms,
+                        audio_sha256=digest,
+                        request_total_ms=elapsed_total,
+                        total_ms=row.get('total_ms') if row.get('total_ms') is not None else elapsed_total,
+                        error_code=None,
+                    )
                     rows.append(row)
                     self.operations.pop((selected, variant), None)
                     self.validation_state[(selected, variant)] = {
@@ -396,9 +711,21 @@ class STTLab:
                         'load_ms': row.get('cold_load_ms') or row.get('model_load_ms'),
                         'process_rss_mb': row.get('process_rss_mb'),
                     }
+                    self.session_history.append({
+                        'model': selected,
+                        'threads': threads,
+                        'execution_mode': row.get('execution_mode'),
+                        'session_reused': row.get('session_reused', False),
+                        'cold_load_ms': row.get('cold_load_ms'),
+                        'inference_ms': row.get('inference_ms'),
+                        'process_rss_mb': row.get('process_rss_mb'),
+                        'realtime_factor': row.get('realtime_factor'),
+                    })
+                    self.session_history = self.session_history[-50:]
                 except (ValueError, TimeoutError, OSError) as exc:
                     raw_msg = str(exc)
                     explicit_code = getattr(exc, 'error_code', None)
+                    failure_detail = getattr(exc, 'failure_detail', None)
                     if self.cancel_requested or explicit_code == 'cancelled':
                         err_code = 'cancelled'
                         message = 'Benchmark cancelado pelo usuário'
@@ -420,13 +747,16 @@ class STTLab:
                     else:
                         err_code = 'execution_error' if isinstance(exc, ValueError) else 'runtime_unavailable'
                         message = raw_msg if isinstance(exc, ValueError) else 'Runtime STT indisponível'
-                    rows.append({
+                    err_row = {
                         'model': selected,
                         'state': 'cancelled' if err_code == 'cancelled' else 'error',
                         'error_code': err_code,
                         'error': message,
                         'audio_sha256': digest,
-                    })
+                    }
+                    if failure_detail is not None:
+                        err_row['failure_detail'] = failure_detail
+                    rows.append(err_row)
                     self.operations[(selected, variant)] = {'state': 'error', 'error_code': err_code, 'error': rows[-1]['error']}
                     if err_code in ('oom', 'timeout'):
                         self.validation_state[(selected, variant)] = {'load_status': err_code}
@@ -515,6 +845,8 @@ class STTLab:
                 raise
 
     async def close(self):
+        self._cancel_retention()
+        await self._kill_session_proc()
         if self.install_task:
             self.install_task.cancel()
             await asyncio.gather(self.install_task, return_exceptions=True)

@@ -532,15 +532,19 @@ pub fn recognize(
         matches.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.intent.cmp(&b.1.intent)));
         let weight = matches[0].0;
         let mut command = matches[0].1.clone();
+        let mut conflict = false;
         for (_, candidate) in matches.iter().filter(|(rank, _)| *rank == weight).skip(1) {
             if candidate.action != command.action || candidate.parameters != command.parameters {
-                return None;
+                conflict = true;
+                break;
             }
             command.domains.extend(candidate.domains.iter().cloned());
         }
-        command.domains.sort();
-        command.domains.dedup();
-        return Some(command);
+        if !conflict {
+            command.domains.sort();
+            command.domains.dedup();
+            return Some(command);
+        }
     }
     for prefix in ["pode ", "poderia ", "por favor ", "quero "] {
         if let Some(rest) = text.strip_prefix(prefix) {
@@ -577,7 +581,7 @@ fn from_rule(rule: &Rule, values: &BTreeMap<String, String>) -> Option<Command> 
     if let Some(group) = values.get("group_type") {
         command.domains = if matches!(
             group.as_str(),
-            "aparelhos" | "dispositivos" | "equipamentos"
+            "aparelhos" | "dispositivos" | "equipamentos" | "coisas"
         ) {
             [
                 "light",
@@ -822,6 +826,10 @@ pub fn semantic_domain(text: &str) -> Option<&'static str> {
     let words: Vec<&str> = text.split_whitespace().collect();
     if text.contains("ar condicionado")
         || words.contains(&"split")
+        || words.contains(&"condicionado")
+        || words.contains(&"climatizador")
+        || words.contains(&"termostato")
+        || words.contains(&"aquecedor")
         || words.contains(&"ar") && !text.contains("qualidade do ar")
     {
         return Some("climate");
@@ -1358,11 +1366,18 @@ fn basic(text: &str, domain: Option<&str>) -> Option<Command> {
                 | "todos"
                 | "tudo"
                 | "luzes"
+                | "lampadas"
+                | "luminarias"
                 | "ventiladores"
                 | "cortinas"
                 | "persianas"
                 | "interruptores"
                 | "tomadas"
+                | "ares"
+                | "coisas"
+                | "aparelhos"
+                | "dispositivos"
+                | "equipamentos"
         )
     });
     Some(result)
@@ -1887,10 +1902,30 @@ fn query_area_tail(text: &str) -> Option<String> {
 }
 
 pub fn followup_target(text: &str) -> &str {
-    ["o do ", "a da ", "o da ", "a do ", "do ", "da "]
+    let stripped = text
+        .strip_prefix("nao ")
+        .map(str::trim_start)
+        .unwrap_or(text);
+    ["o do ", "a da ", "o da ", "a do ", "do ", "da ", "no ", "na "]
         .iter()
-        .find_map(|prefix| text.strip_prefix(prefix))
-        .unwrap_or(text)
+        .find_map(|prefix| stripped.strip_prefix(prefix))
+        .unwrap_or(stripped)
+}
+
+pub fn followup_action(text: &str) -> Option<(&'static str, &'static str, Option<&'static str>)> {
+    match text.trim() {
+        "liga" | "ligue" | "ligar" | "acende" | "acenda" | "acender" | "ativa" | "ative"
+        | "ativar" => Some(("device.turn_on", "turn_on", None)),
+        "desliga" | "desligue" | "desligar" | "apaga" | "apague" | "apagar" | "desativa"
+        | "desative" | "desativar" => Some(("device.turn_off", "turn_off", None)),
+        "abre" | "abra" | "abrir" => Some(("cover.open", "open", Some("cover"))),
+        "fecha" | "feche" | "fechar" => Some(("cover.close", "close", Some("cover"))),
+        "tranca" | "tranque" | "trancar" => Some(("lock.lock", "lock", Some("lock"))),
+        "destranca" | "destranque" | "destrancar" => {
+            Some(("lock.unlock", "unlock", Some("lock")))
+        }
+        _ => None,
+    }
 }
 
 pub fn split_clauses(text: &str) -> Vec<String> {
@@ -2018,15 +2053,41 @@ fn recognize_bulk_head(head: &str) -> Option<Command> {
         return Some(result);
     }
     if let Some(tail) = rest
+        .strip_prefix("todas as coisas da ")
+        .or_else(|| rest.strip_prefix("todas as coisas do "))
+        .or_else(|| rest.strip_prefix("todas coisas da "))
+        .or_else(|| rest.strip_prefix("todas coisas do "))
+        .or_else(|| rest.strip_prefix("todos os aparelhos da "))
+        .or_else(|| rest.strip_prefix("todos os aparelhos do "))
+        .or_else(|| rest.strip_prefix("todos os dispositivos da "))
+        .or_else(|| rest.strip_prefix("todos os dispositivos do "))
+        .or_else(|| rest.strip_prefix("todos os equipamentos da "))
+        .or_else(|| rest.strip_prefix("todos os equipamentos do "))
+        .or_else(|| rest.strip_prefix("os aparelhos da "))
+        .or_else(|| rest.strip_prefix("os aparelhos do "))
+    {
+        result.area = Some(tail.trim().to_owned());
+        return Some(result);
+    }
+    if let Some(tail) = rest
         .strip_prefix("todas as luzes da ")
         .or_else(|| rest.strip_prefix("todas as luzes do "))
         .or_else(|| rest.strip_prefix("todas luzes da "))
         .or_else(|| rest.strip_prefix("todas luzes do "))
         .or_else(|| rest.strip_prefix("todas as lampadas da "))
         .or_else(|| rest.strip_prefix("todas as lampadas do "))
+        .or_else(|| rest.strip_prefix("as luzes da "))
+        .or_else(|| rest.strip_prefix("as luzes do "))
+        .or_else(|| rest.strip_prefix("as lampadas da "))
+        .or_else(|| rest.strip_prefix("as lampadas do "))
     {
         result.domains.push("light".into());
         result.area = Some(tail.trim().to_owned());
+        return Some(result);
+    }
+    if rest == "as luzes" || rest == "todas as luzes" || rest == "as lampadas" || rest == "todas as lampadas" {
+        result.domains.push("light".into());
+        result.origin = true;
         return Some(result);
     }
     if let Some(tail) = rest

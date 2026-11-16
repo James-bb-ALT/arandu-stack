@@ -67,17 +67,21 @@ fn review_accepts_valid_action_repair_and_requires_confirmation() {
         antecedent: None,
     });
 
-    let reviewed = review_proposal(&ReviewProposalRequest {
-        version: 5,
-        partial,
-        repairs: vec![ProposalRepair {
+    let wire_json = serde_json::json!({
+        "version": 5,
+        "partial": &partial,
+        "repairs": [ProposalRepair {
             clause_id: 0,
             slot: "action".into(),
             value: json!("turn_on"),
             source: "decision_ranked".into(),
             evidence: vec!["phonetic_ptbr".into()],
+            raw_score: Some(0.92),
         }],
     });
+    let req: ReviewProposalRequest =
+        serde_json::from_str(&wire_json.to_string()).expect("wire /v5/review round-trip");
+    let reviewed = review_proposal(&req);
     assert!(reviewed.accepted);
     assert_eq!(reviewed.status, "plan");
     assert!(reviewed.requires_confirmation);
@@ -115,6 +119,7 @@ fn review_rejects_overwriting_frozen_target_or_unsupported_action() {
             value: json!("ar_quarto_1"),
             source: "llm_proposed".into(),
             evidence: vec![],
+            ..Default::default()
         }],
     });
     assert!(!overwrite_target.accepted);
@@ -129,6 +134,7 @@ fn review_rejects_overwriting_frozen_target_or_unsupported_action() {
             value: json!("unlock"),
             source: "decision_ranked".into(),
             evidence: vec![],
+            ..Default::default()
         }],
     });
     assert!(!unsupported_action.accepted);
@@ -167,8 +173,59 @@ fn review_rejects_safety_locked_partial() {
             value: json!("turn_on"),
             source: "llm_proposed".into(),
             evidence: vec![],
+            ..Default::default()
         }],
     });
     assert!(!reviewed.accepted);
     assert_eq!(reviewed.reason.as_deref(), Some("safety_locked"));
+}
+
+#[test]
+fn review_deterministic_target_repair_does_not_require_confirmation() {
+    let generation = "7".repeat(64);
+    let _ = register_catalog(test_catalog(&generation));
+
+    let mut partial = interpret_partial(&PartialRequest {
+        version: 5,
+        request_id: "rev-4".into(),
+        generation,
+        identity_scope_hash: "8".repeat(64),
+        text: "liga o xpto desconhecido".into(),
+        origin_area: Some("quarto".into()),
+        origin_area_source: Some("satellite".into()),
+        origin_context_id: None,
+        last_area: None,
+        last_targets: Vec::new(),
+        pending: None,
+        antecedent: None,
+    });
+    // Simulate unresolved target while action was deterministically resolved by NLU
+    partial.clauses[0].slots.insert(
+        "target".into(),
+        local_nlu::contextual::contract::SlotState {
+            value: json!(null),
+            status: "candidate".into(),
+            evidence: vec!["catalog_token_match".into()],
+            source: Some("catalog_alias".into()),
+            candidates: vec![json!("ar_quarto_1")],
+        },
+    );
+    partial.clauses[0].unresolved = vec!["target".into()];
+
+    let reviewed = review_proposal(&ReviewProposalRequest {
+        version: 5,
+        partial,
+        repairs: vec![ProposalRepair {
+            clause_id: 0,
+            slot: "target".into(),
+            value: json!("ar_quarto_1"),
+            source: "decision_ranked".into(),
+            evidence: vec!["single_authorized_candidate".into()],
+            ..Default::default()
+        }],
+    });
+    assert!(reviewed.accepted, "{reviewed:?}");
+    assert!(!reviewed.requires_confirmation);
+    assert_eq!(reviewed.operations[0].action, "turn_on");
+    assert_eq!(reviewed.operations[0].targets, vec!["ar_quarto_1"]);
 }

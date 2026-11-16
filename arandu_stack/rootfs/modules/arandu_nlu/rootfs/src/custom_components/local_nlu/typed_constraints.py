@@ -69,12 +69,17 @@ def operational_refusal(text, catalog, operations):
                 action='pause'
             if semantic_refusal(remainder,catalog) is None and action == op.parameters['target_action']:
                 return None
-    if refusal == 'semantic_exclusion' and op.action in ('turn_on','turn_off') and 'complete_spatial_set' in op.evidence:
-        match = re.search(r'\b(?:menos|exceto) (.+)$', value)
+    if refusal == 'semantic_exclusion' and op.action in ('turn_on', 'turn_off') and 'complete_spatial_set' in op.evidence:
+        match = re.search(r'\b(?:menos|exceto|com excecao(?: d[eao]s?)?) (.+)$', value)
         if match:
-            clause = re.sub(r'^(?:a|o|as|os) ', '', match[1])
-            matches = [row for row in catalog.get('entities',[]) if clause in {normalized(name) for name in (row['name'],*row.get('aliases',[]))}]
-            excluded = op.parameters.get('excluded_targets')
-            if len(matches)==1 and excluded == [matches[0]['registry_id']] and matches[0]['registry_id'] not in op.targets and semantic_refusal(value[:match.start()],catalog) is None:
+            clause = re.sub(r'^(?:a|o|as|os|da|do|das|dos) ', '', match[1])
+            target_area = op.parameters.get('area')
+            matches = [row for row in catalog.get('entities', [])
+                       if (target_area is None or row.get('area_id') == target_area)
+                       and (clause in {normalized(name) for name in (row['name'], *row.get('aliases', []))}
+                            or all(t in {w for name in (row['name'], *row.get('aliases', [])) for w in normalized(name).split()}
+                                   for t in clause.split() if len(t) >= 3))]
+            excluded = op.parameters.get('excluded_targets') or []
+            if matches and set(excluded) == {row['registry_id'] for row in matches} and not set(excluded).intersection(op.targets) and semantic_refusal(value[:match.start()], catalog) is None:
                 return None
     return refusal

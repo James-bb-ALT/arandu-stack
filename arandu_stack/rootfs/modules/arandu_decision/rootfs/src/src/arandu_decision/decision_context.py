@@ -143,7 +143,19 @@ def fields(text, catalog, context=None):
         if any(word not in labels.split() and word not in {'comodo', 'aqui'} for word in qualifiers):
             refusal = refusal or 'unknown_explicit_area'
     named = [m for m in matches if m['evidence'] == 'exact_alias']
-    grounded = named or [m for m in matches if m['evidence'] == 'category']
+    token_matched = []
+    if not named:
+        by_id = {r['entity_id']: r for r in catalog['entities']}
+        area_tokens = {w for a in catalog['areas'] for n in a['names'] for w in normalized(n).split()}
+        query_toks = {w for w in remaining.split() if len(w) >= 4 and w not in ARTICLES and w not in area_tokens}
+        if query_toks:
+            for match in matches:
+                row = by_id[match['entity_id']]
+                row_toks = {w for lbl in [row['name'], *row.get('aliases', [])] for w in normalized(lbl).split()
+                            if len(w) >= 4 and w not in ARTICLES and w not in area_tokens}
+                if query_toks & row_toks:
+                    token_matched.append({**match, 'evidence': 'token_match'})
+    grounded = named or token_matched or [m for m in matches if m['evidence'] == 'category']
     if not grounded:
         typo = []
         by_id = {r['entity_id']: r for r in catalog['entities']}

@@ -29,7 +29,11 @@ FIXED_DETECT_LANGUAGE = False
 
 MODEL_FILENAMES = {
     'whisper_cpp_small': 'ggml-small.bin',
+    'whisper_cpp_small_q8_0': 'ggml-small-q8_0.bin',
+    'whisper_cpp_small_q5_1': 'ggml-small-q5_1.bin',
     'whisper_cpp_medium': 'ggml-medium.bin',
+    'whisper_cpp_medium_q8_0': 'ggml-medium-q8_0.bin',
+    'whisper_cpp_medium_q5_0': 'ggml-medium-q5_0.bin',
 }
 
 DEFAULT_WHISPER_SERVER_PATHS = (
@@ -37,12 +41,32 @@ DEFAULT_WHISPER_SERVER_PATHS = (
     Path('/usr/bin/whisper-server'),
 )
 
+PORTABLE_WHISPER_SERVER_PATHS = (
+    Path('/usr/local/bin/whisper-server-portable'),
+    Path('/usr/bin/whisper-server-portable'),
+)
+
 LFS_POINTER_PREFIX = b'version https://git-lfs.github.com/spec/v1'
 MIN_GGML_BYTES = 1024
 
 
+def _cpu_supports_avx2_fma() -> bool:
+    """Check Linux /proc/cpuinfo for AVX2 + FMA + F16C; assume True on non-proc platforms."""
+    cpuinfo = Path('/proc/cpuinfo')
+    if not cpuinfo.is_file():
+        return True
+    try:
+        for line in cpuinfo.read_text(encoding='utf-8', errors='ignore').splitlines():
+            if line.lower().startswith('flags'):
+                flags = set(line.split(':', 1)[-1].split())
+                return {'avx2', 'fma', 'f16c'}.issubset(flags)
+    except OSError:
+        pass
+    return True
+
+
 def find_whisper_server_binary() -> str | None:
-    """Locate the compiled whisper-server executable without auto-downloading or compiling."""
+    """Locate the compiled whisper-server executable, choosing portable SSE4.2 fallback if AVX2 is absent."""
     env_override = os.environ.get('ARANDU_WHISPER_SERVER_BIN')
     if env_override is not None:
         trimmed = env_override.strip()
@@ -52,7 +76,14 @@ def find_whisper_server_binary() -> str | None:
         if cand.is_file() and (os.name == 'nt' or os.access(cand, os.X_OK)):
             return str(cand)
         return None
+    if not _cpu_supports_avx2_fma():
+        for cand in PORTABLE_WHISPER_SERVER_PATHS:
+            if cand.is_file() and (os.name == 'nt' or os.access(cand, os.X_OK)):
+                return str(cand)
     for cand in DEFAULT_WHISPER_SERVER_PATHS:
+        if cand.is_file() and (os.name == 'nt' or os.access(cand, os.X_OK)):
+            return str(cand)
+    for cand in PORTABLE_WHISPER_SERVER_PATHS:
         if cand.is_file() and (os.name == 'nt' or os.access(cand, os.X_OK)):
             return str(cand)
     found = shutil.which('whisper-server')
@@ -377,10 +408,20 @@ class WhisperCppBackend:
         with self._infer_lock:
             if self._proc is None or self._proc.poll() is not None or self.port is None:
                 raise RuntimeError('Modelo whisper.cpp não está carregado ou o servidor foi encerrado')
+            t_start = time.perf_counter()
             wav_bytes, sample_count = _audio_to_wav_bytes(audio)
+            wav_encode_ms = (time.perf_counter() - t_start) * 1000.0
             if sample_count == 0 or not wav_bytes:
+                self.last_timings = {
+                    'wav_encode_ms': round(wav_encode_ms, 3),
+                    'http_roundtrip_ms': 0.0,
+                    'server_processing_ms': None,
+                    'decode_ms': None,
+                    'end_to_end_ms': round(wav_encode_ms, 3),
+                    'instrumentation_scope': 'end_to_end_http',
+                }
                 return '', 0.0
-            start = time.perf_counter()
+            t_http = time.perf_counter()
             try:
                 data = self._post_inference(wav_bytes)
             except (socket.timeout, TimeoutError) as exc:
@@ -390,9 +431,21 @@ class WhisperCppBackend:
                 if _tail_implies_oom(self._stderr_lines, rc):
                     raise MemoryError(f'whisper-server encerrado por falta de memória durante inferência (exit={rc})') from exc
                 raise RuntimeError(f'Falha de comunicação com whisper-server (exit={rc}): {exc}') from exc
-            elapsed_ms = (time.perf_counter() - start) * 1000.0
+            http_roundtrip_ms = (time.perf_counter() - t_http) * 1000.0
+            end_to_end_ms = (time.perf_counter() - t_start) * 1000.0
+            raw_timings = data.get('timings') if isinstance(data.get('timings'), dict) else {}
+            srv_ms = raw_timings.get('total_ms') or raw_timings.get('predicted_ms')
+            dec_ms = raw_timings.get('decode_ms') or raw_timings.get('predicted_ms')
+            self.last_timings = {
+                'wav_encode_ms': round(wav_encode_ms, 3),
+                'http_roundtrip_ms': round(http_roundtrip_ms, 3),
+                'server_processing_ms': round(float(srv_ms), 3) if isinstance(srv_ms, (int, float)) else None,
+                'decode_ms': round(float(dec_ms), 3) if isinstance(dec_ms, (int, float)) else None,
+                'end_to_end_ms': round(end_to_end_ms, 3),
+                'instrumentation_scope': 'server_reported' if isinstance(srv_ms, (int, float)) else 'end_to_end_http',
+            }
             text = ' '.join(str(data.get('text') or '').strip().split())
-            return text, elapsed_ms
+            return text, http_roundtrip_ms
 
     def close(self) -> None:
         proc = self._proc

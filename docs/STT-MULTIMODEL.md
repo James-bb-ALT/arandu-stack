@@ -12,7 +12,11 @@ App **5.0.1**, STT **4.0.1**, integração HACS **6.0.1**. O STT permanece inalt
 | `whisper_base` | [Systran/faster-whisper-base](https://huggingface.co/Systran/faster-whisper-base) | MIT |
 | `whisper_small` | [Systran/faster-whisper-small](https://huggingface.co/Systran/faster-whisper-small) | MIT |
 | `whisper_cpp_small` | [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp) (`ggml-small.bin`, whisper.cpp v1.9.5) | MIT |
+| `whisper_cpp_small_q8_0` | [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp) (`ggml-small-q8_0.bin`, whisper.cpp v1.9.5) | MIT |
+| `whisper_cpp_small_q5_1` | [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp) (`ggml-small-q5_1.bin`, whisper.cpp v1.9.5) | MIT |
 | `whisper_cpp_medium` | [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp) (`ggml-medium.bin`, whisper.cpp v1.9.5) | MIT |
+| `whisper_cpp_medium_q8_0` | [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp) (`ggml-medium-q8_0.bin`, whisper.cpp v1.9.5) | MIT |
+| `whisper_cpp_medium_q5_0` | [ggerganov/whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp) (`ggml-medium-q5_0.bin`, whisper.cpp v1.9.5) | MIT |
 | `parakeet_ptbr_30s` | [alefiury/parakeet-tdt-v3-ptBR-30s-onnx](https://huggingface.co/alefiury/parakeet-tdt-v3-ptBR-30s-onnx), FP32, onnx-asr | CC BY 4.0 |
 | `parakeet_tagarela` | [alefiury/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx](https://huggingface.co/alefiury/parakeet-tdt-0.6b-v3-ptBR-TAGARELA-onnx), FP32, onnx-asr | CC BY 4.0 |
 | `orukeet_int8` | [oruk/orukeet](https://huggingface.co/oruk/orukeet), transducer INT8, sherpa-onnx | CC BY-SA 4.0 |
@@ -35,7 +39,11 @@ Os modelos instalados usam as mesmas rotas, seletores, cache e aplicação confi
 | `orukeet_int8` | 487 MB; 672 MB extraídos | `55a984d46f68323301837194ce647c702f55facc` |
 | `granite_turboctc_q4` | 279 MB | `88845afaa7beadca4b9ec545df0dd7332349ab88` |
 | `whisper_cpp_small` | 488 MB | `5359861c739e955e79d9a303bcbc70fb988958b1` |
+| `whisper_cpp_small_q8_0` | 264 MB | `5359861c739e955e79d9a303bcbc70fb988958b1` |
+| `whisper_cpp_small_q5_1` | 190 MB | `5359861c739e955e79d9a303bcbc70fb988958b1` |
 | `whisper_cpp_medium` | 1.534 MB | `5359861c739e955e79d9a303bcbc70fb988958b1` |
+| `whisper_cpp_medium_q8_0` | 823 MB | `5359861c739e955e79d9a303bcbc70fb988958b1` |
+| `whisper_cpp_medium_q5_0` | 539 MB | `5359861c739e955e79d9a303bcbc70fb988958b1` |
 
 ### Runtime whisper.cpp (v11.4.0)
 
@@ -60,7 +68,8 @@ Verificado também `ORPHAN_WHISPER_SERVER: []` após a execução e `13` eventos
 
 - **Modelo e integridade:** `nemotron_unified_0_6b` utiliza o checkpoint oficial `nvidia/nemotron-labs-unified-asr-0.6b` (`nemotron-labs-unified-asr-0.6b.nemo`, revisão `023ce907267a09a308a5cb69239447cb3d0c1597`, `2.507.735.040` bytes, SHA-256 `1718cc1b44fb8597b2356328d706a8d89f31c389ca6f2256c2e3f743c0246936`) sob licença `OpenMDW-1.1`.
 - **Runtime isolado (`/opt/venvs/nemotron`):** Criado no build padrão (`ENABLE_NEMOTRON_RUNTIME=1`) via `python -m venv --system-site-packages /opt/venvs/nemotron` reutilizando `torch==2.9.1` CPU do sistema sem duplicar wheels CUDA, validado com `pip check` e importação real de `numpy, torch, soundfile, nemo.collections.asr`.
-- **Worker persistente e governança de RAM:** `NemotronUnifiedBackend` executa `--worker` fora do processo do Assist/Lab, define `TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1` apenas após validação de tamanho e SHA-256 em `model_catalog.verify()`, mantém orçamento de `memory_limit_mb=4608` MiB (consumo típico em carga CPU ~`3,2–4,5 GiB` RSS),timeouts independentes de carga/inferência, detecção de OOM/SIGKILL e limpeza de árvore de processos e WAVs temporários.
+- **Worker persistente e governança de RAM:** `NemotronUnifiedBackend` executa `--worker` fora do processo do Assist/Lab, define `TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1` apenas após validação de tamanho e SHA-256 em `model_catalog.verify()`, e segue a política de memória configurável do AI Lab (`auto` = 80% da RAM efetivamente disponível via `min(host_available, cgroup_headroom)`, `custom` = limite manual em MiB, ou `none` = sem teto interno de RSS, mantendo proteção pré-carga e diagnóstico de OOM `internal_limit_exceeded` / `cgroup_limit_exceeded` / `kernel_oom` / `runtime_alloc_error` / `model_load_failed`), além de timeouts independentes de carga/inferência e limpeza de processos/WAVs temporários.
+- **Sessão residente do AI Lab (`--serve`):** O AI Lab mantém no máximo 1 modelo residente em RAM entre testes (`warm`), com retenção configurável (`0`, `300s`, `900s`, `1800s`, permanente) e controles explícitos de **Carregar**, **Aquecer** e **Descarregar** via `/api/stt/session`, `/api/stt/load`, `/api/stt/warmup` e `/api/stt/unload`, sem interferir no STT de produção (`11560`/`10350`).
 - **Idioma e modos (`offline` vs `buffered_offline`):** Idioma fixo em português (`pt`) resolvido no `prompt_dictionary`, sem tradução e com retorno vazio em silêncio digital. Como a arquitetura unificada do checkpoint emprega convoluções não-causais, o modo em blocos (`precision` 560/560 ms, `balanced` 160/400 ms, `fast` 80/160 ms, `experimental` 80/80 ms) informa honestamente `inference_mode="buffered_offline"` e reporta latência medida real, sem confundir janela algorítmica com latência de inferência.
 - **Escopo de validação:** Em GitHub CI são verificados `pip check`, imports reais no container e suítes automatizadas offline/worker (`tests/test_nemotron_and_stt_runtimes.py`); benchmarks acústicos reais com o checkpoint `.nemo` de `2,5 GB` exigem ambiente staging com largura de banda e >= 5 GiB de RAM livre.
 

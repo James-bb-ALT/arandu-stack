@@ -19,7 +19,8 @@ FROM python:3.12-slim-bookworm AS whisper_cpp_builder
 # Source only, pinned immutable upstream release tag v1.9.5; model weights are downloaded on demand.
 RUN apt-get update && apt-get install -y --no-install-recommends git cmake build-essential ca-certificates
 RUN git init /whisper && cd /whisper && git remote add origin https://github.com/ggml-org/whisper.cpp.git && git fetch --depth 1 origin d1be6fde11ac6e0407606b4e42fe72d34add8037 && git checkout FETCH_HEAD
-RUN cmake -S /whisper -B /whisper/build -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_IS_DEV=OFF -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DGGML_AVX512=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON -DWHISPER_BUILD_SERVER=ON && cmake --build /whisper/build --target whisper-server whisper-cli -j 2
+RUN cmake -S /whisper -B /whisper/build -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_IS_DEV=OFF -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON -DGGML_OPENMP=OFF -DGGML_AVX512=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON -DWHISPER_BUILD_SERVER=ON && cmake --build /whisper/build --target whisper-server whisper-cli -j 2
+RUN cmake -S /whisper -B /whisper/build-portable -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_IS_DEV=OFF -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_OPENMP=OFF -DGGML_AVX512=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON -DWHISPER_BUILD_SERVER=ON && cmake --build /whisper/build-portable --target whisper-server -j 2
 
 FROM python:3.12-slim-bookworm
 ARG ENABLE_NEMOTRON_RUNTIME=1
@@ -29,8 +30,9 @@ RUN pip install --no-cache-dir aiohttp==3.13.3 psutil==7.2.2 && pip install --no
 COPY --from=nlu_builder /build/engine/target/release/local-nlu /usr/bin/local-nlu
 COPY --from=llama /llama/build/bin/llama-server /usr/local/bin/llama-server
 COPY --from=whisper_cpp_builder /whisper/build/bin/whisper-server /usr/local/bin/whisper-server
+COPY --from=whisper_cpp_builder /whisper/build-portable/bin/whisper-server /usr/local/bin/whisper-server-portable
 COPY --from=whisper_cpp_builder /whisper/build/bin/whisper-cli /usr/local/bin/whisper-cli
-RUN test -x /usr/local/bin/whisper-server && test -x /usr/local/bin/whisper-cli
+RUN test -x /usr/local/bin/whisper-server && test -x /usr/local/bin/whisper-server-portable && test -x /usr/local/bin/whisper-cli
 COPY --from=transcribe_builder /runtime/lib/ /usr/local/lib/
 COPY --from=transcribe_builder /runtime/wheels/ /opt/transcribe-wheels/
 RUN ldconfig

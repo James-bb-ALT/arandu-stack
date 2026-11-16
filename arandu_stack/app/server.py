@@ -16,7 +16,7 @@ from logs import LogStore, SOURCES, LOGGER
 from request_traces import TraceStore
 from admission import Gate, Busy
 
-APP_VERSION = '11.4.3'
+APP_VERSION = '11.4.4'
 
 async def read_limited(content, limit):
     """Read to EOF: StreamReader.read(n) may return only the first network chunk."""
@@ -417,16 +417,27 @@ def create_app(data_dir, local=False):
                 raise
     async def stt_models(request):
         return web.json_response(await stt_lab.models(request.query.get('variant')))
+    async def stt_session(request):
+        return web.json_response(await stt_lab.session_status(
+            memory_policy=request.query.get('memory_policy', 'auto'),
+            memory_limit_mb=request.query.get('memory_limit_mb'),
+        ))
     async def stt_action(request):
         action = request.match_info['action']
         raw_text = await request.text() if request.can_read_body else ''
-        body = json.loads(raw_text) if raw_text.strip() else ({} if action == 'cancel' else None)
+        body = json.loads(raw_text) if raw_text.strip() else ({} if action in {'cancel', 'unload', 'warmup'} else None)
         if type(body) is not dict:
             raise ValueError('Objeto JSON obrigatório')
         if action == 'install':
             result = stt_lab.start_install(body.get('model'), body.get('variant', 'adapted'))
         elif action == 'remove':
             result = await stt_lab.remove(body.get('model'), body.get('variant', 'adapted'))
+        elif action == 'load':
+            result = await stt_lab.load_model(body)
+        elif action == 'warmup':
+            result = await stt_lab.warmup_model(body)
+        elif action == 'unload':
+            result = await stt_lab.unload_model()
         elif action in {'test', 'compare'}:
             result = await stt_lab.test(body, compare=action == 'compare')
         elif action == 'cancel':
@@ -565,6 +576,7 @@ def create_app(data_dir, local=False):
     app.router.add_get('/', index)
     app.router.add_get('/api/state', state)
     app.router.add_get('/api/stt/models', stt_models)
+    app.router.add_get('/api/stt/session', stt_session)
     app.router.add_post('/api/stt/{action}', stt_action)
     app.router.add_get('/api/tts/status', tts_status)
     app.router.add_get('/api/tts/models', tts_models)

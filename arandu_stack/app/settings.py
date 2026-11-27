@@ -52,6 +52,7 @@ FIELDS = {
              ('whisper_base','Whisper Base'),
              ('whisper_small','Whisper Small'),
              ('parakeet_ptbr_30s', 'Parakeet TDT V3 pt-BR 30s'),
+             ('parakeet_ptbr_30s_int8', 'Parakeet TDT V3 pt-BR 30s INT8'),
              ('parakeet_tagarela', 'Parakeet TAGARELA pt-BR'),
              ('orukeet_int8', 'Orukeet INT8'),
              ('granite_turboctc_q4', 'Granite TurboCTC Q4_K_M'),

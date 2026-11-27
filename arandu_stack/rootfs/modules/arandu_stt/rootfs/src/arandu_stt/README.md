@@ -1,6 +1,6 @@
-# STT 4.0.1 — oito modelos locais
+# STT 4.0.2 — nove modelos locais
 
-FastConformer original/adaptado e Whisper Tiny/Base/Small são preservados. Novos IDs: `parakeet_ptbr_30s`, `parakeet_tagarela`, `orukeet_int8`, `granite_turboctc_q4`. CPU, duas threads por padrão, carga offline após instalação individual verificada. Sem pesos ou Torch no ambiente STT.
+FastConformer original/adaptado e Whisper Tiny/Base/Small são preservados. Modelos TDT pt-BR incluem `parakeet_ptbr_30s` FP32 e `parakeet_ptbr_30s_int8` INT8; ambos usam `onnx-asr` e TDT nativo. Orukeet permanece o padrão. CPU, duas threads por padrão, carga offline após instalação individual verificada. Sem pesos ou Torch no ambiente STT. Fluid Speech Pro não é oferecido porque sua documentação lista 25 línguas europeias, sem PT-BR. Granite só oferece a variante Q4_K_M verificada no catálogo atual.
 
 Dashboard e AI Lab usam o mesmo catálogo: gravação/upload/player, comparação sequencial, RAW/FINAL, carga/inferência/total, WER/CER, exportação e aplicação confirmada com rollback. Portas e identificador Wyoming preservados. Consulte `docs/STT-MULTIMODEL.md` na raiz para licenças, tamanhos, revisões, validação e limitações. Os três novos motores sem pesos reais não são anunciados como acusticamente validados.
 

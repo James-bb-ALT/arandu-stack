@@ -151,7 +151,7 @@ class Lab:
                 variant, model = model, 'fastconformer'
             allowed = {
                 'fastconformer', 'whisper_tiny', 'whisper_base', 'whisper_small',
-                'parakeet_ptbr_30s', 'parakeet_tagarela', 'orukeet_int8', 'granite_turboctc_q4',
+                'parakeet_ptbr_30s', 'parakeet_ptbr_30s_int8', 'parakeet_tagarela', 'orukeet_int8', 'granite_turboctc_q4',
                 'parakeet_ultra_q8', 'parakeet_ultra_q4', 'phonon_2_5', 'nemotron_unified_0_6b',
                 'whisper_cpp_small', 'whisper_cpp_small_q8_0', 'whisper_cpp_small_q5_1',
                 'whisper_cpp_medium', 'whisper_cpp_medium_q8_0', 'whisper_cpp_medium_q5_0',

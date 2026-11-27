@@ -1,3 +1,8 @@
+# 4.1.0 — 2026-11-27
+
+- Adiciona Parakeet TDT V3 pt-BR INT8 com pesos pinados, instalação verificada, carga residente e seleção no AI Lab e configurações.
+- Mantém a variante FP32 e Orukeet como padrão. Não anuncia Fluid Speech Pro (sem PT-BR declarado) nem quantizações Granite sem arquivos verificados.
+
 # 4.0.2 — 2026-11-12
 
 - Limites de conexões/captura na porta Wyoming direta e rejeição explícita de saturação, sem alterar o modelo selecionado.

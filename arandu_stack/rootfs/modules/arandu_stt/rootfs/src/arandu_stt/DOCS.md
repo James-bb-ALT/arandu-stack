@@ -1,6 +1,6 @@
 # Arandu STT
 
-STT local em português do Brasil para Home Assistant Assist, usando FastConformer CTC INT8 + motor contextual Arandu 2.0 e protocolo Wyoming.
+STT local em português do Brasil para Home Assistant Assist, usando motores FastConformer, Whisper, Parakeet TDT FP32/INT8, Orukeet e Granite + motor contextual Arandu 2.0 e protocolo Wyoming.
 
 Consulte [atualização e rollback](UPGRADE_2.0.md), [arquitetura](ARCHITECTURE_2.0.md) e [validação e limitações](REPORT_2.0.md).
 

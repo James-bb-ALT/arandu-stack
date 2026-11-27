@@ -18,12 +18,12 @@ from stt_lab import SOURCE
 import model_catalog as catalog
 from backends import create_backend
 
-IDS = ['fastconformer','whisper_tiny','whisper_base','whisper_small','parakeet_ptbr_30s','parakeet_tagarela','orukeet_int8','granite_turboctc_q4']
+IDS = ['fastconformer','whisper_tiny','whisper_base','whisper_small','parakeet_ptbr_30s','parakeet_ptbr_30s_int8','parakeet_tagarela','orukeet_int8','granite_turboctc_q4']
 
 
 def test_catalog_and_factory_cover_eight_without_importing_native_libraries():
-    assert list(catalog.CATALOG) == IDS
-    expected = ['FastConformerBackend']+['WhisperBackend']*3+['ParakeetBackend']*2+['OrukeetBackend','GraniteBackend']
+    expected = ['FastConformerBackend']+['WhisperBackend']*3+['ParakeetBackend']*3+['OrukeetBackend','GraniteBackend']
+    assert all(model in catalog.CATALOG for model in IDS)
     for model, name in zip(IDS, expected):
         assert type(create_backend(model, '/unused', 2)).__name__ == name
         row = catalog.describe('/unused', model)
@@ -32,8 +32,8 @@ def test_catalog_and_factory_cover_eight_without_importing_native_libraries():
     for model in IDS[4:]:
         assert len(catalog.CATALOG[model]['revision']) == 40
         assert catalog.CATALOG[model]['download_bytes'] > 200_000_000
-    for model in IDS[4:6]:
-        assert 'encoder-model.onnx.data' in catalog.files(model)
+    assert 'encoder-model.onnx.data' in catalog.files('parakeet_ptbr_30s')
+    assert 'encoder-model.int8.onnx' in catalog.files('parakeet_ptbr_30s_int8')
 
 
 def test_each_model_selection_persists_without_changing_other_options(tmp_path):
@@ -148,6 +148,23 @@ def test_parakeet_offline_cpu_threads_and_plain_tdt_options(tmp_path):
         assert manager.create_asr.call_args.kwargs['offline'] is True
         assert engine.recognize([.1])[0]=='olá'
         assert native.recognize.call_args.kwargs=={'sample_rate':16000}
+
+
+def test_parakeet_ptbr_int8_selects_int8_export_and_keeps_tdt_decoder(tmp_path):
+    model_dir=tmp_path/'parakeet_ptbr_30s_int8'
+    model_dir.mkdir()
+    native=SimpleNamespace(recognize=Mock(return_value='  liga a luz  '))
+    manager=SimpleNamespace(create_asr=Mock(return_value=native))
+    loader=SimpleNamespace(Manager=Mock(return_value=manager))
+    ort=SimpleNamespace(SessionOptions=lambda:SimpleNamespace(),
+        GraphOptimizationLevel=SimpleNamespace(ORT_ENABLE_BASIC=1),get_available_providers=lambda:['CPUExecutionProvider'])
+    with patch.dict(sys.modules,{'onnx_asr':ModuleType('onnx_asr'),'onnx_asr.loader':loader,'onnxruntime':ort}):
+        engine=create_backend('parakeet_ptbr_30s_int8',model_dir,3).load()
+        args=loader.Manager.call_args.kwargs
+        assert args['providers']==['CPUExecutionProvider']
+        assert args['sess_options'].intra_op_num_threads==3
+        assert manager.create_asr.call_args.kwargs=={'offline':True,'quantization':'int8'}
+        assert engine.recognize([.1])[0]=='liga a luz'
         engine.close()
 
 

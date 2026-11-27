@@ -18,12 +18,19 @@ class ParakeetBackend:
         options.intra_op_num_threads = self.threads
         options.inter_op_num_threads = 1
         options.enable_cpu_mem_arena = False
-        # Avoid duplicating the 2.4 GB external encoder weights during graph optimization.
+        # Keep FP32 external weights memory-safe; INT8 uses the same graph setup.
         options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_BASIC
         start = time.perf_counter()
-        manager = Manager(sess_options=options, providers=['CPUExecutionProvider'],
+        providers = ['CPUExecutionProvider']
+        available = set(ort.get_available_providers()) if hasattr(ort, 'get_available_providers') else {'CPUExecutionProvider'}
+        if 'CUDAExecutionProvider' in available and getattr(self, 'prefer_cuda', False):
+            providers.insert(0, 'CUDAExecutionProvider')
+        manager = Manager(sess_options=options, providers=providers,
                           preprocessor_config={'use_numpy_preprocessors': True, 'max_concurrent_workers': 1})
-        self._model = manager.create_asr('nemo-conformer-tdt', self.model_dir, offline=True)
+        quantization = 'int8' if self.model_dir.name.endswith('_int8') else None
+        self._model = manager.create_asr('nemo-conformer-tdt', self.model_dir, offline=True,
+                                         **({'quantization': quantization} if quantization else {}))
+        self.providers = providers
         self.load_ms = (time.perf_counter()-start)*1000
         return self
 

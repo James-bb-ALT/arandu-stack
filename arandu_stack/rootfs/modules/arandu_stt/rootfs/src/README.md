@@ -1,8 +1,8 @@
-# STT 4.0.1 — oito modelos locais
+# STT 4.1.0 — nove opções locais
 
-FastConformer original/adaptado e Whisper Tiny/Base/Small são preservados. Novos IDs: `parakeet_ptbr_30s`, `parakeet_tagarela`, `orukeet_int8`, `granite_turboctc_q4`. CPU, duas threads por padrão, carga offline após instalação individual verificada. Sem pesos ou Torch no ambiente STT.
+FastConformer original/adaptado e Whisper Tiny/Base/Small são preservados. Novos IDs: `parakeet_ptbr_30s` FP32, `parakeet_ptbr_30s_int8` INT8, `parakeet_tagarela`, `orukeet_int8`, `granite_turboctc_q4`. CPU, duas threads por padrão, carga offline após instalação individual verificada. Sem pesos ou Torch no ambiente STT.
 
-Dashboard e AI Lab usam o mesmo catálogo: gravação/upload/player, comparação sequencial, RAW/FINAL, carga/inferência/total, WER/CER, exportação e aplicação confirmada com rollback. Portas e identificador Wyoming preservados. Consulte `docs/STT-MULTIMODEL.md` na raiz para licenças, tamanhos, revisões, validação e limitações. Os três novos motores sem pesos reais não são anunciados como acusticamente validados.
+Dashboard e AI Lab usam o mesmo catálogo: gravação/upload/player, comparação sequencial, RAW/FINAL, carga/inferência/total, WER/CER, exportação e aplicação confirmada com rollback. Portas e identificador Wyoming preservados. Consulte `docs/STT-MULTIMODEL.md` na raiz para licenças, tamanhos, revisões, validação e limitações. A nova variante INT8 ainda exige benchmark acústico local para comparação válida. Fluid Speech Pro não oferece idioma PT-BR declarado; Granite Q8_0 e Q6_K não têm assets verificados neste checkpoint.
 
 ## Documentação histórica do FastConformer
 
